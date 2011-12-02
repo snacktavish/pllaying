@@ -83,7 +83,7 @@ typedef struct {
 
 } state;
 
-print_state(state *s, double startLH)
+static void print_state(state *s, double startLH)
 {
    assert(startLH == s->tr->startLH);
    printBothOpen("tr LH %f, startLH %f, incr %f\n", s->tr->likelihood, startLH, s->tr->likelihood - startLH);
@@ -195,7 +195,7 @@ static void printSimpleTree(tree *tr, boolean printBranchLengths, analdef *adef)
   fprintf(stderr, "%s\n", tr->tree_string);
 }
 
-void printRecomTree(tree *tr, boolean printBranchLengths, char *title)
+static void printRecomTree(tree *tr, boolean printBranchLengths, char *title)
 {
   FILE *nwfile;
   nwfile = myfopen("tmp.nw", "w+");

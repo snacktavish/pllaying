@@ -1138,6 +1138,10 @@ typedef struct
 
 /****************************** FUNCTIONS ****************************************************/
 
+#ifdef _BAYESIAN 
+extern void mcmc(tree *tr, analdef *adef);
+#endif
+
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model, int numberOfThreads);
 #endif
