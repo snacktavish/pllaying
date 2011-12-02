@@ -5276,7 +5276,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
   switch(localTree->td[0].functionType)
     {            
     case THREAD_NEWVIEW:      
-      newviewIterative(localTree);
+      newviewIterative(localTree, 0);
       break;     
     case THREAD_EVALUATE:      
       result = evaluateIterative(localTree);

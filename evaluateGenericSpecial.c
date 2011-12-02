@@ -377,7 +377,7 @@ double evaluateIterative(tree *tr)
      
   /* iterate over all valid entries in the traversal descriptor */
 
-  newviewIterative(tr);  
+  newviewIterative(tr, 1);  
 
   /* after the above call we are sure that we have properly and consistently computed the 
      conditionals to the right and left of the virtual root and we can now invoke the 

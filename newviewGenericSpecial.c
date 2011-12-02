@@ -790,11 +790,7 @@ void determineFullTraversal(nodeptr p, tree *tr)
   /* now compute the traversal info */
 
   tr->td[0].count = 1; 
-  computeFullTraversalInfo(q, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches); 
-
-  /* this call is probably not required, maybe some junk left from some previous experiments */
-
-  computeFullTraversalInfo(p, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches);
+  computeFullTraversalInfo(q, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches);  
 }
 
     
@@ -995,7 +991,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
    So in a sense, this function has no clue that there is any tree-like structure 
    in the traversal descriptor, it just operates on an array of structs of given length */ 
 
-void newviewIterative (tree *tr)
+void newviewIterative (tree *tr, int startIndex)
 {
   traversalInfo 
     *ti   = tr->td[0].ti;
@@ -1007,7 +1003,7 @@ void newviewIterative (tree *tr)
   /* loop over traversal descriptor length. Note that on average we only re-compute the conditionals on 3 -4 
      nodes in RAxML */
 
-  for(i = 1; i < tr->td[0].count; i++)
+  for(i = startIndex; i < tr->td[0].count; i++)
     {
       traversalInfo *tInfo = &ti[i];
 
@@ -1381,7 +1377,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
      hence we start filling the array at the second entry with index one. This is not very nice and should be fixed 
      at some point */
 
-  tr->td[0].count = 1;
+  tr->td[0].count = 0;
 
   /* compute the traversal descriptor */
   computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);
@@ -1421,7 +1417,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 
   /* if there is something to re-compute */
 
-  if(tr->td[0].count > 1)
+  if(tr->td[0].count > 0)
     {
       /* store execute mask in traversal descriptor */
 
@@ -1442,7 +1438,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 #else
       /* in the sequential case we now simply call newviewIterative() */
 
-      newviewIterative(tr);
+      newviewIterative(tr, 0);
 #endif
 #endif
       

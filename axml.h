@@ -1299,7 +1299,7 @@ extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
 
 
 
-extern void   newviewIterative(tree *);
+extern void   newviewIterative(tree *tr, int startIndex);
 
 extern double evaluateIterative(tree *);
 

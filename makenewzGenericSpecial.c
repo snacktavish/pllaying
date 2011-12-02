@@ -621,7 +621,7 @@ void makenewzIterative(tree *tr)
   
   /* call newvieIterative to get the likelihood arrays to the left and right of the branch */
 
-  newviewIterative(tr);
+  newviewIterative(tr, 1);
 
 
   /* 
