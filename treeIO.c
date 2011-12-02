@@ -1197,8 +1197,7 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
   assert(tr->ntips == tr->mxtips);
   
  
-  /* only */
-  evaluateGeneric(tr, tr->start, TRUE);     
+   
   
   return lcount;
 }
