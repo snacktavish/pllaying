@@ -2643,6 +2643,10 @@ static void initAdef(analdef *adef)
   adef->slidingWindowSize      = 100;
   adef->writeBinaryFile        = FALSE;
   adef->readBinaryFile         = FALSE;
+#ifdef _BAYESIAN 
+  adef->bayesian               = FALSE;
+#endif
+
 }
 
 
@@ -3455,10 +3459,10 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   while(!bad_opt &&
-	((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBQX", &optind, &optarg))!=-1))
+	((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBQXb", &optind, &optarg))!=-1))
 #else
     while(!bad_opt &&
-	  ((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBX", &optind, &optarg))!=-1))
+	  ((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBXb", &optind, &optarg))!=-1))
 #endif
     {
     switch(c)
@@ -3606,6 +3610,16 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	else
 	  modelSet = 1;
 	break;
+      case 'b':
+#ifdef _BAYESIAN 	
+	adef->bayesian = TRUE;
+	printf("EXPERIMENTAL BAYESIAN ANALYSIS\n");
+	break;
+#else
+	printf("recompile with Bayesian Makefile to use the -b option \n");
+	errorExit(-1);
+	break;
+#endif
       default:
 	errorExit(-1);
     }
@@ -6163,6 +6177,10 @@ int main (int argc, char *argv[])
 
       if(adef->useCheckpoint)
 	{
+#ifdef _BAYESIAN
+	  assert(0);
+#endif
+
 	  /* read checkpoint file */
 	  restart(tr, adef);
 
@@ -6195,7 +6213,12 @@ int main (int argc, char *argv[])
 	  
 	  /* now start the ML search algorithm */
 	  
-	  computeBIGRAPID(tr, adef, TRUE); 	     
+#ifdef _BAYESIAN 
+	  if(adef->bayesian)
+	    mcmc(tr, adef);
+	  else
+#endif
+	    computeBIGRAPID(tr, adef, TRUE); 	     
 	}            
       
       /* print som more nonsense into the RAxML_info file */

@@ -502,6 +502,9 @@ typedef  struct noderec
  
   branchInfo      *bInf;
   double           z[NUM_BRANCHES];
+#ifdef _BAYESIAN 
+  double           z_tmp[NUM_BRANCHES];
+#endif 
   struct noderec  *next;
   struct noderec  *back;
   hashNumberType   hash;
@@ -1101,6 +1104,9 @@ typedef  struct {
   int           slidingWindowSize;
   boolean       writeBinaryFile;
   boolean       readBinaryFile;
+#ifdef _BAYESIAN 
+  boolean       bayesian;
+#endif
 } analdef;
 
 typedef struct 
