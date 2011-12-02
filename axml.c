@@ -5256,6 +5256,15 @@ static void broadcastPerSiteRates(tree *tr, tree *localTree)
 
 }
 
+
+/* this function here handles all parallel regions in the Pthreads version, when we enter 
+   this function masterBarrier() has ben called by the master thread from within the sequential 
+   part of the program, tr is the tree at the master thread, localTree the tree at the worker threads
+
+   While this is not necessary, adress spaces of threads are indeed separated for easier transition to 
+   a distributed memory paradigm 
+ */
+
 static void execFunction(tree *tr, tree *localTree, int tid, int n)
 {
   double volatile result;
@@ -5267,20 +5276,40 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
     localCounter,
     globalCounter;
 
+  /* some stuff associated with the barrier implementation using Pthreads and busy wait */
+
   currentJob = threadJob >> 16;
  
+  /* here the master sends and all threads/processes receive the traversal descriptor */
+
   broadcastTraversalInfo(localTree, tr);
+
+  /* make sure that nothing is going wrong */
   
   assert(currentJob == localTree->td[0].functionType);
+
+  /*  switch over the function type in the traversal descriptor to figure out which 
+      parallel region to execute */
 
   switch(localTree->td[0].functionType)
     {            
     case THREAD_NEWVIEW:      
+      /* just a newview on the fraction of sites that have been assigned to this thread */
+
       newviewIterative(localTree, 0);
       break;     
     case THREAD_EVALUATE:      
+      /* call evaluateIterative */
+
       result = evaluateIterative(localTree);
       
+      /* when this is done we need to write the per-thread log likelihood to the 
+	 global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
+	 results to reductionBuffer[0] thread 1 to reductionBuffer[1] etc.
+
+	 the actual sum over the entries in the reduction buffer will then be computed 
+	 by the master thread which ensures that the sum is determinsitic */
+
       if(localTree->NumberOfModels > 1)
 	{
 	  for(model = 0; model < localTree->NumberOfModels; model++)
@@ -5290,13 +5319,23 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	reductionBuffer[tid] = result;
       break;	
     case THREAD_MAKENEWZ_FIRST:
+      /* this is the first call from within makenewz that requires getting the likelihood vectors to the left and 
+	 right of the branch via newview and doing som eprecomputations.
+
+	 For details see comments in makenewzGenericSpecial.c 
+      */
+
       {
 	volatile double
 	  dlnLdlz[NUM_BRANCHES],
 	  d2lnLdlz2[NUM_BRANCHES];	       	
-	
+       
 	makenewzIterative(localTree);	
 	execCore(localTree, dlnLdlz, d2lnLdlz2);
+
+	/* gather the first and second derivatives that have been written by each thread */
+	/* as for evaluate above, the final sum over the derivatives will be computed by the 
+	   master thread in its sequential part of the code */
 	       
 	if(!tr->multiBranch)
 	  {
@@ -5314,6 +5353,14 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
       }
       break;
     case THREAD_MAKENEWZ:
+
+      /* this is the invocation called from within the iterative Newton-Raphson 
+	 method, if it's not the first iteration of the routine 
+
+	 Note that, the new branch length(s) proposed by the master in the sequential part 
+	 of the NR-method are stored and passed via the traversal descriptor.
+      */
+
       {
 	volatile double
 	  dlnLdlz[NUM_BRANCHES],
@@ -5321,6 +5368,9 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	
 	execCore(localTree, dlnLdlz, d2lnLdlz2);
 	
+	/* write the first and second derivatives computed by each thread 
+	   into the respective parts of the global reduction buffer */
+
 	if(!tr->multiBranch)
 	  {
 	    reductionBuffer[tid]    = dlnLdlz[0];
@@ -5336,8 +5386,22 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	  }	
       }
       break; 
-    case THREAD_INIT_PARTITION:             
+    case THREAD_INIT_PARTITION:  
+
+      /* 
+	 this is for initializing the partition datastructures that hold the vectors and everything 
+	 for each thread.
+
+	 Basically, with respect to its design this emulates more something like a broadcast than a real shared-memory 
+	 programming style 
+      */
+	 
+      /* this is a boolean variable that tells us how the sites (cyclic or monolithically on a  per partition basis 
+	 have been distributed to the threads */
+      
       localTree->manyPartitions = tr->manyPartitions;
+
+      /* the stuff below needs only to be broadcast if we distribute entoire partitions to threads */
 
       if(localTree->manyPartitions && tid > 0)     
 	{
@@ -5346,22 +5410,36 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	  memcpy(localTree->partitionAssignment, tr->partitionAssignment, localTree->NumberOfModels * sizeof(int));
 	}
 
+      /* 
+	 initialize partition data, allocate data structires for storing nodes and adapt model indices 
+	 all of this is not very clean and could surely be written in a more elegant way 
+       */
+
       initPartition(tr, localTree, tid);     
       allocNodex(localTree, tid, n);
       threadFixModelIndices(tr, localTree, tid, n);     
       
       break;          
     case THREAD_COPY_ALPHA:
+
+      /* if the alpha parameter has changed, copy all 4 discrete rates for each partition into the 
+	 private memory space of each thread */
+
       if(tid > 0)
 	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    {
-	      memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
-	      localTree->partitionData[model].alpha = tr->partitionData[model].alpha;
-	    }
+	  for(model = 0; model < localTree->NumberOfModels; model++)	  
+	    memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);	    
 	}
       break;
     case THREAD_OPT_RATE:
+      /* if we are optimizing the rates in the transition matrix Q this induces recomputing the eigenvector eigenvalue 
+	 decomposition and the tipVector as well because of the special numerics in RAxML, the matrix of eigenvectors 
+	 is "rotated" into the tip lookup table.
+
+	 Hence if the sequantial part of the program that steers the Q matrix rate optimization has changed a rate we 
+	 need to broadcast all eigenvectors, eigenvalues etc to each thread 
+      */
+      
       if(tid > 0)
 	{	 
 	  for(model = 0; model < localTree->NumberOfModels; model++)
@@ -5375,7 +5453,12 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	    }
 	}
 
+      /* now evaluate the likelihood of the new Q matrix, this always requires a full tree traversal because the changes need
+	 to be propagated throughout the entire tree */
+
       result = evaluateIterative(localTree);
+
+      /* deal with the reduction operation on the per-thread partial log likelihood sums again */
 
       if(localTree->NumberOfModels > 1)
 	{
@@ -5387,6 +5470,9 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
      
       break;                   
     case THREAD_COPY_RATES:
+
+      /* just copy the data induced by computing the Q matrix */
+
       if(tid > 0)
 	{
 	  for(model = 0; model < localTree->NumberOfModels; model++)
@@ -5401,6 +5487,14 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	}
       break;          
     case THREAD_COPY_INIT_MODEL:
+
+      /*
+	copy initial model parameters, the Q matrix and alpha are initially, when we start our likelihood search 
+	set to default values. 
+	Hence we need to copy all those values that are required for computing the likelihood 
+	with newview(), evaluate() and makenez() to the private memory of the threads 
+      */
+
       if(tid > 0)
 	{	  
 	  localTree->rateHetModel       = tr->rateHetModel;
@@ -5411,31 +5505,31 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	      memcpy(localTree->partitionData[model].EIGN,        tr->partitionData[model].EIGN,        pl->eignLength * sizeof(double));
 	      memcpy(localTree->partitionData[model].EV,          tr->partitionData[model].EV,          pl->evLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));
-	      
-	      memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));
-	      	      	       
+	      memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));	      
+	      memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	      	       
 	      memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
 
-	      /* do we need to copy this ? */
-	      /*
-		memcpy(localTree->partitionData[model].substRates,  tr->partitionData[model].substRates,  pl->substRatesLength * sizeof(double));
-		memcpy(localTree->partitionData[model].frequencies, tr->partitionData[model].frequencies, pl->frequenciesLength * sizeof(double));
-
-		localTree->partitionData[model].alpha = tr->partitionData[model].alpha;
-	      */
-	      /* probably not ! */
-	      
+	     
+	      /* this is the lower and upper boundary (integer indices of each partition */
 	      localTree->partitionData[model].lower      = tr->partitionData[model].lower;
 	      localTree->partitionData[model].upper      = tr->partitionData[model].upper; 
 	      
+	      /* this is essentially only relevant for CAT, copy the current number of per-site rate categories 
+		 of partittion model to the local private memory of this thread */
+
 	      localTree->partitionData[model].numberOfCategories      = tr->partitionData[model].numberOfCategories;
 	    }
+
+	  /* this is only relevant for the CAT model, we can worry about this later */
 
 	  memcpy(localTree->cdta->patrat,        tr->cdta->patrat,      localTree->originalCrunchedLength * sizeof(double));
 	  memcpy(localTree->cdta->patratStored, tr->cdta->patratStored, localTree->originalCrunchedLength * sizeof(double));	  
 	}     
 
+
+      /* now figure in the site pattern wieghts of those sites that have been assigned to this thread.
+	 Note that, we need to switch over the type of data distribution we are using */
+	 
 
       if(localTree->manyPartitions)
 	for(model = 0; model < localTree->NumberOfModels; model++)
@@ -5463,6 +5557,8 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
       
       break;    
     case THREAD_RATE_CATS:            
+      /* this is for optimizing per-site rate categories under CAT, let's worry about this later */
+
       if(tid > 0)
 	{
 	  localTree->lower_spacing = tr->lower_spacing;
@@ -5479,6 +5575,10 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	}
       break;
     case THREAD_COPY_RATE_CATS:
+      /* this is invoked when we have changed the per-site rate category assignment
+	 In essence it distributes the new per site rates to all threads 
+       */
+
       if(tid > 0)
 	{	  
 	  memcpy(localTree->cdta->patrat,       tr->cdta->patrat,         localTree->originalCrunchedLength * sizeof(double));
@@ -5517,13 +5617,23 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	}
       break;
     case THREAD_OPT_ALPHA:
+      /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
+	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
+      
+
+      /* distribute the new discrete gamma rates to the threads */
+      
       if(tid > 0)
 	{	 
 	  for(model = 0; model < localTree->NumberOfModels; model++)
 	    memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
 	}
 
+      /* compute the likelihood, note that this is always a full tree traversal ! */
+
       result = evaluateIterative(localTree);
+
+      /* and prepare the reduction operation on the global buffer */
 
       if(localTree->NumberOfModels > 1)
 	{
@@ -5534,6 +5644,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	reductionBuffer[tid] = result;
      
       break;      
+      /* check for errors */
     default:
       printf("Job %d\n", currentJob);
       assert(0);
