@@ -1198,7 +1198,7 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
   
  
   /* only */
-  evaluateGenericInitrav(tr, tr->start);     
+  evaluateGeneric(tr, tr->start, TRUE);     
   
   return lcount;
 }

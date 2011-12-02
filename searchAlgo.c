@@ -644,7 +644,7 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
     {     
       if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;         
       
-      evaluateGeneric(tr, p->next->next);       
+      evaluateGeneric(tr, p->next->next, FALSE);       
        
       if(tr->likelihood > tr->bestOfNode)
 	{
@@ -958,7 +958,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
     {
       if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;    
       
-      evaluateGeneric(tr, p->next->next);               
+      evaluateGeneric(tr, p->next->next, FALSE);               
     }
   else
     {
@@ -1182,7 +1182,7 @@ static void readTree(tree *tr, FILE *f, analdef *adef)
 
   }
   
-  evaluateGenericInitrav(tr, tr->start);  
+  evaluateGeneric(tr, tr->start, TRUE);  
 
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
@@ -1835,7 +1835,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   {
     /* RE-TRAVERSE THE ENTIRE TREE */
 
-    evaluateGenericInitrav(tr, tr->start);
+    evaluateGeneric(tr, tr->start, TRUE);
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
 #endif
@@ -2055,7 +2055,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   /* do a final full tree traversal, not sure if this is required here */
 
   {
-    evaluateGenericInitrav(tr, tr->start);
+    evaluateGeneric(tr, tr->start, TRUE);
     
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
@@ -2095,7 +2095,7 @@ boolean treeEvaluate (tree *tr, double smoothFactor)       /* Evaluate a user tr
   
   assert(result); 
 
-  evaluateGeneric(tr, tr->start);   
+  evaluateGeneric(tr, tr->start, FALSE);   
     
 
   return TRUE;

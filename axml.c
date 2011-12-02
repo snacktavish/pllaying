@@ -6076,7 +6076,7 @@ int main (int argc, char *argv[])
 	     This should basically be the first call to the library that actually computes something :-)
 	   */
 	  
-	  evaluateGenericInitrav(tr, tr->start);	 
+	  evaluateGeneric(tr, tr->start, TRUE);	 
 	 	  	  
 	  /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
 

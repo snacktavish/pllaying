@@ -762,36 +762,7 @@ void computeFullTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int ma
   }
 }
 
-/* top-level function calling the recursive version of full traversal */
 
-void determineFullTraversal(nodeptr p, tree *tr)
-{
-  nodeptr 
-    q = p->back;
-  
-  int 
-    k;
-
-  /* the branch p p->back is where we have put the virtual root for this full tree traversal */
-  /* we first store the values for this root branch at the first entry of the traversal descriptor */
-  /* this may actually be a little bit redundant to what is done in the functions calling 
-     determineFullTraversal() we should check and fix this at som epoint ! */
-
-  tr->td[0].ti[0].pNumber = p->number;
-  tr->td[0].ti[0].qNumber = q->number;
-
-  for(k = 0; k < tr->numBranches; k++)        
-    tr->td[0].ti[0].qz[k] = q->z[k];    
-
-  /* the function assumes that the root branch always leads to a tip, so we are checking for this here */
-
-  assert(isTip(p->number, tr->mxtips));
-
-  /* now compute the traversal info */
-
-  tr->td[0].count = 1; 
-  computeFullTraversalInfo(q, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches);  
-}
 
     
 /* The function below computes partial traversals only down to the point/node in the tree where the 

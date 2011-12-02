@@ -1284,7 +1284,7 @@ extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef
 extern boolean bootStop(tree *tr, hashtable *h, int numberOfTrees, double *pearsonAverage, unsigned int **bitVectors, int treeVectorLength, unsigned int vectorLength);
 extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef);
 extern double evaluatePartialGeneric (tree *, int i, double ki, int _model);
-extern double evaluateGeneric (tree *tr, nodeptr p);
+extern double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
 extern void newviewGeneric (tree *tr, nodeptr p, boolean masked);
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
 extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
@@ -1331,7 +1331,6 @@ extern void newviewParsimonyIterativeFast(tree *);
 extern unsigned int evaluatePerSiteParsimony(tree *tr, nodeptr p, unsigned int *siteParsimony);
 extern void initravParsimonyNormal(tree *tr, nodeptr p);
 
-extern double evaluateGenericInitrav (tree *tr, nodeptr p);
 extern double evaluateGenericInitravPartition(tree *tr, nodeptr p, int model);
 extern void evaluateGenericVectorIterative(tree *, int startIndex, int endIndex);
 extern void categorizeIterative(tree *, int startIndex, int endIndex);

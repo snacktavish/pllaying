@@ -672,7 +672,7 @@ double evaluateIterative(tree *tr)
 
 
 
-double evaluateGeneric (tree *tr, nodeptr p)
+double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -702,17 +702,25 @@ double evaluateGeneric (tree *tr, nodeptr p)
 
   /* do we need to recompute any of the vectors at or below p ? */
   
-  if(!p->x)
-    computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);
+  if(fullTraversal)
+    { 
+      assert(isTip(p->number, tr->mxtips));
+      computeFullTraversalInfo(q, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches);  
+    }
+  else
+    {
+      if(!p->x)
+	computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);
 
-  /* recompute/reorient any descriptors at or below q ? 
-     computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
-  
-  if(!q->x)
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);  
+      /* recompute/reorient any descriptors at or below q ? 
+	 computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
+      
+      if(!q->x)
+	computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);  
+    }
    
-  /* now we copy this partition execute mask into the traversal descriptor which must come from the 
-     calling program, the logic of this should not form part of the library */
+      /* now we copy this partition execute mask into the traversal descriptor which must come from the 
+	 calling program, the logic of this should not form part of the library */
 
   storeExecuteMaskInTraversalDescriptor(tr);  
   
@@ -810,86 +818,7 @@ double evaluateGeneric (tree *tr, nodeptr p)
 
 
 
-double evaluateGenericInitrav (tree *tr, nodeptr p)
-{
-  volatile double 
-    result;   
-  
-  /* very similar to evaluate: with two major differences:
-     
-     1. This function will always re-traverse the ENTIRE tree (full tree tarversal) 
-     regardless of whether the conditional likelihood vectors are correctly oriented or not !
-     This si required when changing model parameters like alpha shape or the GTR matrix rates 
-     that actually need to be propagated throughout the tree. This function is thus mainly used 
-     during model parameter optimization.
-     
-     2. This function expects p to be a tip always, otherwise it will fail. There is no need to 
-     impose this though */
-    
-  /* determine a full post-order tree traversal starting at the conditinal likelihood array located at node p->back 
-     Once again, this ignores the node orientations completely, but of course updates their direction toward the virtual root located 
-     between p and p->back consistently. 
-   */
-  determineFullTraversal(p, tr);
 
-  /* same as above */
-
-  storeExecuteMaskInTraversalDescriptor(tr);   
-  tr->td[0].traversalHasChanged = TRUE;
-
-  /* the stuff below is also identical to the stuff above in evaluate() 
-     there is some room for code cleanup here */
-
-#ifdef _USE_PTHREADS 
-  {
-    int 
-      i, 
-      j;
-    
-    masterBarrier(THREAD_EVALUATE, tr);    
-    
-    if(tr->NumberOfModels == 1)
-      {
-	for(i = 0, result = 0.0; i < NumberOfThreads; i++)          
-	  result += reductionBuffer[i];  	  	     
-	
-	tr->perPartitionLH[0] = result;
-      }
-    else
-      {
-	volatile double partitionResult;
-	
-	result = 0.0;
-	
-	for(j = 0; j < tr->NumberOfModels; j++)
-	  {
-	    for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
-	      partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-	    result +=  partitionResult;
-	    tr->perPartitionLH[j] = partitionResult;
-	  }
-      }    
-  }
-#else
-#ifdef _FINE_GRAIN_MPI
-
-  masterBarrierMPI(THREAD_EVALUATE, tr);
-  
-  {
-    int model = 0;
-    
-    for(model = 0, result = 0.0; model < tr->NumberOfModels; model++)
-      result += tr->perPartitionLH[model];	    
-  }     
-#else
-  result = evaluateIterative(tr);
-#endif
-#endif
-
-  tr->likelihood = result;         
-  tr->td[0].traversalHasChanged = FALSE;
-  return result;
-}
 
 
 

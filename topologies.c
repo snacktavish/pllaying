@@ -360,7 +360,7 @@ static boolean restoreTree (topol *tpl, tree *tr)
   
   tr->nextnode   = tpl->nextnode;    
 
-  evaluateGenericInitrav(tr, tr->start);
+  evaluateGeneric(tr, tr->start, TRUE);
   return TRUE;
 }
 

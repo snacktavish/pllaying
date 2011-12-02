@@ -316,7 +316,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 #ifdef _FINE_GRAIN_MPI
       masterBarrierMPI(THREAD_OPT_RATE, tr);     
 #else
-      evaluateGenericInitrav(tr, tr->start);      
+      evaluateGeneric(tr, tr->start, TRUE);      
 #endif
 #endif     
       
@@ -395,7 +395,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 #ifdef _FINE_GRAIN_MPI
       masterBarrierMPI(THREAD_OPT_ALPHA, tr);     
 #else
-      evaluateGenericInitrav(tr, tr->start);
+      evaluateGeneric(tr, tr->start, TRUE);
 #endif
 #endif
             
@@ -990,7 +990,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
    int revertModel = 0;
 #endif   
 
-  evaluateGenericInitrav(tr, tr->start);
+   evaluateGeneric(tr, tr->start, TRUE);
    /* 
      at this point here every worker has the traversal data it needs for the 
      search, so we won't re-distribute it he he :-)
@@ -1098,7 +1098,7 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 
   startRates = (double *)malloc(sizeof(double) * numberOfRates * numberOfModels);
 
-  evaluateGenericInitrav(tr, tr->start);
+  evaluateGeneric(tr, tr->start, TRUE);
   /* 
      at this point here every worker has the traversal data it needs for the 
      search 
@@ -1961,7 +1961,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
   
       assert(isTip(tr->start->number, tr->rdta->numsp));         
       
-      evaluateGenericInitrav(tr, tr->start);
+      evaluateGeneric(tr, tr->start, TRUE);
 
       if(optimizeRateCategoryInvocations == 1)
 	{
@@ -2075,7 +2075,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
         	
       updatePerSiteRates(tr, TRUE);	
 
-      evaluateGenericInitrav(tr, tr->start);
+      evaluateGeneric(tr, tr->start, TRUE);
       
       if(tr->likelihood < initialLH)
 	{	 		  
@@ -2090,7 +2090,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  
 	  updatePerSiteRates(tr, FALSE);
 	  
-	  evaluateGenericInitrav(tr, tr->start);
+	  evaluateGeneric(tr, tr->start, TRUE);
 
 	  /* printf("REVERT: %1.40f %1.40f\n", initialLH, tr->likelihood); */
 
@@ -2258,7 +2258,7 @@ static void autoProtein(tree *tr, analdef *adef)
 #endif
 	  
 	  resetBranches(tr);
-	  evaluateGenericInitrav(tr, tr->start);  
+	  evaluateGeneric(tr, tr->start, TRUE);  
 	  treeEvaluate(tr, 0.5);     
 
 	  for(model = 0; model < tr->NumberOfModels; model++)
@@ -2297,7 +2297,7 @@ static void autoProtein(tree *tr, analdef *adef)
 #endif
 
       resetBranches(tr);
-      evaluateGenericInitrav(tr, tr->start); 
+      evaluateGeneric(tr, tr->start, TRUE); 
       treeEvaluate(tr, 0.5);
       
       /*printf("Exit: %f\n", tr->likelihood);*/
@@ -2338,7 +2338,7 @@ void modOpt(tree *tr, analdef *adef, boolean resetModel, double likelihoodEpsilo
      
       optRatesGeneric(tr, adef, modelEpsilon, rateList);
            
-      evaluateGenericInitrav(tr, tr->start);                                       
+      evaluateGeneric(tr, tr->start, TRUE);                                       
 
       autoProtein(tr, adef);
 
@@ -2348,7 +2348,7 @@ void modOpt(tree *tr, analdef *adef, boolean resetModel, double likelihoodEpsilo
 	{
 	case GAMMA:      
 	  optAlpha(tr, modelEpsilon, alphaList); 
-	  evaluateGenericInitrav(tr, tr->start); 	 	 
+	  evaluateGeneric(tr, tr->start, TRUE); 	 	 
 	  treeEvaluate(tr, 0.1);	  	 
 	  break;
 	case CAT:
@@ -2535,7 +2535,7 @@ void modOptJoerg(tree *tr, analdef *adef)
 	 assignment using the default branch length and alpha parameter values 
       */
 
-      evaluateGenericInitrav(tr, tr->start);
+      evaluateGeneric(tr, tr->start, TRUE);
 
       /* loop and apply numerical optimization routines 
 	 for branch lengths and alpha until the difference 
@@ -2554,7 +2554,7 @@ void modOptJoerg(tree *tr, analdef *adef)
            
 	  /* entirely re-traverse the tree using Felsensteins pruning algorithm */
 
-	  evaluateGenericInitrav(tr, tr->start);                                       	  
+	  evaluateGeneric(tr, tr->start, TRUE);                                       	  
 
 	  /* optimize the branch lengths a bit */
 
@@ -2571,7 +2571,7 @@ void modOptJoerg(tree *tr, analdef *adef)
 	      
 	      /* re-traverse the entire tree using Felsenstein's algorithm */
 
-	      evaluateGenericInitrav(tr, tr->start); 	 	 
+	      evaluateGeneric(tr, tr->start, TRUE); 	 	 
 	      
 	      /* optimize branch lengths a bit more */
 
