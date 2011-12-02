@@ -58,7 +58,7 @@ void  newviewGTRGAMMA_AVX(int tipCase,
 			 double *x1, double *x2, double *x3,
 			 double *extEV, double *tipVector,
 			 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-			 const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling
+			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 )
 {
  
@@ -301,7 +301,6 @@ void  newviewGTRGAMMA_AVX(int tipCase,
       assert(0);
     }
 
-  if(useFastScaling)
     *scalerIncrement = addScale;
   
 }
@@ -504,7 +503,7 @@ static void  newviewGTRGAMMA_AVX2(int tipCase,
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
 			   double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
 			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-			   int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
+			   int n,  double *left, double *right, int *wgt, int *scalerIncrement)
 {
   double
     *le,
@@ -660,7 +659,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 			       int *cptr,
 			       double *x1, double *x2, double *x3, double *tipVector,
 			       int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-			       int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
+			       int n, double *left, double *right, int *wgt, int *scalerIncrement)
 {
   double
     *le, *ri, *v, *vl, *vr;
@@ -819,10 +818,8 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	      for(l = 0; l < 20; l += 4)
 		vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
 	  
-	      if(useFastScaling)
-		addScale += wgt[i];
-	      else
-		ex3[i]  += 1;	      
+	      
+	      addScale += wgt[i];	 
 	    }
 
 	  _mm256_store_pd(&v[0], vv[0]);
@@ -914,10 +911,8 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	      for(l = 0; l < 20; l += 4)
 		vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
 	  
-	      if(useFastScaling)
-		addScale += wgt[i];
-	      else
-		ex3[i]  += 1;	      
+	      
+	      addScale += wgt[i];	   
 	    }
 
 	  _mm256_store_pd(&v[0], vv[0]);
@@ -932,6 +927,6 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
       assert(0);
     }
   
-  if(useFastScaling)
-    *scalerIncrement = addScale;
+  
+  *scalerIncrement = addScale;
 }
