@@ -47,6 +47,12 @@
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
+#include "cycle.h"
+
+double g_cyc1 = 0.0;
+double g_cyc2 = 0.0;
+
+
 /* required to compute the absoliute values of double precision numbers with SSE3 */
 
 const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
@@ -210,6 +216,8 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
      nodes.
   */
      
+
+  printf( "newview: %d\n", tipCase);
 
   switch(tipCase)
     {
@@ -897,8 +905,8 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
    for computing the conditional likelihood at p given child nodes q and r. The actual implementation is located at the end/bottom of this 
    file.
 */
-
-#ifdef _OPTIMIZED_FUNCTIONS
+#if 1
+//#ifdef _OPTIMIZED_FUNCTIONS
 static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 					double *x1_start, double *x2_start, double *x3_start,
 					double *EV, double *tipVector,
@@ -961,6 +969,15 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
    just computes the conditional likelihhod arrays in the order given by the descriptor.
    So in a sense, this function has no clue that there is any tree-like structure 
    in the traversal descriptor, it just operates on an array of structs of given length */ 
+
+void newviewCAT_FLEX_reorder(int tipCase, double *extEV,
+                int *cptr,
+                double *x1, double *x2, double *x3, double *tipVector,
+                int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                int n, double *left, double *right, int *wgt, int *scalerIncrement, const int states);
+
+void newviewGAMMA_FLEX_reorder(int tipCase, double *x1, double *x2, double *x3, double *extEV, double *tipVector, int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, double *left, double *right, int *wgt, int *scalerIncrement, const int states, const int maxStateValue);
+
 
 void newviewIterative (tree *tr, int startIndex)
 {
@@ -1198,17 +1215,66 @@ void newviewIterative (tree *tr, int startIndex)
 
 	      /* figure out if we need to compute the CAT or GAMMA model of rate heterogeneity */
 
-	      if(tr->rateHetModel == CAT)
-		newviewCAT_FLEX(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
-				x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
-				ex3, tipX1, tipX2,
-				width, left, right, wgt, &scalerIncrement, states);
-	      else
-		newviewGAMMA_FLEX(tInfo->tipCase,
+	      if(tr->rateHetModel == CAT) {
+	        ticks t1 = getticks();
+
+	        assert( states == 4 );
+//		newviewCAT_FLEX(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
+//				x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
+//				ex3, tipX1, tipX2,
+//				width, left, right, wgt, &scalerIncrement, states);
+
+		newviewGTRCAT(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
+		                                      x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
+		                                      ex3, tipX1, tipX2,
+		                                      width, left, right, wgt, &scalerIncrement);
+
+
+
+		ticks t2 = getticks();
+		if( tInfo->tipCase == TIP_TIP ) {
+                    newviewCAT_FLEX_reorder(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
+                                            x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
+                                            ex3, tipX1, tipX2,
+                                            width, left, right, wgt, &scalerIncrement, states);
+		}
+                ticks t3 = getticks();
+
+		double d1 = elapsed(t2, t1);
+		double d2 = elapsed(t3, t2);
+
+		printf( "ticks: %f %f\n", d1, d2 );
+
+	      } else {
+	          ticks t1 = getticks();
+
+#if 0
+	          newviewGAMMA_FLEX(tInfo->tipCase,
 				  x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
 				  ex3, tipX1, tipX2,
 				  width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
+#else
+	          newviewGTRGAMMA(tInfo->tipCase,
+                               x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+                               ex3, tipX1, tipX2,
+                               width, left, right, wgt, &scalerIncrement);
+#endif
+	          ticks t2 = getticks();
 
+	          if( tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
+	           newviewGAMMA_FLEX_reorder(tInfo->tipCase,
+	                                        x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+	                                        ex3, tipX1, tipX2,
+	                                        width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
+	          }
+	           ticks t3 = getticks();
+
+                 double d1 = elapsed(t2, t1);
+                 double d2 = elapsed(t3, t2);
+
+                 printf( "ticks: %f %f\n", d1, d2 );
+
+	      }
 #else
 	      /* dedicated highly optimized functions. Analogously to the functions in evaluateGeneric() 
 		 we also siwtch over the state number */
@@ -1430,8 +1496,8 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 
 
 /* optimized function implementations */
-
-#ifdef _OPTIMIZED_FUNCTIONS
+#if 1
+//#ifdef _OPTIMIZED_FUNCTIONS
 
 static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 					double *x1_start, double *x2_start, double *x3_start,
@@ -2374,8 +2440,8 @@ static void newviewGTRGAMMA(int tipCase,
 	    __m128d x1_2 = _mm_load_pd(&(tipVector[i*4 + 2]));	   
 
 	    for (j = 0; j < 4; j++)
-	      for (k = 0; k < 4; k++)
-		{		 
+
+	      for (k = 0; k < 4; k++) {
 		  __m128d left1 = _mm_load_pd(&left[j*16 + k*4]);
 		  __m128d left2 = _mm_load_pd(&left[j*16 + k*4 + 2]);
 		  
