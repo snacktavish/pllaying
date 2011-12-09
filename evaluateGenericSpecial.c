@@ -705,18 +705,18 @@ double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   if(fullTraversal)
     { 
       assert(isTip(p->number, tr->mxtips));
-      computeFullTraversalInfo(q, &(tr->td[0].ti[0]),  &(tr->td[0].count), tr->mxtips, tr->numBranches);  
+      computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE);     
     }
   else
     {
       if(!p->x)
-	computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);
+	computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);
 
       /* recompute/reorient any descriptors at or below q ? 
 	 computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
       
       if(!q->x)
-	computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);  
+	computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);  
     }
    
       /* now we copy this partition execute mask into the traversal descriptor which must come from the 
