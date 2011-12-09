@@ -993,7 +993,7 @@ void newviewIterative (tree *tr, int startIndex)
 	      double
 		*x1_start = (double*)NULL,
 		*x2_start = (double*)NULL,
-		*x3_start = (double*)NULL,
+		*x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1],
 		*left     = (double*)NULL,
 		*right    = (double*)NULL,		
 		*x1_gapColumn = (double*)NULL,
@@ -1115,8 +1115,7 @@ void newviewIterative (tree *tr, int startIndex)
 		{
 		case TIP_TIP:		  
 		  tipX1    = tr->partitionData[model].yVector[tInfo->qNumber];
-		  tipX2    = tr->partitionData[model].yVector[tInfo->rNumber];		  
-		  x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];			  
+		  tipX2    = tr->partitionData[model].yVector[tInfo->rNumber];		  		  
 
 		  if(tr->saveMemory)
 		    {
@@ -1128,8 +1127,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  break;
 		case TIP_INNER:		 
 		  tipX1    =  tr->partitionData[model].yVector[tInfo->qNumber];
-		  x2_start = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];
-		  x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];	
+		  x2_start = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];		 
 
 		  if(tr->saveMemory)
 		    {	
@@ -1141,8 +1139,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  break;
 		case INNER_INNER:		 		 
 		  x1_start       = tr->partitionData[model].xVector[tInfo->qNumber - tr->mxtips - 1];
-		  x2_start       = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];
-		  x3_start       = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];	
+		  x2_start       = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];		 
 
 		  if(tr->saveMemory)
 		    {
