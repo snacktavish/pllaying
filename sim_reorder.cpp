@@ -188,7 +188,9 @@ template<typename iiter1, typename iiter2>
 void print_delta(iiter1 start1, iiter1 end1, iiter2 start2) {
 
     for (; start1 != end1; ++start1, ++start2) {
-        std::cout << std::setw(20) << std::left << *start1 << *start2 << "\n"; // ": " << *start1 - *start2 << "\n";
+        const char *meeeep = fabs(*start1 - *start2) > 1e-3 ? "<<<< meeeeeeep" : "";
+
+        std::cout << std::setw(20) << std::left << *start1 << *start2 << meeeep << "\n"; // ": " << *start1 - *start2 << "\n";
     }
 }
 
@@ -533,6 +535,7 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
      Essentially this is very similar to the tip vectors which we also use as lookup tables */
     precomputeLength = maxStateValue * span;
 
+    assert( n % VW == 0 );
 
     if( !arr.valid() ) {
         arr.u_x1.resize(VW * span);
@@ -774,6 +777,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
         ticks t1 = getticks();
 
         for (i = 0; i < n; i+=VW) {
+            vec_t max_v = vu::setzero();
+
             for (k = 0; k < 4; k++) {
                 vl = &(x1[span * i + states * k]);
                 vr = &(x2[span * i + states * k]);
@@ -790,8 +795,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
 
                 for (l = 0; l < states; l++) {
 
-                    al = 0.0;
-                    ar = 0.0;
+//                    al = 0.0;
+//                    ar = 0.0;
                     vec_t al_v = vu::setzero();
 
                     vec_t ar_v = vu::setzero();
@@ -824,17 +829,91 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
                                                         vu::set1(extEV[states * l + 3]) ));
 
 
+                    if( l == 3 ) {
+                        const vec_t max01_v = vu::max( vu::abs(v_acc0), vu::abs(v_acc1) );
+                        const vec_t max23_v = vu::max( vu::abs(v_acc2), vu::abs(v_acc3) );
+                        max_v = vu::max( max_v, vu::max( max01_v, max23_v ));
+
+                    }
+
 //                    for (j = 0; j < states; j++)
 //                        v[j] += x1px2 * extEV[states * l + j];
 
                 }
+
+
+
+
+
                 vu::store( v_acc0, arr.x3_ro(i * span + (k * states + 0) * VW));
                 vu::store( v_acc1, arr.x3_ro(i * span + (k * states + 1) * VW));
                 vu::store( v_acc2, arr.x3_ro(i * span + (k * states + 2) * VW));
                 vu::store( v_acc3, arr.x3_ro(i * span + (k * states + 3) * VW));
 
 
+
+
             }
+
+//            _mm_prefetch( arr.x3_ro(i * span + (0 * states + 0) * VW), _MM_HINT_T0 );
+
+
+//            for( k = 0; k < 4; ++k ) {
+//                vec_t v_acc0 = vu::load( arr.x3_ro(i * span + (k * states + 0) * VW));
+//                vec_t v_acc1 = vu::load( arr.x3_ro(i * span + (k * states + 1) * VW));
+//                vec_t v_acc2 = vu::load( arr.x3_ro(i * span + (k * states + 2) * VW));
+//                vec_t v_acc3 = vu::load( arr.x3_ro(i * span + (k * states + 3) * VW));
+//
+//                const vec_t max01_v = vu::max( vu::abs(v_acc0), vu::abs(v_acc1) );
+//                const vec_t max23_v = vu::max( vu::abs(v_acc2), vu::abs(v_acc3) );
+//                max_v = vu::max( max_v, vu::max( max01_v, max23_v ));
+//            }
+#if 1
+//            const vec_t cmp_v = vu::cmp_lt( max_v, vu::set1(minlikelihood));
+//            const vec_t scaletrue_v = vu::bit_and( cmp_v, vu::set1(twotothe256));
+//            const vec_t scalefalse_v = vu::bit_andnot( cmp_v, vu::set1(1));
+//            const vec_t scale_v = vu::bit_or( scaletrue_v, scalefalse_v );
+
+            //const vec_t scale_v = vu::set1(twotothe256);
+
+            double max_tmp[4] __attribute__ ((aligned (32)));
+
+            vu::store( max_v, max_tmp );
+
+            double max_val = std::max( max_tmp[0], max_tmp[1] );
+//
+//            for( k = 0; k < span; ++k ) {
+//                max_val = std::max( max_val, fabs(arr.x3_ro[i*span + k]));
+//            }
+
+
+            std::cout << "max val: " << max_val << "\n";
+            if( max_val < minlikelihood ) {
+
+                std::cout << "scale sim\n";
+                const vec_t scale_v = vu::set1( twotothe256 );
+                for( k = 0; k < 4; ++k ) {
+                    vec_t v_acc0 = vu::load( arr.x3_ro(i * span + (k * states + 0) * VW));
+                    vec_t v_acc1 = vu::load( arr.x3_ro(i * span + (k * states + 1) * VW));
+                    vec_t v_acc2 = vu::load( arr.x3_ro(i * span + (k * states + 2) * VW));
+                    vec_t v_acc3 = vu::load( arr.x3_ro(i * span + (k * states + 3) * VW));
+
+
+                    v_acc0 = vu::mul( scale_v, v_acc0 );
+                    v_acc1 = vu::mul( scale_v, v_acc1 );
+                    v_acc2 = vu::mul( scale_v, v_acc2 );
+                    v_acc3 = vu::mul( scale_v, v_acc3 );
+
+
+                    vu::store( v_acc0, arr.x3_ro(i * span + (k * states + 0) * VW));
+                    vu::store( v_acc1, arr.x3_ro(i * span + (k * states + 1) * VW));
+                    vu::store( v_acc2, arr.x3_ro(i * span + (k * states + 2) * VW));
+                    vu::store( v_acc3, arr.x3_ro(i * span + (k * states + 3) * VW));
+
+                }
+            }
+#endif
+
 
 
         }
@@ -845,19 +924,19 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
 
         reorder_back(arr.x3_tmp.data(), n, span, arr.x3_ro.begin(), VW );
 
-        for( i = 0; i < n; ++i ) {
-            v = &(arr.x3_tmp[span * i]);
-            scale = 1;
-            for (l = 0; scale && (l < span); l++)
-                scale = ((ABS(v[l]) < minlikelihood));
-
-            if (scale) {
-                for (l = 0; l < span; l++)
-                    v[l] *= twotothe256;
-
-                addScale += wgt[i];
-            }
-        }
+//        for( i = 0; i < n; ++i ) {
+//            v = &(arr.x3_tmp[span * i]);
+//            scale = 1;
+//            for (l = 0; scale && (l < span); l++)
+//                scale = ((ABS(v[l]) < minlikelihood));
+//
+//            if (scale) {
+//                for (l = 0; l < span; l++)
+//                    v[l] *= twotothe256;
+//
+//                addScale += wgt[i];
+//            }
+//        }
 #if 1
         {
             bool eq = std::equal( arr.x3_tmp.begin(), arr.x3_tmp.end(), x3, delta_equal<double>( 1e-3 ) );
@@ -870,7 +949,10 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
                 std::cout << "<<<<<<<\n";
                 //print_delta( x3_ro.begin(), x3_ro.end(), x3 );
                 print_delta( arr.x3_ro.begin(), arr.x3_ro.end(), arr.x3_tmp.begin() );
+                throw std::runtime_error( "baililng out");
                 getchar();
+
+
             }
         }
 #endif

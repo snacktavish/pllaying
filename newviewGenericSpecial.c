@@ -1247,32 +1247,37 @@ void newviewIterative (tree *tr, int startIndex)
 
 	      } else {
 	          ticks t1 = getticks();
+	          int old_scale = scalerIncrement;
+
 
 #if 0
-	          newviewGAMMA_FLEX(tInfo->tipCase,
-				  x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-				  ex3, tipX1, tipX2,
-				  width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
+                  newviewGAMMA_FLEX(tInfo->tipCase,
+                                                    x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+                                                    ex3, tipX1, tipX2,
+                                                    width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
 #else
-	          newviewGTRGAMMA(tInfo->tipCase,
-                               x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-                               ex3, tipX1, tipX2,
-                               width, left, right, wgt, &scalerIncrement);
+                  newviewGTRGAMMA(tInfo->tipCase,
+                                 x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+                                 ex3, tipX1, tipX2,
+                                 width, left, right, wgt, &scalerIncrement);
 #endif
-	          ticks t2 = getticks();
 
-	          if( tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
-	           newviewGAMMA_FLEX_reorder(tInfo->tipCase,
-	                                        x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-	                                        ex3, tipX1, tipX2,
-	                                        width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
-	          }
-	           ticks t3 = getticks();
+	          ticks t2 = getticks();
+                  if( tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
+                     newviewGAMMA_FLEX_reorder(tInfo->tipCase,
+                                              x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+                                              ex3, tipX1, tipX2,
+                                              width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
+                  }
+
+	          ticks t3 = getticks();
 
                  double d1 = elapsed(t2, t1);
                  double d2 = elapsed(t3, t2);
 
-                 printf( "ticks: %f %f\n", d1, d2 );
+                 const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
+
+                 printf( "ticks: %f %f%s\n", d1, d2, scaling_text );
 
 	      }
 #else
@@ -2408,6 +2413,8 @@ static void newviewGTRGAMMA(int tipCase,
     l,
     addScale = 0;
   
+  int scaling = 0;
+
   double
     *x1,
     *x2,
@@ -2713,7 +2720,8 @@ static void newviewGTRGAMMA(int tipCase,
 	   }
       }
       break;
-    case INNER_INNER:     
+    case INNER_INNER:
+
      for (i = 0; i < n; i++)
        {
 	 __m128d maxv =_mm_setzero_pd();
@@ -2877,7 +2885,9 @@ static void newviewGTRGAMMA(int tipCase,
 	     
 	    
 	     addScale += wgt[i];
-	    
+
+	     //printf( "scale INNER/INNER\n" );
+//	     getchar();
 	   }
 	 else
 	   {
@@ -2891,12 +2901,13 @@ static void newviewGTRGAMMA(int tipCase,
 	     _mm_store_pd(&x3[14], values[7]);
 	   }	 
        }
-   
+
      break;
     default:
       assert(0);
     }
   
+
  
   *scalerIncrement = addScale;
 

@@ -379,7 +379,7 @@ struct vector_unit<double, 2> {
     typedef __m128d vec_t;
     typedef double T;
 
-    const static int SIGN_MASK_INT = 0x7FFFFFFF;
+//    const static uint64_t SIGN_MASK_U64 = 0x7FFFFFFFFFFFFFFF;
 
     const static T LARGE_VALUE  = 1e8;
     const static T SMALL_VALUE = -1e8;
@@ -415,6 +415,10 @@ struct vector_unit<double, 2> {
 #if 1
     static inline const vec_t bit_and( const vec_t &a, const vec_t &b ) {
         return _mm_and_pd( a, b );
+    }
+
+    static inline const vec_t bit_or( const vec_t &a, const vec_t &b ) {
+        return _mm_or_pd( a, b );
     }
 
     static inline const vec_t bit_andnot( const vec_t &a, const vec_t &b ) {
@@ -470,13 +474,29 @@ struct vector_unit<double, 2> {
 
         //unsigned int SIGN_MASK[4] = {0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF,0x7FFFFFFF};
         //unsigned int SIGN_MASK = 0x7FFFFFFF;
-        const float *SIGN_MASK_PTR = (float*)&SIGN_MASK_INT;
-        static float SIGN_MASK = *SIGN_MASK_PTR;
+
+        const uint64_t SIGN_MASK_U64x = 0x7fffffffffffffff;
+
+        const double *SIGN_MASK_PTR = (double*)&SIGN_MASK_U64x;
+        double SIGN_MASK = *SIGN_MASK_PTR;
         return bit_and(sub(a,b), set1(SIGN_MASK) ); // TODO: could this case any alignment problems?
         //return bit_and(sub(a,b), set1(*((float*)&SIGN_MASK_INT) )); // TODO: could this case any alignment problems?
 
         //return bit_and(sub(a,b), load((float*)SIGN_MASK ));
 
+
+    }
+
+    static inline const vec_t abs( const vec_t &a ) {
+//        const uint64_t SIGN_MASK_U64x = 0x7fffffffffffffff;
+//
+//        const static double *SIGN_MASK_PTR = (double*)&SIGN_MASK_U64x;
+//        static double SIGN_MASK = *SIGN_MASK_PTR;
+//
+//        return bit_and( a, set1(SIGN_MASK));
+//
+//
+        return max( a, sub( setzero(), a ));
     }
 
     static inline void println( const vec_t & v ) {
