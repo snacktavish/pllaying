@@ -315,49 +315,9 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 }
 
 
-static void collectSubtrees(tree *tr, nodeptr *subtrees, int *count, int ogn)
-{
-  int i;
-  for(i = tr->mxtips + 1; i <= tr->mxtips + tr->mxtips - 2; i++)
-    {
-      nodeptr p, q;
-      p = tr->nodep[i];
-      if(countTips(p, tr->rdta->numsp) == ogn)
-	{
-	  subtrees[*count] = p;
-	  *count = *count + 1;
-	}
-      q = p->next;
-      while(q != p)
-	{
-	  if(countTips(q, tr->rdta->numsp) == ogn)
-	    {
-	      subtrees[*count] = q;
-	      *count = *count + 1;
-	    }
-	  q = q->next;
-	}
-    }
-}
 
-static void checkOM(nodeptr p, int *n, int *c, tree *tr)
-{
-  if(isTip(p->number, tr->rdta->numsp))
-    {
-      n[*c] = p->number;
-      *c = *c + 1;     
-    }
-  else
-    {
-      nodeptr q = p->next;
 
-      while(q != p)
-	{
-	  checkOM(q->back, n, c, tr);
-	  q = q->next;
-	}
-    }
-}
+
     
 static char *rootedTreeREC(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, 
 			   boolean printLikelihood, boolean rellTree, 
@@ -511,123 +471,9 @@ char *Tree2String(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths
   if(printSHSupport)
     assert(!branchLabelSupport && !rellTree);
 
-  if(finalPrint && adef->outgroup)
-    {
-      nodeptr startNode = tr->start;
-
-      
-
-      if(tr->numberOfOutgroups > 1)
-	{
-	  nodeptr root;
-	  nodeptr *subtrees = (nodeptr *)malloc(sizeof(nodeptr) * tr->mxtips);
-	  int i, k, count = 0;
-	  int *nodeNumbers = (int*)malloc(sizeof(int) * tr->numberOfOutgroups);
-	  int *foundVector = (int*)malloc(sizeof(int) * tr->numberOfOutgroups);
-	  boolean monophyletic = FALSE;
-
-	 
-
-	  collectSubtrees(tr, subtrees, &count, tr->numberOfOutgroups);
-
-	  /*printf("Found %d subtrees of size  %d\n", count, tr->numberOfOutgroups);*/
-	  
-	  for(i = 0; (i < count) && (!monophyletic); i++)
-	    {
-	      int l, sum, nc = 0;
-	      for(k = 0; k <  tr->numberOfOutgroups; k++)
-		{
-		  nodeNumbers[k] = -1;
-		  foundVector[k] = 0;
-		}
-
-	      checkOM(subtrees[i], nodeNumbers, &nc, tr);	      
-	      
-	      for(l = 0; l < tr->numberOfOutgroups; l++)
-		for(k = 0; k < tr->numberOfOutgroups; k++)
-		  {
-		    if(nodeNumbers[l] == tr->outgroupNums[k])
-		      foundVector[l] = 1;
-		  }
-	      
-	      sum = 0;
-	      for(l = 0; l < tr->numberOfOutgroups; l++)
-		sum += foundVector[l];
-	      
-	      if(sum == tr->numberOfOutgroups)
-		{	       		  
-		  root = subtrees[i];
-		  tr->start = root;		
-		  /*printf("outgroups are monphyletic!\n");*/
-		  monophyletic = TRUE;		  
-		}
-	      else
-		{
-		  if(sum > 0)
-		    {
-		      /*printf("outgroups are NOT monophyletic!\n");*/
-		      monophyletic = FALSE;
-		    }	     
-		}	
-	    }
-	  
-	  if(!monophyletic)
-	    {	      
-	     
-
-	      printf("WARNING, outgroups are not monophyletic, using first outgroup \"%s\"\n", tr->nameList[tr->outgroupNums[0]]);
-	      printf("from the list to root the tree!\n");
-	     
-
-	      {
-		FILE *infoFile = myfopen(infoFileName, "ab");
-
-		fprintf(infoFile, "\nWARNING, outgroups are not monophyletic, using first outgroup \"%s\"\n", tr->nameList[tr->outgroupNums[0]]);
-		fprintf(infoFile, "from the list to root the tree!\n");
-		
-		fclose(infoFile);
-	      }
-
-	      tr->start = tr->nodep[tr->outgroupNums[0]];	      	     
-
-	      rootedTree(treestr, tr, tr->start->back, printBranchLengths, printNames, printLikelihood, rellTree, 
-			 finalPrint, adef, perGene, branchLabelSupport, printSHSupport);
-	    }
-	  else
-	    {	     
-	      if(isTip(tr->start->number, tr->rdta->numsp))
-		{
-		  printf("Outgroup-Monophyly ERROR; tr->start is a tip \n");
-		  errorExit(-1);
-		}
-	      if(isTip(tr->start->back->number, tr->rdta->numsp))
-	      	{
-		  printf("Outgroup-Monophyly ERROR; tr->start is a tip \n");
-		  errorExit(-1);
-		}	      	      	      
-
-	      rootedTree(treestr, tr, tr->start->back, printBranchLengths, printNames, printLikelihood, rellTree, 
-			 finalPrint, adef, perGene, branchLabelSupport, printSHSupport);
-	    }
-	  
-	  free(foundVector);
-	  free(nodeNumbers);
-	  free(subtrees);
-	}
-      else
-	{	  	 	  
-	  tr->start = tr->nodep[tr->outgroupNums[0]];		  	  
  
-	  rootedTree(treestr, tr, tr->start->back, printBranchLengths, printNames, printLikelihood, rellTree, 
-		     finalPrint, adef, perGene, branchLabelSupport, printSHSupport);
-	  
-	}      
-
-      tr->start = startNode;
-    }
-  else    
-    Tree2StringREC(treestr, tr, p, printBranchLengths, printNames, printLikelihood, rellTree, 
-		   finalPrint, perGene, branchLabelSupport, printSHSupport);  
+  Tree2StringREC(treestr, tr, p, printBranchLengths, printNames, printLikelihood, rellTree, 
+		 finalPrint, perGene, branchLabelSupport, printSHSupport);  
     
   
   while (*treestr) treestr++;

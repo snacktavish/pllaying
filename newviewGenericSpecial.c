@@ -652,131 +652,13 @@ static void newviewGAMMA_FLEX(int tipCase,
 }
 
 
-/* the function below does not really belong to the library, but rather to logic of the calling program 
-   what we do here is to to compute a full tree traversal (post-order) and copy the description of this tarversal 
-   into the traversal descriptor that is then broadcasted to the worker threads or MPI processes */
-
-void computeFullTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches)
-{
-  /* if we end up at a tip there is nothing to be done :-) */
-
-  if(isTip(p->number, maxTips))
-    return; 
-
-  {     
-    int 
-      i;
-    
-    /* get the two child nodes of p, note that we have an orientation in the tree because it is essentially 
-       rooted at the branch spcified by p and p->back */
-
-    nodeptr 
-      q = p->next->back,
-      r = p->next->next->back;
-   
-    /* set the conditional likelihood vector orientation consistently */
-
-    p->x = 1;
-    p->next->x = 0;
-    p->next->next->x = 0;     
-
-    /* if both child nodes are tips, store this as tip tip case,
-       store the node number triplet and the branch lengths.
-       also increment the traversal descriptor length counter ! */
-
-    if(isTip(r->number, maxTips) && isTip(q->number, maxTips))
-      {	  
-	ti[*counter].tipCase = TIP_TIP; 
-	ti[*counter].pNumber = p->number;
-	ti[*counter].qNumber = q->number;
-	ti[*counter].rNumber = r->number;
-
-	for(i = 0; i < numBranches; i++)
-	  {	   
-	    ti[*counter].qz[i] = q->z[i];
-	    ti[*counter].rz[i] = r->z[i];
-	  }     
-	
-	*counter = *counter + 1;
-      }  
-    else
-      {
-	/* now here either r or q is a tip but not both ! */
-
-	if(isTip(r->number, maxTips) || isTip(q->number, maxTips))
-	  {			 
-	    /* if r is a tip, flip the values, this is required for consistency, because 
-	       the newview and evaluate function implementations always 
-	       expect the tip to be stored in q for the TIP_INNER case.
-	       This essentially makes the function implementations less complex because 
-	       we do not have to distinguish between 
-	       a TIP_INNER and INNER_TIP case ! */
-
-	    if(isTip(r->number, maxTips))
-	      {
-		nodeptr 
-		  tmp = r;
-		r = q;
-		q = tmp;
-	      }
-	    
-	    /* invoke the function recursively on the non-tip node, remember that we are computing a 
-	       post-order tree traversal here ! */
-
-	    computeFullTraversalInfo(r, ti, counter, maxTips, numBranches);	
-	    	   
-	    /* store node numbers and tip case in the traversal descriptor */
-
-	    ti[*counter].tipCase = TIP_INNER; 
-	    ti[*counter].pNumber = p->number;
-	    ti[*counter].qNumber = q->number;
-	    ti[*counter].rNumber = r->number;
-
-	    /* store branches, the length of this loop will be 1 as long as we do not conduct 
-	       a per-partition branch length estimate */
-
-	    for(i = 0; i < numBranches; i++)
-	      {	
-		ti[*counter].qz[i] = q->z[i];
-		ti[*counter].rz[i] = r->z[i];	
-	      }   
-	    
-	    /* increment traversal descriptor length */
-
-	    *counter = *counter + 1;
-	  }
-	else
-	  {	 	  
-	    /* here we are in the INNER_INNER case, so we just do the recursive calls
-	       and the rest is the same as above */
-
-	    computeFullTraversalInfo(q, ti, counter, maxTips, numBranches);	       
-	    computeFullTraversalInfo(r, ti, counter, maxTips, numBranches);
-	   
-	    ti[*counter].tipCase = INNER_INNER; 
-	    ti[*counter].pNumber = p->number;
-	    ti[*counter].qNumber = q->number;
-	    ti[*counter].rNumber = r->number;
-	    
-	    for(i = 0; i < numBranches; i++)
-	      {	
-		ti[*counter].qz[i] = q->z[i];
-		ti[*counter].rz[i] = r->z[i];	
-	      }   
-	    
-	    *counter = *counter + 1;
-	  }
-      }    
-  }
-}
-
 
 
     
 /* The function below computes partial traversals only down to the point/node in the tree where the 
    conditional likelihhod vector summarizing a subtree is already oriented in the correct direction */
 
-void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches)
+void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal)
 {
   /* if it's a tip we don't do anything */
 
@@ -791,19 +673,18 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 
     nodeptr 
       q = p->next->back,
-      r = p->next->next->back;
+      r = p->next->next->back;   
 
     /* if the left and right children are tips there is not that much to do */
 
     if(isTip(r->number, maxTips) && isTip(q->number, maxTips))
       {
 	/* fix the orientation of p->x */
-
-	if (! p->x)
-	  getxnode(p);
 	
+	if (! p->x)
+	  getxnode(p);	
 	assert(p->x);
-
+	  
 	/* add the current node triplet p,q,r to the traversal descriptor */
 
 	ti[*counter].tipCase = TIP_TIP;
@@ -842,8 +723,8 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 	       and descend into its subtree to figure out if there are more vrctors in there to re-compute and 
 	       re-orient */
 
-	    if(! r->x)
-	      computeTraversalInfo(r, ti, counter, maxTips, numBranches);
+	    if(!r->x || !partialTraversal)
+	      computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal);
 	    if(! p->x)
 	      getxnode(p);	 
 	    
@@ -873,10 +754,10 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 	       respective subtrees to check if everything is consistent in there, potentially expanding 
 	       the traversal descriptor */
 	   
-	    if(! q->x)
-	      computeTraversalInfo(q, ti, counter, maxTips, numBranches);
-	    if(! r->x)
-	      computeTraversalInfo(r, ti, counter, maxTips, numBranches);
+	    if(! q->x || !partialTraversal)
+	      computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal);
+	    if(! r->x || !partialTraversal)
+	      computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal);
 	    if(! p->x)
 	      getxnode(p);
 	     
@@ -1010,7 +891,7 @@ void newviewIterative (tree *tr, int startIndex)
 	      double
 		*x1_start = (double*)NULL,
 		*x2_start = (double*)NULL,
-		*x3_start = (double*)NULL,
+		*x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1],
 		*left     = (double*)NULL,
 		*right    = (double*)NULL,		
 		*x1_gapColumn = (double*)NULL,
@@ -1132,8 +1013,7 @@ void newviewIterative (tree *tr, int startIndex)
 		{
 		case TIP_TIP:		  
 		  tipX1    = tr->partitionData[model].yVector[tInfo->qNumber];
-		  tipX2    = tr->partitionData[model].yVector[tInfo->rNumber];		  
-		  x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];			  
+		  tipX2    = tr->partitionData[model].yVector[tInfo->rNumber];		  		  
 
 		  if(tr->saveMemory)
 		    {
@@ -1145,8 +1025,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  break;
 		case TIP_INNER:		 
 		  tipX1    =  tr->partitionData[model].yVector[tInfo->qNumber];
-		  x2_start = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];
-		  x3_start = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];	
+		  x2_start = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];		 
 
 		  if(tr->saveMemory)
 		    {	
@@ -1158,8 +1037,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  break;
 		case INNER_INNER:		 		 
 		  x1_start       = tr->partitionData[model].xVector[tInfo->qNumber - tr->mxtips - 1];
-		  x2_start       = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];
-		  x3_start       = tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1];	
+		  x2_start       = tr->partitionData[model].xVector[tInfo->rNumber - tr->mxtips - 1];		 
 
 		  if(tr->saveMemory)
 		    {
@@ -1422,7 +1300,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   tr->td[0].count = 0;
 
   /* compute the traversal descriptor */
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
