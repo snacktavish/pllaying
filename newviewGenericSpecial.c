@@ -1141,7 +1141,7 @@ void newviewIterative (tree *tr, int startIndex)
 #endif
 
 	          ticks t2 = getticks();
-                  if( tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
+                  if( 1 || tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
                      newviewGAMMA_FLEX_reorder(tInfo->tipCase,
                                               x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
                                               ex3, tipX1, tipX2,
@@ -1155,7 +1155,7 @@ void newviewIterative (tree *tr, int startIndex)
 
                  const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
 
-                 printf( "ticks: %f %f%s\n", d1, d2, scaling_text );
+                 printf( "ticks: %d %f %f%s\n", tInfo->tipCase, d1, d2, scaling_text );
 
 	      }
 #else

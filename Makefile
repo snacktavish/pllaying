@@ -12,7 +12,7 @@ MAKE_DIR   = ./system
 #DO NOT EDIT BELOW
 include $(MAKE_DIR)/include_$(TAG).mk
 
-SRC += axml.c bipartitionList.c evaluateGenericSpecial.c evaluatePartialGenericSpecial.c makenewzGenericSpecial.c models.c optimizeModel.c parsePartitions.c restartHashTable.c searchAlgo.c topologies.c trash.c treeIO.c newviewGenericSpecial.c
+SRC += axml.c bipartitionList.c evaluateGenericSpecial.c evaluatePartialGenericSpecial.c makenewzGenericSpecial.c models.c optimizeModel.c parsePartitions.c restartHashTable.c searchAlgo.c topologies.c trash.c treeIO.c newviewGenericSpecial.c avxLikelihood.c
 
 CXX_SRC += sim_reorder.cpp
 
