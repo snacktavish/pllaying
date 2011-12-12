@@ -11,9 +11,11 @@ Q         ?= @
 #DO NOT EDIT BELOW
 include $(MAKE_DIR)/include_$(TAG).mk
 
+SRC += axml.c bipartitionList.c evaluateGenericSpecial.c evaluatePartialGenericSpecial.c makenewzGenericSpecial.c models.c optimizeModel.c parsePartitions.c restartHashTable.c searchAlgo.c topologies.c trash.c treeIO.c newviewGenericSpecial.c
+LIBS += -lm
 
-VPATH     = $(SRC_DIR)
-OBJ       = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
+#OBJ       = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
+OBJ       = $(patsubst %.c, $(BUILD_DIR)/%.o,$(SRC))
 CCFLAGS := $(CCFLAGS) $(DEFINES) $(INCLUDES) 
 
 ${TARGET}: $(BUILD_DIR) $(OBJ)
