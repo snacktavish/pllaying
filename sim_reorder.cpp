@@ -535,6 +535,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
      Essentially this is very similar to the tip vectors which we also use as lookup tables */
     precomputeLength = maxStateValue * span;
 
+    bool did_scaling = false;
+
     assert( n % VW == 0 );
 
     if( !arr.valid() ) {
@@ -828,13 +830,11 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
                     v_acc3 = vu::add( v_acc3, vu::mul( x1px2_v,
                                                         vu::set1(extEV[states * l + 3]) ));
 
-
-                    if( l == 3 ) {
-                        const vec_t max01_v = vu::max( vu::abs(v_acc0), vu::abs(v_acc1) );
-                        const vec_t max23_v = vu::max( vu::abs(v_acc2), vu::abs(v_acc3) );
-                        max_v = vu::max( max_v, vu::max( max01_v, max23_v ));
-
-                    }
+//
+//                    if( l == 3 ) {
+//
+//
+//                    }
 
 //                    for (j = 0; j < states; j++)
 //                        v[j] += x1px2 * extEV[states * l + j];
@@ -843,7 +843,9 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
 
 
 
-
+                const vec_t max01_v = vu::max( vu::abs(v_acc0), vu::abs(v_acc1) );
+                const vec_t max23_v = vu::max( vu::abs(v_acc2), vu::abs(v_acc3) );
+                max_v = vu::max( max_v, vu::max( max01_v, max23_v ));
 
                 vu::store( v_acc0, arr.x3_ro(i * span + (k * states + 0) * VW));
                 vu::store( v_acc1, arr.x3_ro(i * span + (k * states + 1) * VW));
@@ -876,27 +878,47 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
 
             //const vec_t scale_v = vu::set1(twotothe256);
 
-            double max_tmp[4] __attribute__ ((aligned (32)));
+            double max_tmp[2] __attribute__ ((aligned (32)));
 
             vu::store( max_v, max_tmp );
 
-            double max_val = std::max( max_tmp[0], max_tmp[1] );
+            //double max_val = std::max( max_tmp[0], max_tmp[1] );
+
+
+            bool do_scale = false;
+            if( max_tmp[0] < minlikelihood ) {
+                max_tmp[0] = twotothe256;
+                do_scale = true;
+            } else {
+                max_tmp[0] = 1.0;
+            }
+
+            if( max_tmp[1] < minlikelihood ) {
+                max_tmp[1] = twotothe256;
+                do_scale = true;
+            } else {
+                max_tmp[1] = 1.0;
+            }
+            const vec_t scale_v = vu::load( max_tmp );
 //
 //            for( k = 0; k < span; ++k ) {
 //                max_val = std::max( max_val, fabs(arr.x3_ro[i*span + k]));
 //            }
 
 
-            std::cout << "max val: " << max_val << "\n";
-            if( max_val < minlikelihood ) {
+            //std::cout << "max val: " << max_val << "\n";
+            if( do_scale ) {
 
-                std::cout << "scale sim\n";
-                const vec_t scale_v = vu::set1( twotothe256 );
+//                std::cout << "scale sim\n";
+
+
+
                 for( k = 0; k < 4; ++k ) {
-                    vec_t v_acc0 = vu::load( arr.x3_ro(i * span + (k * states + 0) * VW));
-                    vec_t v_acc1 = vu::load( arr.x3_ro(i * span + (k * states + 1) * VW));
-                    vec_t v_acc2 = vu::load( arr.x3_ro(i * span + (k * states + 2) * VW));
-                    vec_t v_acc3 = vu::load( arr.x3_ro(i * span + (k * states + 3) * VW));
+                    double * __restrict base = arr.x3_ro(i * span + (k * states + 0) * VW);
+                    vec_t v_acc0 = vu::load( base );
+                    vec_t v_acc1 = vu::load( base + VW );
+                    vec_t v_acc2 = vu::load( base + 2 * VW );
+                    vec_t v_acc3 = vu::load( base + 3 * VW );
 
 
                     v_acc0 = vu::mul( scale_v, v_acc0 );
@@ -905,13 +927,14 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
                     v_acc3 = vu::mul( scale_v, v_acc3 );
 
 
-                    vu::store( v_acc0, arr.x3_ro(i * span + (k * states + 0) * VW));
-                    vu::store( v_acc1, arr.x3_ro(i * span + (k * states + 1) * VW));
-                    vu::store( v_acc2, arr.x3_ro(i * span + (k * states + 2) * VW));
-                    vu::store( v_acc3, arr.x3_ro(i * span + (k * states + 3) * VW));
+                    vu::store( v_acc0, base);
+                    vu::store( v_acc1, base + VW );
+                    vu::store( v_acc2, base + 2 * VW );
+                    vu::store( v_acc3, base + 3 * VW );
 
                 }
             }
+            did_scaling |= do_scale;
 #endif
 
 
@@ -960,6 +983,10 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3, double *
         break;
     default:
         assert(0);
+    }
+
+    if( did_scaling ) {
+        std::cout << "sim scaling\n";
     }
 
     /* as above, increment the global counter that counts scaling multiplications by the scaling multiplications
