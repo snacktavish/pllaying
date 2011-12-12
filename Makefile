@@ -1,37 +1,29 @@
-TAG = GCC-SEQ
-DIM=3D
+TAG = GCC-SS3
 
 #CONFIGURE BUILD SYSTEM
-TARGET	   = MAIN$(DIM)-$(TAG)
-BUILD_DIR  = ./$(TAG)$(DIM)
-SRC_DIR    = ./include
+TARGET	   = RAxML-$(TAG)
+BUILD_DIR  = ./$(TAG)
+SRC_DIR    = ./
 MAKE_DIR   = ./system
 Q         ?= @
 
-DEFINES  +=  -DEPOT -DDIFFUSION -DTHERMO
 
 #DO NOT EDIT BELOW
 include $(MAKE_DIR)/include_$(TAG).mk
 
-INCLUDES += -I./include/
-
-ifeq ($(DIM),2D)
-	DEFINES  += -DTWODIM
-endif
-
 
 VPATH     = $(SRC_DIR)
-OBJ       = $(patsubst $(SRC_DIR)/%.C, $(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.C))
-CPPFLAGS := $(CPPFLAGS) $(DEFINES) $(INCLUDES) 
+OBJ       = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
+CCFLAGS := $(CCFLAGS) $(DEFINES) $(INCLUDES) 
 
 ${TARGET}: $(BUILD_DIR) $(OBJ)
 	@echo "===>  LINKING  $(TARGET)"
-	$(Q)${CXX} ${LFLAGS} -o $(TARGET) $(OBJ) $(LIBS)
+	$(Q)${CC} ${LFLAGS} -o $(TARGET) $(OBJ) $(LIBS)
 
-$(BUILD_DIR)/%.o:  %.C
+$(BUILD_DIR)/%.o:  %.c
 	@echo "===>  COMPILE  $@"
-	$(Q)$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $< -o $@
-	$(Q)$(CXX) $(CPPFLAGS) -MT $(@:.d=.o) -MM  $< > $(BUILD_DIR)/$*.d
+	$(Q)$(CC) -c $(CCFLAGS) $< -o $@
+	$(Q)$(CC) $(CCFLAGS) -MT $(@:.d=.o) -MM  $< > $(BUILD_DIR)/$*.d
 
 $(BUILD_DIR):
 	@mkdir $(BUILD_DIR)
