@@ -2617,8 +2617,7 @@ static void initAdef(analdef *adef)
   adef->randomStartingTree     = FALSE;
   adef->parsimonySeed          = 0;
   adef->proteinMatrix          = JTT;
-  adef->protEmpiricalFreqs     = 0;
-  adef->outgroup               = FALSE;
+  adef->protEmpiricalFreqs     = 0;  
   adef->useInvariant           = FALSE;
   adef->permuteTreeoptimize    = FALSE;
   adef->useInvariant           = FALSE;
@@ -3089,89 +3088,10 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
   return(c);
   }
 
-static void checkOutgroups(tree *tr, analdef *adef)
-{
-  if(adef->outgroup)
-    {
-      boolean found;
-      int i, j;
-
-      for(j = 0; j < tr->numberOfOutgroups; j++)
-	{
-	  found = FALSE;
-	  for(i = 1; (i <= tr->mxtips) && !found; i++)
-	    {
-	      if(strcmp(tr->nameList[i], tr->outgroups[j]) == 0)
-		{
-		  tr->outgroupNums[j] = i;
-		  printf("%d\n", i);
-		  found = TRUE;
-		}
-	    }
-	  if(!found)
-	    {
-	      printf("Error, the outgroup name \"%s\" you specified can not be found in the alignment, exiting ....\n", tr->outgroups[j]);
-	      errorExit(-1);
-	    }
-	}
-    }
-
-}
-
-static void parseOutgroups(char *outgr, tree *tr)
-{
-  int count = 1, i, k;
-  char name[nmlngth];
-
-  i = 0;
-  while(outgr[i] != '\0')
-    {
-      if(outgr[i] == ',')
-	count++;
-      i++;
-    }
-
-  tr->numberOfOutgroups = count;
-
-  tr->outgroups = (char **)malloc(sizeof(char *) * count);
-
-  for(i = 0; i < tr->numberOfOutgroups; i++)
-    tr->outgroups[i] = (char *)malloc(sizeof(char) * nmlngth);
-
-  tr->outgroupNums = (int *)malloc(sizeof(int) * count);
-
-  i = 0;
-  k = 0;
-  count = 0;
-  while(outgr[i] != '\0')
-    {
-      if(outgr[i] == ',')
-	{
-	  name[k] = '\0';
-	  strcpy(tr->outgroups[count], name);
-	  count++;
-	  k = 0;
-	}
-      else
-	{
-	  name[k] = outgr[i];
-	  k++;
-	}
-      i++;
-    }
-
-  name[k] = '\0';
-  strcpy(tr->outgroups[count], name);
-
-  for(i = 0; i < tr->numberOfOutgroups; i++)
-    printf("%d %s \n", i, tr->outgroups[i]);
 
 
-  printf("%s \n", name);
-}
 
-
-/*********************************** OUTGROUP STUFF END *********************************************************/
+/*********************************** *********************************************************/
 
 
 static void printVersionInfo(void)
@@ -3220,7 +3140,6 @@ static void printREADME(void)
   printf("      [-h] \n");
   printf("      [-i initialRearrangementSetting] \n");
   printf("      [-M]\n");
-  printf("      [-o outGroupName1[,outGroupName2[,...]]] \n");
   printf("      [-P proteinModel]\n");
   printf("      [-q multipleModelFileName] \n");
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
@@ -3303,10 +3222,6 @@ static void printREADME(void)
   printf("              DEFAULT: OFF\n");
   printf("\n");
   printf("      -n      Specifies the name of the output file.\n");
-  printf("\n");
-  printf("      -o      Specify the name of a single outgrpoup or a comma-separated list of outgroups, eg \"-o Rat\" \n");
-  printf("              or \"-o Rat,Mouse\", in case that multiple outgroups are not monophyletic the first name \n");
-  printf("              in the list will be selected as outgroup, don't leave spaces between taxon names!\n"); 
   printf("\n"); 
   printf("      -P      Specify the file name of a user-defined AA (Protein) substitution model. This file must contain\n");
   printf("              420 entries, the first 400 being the AA substitution rates (this must be a symmetric matrix) and the\n");
@@ -3400,8 +3315,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
   double 
     likelihoodEpsilon,    
-    wcThreshold,
-    fastEPAthreshold;
+    wcThreshold;
   
   int  
     optind = 1,        
@@ -3443,9 +3357,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   tr->secondaryStructureModel = SEC_16; /* default setting */
   tr->searchConvergenceCriterion = FALSE;
   tr->catOnly = FALSE;
-  tr->fastEPA_ML = FALSE;
-  tr->fastEPA_MP = FALSE;
-  tr->fastEPAthreshold = -1.0;
+ 
   tr->multiStateModel  = GTR_MULTI_STATE;
   tr->useGappedImplementation = FALSE;
   tr->saveMemory = FALSE;
@@ -3459,10 +3371,10 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   while(!bad_opt &&
-	((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBQXb", &optind, &optarg))!=-1))
+	((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:q:G:vhMSDBQXb", &optind, &optarg))!=-1))
 #else
     while(!bad_opt &&
-	  ((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:o:q:G:vhMSDBXb", &optind, &optarg))!=-1))
+	  ((c = mygetopt(argc,argv,"T:P:R:e:c:f:i:m:t:w:s:n:q:G:vhMSDBXb", &optind, &optarg))!=-1))
 #endif
     {
     switch(c)
@@ -3513,18 +3425,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	    printf("It is used to specify the number of threads for the Pthreads-based parallelization\n");
 	  }
 #endif
-	break;                  
-      case 'o':
-	{
-	  char *outgroups;
-	  outgroups = (char*)malloc(sizeof(char) * (strlen(optarg) + 1));
-	  strcpy(outgroups, optarg);
-	  parseOutgroups(outgroups, tr);
-	  free(outgroups);
-	  adef->outgroup = TRUE;
-	}
-	break;
-     
+	break;                       
       case 'e':
 	sscanf(optarg,"%lf", &likelihoodEpsilon);
 	adef->likelihoodEpsilon = likelihoodEpsilon;
@@ -3962,13 +3863,7 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
 	  break;
 	case SH_LIKE_SUPPORTS:
 	  printBoth(infoFile, "\nRAxML computation of SH-like support values on a given tree\n\n");
-	  break;
-	case EPA_ROGUE_TAXA:
-	  printBoth(infoFile, "\nRAxML experimental statistical rogue taxon identification algorithm\n\n");
-	  break;
-	case EPA_SITE_SPECIFIC_BIAS:
-	  printBoth(infoFile, "\nRAxML exprimental site-specfific phylogenetic placement bias analysis algorithm\n\n");
-	  break;
+	  break;	
 	default:
 	  assert(0);
 	}
@@ -6024,12 +5919,7 @@ int main (int argc, char *argv[])
 
       getinput(adef, rdta, cdta, tr);
   
-      /* parse the outgroup string, this actually checks if if the outgroup name(s) specified on the command line 
-	 via -o actually are contained in the phylip alignment that has just been parsed. 
-	 Maybe, we should omit the stupid outgroup option alltogether, because this only increases code complexity 
-	 and essentially outgroups are just a tree drawing option and nothing more */
-	 
-      checkOutgroups(tr, adef);
+      
 
       /* generate the RAxML output file names and store them in strings */
       

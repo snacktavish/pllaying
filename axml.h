@@ -209,8 +209,6 @@ extern double exp_approx (double x);
 #define  MESH_TREE_SEARCH           23
 #define  FAST_SEARCH                24
 #define  MORPH_CALIBRATOR_PARSIMONY 25
-#define  EPA_ROGUE_TAXA             26           
-#define  EPA_SITE_SPECIFIC_BIAS     27
 #define  SH_LIKE_SUPPORTS           28
 
 #define M_GTRCAT         1
@@ -896,13 +894,7 @@ typedef  struct  {
   int              parsimonyLength;
   
   int              checkPointCounter;
-  int              treeID;
-  int              numberOfOutgroups;
-  int             *outgroupNums;
-  char           **outgroups;
-  boolean          fastEPA_ML;
-  boolean          fastEPA_MP;
-  double           fastEPAthreshold;
+  int              treeID;  
   boolean          bigCutoff;
   boolean          partitionSmoothed[NUM_BRANCHES];
   boolean          partitionConverged[NUM_BRANCHES];
@@ -1080,7 +1072,6 @@ typedef  struct {
   long           parsimonySeed;
   boolean        perGeneBranchLengths;
   boolean        likelihoodTest;
-  boolean        outgroup;
   boolean        permuteTreeoptimize;
   boolean        allInOne;
   boolean        generateBS;
@@ -1159,14 +1150,7 @@ extern void computeRogueTaxa(tree *tr, char* treeSetFileName, analdef *adef);
 extern unsigned int precomputed16_bitcount(unsigned int n);
 
 
-extern double evaluateGenericMulti (tree *tr, nodeptr p, int model);
-extern void setupPointerMesh(tree *tr);
-extern void determineFullTraversalMulti(nodeptr p, tree *tr);
-extern void computeTraversalInfoMulti(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int model);
-extern double evaluateIterativeMulti(tree *, boolean writeVector);
-extern void newviewIterativeMulti (tree *tr);
-extern void getxsnode (nodeptr p, int model);
-extern void findNext(nodeptr p, tree *tr, nodeptr *result);
+
 
 
 
@@ -1305,7 +1289,7 @@ extern double evaluateGenericVector (tree *tr, nodeptr p);
 extern void categorizeGeneric (tree *tr, nodeptr p);
 extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0, int maxiter, int model);
 extern boolean isTip(int number, int maxTips);
-extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches);
+extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
 
 
 
@@ -1353,7 +1337,7 @@ extern nodeptr findAnyTip(nodeptr p, int numsp);
 
 extern void parseProteinModel(analdef *adef);
 
-extern void computeFullTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches);
+
 
 extern void computeNextReplicate(tree *tr, long *seed, int *originalRateCategories, int *originalInvariant, boolean isRapid, boolean fixRates);
 /*extern void computeNextReplicate(tree *tr, analdef *adef, int *originalRateCategories, int *originalInvariant);*/
@@ -1402,7 +1386,7 @@ extern void testGapped(tree *tr);
 extern boolean issubset(unsigned int* bipA, unsigned int* bipB, unsigned int vectorLen);
 extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 
-extern void computeRogueTaxaEPA(tree *tr);
+
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
 
