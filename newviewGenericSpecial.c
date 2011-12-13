@@ -860,6 +860,8 @@ void newviewCAT_FLEX_reorder(int tipCase, double *extEV,
 void newviewGAMMA_FLEX_reorder(int tipCase, double *x1, double *x2, double *x3, double *extEV, double *tipVector, int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, double *left, double *right, int *wgt, int *scalerIncrement, const int states, const int maxStateValue);
 
 
+
+
 void newviewIterative (tree *tr, int startIndex)
 {
   traversalInfo 
@@ -868,6 +870,10 @@ void newviewIterative (tree *tr, int startIndex)
   int 
     i, 
     model;
+
+  double *last_x3 = 0;
+
+  int last_width = -1;
 
   /* loop over traversal descriptor length. Note that on average we only re-compute the conditionals on 3 -4 
      nodes in RAxML */
@@ -1127,7 +1133,7 @@ void newviewIterative (tree *tr, int startIndex)
 	          ticks t1 = getticks();
 	          int old_scale = scalerIncrement;
 
-
+#if 0
 #if 0
                   newviewGAMMA_FLEX(tInfo->tipCase,
                                                     x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
@@ -1139,7 +1145,7 @@ void newviewIterative (tree *tr, int startIndex)
                                  ex3, tipX1, tipX2,
                                  width, left, right, wgt, &scalerIncrement);
 #endif
-
+#endif
 	          ticks t2 = getticks();
                   if( 1 || tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
                      newviewGAMMA_FLEX_reorder(tInfo->tipCase,
@@ -1155,7 +1161,9 @@ void newviewIterative (tree *tr, int startIndex)
 
                  const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
 
-                 printf( "ticks: %d %f %f%s\n", tInfo->tipCase, d1, d2, scaling_text );
+//                 printf( "ticks: %d %f %f%s\n", tInfo->tipCase, d1, d2, scaling_text );
+                 last_x3 = x3_start;
+                 last_width = width;
 
 	      }
 #else
@@ -1278,6 +1286,9 @@ void newviewIterative (tree *tr, int startIndex)
 	    }	
 	}
     }
+
+
+
 }
 
 

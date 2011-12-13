@@ -32,6 +32,10 @@
 #include <assert.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __AVX
 #define BYTE_ALIGNMENT 32
 #else
@@ -1523,4 +1527,11 @@ void newviewGTRGAMMA_AVX(int tipCase,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 );
 
+#endif
+
+void reorder( double *x, int n, int span );
+void reorder_back( double *x, int n, int span );
+
+#ifdef __cplusplus
+} // extern "C"
 #endif

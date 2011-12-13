@@ -14,6 +14,9 @@
 #include <pmmintrin.h>
 #include <immintrin.h>
 
+
+#ifdef __AVX__
+
 const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
 {
   uint64_t i[4];
@@ -930,3 +933,4 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
   
   *scalerIncrement = addScale;
 }
+#endif
