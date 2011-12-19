@@ -15,16 +15,22 @@ SRC += axml.c bipartitionList.c evaluateGenericSpecial.c evaluatePartialGenericS
 LIBS += -lm
 
 #OBJ       = $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o,$(wildcard $(SRC_DIR)/*.c))
-OBJ       = $(patsubst %.c, $(BUILD_DIR)/%.o,$(SRC))
+OBJ     += $(patsubst %.c, $(BUILD_DIR)/%.o,$(SRC))
+SOBJ    += $(patsubst %.c, $(BUILD_DIR)/%_special.o,$(SPECIAL_SRC))
 CCFLAGS := $(CCFLAGS) $(DEFINES) $(INCLUDES) 
 
-${TARGET}: $(BUILD_DIR) $(OBJ)
+${TARGET}: $(BUILD_DIR) $(OBJ) $(SOBJ)
 	@echo "===>  LINKING  $(TARGET)"
-	$(Q)${CC} ${LFLAGS} -o $(TARGET) $(OBJ) $(LIBS)
+	$(Q)${CC} ${LFLAGS} -o $(TARGET) $(OBJ) $(SOBJ) $(LIBS)
 
 $(BUILD_DIR)/%.o:  %.c
 	@echo "===>  COMPILE  $@"
 	$(Q)$(CC) -c $(CCFLAGS) $< -o $@
+	$(Q)$(CC) $(CCFLAGS) -MT $(@:.d=.o) -MM  $< > $(BUILD_DIR)/$*.d
+
+$(BUILD_DIR)/%_special.o:  %.c
+	@echo "===>  COMPILE  $@"
+	$(Q)$(CC) -c $(SPECIAL_FLAGS) $(CCFLAGS) $< -o $@
 	$(Q)$(CC) $(CCFLAGS) -MT $(@:.d=.o) -MM  $< > $(BUILD_DIR)/$*.d
 
 $(BUILD_DIR):
