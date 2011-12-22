@@ -155,7 +155,7 @@ boolean smooth (tree *tr, nodeptr p)
 	  q = q->next;
 	}	
       
-      if(tr->multiBranch)		  
+      if(tr->numBranches > 1)		  
 	newviewGeneric(tr, p, TRUE);	
       else
 	newviewGeneric(tr, p, FALSE);     

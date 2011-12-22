@@ -182,7 +182,7 @@ static double getBranchLength(tree *tr, int perGene, nodeptr p)
 
   assert(perGene != NO_BRANCHES);
 	      
-  if(!tr->multiBranch)
+  if(tr->numBranches == 1)
     {
       assert(tr->fracchange != -1.0);
       z = p->z[0];
@@ -404,7 +404,7 @@ static char *rootedTree(char *treestr, tree *tr, nodeptr p, boolean printBranchL
 	  double rz, z;
 	  assert(perGene != NO_BRANCHES);
 
-	  if(!tr->multiBranch)
+	  if(tr->numBranches == 1)
 	    {
 	      assert(tr->fracchange != -1.0);
 	      z = -log(p->z[0]) * tr->fracchange;

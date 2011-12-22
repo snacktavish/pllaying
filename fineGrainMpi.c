@@ -185,7 +185,7 @@ static void allocLikelihoodVectors(tree *tr)
      printf("%d %d %d\n", processID, model, tr->partitionData[model].width);
   */
 
-  for(i = 0; i < (size_t)tr->innerNodes; i++)    
+  for(i = 0; i < (size_t)tr->mxtips; i++)    
     for(model = 0; model < (size_t)tr->NumberOfModels; model++)       
       tr->partitionData[model].xVector[i]   = (double*)NULL;       
 }
@@ -454,7 +454,7 @@ void fineGrainWorker(tree *tr)
 
   tr->saveMemory = sendBufferInt[dataCounter++];
   tr->useGappedImplementation = sendBufferInt[dataCounter++];
-  tr->innerNodes = sendBufferInt[dataCounter++];
+  tr->mxtips = sendBufferInt[dataCounter++];
   tr->maxCategories = sendBufferInt[dataCounter++];
   tr->originalCrunchedLength = sendBufferInt[dataCounter++];  
   tr->mxtips = sendBufferInt[dataCounter++];
@@ -1176,7 +1176,7 @@ void startFineGrainMpi(tree *tr, analdef *adef)
 
   sendBufferInt[dataCounter++] = tr->saveMemory;
   sendBufferInt[dataCounter++] = tr->useGappedImplementation;
-  sendBufferInt[dataCounter++] = tr->innerNodes;
+  sendBufferInt[dataCounter++] = tr->mxtips;
   sendBufferInt[dataCounter++] = tr->maxCategories;
   sendBufferInt[dataCounter++] = tr->originalCrunchedLength; 
   sendBufferInt[dataCounter++] = tr->mxtips;

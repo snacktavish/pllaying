@@ -1674,7 +1674,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
     i,
     model;
 
-  if(tr->multiBranch)
+  if(tr->numBranches > 1)
     {            
       for(model = 0; model < tr->NumberOfModels; model++)
 	{
@@ -1784,6 +1784,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      {	    	      
 		tr->partitionData[model].wr[localCount]  = tr->wr[i];
 		tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+		tr->partitionData[model].rateCategory[localCount] = tr->cdta->rateCategory[i];
 	      }
 	  }
 #endif
@@ -1922,6 +1923,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    {	    	      
 	      tr->partitionData[model].wr[localCount]  = tr->wr[i];
 	      tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+	      tr->partitionData[model].rateCategory[localCount] = tr->cdta->rateCategory[i];
 	    }
 	}
 #endif

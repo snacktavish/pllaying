@@ -67,7 +67,6 @@
 #define NO_BRANCHES      -1
 
 #define MASK_LENGTH 32
-#define VECTOR_LENGTH (NUM_BRANCHES / MASK_LENGTH)
 #define GET_BITVECTOR_LENGTH(x) ((x % MASK_LENGTH) ? (x / MASK_LENGTH + 1) : (x / MASK_LENGTH))
 
 #define zmin       1.0E-15  /* max branch prop. to -log(zmin) (= 34) */
@@ -433,8 +432,8 @@ typedef struct
   int count;
   int functionType;
   boolean traversalHasChanged;
-  boolean executeModel[NUM_BRANCHES];
-  double  parameterValues[NUM_BRANCHES];
+  boolean *executeModel;
+  double  *parameterValues;
 } traversalData;
 
 
@@ -564,7 +563,6 @@ typedef struct {
   int     protModels;
   int     autoProtModels;
   int     protFreqs;
-  int     mxtips;
   int             **expVector;
   double          **xVector;
   size_t           *xSpaceVector;
@@ -595,7 +593,7 @@ typedef struct {
   double *frequencies;
   double *tipVector; 
   double *substRates;
-  double *perSiteLL;
+  
   
   double *perSiteRates;
 
@@ -619,7 +617,6 @@ typedef struct {
   unsigned int *gapVector;
   double *gapColumn;
 
-  size_t initialGapVectorSize;
   int    numberOfCategories;
 } pInfo;
 
@@ -734,37 +731,16 @@ typedef  struct  {
     
   int *partitionAssignment;   
 
-  double *temporaryVector;
-  parsimonyVector *temporaryParsimonyVector;
-  int    *temporaryScaling;
-  double *temporarySumBuffer;
-  size_t contiguousVectorLength;
-  size_t contiguousScalingLength;  
  
- 
-
-  int *contiguousRateCategory;
-  int *contiguousWgt;
- 
-
-  unsigned char **contiguousTips;
-
-  double *contiguousWR;
-  double *contiguousWR2;
-  
   
  
   unsigned char *y_ptr; 
  
-  double *wrPtr;
-  double *wr2Ptr;
-
+ 
  
 
-  double *perSiteLLPtr;
-  int    *wgtPtr;
   
-  int    *rateCategoryPtr;
+  
 
   int threadID;
   double lower_spacing;
@@ -802,7 +778,6 @@ typedef  struct  {
   boolean          *executeModel;
 
   double           *perPartitionLH;
-  double           *storedPerPartitionLH;
 
   traversalData    td[1];
 
@@ -811,28 +786,17 @@ typedef  struct  {
   double           *wr;
   double           *wr2;
   
-  double           *sumBuffer;
-  double           *perSiteLL;
   double           coreLZ[NUM_BRANCHES];
   int              modelNumber;
-  int              multiBranch;
   int              numBranches;
   int              bootStopCriterion;
   int              consensusType;
   double           wcThreshold;
 
-  nodeptr          startVector[NUM_BRANCHES];
 
-  nodeptr          removeNodes[NUM_BRANCHES];
-  nodeptr          leftNodes[NUM_BRANCHES];
-  nodeptr          rightNodes[NUM_BRANCHES]; 
-  nodeptr          storedBacks[NUM_BRANCHES];
-  lhList          *likelihoodList[NUM_BRANCHES];
  
-  double           zLeft[NUM_BRANCHES];
-  double           zRight[NUM_BRANCHES];
-  double           zDown[NUM_BRANCHES];
-
+ 
+ 
  
   
  
@@ -840,8 +804,6 @@ typedef  struct  {
 
   int              multiStateModel;
 
-
-  size_t innerNodes;
 
   boolean curvatOK[NUM_BRANCHES];
   /* the stuff below is shared among DNA and AA, span does
@@ -854,7 +816,6 @@ typedef  struct  {
 
   unsigned char             **yVector;
   int              secondaryStructureModel;
-  int              discreteRateCategories;
   int              originalCrunchedLength;
   int              fullSites;
   int              *originalModel;
@@ -881,8 +842,7 @@ typedef  struct  {
   node           **nodep;
   nodeptr          nodeBaseAddress;
   node            *start;
-  int              mxtips;
-  int              mxtipsVector[NUM_BRANCHES];
+  int              mxtips;  
   int              *model;
 
   int              *constraintVector;
@@ -930,39 +890,7 @@ typedef  struct  {
 
  
   int mr_thresh;
-#ifdef _USE_PTHREADS
 
-  /* stuff for parallel MRE */
-
-  /* added by aberer */  
-  entry **sbi;
-  entry **sbw;
-  int *len;   
-
-  /* mre */
-  int sectionEnd;
-  int bipStatusLen;
-  entry **entriesOfSection;
-  int recommendedAmountJobs;
- 
-
-  /* used for printBip */
-  boolean *hasAncestor; 
-  List **listOfDirectChildren;
-  unsigned int bitVectorLength;                 /* we now need this also in sequential mode */
-  entry **consensusBips;
-  int consensusBipLen;          /* also used in mre */  
-  int maxBips;
-  int *bipStatus;
-
-
-  /* for parallel hash insert */
-  pthread_mutex_t** mutexesForHashing; 
-
-
- 
-
-#endif
 
   unsigned int **bitVectors;
 
@@ -1153,7 +1081,7 @@ extern unsigned int precomputed16_bitcount(unsigned int n);
 
 
 
-
+extern size_t discreteRateCategories(int rateHetModel);
 
 extern partitionLengths * getPartitionLengths(pInfo *p);
 extern boolean getSmoothFreqs(int dataType);
@@ -1278,7 +1206,7 @@ extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef
 extern boolean bootStop(tree *tr, hashtable *h, int numberOfTrees, double *pearsonAverage, unsigned int **bitVectors, int treeVectorLength, unsigned int vectorLength);
 extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef);
 extern double evaluatePartialGeneric (tree *, int i, double ki, int _model);
-extern double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
+extern void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
 extern void newviewGeneric (tree *tr, nodeptr p, boolean masked);
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
 extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
@@ -1295,7 +1223,7 @@ extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
 
 extern void   newviewIterative(tree *tr, int startIndex);
 
-extern double evaluateIterative(tree *);
+extern void evaluateIterative(tree *);
 
 extern void *malloc_aligned( size_t size);
 
@@ -1479,15 +1407,7 @@ void allocNodex(tree *tr, int tid, int n);
 
 
 
-typedef struct 
-{
-  int jobType;
-  int length;
-  int executeModel[NUM_BRANCHES];
-  double coreLZ[NUM_BRANCHES];
-  double lower_spacing;
-  double upper_spacing;
-} jobDescr;
+
     
 
 

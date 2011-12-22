@@ -380,24 +380,34 @@ static int stateAnalyzer(tree *tr, int model, int maxStates)
 }
 
 
+size_t discreteRateCategories(int rateHetModel)
+{
+  size_t 
+    result;
 
+  switch(rateHetModel)
+    {
+    case CAT:
+      result = 1;
+      break;
+    case GAMMA:
+      result = 4;
+      break;
+    default:
+      assert(0);
+    }
+
+  return result;
+}
 
 static void setRateHetAndDataIncrement(tree *tr, analdef *adef)
 {
   int model;
  
-  if(isCat(adef))
-    {
-      tr->rateHetModel = CAT;
-      tr->discreteRateCategories = 1; 
-    }
-  else
-    {
-      tr->rateHetModel = GAMMA;
-      tr->discreteRateCategories = 4;
-    }
-  
-  
+  if(isCat(adef))    
+    tr->rateHetModel = CAT;         
+  else    
+    tr->rateHetModel = GAMMA;       
       
   for(model = 0; model < tr->NumberOfModels; model++)
     {
@@ -724,12 +734,11 @@ static boolean setupTree (tree *tr, analdef *adef)
 	tr->partitionContributions[i] = -1.0;
 
       tr->perPartitionLH = (double *)malloc(sizeof(double) * tr->NumberOfModels);
-      tr->storedPerPartitionLH = (double *)malloc(sizeof(double) * tr->NumberOfModels);
+      
 
       for(i = 0; i < tr->NumberOfModels; i++)
 	{
-	  tr->perPartitionLH[i] = 0.0;
-	  tr->storedPerPartitionLH[i] = 0.0;
+	  tr->perPartitionLH[i] = 0.0;	 
 	}
 
       if(adef->grouping)
@@ -774,6 +783,8 @@ static boolean setupTree (tree *tr, analdef *adef)
             
       tr->td[0].count = 0;
       tr->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * tr->mxtips);
+      tr->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * tr->NumberOfModels);
+      tr->td[0].parameterValues = (double *)malloc(sizeof(double) * tr->NumberOfModels);
        
       for(i = 0; i < tr->NumberOfModels; i++)
 	tr->fracchanges[i] = -1.0;
@@ -846,8 +857,7 @@ static boolean setupTree (tree *tr, analdef *adef)
   tr->likelihood  = unlikely;
   tr->start       = (node *) NULL;
 
-  for(i = 0; i < NUM_BRANCHES; i++)
-    tr->startVector[i]  = (node *) NULL;
+  
 
   tr->ntips       = 0;
   tr->nextnode    = 0;
@@ -1319,8 +1329,7 @@ static void getinput(analdef *adef, rawdata *rdta, cruncheddata *cdta, tree *tr)
 	  inputweights(rdta);
 	}
     }
-
-  tr->multiBranch = 0;
+ 
   tr->numBranches = 1;
 
   if(!adef->readTaxaOnly)
@@ -2427,169 +2436,14 @@ static void checkSequences(tree *tr, rawdata *rdta, analdef *adef)
 
 
 
-static void allocPartitions(tree *tr)
-{
-  int
-    i,
-    maxCategories = tr->maxCategories;
-
-  for(i = 0; i < tr->NumberOfModels; i++)
-    {
-      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[i]));
-
-      size_t 
-	k,
-	width = tr->partitionData[i].width;      
-
-    
-
-      tr->partitionData[i].wr = (double *)malloc(sizeof(double) * width);
-      tr->partitionData[i].wr2 = (double *)malloc(sizeof(double) * width);     
-
-     	
-      tr->partitionData[i].globalScaler    = (unsigned int *)calloc(2 * tr->mxtips, sizeof(unsigned int));  	         
-
-      tr->partitionData[i].left              = (double *)malloc_aligned(pl->leftLength * (maxCategories + 1) * sizeof(double));
-      tr->partitionData[i].right             = (double *)malloc_aligned(pl->rightLength * (maxCategories + 1) * sizeof(double));
-      tr->partitionData[i].EIGN              = (double*)malloc(pl->eignLength * sizeof(double));
-      tr->partitionData[i].EV                = (double*)malloc_aligned(pl->evLength * sizeof(double));
-      tr->partitionData[i].EI                = (double*)malloc(pl->eiLength * sizeof(double));
-      tr->partitionData[i].substRates        = (double *)malloc(pl->substRatesLength * sizeof(double));
-      tr->partitionData[i].frequencies       = (double*)malloc(pl->frequenciesLength * sizeof(double));
-      tr->partitionData[i].tipVector         = (double *)malloc_aligned(pl->tipVectorLength * sizeof(double));
-      tr->partitionData[i].symmetryVector    = (int *)malloc(pl->symmetryVectorLength  * sizeof(int));
-      tr->partitionData[i].frequencyGrouping = (int *)malloc(pl->frequencyGroupingLength  * sizeof(int));
-      tr->partitionData[i].perSiteRates      = (double *)malloc(sizeof(double) * tr->maxCategories);
-            
-      tr->partitionData[i].nonGTR = FALSE;             
-
-      tr->partitionData[i].gammaRates = (double*)malloc(sizeof(double) * 4);
-      tr->partitionData[i].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * (tr->mxtips + 1));
-
-      
-      tr->partitionData[i].xVector = (double **)malloc(sizeof(double*) * tr->innerNodes);      
-      tr->partitionData[i].xSpaceVector = (size_t *)calloc(tr->innerNodes, sizeof(size_t));
-
-     
-     
-
-      tr->partitionData[i].mxtips  = tr->mxtips;
-
-     
-
-
-#if ! (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-      {
-	int j;
-
-	for(j = 1; j <= tr->mxtips; j++)
-	  tr->partitionData[i].yVector[j] = &(tr->yVector[j][tr->partitionData[i].lower]);
-      }
-#endif
-
-    }
-}
-
-#if ! (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 
 
 
 
 
-static void allocNodex (tree *tr)
-{
-  size_t
-    rateHet,
-    i,   
-    model,
-    offset,
-    memoryRequirements = 0;
- 
-
-  allocPartitions(tr);
-
-  if(tr->rateHetModel == CAT)
-    rateHet = 1;
-  else
-    rateHet = 4;
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t width = tr->partitionData[model].upper - tr->partitionData[model].lower;
-
-      memoryRequirements += (size_t)(tr->discreteRateCategories) * (size_t)(tr->partitionData[model].states) * width;  
-      
-      {
-	int 
-	  undetermined, 
-	  j;
-		
-	tr->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
-	
-	tr->partitionData[model].gapVector = (unsigned int*)calloc(tr->partitionData[model].gapVectorLength * 2 * tr->mxtips, sizeof(unsigned int));
-
-	tr->partitionData[model].initialGapVectorSize = tr->partitionData[model].gapVectorLength * 2 * tr->mxtips * sizeof(int);
-	
-	tr->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)tr->innerNodes) *								      
-								      ((size_t)(tr->partitionData[model].states)) *
-								      rateHet *
-								      sizeof(double));		  		
-	
-	undetermined = getUndetermined(tr->partitionData[model].dataType);
-
-	for(j = 1; j <= tr->mxtips; j++)
-	  for(i = 0; i < width; i++)
-	    if(tr->partitionData[model].yVector[j][i] == undetermined)
-	      tr->partitionData[model].gapVector[tr->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];
-      }
- 
-    }
-
-  tr->perSiteLL       = (double *)malloc((size_t)tr->cdta->endsite * sizeof(double));
-  assert(tr->perSiteLL != NULL);
-
-  
-  tr->sumBuffer  = (double *)malloc_aligned(memoryRequirements * sizeof(double));
-  assert(tr->sumBuffer != NULL);
-   
-
-  assert(4 * sizeof(double) > sizeof(parsimonyVector));
-
-  offset = 0;
-
-  /* C-OPT for initial testing tr->NumberOfModels will be 1 */
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t lower = tr->partitionData[model].lower;
-      size_t width = tr->partitionData[model].upper - lower;
-
-      /* TODO all of this must be reset/adapted when fixModelIndices is called ! */
-
-     
-      tr->partitionData[model].sumBuffer       = &tr->sumBuffer[offset];
-      
-
-      tr->partitionData[model].perSiteLL    = &tr->perSiteLL[lower];        
-
-
-      tr->partitionData[model].wgt          = &tr->cdta->aliaswgt[lower];
-     
-      tr->partitionData[model].rateCategory = &tr->cdta->rateCategory[lower];
-
-      offset += (size_t)(tr->discreteRateCategories) * (size_t)(tr->partitionData[model].states) * width;      
-    }
 
 
 
-  for(i = 0; i < tr->innerNodes; i++)
-    {     
-      for(model = 0; model < (size_t)tr->NumberOfModels; model++)	    		
-	tr->partitionData[model].xVector[i]   = (double*)NULL;	      	   	 
-    }
-}
-
-#endif
 
 
 static void initAdef(analdef *adef)
@@ -4595,7 +4449,7 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 	      }
 	    else
 	      {
-		if(tr->multiBranch)
+		if(tr->numBranches > 1)
 		  {
 		    if(adef->useInvariant)
 		      {
@@ -4799,147 +4653,7 @@ static void computeFraction(tree *localTree, int tid, int n)
 
 
 
-static void threadFixModelIndices(tree *tr, tree *localTree, int tid, int n)
-{
-  size_t
-    model,
-    j,
-    i,
-    globalCounter = 0,
-    localCounter  = 0,
-    offset,
-    countOffset,
-    myLength = 0,
-    memoryRequirements = 0;
 
-  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-    {
-      localTree->partitionData[model].lower      = tr->partitionData[model].lower;
-      localTree->partitionData[model].upper      = tr->partitionData[model].upper;
-    }
-  
-  if(tr->manyPartitions)
-    computeFractionMany(localTree, tid, n);
-  else
-    computeFraction(localTree, tid, n);
-
-  for(model = 0, offset = 0, countOffset = 0; model < (size_t)localTree->NumberOfModels; model++)
-    {           
-      localTree->partitionData[model].sumBuffer       = &localTree->sumBuffer[offset];
-      
-      localTree->partitionData[model].perSiteLL    = &localTree->perSiteLLPtr[countOffset];          
-
-      localTree->partitionData[model].wgt          = &localTree->wgtPtr[countOffset];
-     
-      localTree->partitionData[model].rateCategory = &localTree->rateCategoryPtr[countOffset];     
-
-      countOffset += localTree->partitionData[model].width;
-
-      offset += (size_t)(tr->discreteRateCategories) * (size_t)(tr->partitionData[model].states) * (size_t)(localTree->partitionData[model].width);      
-    }
-
-  myLength           = countOffset;
-  memoryRequirements = offset;
-
-
-  /* figure in data */   
-
-
-  for(i = 0; i < (size_t)localTree->mxtips; i++)
-    {
-      for(model = 0, offset = 0, countOffset = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  localTree->partitionData[model].yVector[i+1]   = &localTree->y_ptr[i * myLength + countOffset];
-	  countOffset +=  localTree->partitionData[model].width;
-	}
-      assert(countOffset == myLength);
-    }
-
-  for(i = 0; i < (size_t)localTree->innerNodes; i++)
-    {
-      for(model = 0, offset = 0, countOffset = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  size_t 
-	    width = localTree->partitionData[model].width;	  	  
-	  	 
-	  localTree->partitionData[model].xVector[i]   = (double*)NULL;
-	      	 
-	  countOffset += width;
-
-	  offset += (size_t)(tr->discreteRateCategories) * (size_t)(tr->partitionData[model].states) * width;
-	  
-	}
-      assert(countOffset == myLength);
-    }
-
-  if(tr->manyPartitions)
-    for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
-      {
-	if(isThisMyPartition(localTree, tid, model, n))
-	  {
-	    assert(localTree->partitionData[model].upper - localTree->partitionData[model].lower == localTree->partitionData[model].width);
-	    
-	    for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++, localCounter++)
-	      {	    
-		localTree->partitionData[model].wgt[localCounter]          = tr->cdta->aliaswgt[globalCounter];	      	     
-		localTree->partitionData[model].rateCategory[localCounter] = tr->cdta->rateCategory[globalCounter];	      
-		
-		for(j = 1; j <= (size_t)localTree->mxtips; j++)
-		  localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
-		
-		globalCounter++;
-	      }
-	  }
-      else
-	globalCounter += (localTree->partitionData[model].upper - localTree->partitionData[model].lower);
-      }
-  else
-    for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
-      {
-	for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++)
-	  {
-	    if(i % (size_t)n == (size_t)tid)
-	      {
-		localTree->partitionData[model].wgt[localCounter]          = tr->cdta->aliaswgt[globalCounter];	      	     
-		localTree->partitionData[model].rateCategory[localCounter] = tr->cdta->rateCategory[globalCounter];	      
-		
-		for(j = 1; j <= (size_t)localTree->mxtips; j++)
-		  localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
-		
-		localCounter++;
-	      }
-	    globalCounter++;
-	  }
-      }
-  
-  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-    {
-      int        
-	undetermined = getUndetermined(localTree->partitionData[model].dataType);
-      
-      size_t
-	width =  localTree->partitionData[model].width;
-      
-      if(width > 0)
-	{
-	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
-          
-	  memset(localTree->partitionData[model].gapVector, 0, localTree->partitionData[model].initialGapVectorSize);
-     
-	  if(localTree->saveMemory)
-	    {
-	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
-		for(i = 0; i < width; i++)
-		  if(localTree->partitionData[model].yVector[j][i] == undetermined)
-		    localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];
-	    }
-	}
-      else
-	{
-	  localTree->partitionData[model].gapVectorLength = 0;
-	}
-    }
-}
 
 
 static void initPartition(tree *tr, tree *localTree, int tid)
@@ -4954,34 +4668,27 @@ static void initPartition(tree *tr, tree *localTree, int tid)
 
       localTree->rateHetModel            = tr->rateHetModel;
       localTree->saveMemory              = tr->saveMemory;
-      localTree->useGappedImplementation = tr->useGappedImplementation;
-      localTree->innerNodes              = tr->innerNodes;
-     
-      localTree->maxCategories           = tr->maxCategories;
-      
+      localTree->useGappedImplementation = tr->useGappedImplementation;           
+      localTree->maxCategories           = tr->maxCategories;      
       localTree->originalCrunchedLength  = tr->originalCrunchedLength;
       localTree->NumberOfModels          = tr->NumberOfModels;
-      localTree->mxtips                  = tr->mxtips;
-      localTree->multiBranch             = tr->multiBranch;         
+      localTree->mxtips                  = tr->mxtips;     
       localTree->numBranches             = tr->numBranches;
       localTree->lhs                     = (double*)malloc(sizeof(double)   * localTree->originalCrunchedLength);     
-      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-      localTree->storedPerPartitionLH    = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-
+      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);     
       localTree->fracchanges = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
       localTree->partitionContributions = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-
       localTree->partitionData = (pInfo*)malloc(sizeof(pInfo) * localTree->NumberOfModels);
 
       /* extend for multi-branch */
       localTree->td[0].count = 0;
       localTree->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * localTree->mxtips);
+      localTree->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * localTree->NumberOfModels);
+      localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * localTree->NumberOfModels);
 
       localTree->cdta               = (cruncheddata*)malloc(sizeof(cruncheddata));
       localTree->cdta->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
       localTree->cdta->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
-
-      localTree->discreteRateCategories = tr->discreteRateCategories;     
 
       for(model = 0; model < localTree->NumberOfModels; model++)
 	{
@@ -4990,12 +4697,11 @@ static void initPartition(tree *tr, tree *localTree, int tid)
 	  localTree->partitionData[model].maxTipStates    = tr->partitionData[model].maxTipStates;
 	  localTree->partitionData[model].dataType   = tr->partitionData[model].dataType;
 	  localTree->partitionData[model].protModels = tr->partitionData[model].protModels;
-	  localTree->partitionData[model].protFreqs  = tr->partitionData[model].protFreqs;
-	  localTree->partitionData[model].mxtips     = tr->partitionData[model].mxtips;
+	  localTree->partitionData[model].protFreqs  = tr->partitionData[model].protFreqs;	  
 	  localTree->partitionData[model].lower      = tr->partitionData[model].lower;
 	  localTree->partitionData[model].upper      = tr->partitionData[model].upper;	 
 	  localTree->perPartitionLH[model]           = 0.0;
-	  localTree->storedPerPartitionLH[model]     = 0.0;
+	 
 	  totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
 	}
 
@@ -5009,91 +4715,6 @@ static void initPartition(tree *tr, tree *localTree, int tid)
 
 
 
-void allocNodex(tree *tr, int tid, int n)
-{
-  size_t 
-    rateHet,
-    model,
-    memoryRequirements = 0,
-    myLength = 0;
-
-  if(tr->manyPartitions)
-    computeFractionMany(tr, tid, n);
-  else
-    computeFraction(tr, tid, n);
-
-  allocPartitions(tr);
- 
-  if(tr->rateHetModel == CAT)
-    rateHet = 1;
-  else
-    rateHet = 4;
-
-  
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t 
-	width = tr->partitionData[model].width;
-
-      myLength += width;
-
-      if(width > 0)
-	{
-	  memoryRequirements += (size_t)(tr->discreteRateCategories) * (size_t)(tr->partitionData[model].states) * width;
-      
-	  tr->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
-     
-	  tr->partitionData[model].gapVector = (unsigned int*)calloc(tr->partitionData[model].gapVectorLength * 2 * tr->mxtips, sizeof(unsigned int));	  
-      
-	  tr->partitionData[model].initialGapVectorSize = tr->partitionData[model].gapVectorLength * 2 * tr->mxtips * sizeof(int);
-      
-	  tr->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)tr->innerNodes) *								      
-									((size_t)(tr->partitionData[model].states)) *
-									rateHet * sizeof(double));		              
-	}
-      else
-	{
-	  tr->partitionData[model].gapVectorLength = 0;
-     
-	  tr->partitionData[model].gapVector = (unsigned int*)NULL; 	  
-      
-	  tr->partitionData[model].initialGapVectorSize = 0;
-      
-	  tr->partitionData[model].gapColumn = (double*)NULL;
-	}
-    }
-
-  if(tid == 0)
-    {
-      tr->perSiteLL       = (double *)malloc((size_t)tr->cdta->endsite * sizeof(double));
-      assert(tr->perSiteLL != NULL);
-    }
-  
-  tr->sumBuffer  = (double *)malloc_aligned(memoryRequirements * sizeof(double));
-  assert(tr->sumBuffer != NULL);
-   
-
-  tr->y_ptr = (unsigned char *)malloc(myLength * (size_t)(tr->mxtips) * sizeof(unsigned char));
-  assert(tr->y_ptr != NULL);
-
-#ifdef  _FINE_GRAIN_MPI 
-  printf("Process %d assigning %Zu bytes for partial alignment\n", processID, myLength * (size_t)(tr->mxtips) * sizeof(unsigned char));
-#endif
-
-
-  assert(4 * sizeof(double) > sizeof(parsimonyVector));
-
-  tr->perSiteLLPtr     = (double*) malloc(myLength * sizeof(double));
-
-  tr->wgtPtr           = (int*)    malloc(myLength * sizeof(int));
-  assert(tr->wgtPtr != NULL);  
-
-  tr->rateCategoryPtr  = (int*)    malloc(myLength * sizeof(int));
-  assert(tr->rateCategoryPtr != NULL);
-
-  
-}
 
 
 #ifdef _USE_PTHREADS
@@ -5116,8 +4737,8 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
       localTree->td[0].functionType        = tr->td[0].functionType;
       localTree->td[0].traversalHasChanged = tr->td[0].traversalHasChanged;
      
-      memcpy(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * NUM_BRANCHES);
-      memcpy(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * NUM_BRANCHES);
+      memcpy(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
+      memcpy(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
       
       if(localTree->td[0].traversalHasChanged)
 	memcpy(localTree->td[0].ti, tr->td[0].ti, localTree->td[0].count * sizeof(traversalInfo));
@@ -5165,7 +4786,56 @@ static void broadcastPerSiteRates(tree *tr, tree *localTree)
 
 }
 
+static void reduceEvaluateIterative(tree *localTree, int tid)
+{
+  int model;
+  
+  evaluateIterative(localTree);
+      
+  /* when this is done we need to write the per-thread log likelihood to the 
+     global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
+     results to reductionBuffer[0] thread 1 to reductionBuffer[1] etc.
+     
+     the actual sum over the entries in the reduction buffer will then be computed 
+     by the master thread which ensures that the sum is determinsitic */
+  
+  
+  for(model = 0; model < localTree->NumberOfModels; model++)
+    reductionBuffer[tid * localTree->NumberOfModels + model] = localTree->perPartitionLH[model];
+}
 
+static void broadCastRates(tree *localTree, tree *tr, int tid)
+{
+  int 
+    model;
+
+  if(tid > 0)
+    {	 
+      for(model = 0; model < localTree->NumberOfModels; model++)
+	{
+	  const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
+	  
+	  memcpy(localTree->partitionData[model].EIGN,        tr->partitionData[model].EIGN,        pl->eignLength * sizeof(double));
+	  memcpy(localTree->partitionData[model].EV,          tr->partitionData[model].EV,          pl->evLength * sizeof(double));		  
+	  memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));
+	  memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	      	     
+	}
+    }
+}
+
+static void broadCastAlpha(tree *localTree, tree *tr, int tid)
+{
+  int 
+    model; 
+	  
+  if(tid > 0)
+    {	 
+      for(model = 0; model < localTree->NumberOfModels; model++)
+	memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
+    }	      	      	     
+}
+
+static void initializePartitions(tree *tr, tree *localTree, int tid, int n);
 /* this function here handles all parallel regions in the Pthreads version, when we enter 
    this function masterBarrier() has ben called by the master thread from within the sequential 
    part of the program, tr is the tree at the master thread, localTree the tree at the worker threads
@@ -5174,9 +4844,10 @@ static void broadcastPerSiteRates(tree *tr, tree *localTree)
    a distributed memory paradigm 
  */
 
+
+
 static void execFunction(tree *tr, tree *localTree, int tid, int n)
 {
-  double volatile result;
   int
     i,
     currentJob,
@@ -5207,27 +4878,12 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 
       newviewIterative(localTree, 0);
       break;     
-    case THREAD_EVALUATE:      
-      /* call evaluateIterative */
+    case THREAD_EVALUATE:            
 
-      result = evaluateIterative(localTree);
-      
-      /* when this is done we need to write the per-thread log likelihood to the 
-	 global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
-	 results to reductionBuffer[0] thread 1 to reductionBuffer[1] etc.
-
-	 the actual sum over the entries in the reduction buffer will then be computed 
-	 by the master thread which ensures that the sum is determinsitic */
-
-      if(localTree->NumberOfModels > 1)
-	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    reductionBuffer[tid * localTree->NumberOfModels + model] = localTree->perPartitionLH[model];
-	}
-      else
-	reductionBuffer[tid] = result;
+      reduceEvaluateIterative(localTree, tid);            	        
       break;	
     case THREAD_MAKENEWZ_FIRST:
+    case  THREAD_MAKENEWZ:
       /* this is the first call from within makenewz that requires getting the likelihood vectors to the left and 
 	 right of the branch via newview and doing som eprecomputations.
 
@@ -5235,112 +4891,52 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
       */
 
       {
+	int 
+	  b;
+
 	volatile double
 	  dlnLdlz[NUM_BRANCHES],
-	  d2lnLdlz2[NUM_BRANCHES];	       	
-       
-	makenewzIterative(localTree);	
+	  d2lnLdlz2[NUM_BRANCHES];	
+	
+	if(localTree->td[0].functionType == THREAD_MAKENEWZ_FIRST)
+	  makenewzIterative(localTree);	
 	execCore(localTree, dlnLdlz, d2lnLdlz2);
 
 	/* gather the first and second derivatives that have been written by each thread */
 	/* as for evaluate above, the final sum over the derivatives will be computed by the 
 	   master thread in its sequential part of the code */
 	       
-	if(!tr->multiBranch)
-	  {
-	    reductionBuffer[tid]    = dlnLdlz[0];
-	    reductionBufferTwo[tid] = d2lnLdlz2[0];
-	  }
-	else
-	  {
-	    for(i = 0; i < localTree->NumberOfModels; i++)
-	      {
-		reductionBuffer[tid * localTree->NumberOfModels + i]    = dlnLdlz[i];
-		reductionBufferTwo[tid * localTree->NumberOfModels + i] = d2lnLdlz2[i];
-	      }
+	
+	for(b = 0; b < localTree->numBranches; b++)
+	  {	     
+	    reductionBuffer[tid * localTree->numBranches + b]    = dlnLdlz[b];
+	    reductionBufferTwo[tid * localTree->numBranches + b] = d2lnLdlz2[b];
 	  }	
       }
       break;
-    case THREAD_MAKENEWZ:
+   
+    case THREAD_INIT_PARTITION:       
 
-      /* this is the invocation called from within the iterative Newton-Raphson 
-	 method, if it's not the first iteration of the routine 
-
-	 Note that, the new branch length(s) proposed by the master in the sequential part 
-	 of the NR-method are stored and passed via the traversal descriptor.
-      */
-
-      {
-	volatile double
-	  dlnLdlz[NUM_BRANCHES],
-	  d2lnLdlz2[NUM_BRANCHES];	
-	
-	execCore(localTree, dlnLdlz, d2lnLdlz2);
-	
-	/* write the first and second derivatives computed by each thread 
-	   into the respective parts of the global reduction buffer */
-
-	if(!tr->multiBranch)
-	  {
-	    reductionBuffer[tid]    = dlnLdlz[0];
-	    reductionBufferTwo[tid] = d2lnLdlz2[0];
-	  }
-	else
-	  {
-	    for(i = 0; i < localTree->NumberOfModels; i++)
-	      {
-		reductionBuffer[tid * localTree->NumberOfModels + i]    = dlnLdlz[i];
-		reductionBufferTwo[tid * localTree->NumberOfModels + i] = d2lnLdlz2[i];
-	      }
-	  }	
-      }
-      break; 
-    case THREAD_INIT_PARTITION:  
-
-      /* 
-	 this is for initializing the partition datastructures that hold the vectors and everything 
-	 for each thread.
-
-	 Basically, with respect to its design this emulates more something like a broadcast than a real shared-memory 
-	 programming style 
-      */
-	 
-      /* this is a boolean variable that tells us how the sites (cyclic or monolithically on a  per partition basis 
-	 have been distributed to the threads */
-      
-      localTree->manyPartitions = tr->manyPartitions;
-
-      /* the stuff below needs only to be broadcast if we distribute entoire partitions to threads */
-
-      if(localTree->manyPartitions && tid > 0)     
-	{
-	  localTree->NumberOfModels = tr->NumberOfModels;
-	  localTree->partitionAssignment = (int*)malloc(sizeof(int) * localTree->NumberOfModels);
-	  memcpy(localTree->partitionAssignment, tr->partitionAssignment, localTree->NumberOfModels * sizeof(int));
-	}
-
-      /* 
-	 initialize partition data, allocate data structires for storing nodes and adapt model indices 
-	 all of this is not very clean and could surely be written in a more elegant way 
-       */
-
-      initPartition(tr, localTree, tid);     
-      allocNodex(localTree, tid, n);
-      threadFixModelIndices(tr, localTree, tid, n);     
-      
+      /* broadcast data and initialize and allocate arrays in partitions */
+     
+      initializePartitions(tr, localTree, tid, n);
       break;          
-    case THREAD_COPY_ALPHA:
+    case THREAD_COPY_ALPHA: 
+    case THREAD_OPT_ALPHA:
+      /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
+	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
+      
 
-      /* if the alpha parameter has changed, copy all 4 discrete rates for each partition into the 
-	 private memory space of each thread */
-
-      if(tid > 0)
-	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)	  
-	    memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);	    
-	}
-      break;
+      /* distribute the new discrete gamma rates to the threads */
+      broadCastAlpha(localTree, tr, tid);
+      
+      /* compute the likelihood, note that this is always a full tree traversal ! */
+      if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
+	reduceEvaluateIterative(localTree, tid);      
+     
+      break;           
     case THREAD_OPT_RATE:
+    case THREAD_COPY_RATES:
       /* if we are optimizing the rates in the transition matrix Q this induces recomputing the eigenvector eigenvalue 
 	 decomposition and the tipVector as well because of the special numerics in RAxML, the matrix of eigenvectors 
 	 is "rotated" into the tip lookup table.
@@ -5349,89 +4945,33 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	 need to broadcast all eigenvectors, eigenvalues etc to each thread 
       */
       
-      if(tid > 0)
-	{	 
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    {
-	      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-	      
-	      memcpy(localTree->partitionData[model].EIGN,        tr->partitionData[model].EIGN,        pl->eignLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].EV,          tr->partitionData[model].EV,          pl->evLength * sizeof(double));		  
-	      memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	      	     
-	    }
-	}
+      broadCastRates(localTree, tr, tid);     
 
       /* now evaluate the likelihood of the new Q matrix, this always requires a full tree traversal because the changes need
 	 to be propagated throughout the entire tree */
 
-      result = evaluateIterative(localTree);
-
-      /* deal with the reduction operation on the per-thread partial log likelihood sums again */
-
-      if(localTree->NumberOfModels > 1)
-	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    reductionBuffer[tid * localTree->NumberOfModels + model] = localTree->perPartitionLH[model];
-	}
-      else
-	reductionBuffer[tid] = result;
+      if(localTree->td[0].functionType == THREAD_OPT_RATE)
+	reduceEvaluateIterative(localTree, tid);         
      
-      break;                   
-    case THREAD_COPY_RATES:
-
-      /* just copy the data induced by computing the Q matrix */
-
-      if(tid > 0)
-	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    {	      
-	      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-	      
-	      memcpy(localTree->partitionData[model].EIGN,        tr->partitionData[model].EIGN,        pl->eignLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].EV,          tr->partitionData[model].EV,          pl->evLength * sizeof(double));		  
-	      memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	     	
-	    }
-	}
-      break;          
+      break;                       
     case THREAD_COPY_INIT_MODEL:
-
+       broadCastRates(localTree, tr, tid); 
+       broadCastAlpha(localTree, tr, tid); 
       /*
 	copy initial model parameters, the Q matrix and alpha are initially, when we start our likelihood search 
 	set to default values. 
 	Hence we need to copy all those values that are required for computing the likelihood 
 	with newview(), evaluate() and makenez() to the private memory of the threads 
       */
-
-      if(tid > 0)
-	{	  
-	  localTree->rateHetModel       = tr->rateHetModel;
-
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    {
-	      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-
-	      memcpy(localTree->partitionData[model].EIGN,        tr->partitionData[model].EIGN,        pl->eignLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].EV,          tr->partitionData[model].EV,          pl->evLength * sizeof(double));
-	      memcpy(localTree->partitionData[model].EI,          tr->partitionData[model].EI,          pl->eiLength * sizeof(double));	      
-	      memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	      	       
-	      memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
-
-	     
-	      /* this is the lower and upper boundary (integer indices of each partition */
-	      localTree->partitionData[model].lower      = tr->partitionData[model].lower;
-	      localTree->partitionData[model].upper      = tr->partitionData[model].upper; 
-	      
-	      /* this is essentially only relevant for CAT, copy the current number of per-site rate categories 
-		 of partittion model to the local private memory of this thread */
-
-	      localTree->partitionData[model].numberOfCategories      = tr->partitionData[model].numberOfCategories;
-	    }
+      
+      if(tid > 0 && localTree->rateHetModel == CAT)
+	{	  	  
+	  for(model = 0; model < localTree->NumberOfModels; model++)	    	     
+	    localTree->partitionData[model].numberOfCategories      = tr->partitionData[model].numberOfCategories;	    
 
 	  /* this is only relevant for the CAT model, we can worry about this later */
 
-	  memcpy(localTree->cdta->patrat,        tr->cdta->patrat,      localTree->originalCrunchedLength * sizeof(double));
+	  memcpy(localTree->cdta->patrat,       tr->cdta->patrat,      localTree->originalCrunchedLength * sizeof(double));
 	  memcpy(localTree->cdta->patratStored, tr->cdta->patratStored, localTree->originalCrunchedLength * sizeof(double));	  
 	}     
 
@@ -5525,34 +5065,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	    }
 	}
       break;
-    case THREAD_OPT_ALPHA:
-      /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
-	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
-      
-
-      /* distribute the new discrete gamma rates to the threads */
-      
-      if(tid > 0)
-	{	 
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
-	}
-
-      /* compute the likelihood, note that this is always a full tree traversal ! */
-
-      result = evaluateIterative(localTree);
-
-      /* and prepare the reduction operation on the global buffer */
-
-      if(localTree->NumberOfModels > 1)
-	{
-	  for(model = 0; model < localTree->NumberOfModels; model++)
-	    reductionBuffer[tid *  localTree->NumberOfModels + model] = localTree->perPartitionLH[model];
-	}
-      else
-	reductionBuffer[tid] = result;
-     
-      break;      
+   
       /* check for errors */
     default:
       printf("Job %d\n", currentJob);
@@ -5636,7 +5149,6 @@ static void *likelihoodThread(void *tData)
       myCycle = threadJob;
 
       execFunction(tr, localTree, tid, n);
-
    
       barrierBuffer[tid] = 1;     
     }
@@ -5659,23 +5171,17 @@ static void startPthreads(tree *tr)
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-  pthread_mutex_init(&mutex , (pthread_mutexattr_t *)NULL);
-
   threads    = (pthread_t *)malloc(NumberOfThreads * sizeof(pthread_t));
   tData      = (threadData *)malloc(NumberOfThreads * sizeof(threadData));
   reductionBuffer          = (volatile double *)malloc(sizeof(volatile double) *  NumberOfThreads * tr->NumberOfModels);
   reductionBufferTwo       = (volatile double *)malloc(sizeof(volatile double) *  NumberOfThreads * tr->NumberOfModels);
-  reductionBufferThree     = (volatile double *)malloc(sizeof(volatile double) *  NumberOfThreads * tr->NumberOfModels);
-  reductionBufferParsimony = (volatile int *)malloc(sizeof(volatile int) *  NumberOfThreads);
+ 
 
   
   barrierBuffer            = (volatile char *)malloc(sizeof(volatile char) *  NumberOfThreads);
   
   for(t = 0; t < NumberOfThreads; t++)
     barrierBuffer[t] = 0;
-
- 
-  branchInfos              = (volatile branchInfo **)malloc(sizeof(volatile branchInfo *) * NumberOfThreads);
  
   for(t = 1; t < NumberOfThreads; t++)
     {
@@ -5834,6 +5340,288 @@ static void multiprocessorScheduling(tree *tr)
 
 #endif
 
+
+static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
+{ 
+  int 
+    model,
+    maxCategories;
+  
+#ifdef _USE_PTHREADS
+   
+  localTree->threadID = tid; 
+
+  if(tid > 0)
+    {
+      int totalLength = 0;
+
+      assert(localTree != tr);
+
+      localTree->manyPartitions = tr->manyPartitions;
+      localTree->NumberOfModels          = tr->NumberOfModels;
+      
+      if(localTree->manyPartitions)
+	{
+	  localTree->partitionAssignment = (int*)malloc(sizeof(int) * localTree->NumberOfModels);
+	  memcpy(localTree->partitionAssignment, tr->partitionAssignment, localTree->NumberOfModels * sizeof(int));
+	}
+
+      localTree->rateHetModel            = tr->rateHetModel;
+      localTree->saveMemory              = tr->saveMemory;
+      localTree->useGappedImplementation = tr->useGappedImplementation;           
+      localTree->maxCategories           = tr->maxCategories;      
+      localTree->originalCrunchedLength  = tr->originalCrunchedLength;
+    
+      localTree->mxtips                  = tr->mxtips;     
+      localTree->numBranches             = tr->numBranches;
+      localTree->lhs                     = (double*)malloc(sizeof(double)   * localTree->originalCrunchedLength);     
+      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);     
+      localTree->fracchanges             = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
+      localTree->partitionContributions  = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
+      localTree->partitionData           = (pInfo*)malloc(sizeof(pInfo) * localTree->NumberOfModels);
+      
+      localTree->td[0].count = 0;
+      localTree->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * localTree->mxtips);
+      localTree->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * localTree->NumberOfModels);
+      localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * localTree->NumberOfModels);
+
+      localTree->cdta               = (cruncheddata*)malloc(sizeof(cruncheddata));
+      localTree->cdta->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
+      localTree->cdta->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
+
+      for(model = 0; model < localTree->NumberOfModels; model++)
+	{
+	  localTree->partitionData[model].numberOfCategories    = tr->partitionData[model].numberOfCategories;
+	  localTree->partitionData[model].states                = tr->partitionData[model].states;
+	  localTree->partitionData[model].maxTipStates          = tr->partitionData[model].maxTipStates;
+	  localTree->partitionData[model].dataType              = tr->partitionData[model].dataType;
+	  localTree->partitionData[model].protModels            = tr->partitionData[model].protModels;
+	  localTree->partitionData[model].protFreqs             = tr->partitionData[model].protFreqs;	  
+	  localTree->partitionData[model].lower                 = tr->partitionData[model].lower;
+	  localTree->partitionData[model].upper                 = tr->partitionData[model].upper;	 
+	  localTree->perPartitionLH[model]                      = 0.0;
+	 
+	  totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
+	}
+
+      assert(totalLength == localTree->originalCrunchedLength);
+    }
+
+  for(model = 0; model < localTree->NumberOfModels; model++)
+    localTree->partitionData[model].width        = 0;
+
+  if(tr->manyPartitions)
+    computeFractionMany(localTree, tid, n);
+  else
+    computeFraction(localTree, tid, n);
+
+#else
+  assert(tr == localTree);
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
+#endif	   
+	   
+  maxCategories = localTree->maxCategories;
+
+  for(model = 0; model < localTree->NumberOfModels; model++)
+    {
+      size_t 
+	j,
+	k,
+	width = localTree->partitionData[model].width;
+      
+      const partitionLengths 
+	*pl = getPartitionLengths(&(localTree->partitionData[model]));
+
+      localTree->partitionData[model].wr = (double *)malloc(sizeof(double) * width);
+      localTree->partitionData[model].wr2 = (double *)malloc(sizeof(double) * width);     
+
+     	
+      /* 
+	 globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch
+	 to this end, it must also be initialized with zeros -> calloc
+       */
+
+      localTree->partitionData[model].globalScaler    = (unsigned int *)calloc(2 * localTree->mxtips, sizeof(unsigned int));  	         
+
+      localTree->partitionData[model].left              = (double *)malloc_aligned(pl->leftLength * (maxCategories + 1) * sizeof(double));
+      localTree->partitionData[model].right             = (double *)malloc_aligned(pl->rightLength * (maxCategories + 1) * sizeof(double));
+      localTree->partitionData[model].EIGN              = (double*)malloc(pl->eignLength * sizeof(double));
+      localTree->partitionData[model].EV                = (double*)malloc_aligned(pl->evLength * sizeof(double));
+      localTree->partitionData[model].EI                = (double*)malloc(pl->eiLength * sizeof(double));
+      
+      localTree->partitionData[model].substRates        = (double *)malloc(pl->substRatesLength * sizeof(double));
+      localTree->partitionData[model].frequencies       = (double*)malloc(pl->frequenciesLength * sizeof(double));
+      localTree->partitionData[model].tipVector         = (double *)malloc_aligned(pl->tipVectorLength * sizeof(double));
+      localTree->partitionData[model].symmetryVector    = (int *)malloc(pl->symmetryVectorLength  * sizeof(int));
+      localTree->partitionData[model].frequencyGrouping = (int *)malloc(pl->frequencyGroupingLength  * sizeof(int));
+      
+      localTree->partitionData[model].perSiteRates      = (double *)malloc(sizeof(double) * localTree->maxCategories);
+            
+      localTree->partitionData[model].nonGTR = FALSE;            
+
+      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);
+      localTree->partitionData[model].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * (localTree->mxtips + 1));
+
+      
+      localTree->partitionData[model].xVector = (double **)malloc(sizeof(double*) * localTree->mxtips);   
+      	
+      for(j = 0; j < (size_t)localTree->mxtips; j++)	        	  	  	  	 
+	  localTree->partitionData[model].xVector[j]   = (double*)NULL;   
+
+      localTree->partitionData[model].xSpaceVector = (size_t *)calloc(localTree->mxtips, sizeof(size_t));  
+
+      localTree->partitionData[model].sumBuffer = (double *)malloc_aligned(width *
+									   (size_t)(localTree->partitionData[model].states) *
+									   discreteRateCategories(localTree->rateHetModel) *
+									   sizeof(double));
+	    
+      localTree->partitionData[model].wgt = (int *)malloc_aligned(width * sizeof(int));	  
+
+      /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
+
+      localTree->partitionData[model].rateCategory = (int *)calloc(width, sizeof(int));
+
+      if(width > 0 && localTree->saveMemory)
+	{
+	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
+	    
+	  localTree->partitionData[model].gapVector = (unsigned int*)calloc(localTree->partitionData[model].gapVectorLength * 2 * localTree->mxtips, sizeof(unsigned int));	  	    	  	  
+	    
+	  localTree->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *								      
+									       ((size_t)(localTree->partitionData[model].states)) *
+									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
+	}
+      else
+	{
+	   localTree->partitionData[model].gapVectorLength = 0;
+	    
+	   localTree->partitionData[model].gapVector = (unsigned int*)NULL; 	  	    	   
+	    
+	   localTree->partitionData[model].gapColumn = (double*)NULL;	    	    	   
+	}              
+    }
+
+  
+  
+
+  
+#if ! (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+  /* figure in tip sequence data per-site pattern weights */ 
+ 
+
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    {
+      size_t
+	j,
+	lower = tr->partitionData[model].lower,
+	width = tr->partitionData[model].upper - lower;  
+      
+      for(j = 1; j <= tr->mxtips; j++)
+	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
+      
+      memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->cdta->aliaswgt[lower])),      sizeof(int) * width);            
+    }  
+#else
+  {
+    size_t 
+      model,  
+      j,
+      i,
+      globalCounter = 0,
+      localCounter  = 0,
+      offset,
+      countOffset,
+      myLength = 0;
+    
+    for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+      myLength += localTree->partitionData[model].width;         
+
+    /* assign local memory for storing sequence data */
+
+    localTree->y_ptr = (unsigned char *)malloc(myLength * (size_t)(localTree->mxtips) * sizeof(unsigned char));
+    assert(localTree->y_ptr != NULL);
+   
+    for(i = 0; i < (size_t)localTree->mxtips; i++)
+      {
+	for(model = 0, offset = 0, countOffset = 0; model < (size_t)localTree->NumberOfModels; model++)
+	  {
+	    localTree->partitionData[model].yVector[i+1]   = &localTree->y_ptr[i * myLength + countOffset];
+	    countOffset +=  localTree->partitionData[model].width;
+	  }
+	assert(countOffset == myLength);
+      }
+
+    /* figure in data */
+
+    if(tr->manyPartitions)
+      for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
+	{
+	  if(isThisMyPartition(localTree, tid, model, n))
+	    {
+	      assert(localTree->partitionData[model].upper - localTree->partitionData[model].lower == localTree->partitionData[model].width);
+	      
+	      for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++, localCounter++)
+		{	    
+		  localTree->partitionData[model].wgt[localCounter]          = tr->cdta->aliaswgt[globalCounter];	      	     
+		 		  
+		  for(j = 1; j <= (size_t)localTree->mxtips; j++)
+		    localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
+		  
+		  globalCounter++;
+		}
+	    }
+	  else
+	    globalCounter += (localTree->partitionData[model].upper - localTree->partitionData[model].lower);
+	}
+    else
+      for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
+	{
+	  for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++)
+	    {
+	      if(i % (size_t)n == (size_t)tid)
+		{
+		  localTree->partitionData[model].wgt[localCounter]          = tr->cdta->aliaswgt[globalCounter];	      	     		 
+		  
+		  for(j = 1; j <= (size_t)localTree->mxtips; j++)
+		    localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
+		  
+		  localCounter++;
+		}
+	      globalCounter++;
+	    }
+	}    
+  }
+#endif
+
+  /* initialize gap bit vectors at tips when memory saving option is enabled */
+
+  if(localTree->saveMemory)
+    {
+      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+	{
+	  int        
+	    undetermined = getUndetermined(localTree->partitionData[model].dataType);
+	  
+	  size_t
+	    i,
+	    j,
+	    width =  localTree->partitionData[model].width;
+	  
+	  if(width > 0)
+	    {	   	    	      	    	     
+	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
+		for(i = 0; i < width; i++)
+		  if(localTree->partitionData[model].yVector[j][i] == undetermined)
+		    localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
+	    }     
+	}
+    }
+}
+
+
+
 int main (int argc, char *argv[])
 {
   rawdata      *rdta;
@@ -5936,11 +5724,7 @@ int main (int argc, char *argv[])
 	 the actual data structure that will be used thereafter which is tr->partitionData
       */
       
-      makevalues(rdta, cdta, tr, adef);      
-      
-      /* set the number of inner nodes of the tree */
-
-      tr->innerNodes = tr->mxtips;
+      makevalues(rdta, cdta, tr, adef);            
   
       /* set the rate heterogeneity model to be used as well as 
 	 the number of states of the respective data type (e.g., DNA: 4, proteins 20
@@ -6030,7 +5814,9 @@ int main (int argc, char *argv[])
       /* 
 	 allocate the required data structures for storing likelihood vectors etc */
 
-      allocNodex(tr);    
+      initializePartitions(tr, tr, 0, 0);
+
+      
 #endif
 #endif
        

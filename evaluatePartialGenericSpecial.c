@@ -259,7 +259,7 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
   int index = i - tr->partitionData[_model].lower;
 #endif
   
-  if(tr->multiBranch)
+  if(tr->numBranches > 1)
     branchReference = _model;
   else
     branchReference = 0;

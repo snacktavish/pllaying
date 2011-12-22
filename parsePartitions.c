@@ -578,8 +578,7 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
 	  exit(-1);
 	}
       else
-	{
-	  tr->multiBranch = 1;
+	{	  
 	  tr->numBranches = tr->NumberOfModels;
 	}
     }
@@ -1271,8 +1270,7 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 		  exit(-1);
 		}
 	      else
-		{
-		  tr->multiBranch = 1;
+		{		  
 		  tr->numBranches = tr->NumberOfModels;
 		}
 	    }

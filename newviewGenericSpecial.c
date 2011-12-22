@@ -59,13 +59,6 @@ const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
 
 #endif
 
-/* pthread-related stuff */
-
-#ifdef _USE_PTHREADS
-#include <pthread.h>
-extern volatile int NumberOfThreads;
-extern pthread_mutex_t          mutex;
-#endif
 
 extern int processID;
 
@@ -906,7 +899,7 @@ void newviewIterative (tree *tr, int startIndex)
 	      
 	      size_t
 		gapOffset,
-		rateHet,
+		rateHet = discreteRateCategories(tr->rateHetModel),
 
 		/* get the number of states in the data stored in partition model */
 
@@ -927,14 +920,12 @@ void newviewIterative (tree *tr, int startIndex)
 	      /* figure out what kind of rate heterogeneity approach we are using */
 
 	      if(tr->rateHetModel == CAT)
-		{
-		  rateHet = 1;
+		{		 
 		  rateCategories = tr->partitionData[model].perSiteRates;
 		  categories = tr->partitionData[model].numberOfCategories;
 		}
 	      else
-		{		  
-		  rateHet = 4;
+		{		  		 
 		  rateCategories = tr->partitionData[model].gammaRates;
 		  categories = 4;
 		}
@@ -1044,22 +1035,19 @@ void newviewIterative (tree *tr, int startIndex)
 		 use the joint branch length among all partitions that is always stored 
 		 at index [0] */
 
-	      if(tr->multiBranch)
+	      if(tr->numBranches > 1)
 		{
-		  qz = tInfo->qz[model];
-		  qz = (qz > zmin) ? log(qz) : log(zmin);
-		    
-		  rz = tInfo->rz[model];
-		  rz = (rz > zmin) ? log(rz) : log(zmin);
+		  qz = tInfo->qz[model];		  		    
+		  rz = tInfo->rz[model];		  
 		}
 	      else
 		{
 		  qz = tInfo->qz[0];
-		  qz = (qz > zmin) ? log(qz) : log(zmin);
-		  
 		  rz = tInfo->rz[0];
-		  rz = (rz > zmin) ? log(rz) : log(zmin);
-		}	      	      	      	     	      
+		}
+		 
+	      qz = (qz > zmin) ? log(qz) : log(zmin);		  	       
+	      rz = (rz > zmin) ? log(rz) : log(zmin);	          	      
 
 	      /* compute the left and right P matrices */
 

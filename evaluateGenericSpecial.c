@@ -352,15 +352,14 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 
 /* This is the core function for computing the log likelihood at a branch */
 
-double evaluateIterative(tree *tr)
+void evaluateIterative(tree *tr)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
      are stored in the very important traversal array data structure that describes a partial or full tree traversal */
 
   /* get the branch length at the root */
   double 
-    *pz = tr->td[0].ti[0].qz,
-    result = 0.0;   
+    *pz = tr->td[0].ti[0].qz;   
 
   /* get the node number of the node to the left and right of the branch that defines the virtual rooting */
 
@@ -409,7 +408,7 @@ double evaluateIterative(tree *tr)
       if(tr->td[0].executeModel[model] && width > 0)
 	{	
 	  int 
-	    rateHet,
+	    rateHet = (int)discreteRateCategories(tr->rateHetModel),
 	    categories,
 	    
 	    /* get the number of states in the partition, e.g.: 4 = DNA, 20 = Protein */
@@ -444,14 +443,12 @@ double evaluateIterative(tree *tr)
 	   */
 
 	  if(tr->rateHetModel == CAT)
-	    {
-	      rateHet = 1;
+	    {	     
 	      rateCategories = tr->partitionData[model].perSiteRates;
 	      categories = tr->partitionData[model].numberOfCategories;
 	    }
 	  else
-	    {
-	      rateHet = 4;
+	    {	     
 	      rateCategories = tr->partitionData[model].gammaRates;
 	      categories = 4;
 	    }
@@ -529,7 +526,7 @@ double evaluateIterative(tree *tr)
 	  /* if we are using a per-partition branch length estimate, the branch has an index, otherwise, for a joint branch length
 	     estimate over all partitions we just use the branch length value with index 0 */
 
-	  if(tr->multiBranch)
+	  if(tr->numBranches > 1)
 	    z = pz[model];
 	  else
 	    z = pz[0];
@@ -640,10 +637,7 @@ double evaluateIterative(tree *tr)
 
 	  partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
 
-	  /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */
-	  
-	  /* here we also compute the accumulated likelihood over all partitions */
-	  result += partitionLikelihood;	  
+	  /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
 	  
 	  /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
 	     of this partition for example */
@@ -663,23 +657,24 @@ double evaluateIterative(tree *tr)
 	    tr->perPartitionLH[model] = 0.0;	   
 	}
     }
-      
-  /*   return the sum of the log likelihood of all partitions */
-
-  return result;
 }
 
 
 
 
-double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
+void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
 
-  volatile double result;
-  nodeptr q = p->back; 
-  int i;
+  volatile double 
+    result = 0.0;
+  
+  nodeptr 
+    q = p->back; 
+  int 
+    i,
+    model;
     
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
@@ -732,77 +727,59 @@ double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 
   /* now here we enter the fork-join region for Pthreads */
 
-  {
-    int j;
     
-    /* start the parallel region and tell all threads to compute the log likelihood for 
-       their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
-    */
-
-    masterBarrier(THREAD_EVALUATE, tr); 
-
-    /* and now here we explicitly do the reduction operation , that is add over the 
-       per-thread and per-partition log likelihoods to obtain the overall log like 
-       over all sites and partitions */
-
-
-    /* 
-       for unpartitioned data that's easy, we just sum over the log likes computed 
-       by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
-       reductionBuffer[1] and so on 
-    */
-    if(tr->NumberOfModels == 1)
-      {
-	for(i = 0, result = 0.0; i < NumberOfThreads; i++)          
-	  result += reductionBuffer[i];  	  	     
-
-	/* also update the perPartiyion data structure */
-	
-	tr->perPartitionLH[0] = result;
-      }
-    else
-      {
-	/* This reduction for the partitioned case is more complicated because each thread 
-	   needs to store the partial log like of each partition and we then need to collect 
-	   and add everything */
-
-	volatile double partitionResult;
-	
-	result = 0.0;
-	  
-	for(j = 0; j < tr->NumberOfModels; j++)
-	  {
-	    for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
-	      partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-	    result += partitionResult;
-	    tr->perPartitionLH[j] = partitionResult;
-	  }
-      }
-  }
+  /* start the parallel region and tell all threads to compute the log likelihood for 
+     their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
+  */
+  
+  masterBarrier(THREAD_EVALUATE, tr); 
+  
+  /* and now here we explicitly do the reduction operation , that is add over the 
+     per-thread and per-partition log likelihoods to obtain the overall log like 
+     over all sites and partitions */
+  
+  
+  /* 
+     for unpartitioned data that's easy, we just sum over the log likes computed 
+     by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
+     reductionBuffer[1] and so on 
+  */
+  
+  /* This reduction for the partitioned case is more complicated because each thread 
+     needs to store the partial log like of each partition and we then need to collect 
+     and add everything */
+  
+              	  
+  for(model = 0; model < tr->NumberOfModels; model++)
+    { 
+      volatile double 
+	partitionResult = 0.0;  
+      
+      for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
+	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
+      
+      tr->perPartitionLH[model] = partitionResult;
+    }
+       
 #else
 #ifdef _FINE_GRAIN_MPI
 
   /* MPI parallel region, in terms of logic or programming paradigm this is also 
      just like a fork join */
 
-  masterBarrierMPI(THREAD_EVALUATE, tr);
+  masterBarrierMPI(THREAD_EVALUATE, tr);  		  
   
-  {
-    /* the reduction is implemented slightly differently via MPI_reduce, nothing to worry about right now */
-
-    int model = 0;
-    
-    for(model = 0, result = 0.0; model < tr->NumberOfModels; model++)
-      result += tr->perPartitionLH[model];		  
-  }
 #else
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-  result = evaluateIterative(tr);
+  evaluateIterative(tr);  
+    		
 #endif   
 #endif
 
+  for(model = 0; model < tr->NumberOfModels; model++)
+    result += tr->perPartitionLH[model];
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
@@ -810,10 +787,6 @@ double evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* do some bookkeeping to have traversalHasChanged in a consistent state */
 
   tr->td[0].traversalHasChanged = FALSE;
-  
-  /* return the overall log like */
-
-  return result;
 }
 
 

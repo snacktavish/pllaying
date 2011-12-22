@@ -74,17 +74,10 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
 		     double **x1_gapColumn, double **x2_gapColumn, unsigned int **x1_gap, unsigned int **x2_gap)
 {
   int    
-    rateHet,
+    rateHet = (int)discreteRateCategories(tr->rateHetModel),
     states = tr->partitionData[model].states,
     pNumber, 
-    qNumber;
-
-  /* figure out which rate heterogeneity model we are using */
-
-  if(tr->rateHetModel == CAT)
-    rateHet = 1;
-  else
-    rateHet = 4;
+    qNumber; 
     
   /* get the left and right node number of the nodes defining the branch we want to optimize */
  
@@ -750,18 +743,16 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	     all partitions. If we do this on a per partition basis, we also need to compute and store 
 	     the per-partition derivatives of the likelihood separately, otherwise not */
 	  
-	  if(tr->multiBranch)
+	  if(tr->numBranches > 1)
 	    {
-	      branchIndex = model;
-	      /*lz = tr->coreLZ[model];*/
+	      branchIndex = model;	      
 	      lz = tr->td[0].parameterValues[model];
 	      _dlnLdlz[model]   = 0.0;
 	      _d2lnLdlz2[model] = 0.0;
 	    }
 	  else
 	    {
-	      branchIndex = 0;
-	      /*lz = tr->coreLZ[0];*/
+	      branchIndex = 0;	      
 	      lz = tr->td[0].parameterValues[0];
 	    }
 
@@ -819,7 +810,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	{
 	  /* set to 0 to make the reduction operation consistent */
 
-	  if(width == 0 && tr->multiBranch)
+	  if(width == 0 && (tr->numBranches > 1))
 	    {
 	      _dlnLdlz[model]   = 0.0;
 	      _d2lnLdlz2[model] = 0.0;
@@ -846,24 +837,20 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 {
   double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
-  int i, maxiter[NUM_BRANCHES], numBranches, model;
+  int i, maxiter[NUM_BRANCHES], model;
   boolean firstIteration = TRUE;
   boolean outerConverged[NUM_BRANCHES];
   boolean loopConverged;
 
 
   /* figure out if this is on a per partition basis or jointly across all partitions */
-
-  if(tr->multiBranch)
-    numBranches = tr->NumberOfModels;
-  else
-    numBranches = 1;
+  
 
 
   /* initialize loop convergence variables etc. 
      maxiter is the maximum number of NR iterations we are going to do before giving up */
 
-  for(i = 0; i < numBranches; i++)
+  for(i = 0; i < tr->numBranches; i++)
     {
       z[i] = z0[i];
       maxiter[i] = _maxiter;
@@ -879,7 +866,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       /* check if we ar done for partition i or if we need to adapt the branch length again */
 
-      for(i = 0; i < numBranches; i++)
+      for(i = 0; i < tr->numBranches; i++)
 	{
 	  if(outerConverged[i] == FALSE && tr->curvatOK[i] == TRUE)
 	    {
@@ -891,7 +878,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	    }
 	}
 
-      for(i = 0; i < numBranches; i++)
+      for(i = 0; i < tr->numBranches; i++)
 	{
 	  /* other case, the outer loop hasn't converged but we are trying to approach 
 	     the maximum from the wrong side */
@@ -911,7 +898,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       /* set the execution mask */
 
-      if(tr->multiBranch)
+      if(tr->numBranches > 1)
 	{
 	  for(model = 0; model < tr->NumberOfModels; model++)
 	    {
@@ -957,31 +944,22 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	 and sum them up. It's similar to what we do in evaluateGeneric() 
 	 with the only difference that we have to collect two values (firsrt and second derivative) 
 	 instead of onyly one (the log likelihood */
-
-      if(!tr->multiBranch)
-	{
-	  dlnLdlz[0] = 0.0;
-	  d2lnLdlz2[0] = 0.0;
-	  for(i = 0; i < NumberOfThreads; i++)
-	    {
-	      dlnLdlz[0]   += reductionBuffer[i];
-	      d2lnLdlz2[0] += reductionBufferTwo[i];
-	    }
-	}
-      else
-	{
-	  int j;
-	  for(j = 0; j < tr->NumberOfModels; j++)
-	    {
-	      dlnLdlz[j] = 0.0;
-	      d2lnLdlz2[j] = 0.0;
-	      for(i = 0; i < NumberOfThreads; i++)
-		{
-		  dlnLdlz[j]   += reductionBuffer[i * tr->NumberOfModels + j];
-		  d2lnLdlz2[j] += reductionBufferTwo[i * tr->NumberOfModels + j];
-		}
-	    }
-	}
+      
+      {
+	int 
+	  b;
+	
+	for(b = 0; b < tr->numBranches; b++)
+	  {
+	    dlnLdlz[b] = 0.0;
+	    d2lnLdlz2[b] = 0.0;
+	    for(i = 0; i < NumberOfThreads; i++)
+	      {
+		dlnLdlz[b]   += reductionBuffer[i * tr->numBranches + b];
+		d2lnLdlz2[b] += reductionBufferTwo[i * tr->numBranches + b];
+	      }
+	  }
+      }
 #else
 #ifdef _FINE_GRAIN_MPI
 
@@ -997,7 +975,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
       else
 	masterBarrierMPI(THREAD_MAKENEWZ, tr);
 
-      if(!tr->multiBranch)
+      if(tr->numBranches == 1)
 	{
 	  int 
 	    model;	  	  
@@ -1034,7 +1012,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
       /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 
 	 shorten branch */
 
-      for(i = 0; i < numBranches; i++)
+      for(i = 0; i < tr->numBranches; i++)
 	{
 	  if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
 	    {
@@ -1047,7 +1025,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       /* do the standard NR step to obrain the next value, depending on the state for eahc partition */
 
-      for(i = 0; i < numBranches; i++)
+      for(i = 0; i < tr->numBranches; i++)
 	{
 	  if(tr->curvatOK[i] == TRUE && outerConverged[i] == FALSE)
 	    {
@@ -1083,7 +1061,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
       /* check if the loop has converged for all partitions */
 
       loopConverged = TRUE;
-      for(i = 0; i < numBranches; i++)
+      for(i = 0; i < tr->numBranches; i++)
 	loopConverged = loopConverged && outerConverged[i];
     }
   while (!loopConverged);
@@ -1099,7 +1077,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
      branches this will only set result[0]
   */
 
-  for(i = 0; i < numBranches; i++)
+  for(i = 0; i < tr->numBranches; i++)
     result[i] = z[i];
 }
 

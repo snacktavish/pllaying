@@ -198,10 +198,5 @@ volatile int             threadJob = 0;
 volatile int             NumberOfThreads;
 volatile double          *reductionBuffer;
 volatile double          *reductionBufferTwo;
-volatile double          *reductionBufferThree;
-volatile int             *reductionBufferParsimony;
 volatile char             *barrierBuffer;
-
-volatile branchInfo      **branchInfos;
-pthread_mutex_t          mutex;
 #endif
