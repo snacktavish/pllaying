@@ -93,7 +93,7 @@
 
 #define badRear         -1
 
-#define NUM_BRANCHES     2
+#define NUM_BRANCHES     16
 
 #define TRUE             1
 #define FALSE            0
@@ -1106,7 +1106,7 @@ extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 extern int main ( int argc, char *argv[] );
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
-extern void initReversibleGTR (tree *tr, analdef *adef, int model);
+extern void initReversibleGTR (tree *tr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );

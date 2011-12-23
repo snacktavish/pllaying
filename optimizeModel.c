@@ -270,7 +270,9 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		    {
 		      int index = ll->ld[i].partitionList[k];		  	      
 		      setRateModel(tr, index, value[pos], rateNumber);  
-		      initReversibleGTR(tr, adef, index);		 
+#ifndef _LOCAL_DISCRETIZATION 
+		      initReversibleGTR(tr, index);		 
+#endif
 		    }
 		}
 	      pos++;
@@ -360,7 +362,9 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		  int index = ll->ld[i].partitionList[k];
 		  tr->executeModel[index] = TRUE;
 		  tr->partitionData[index].alpha = value[i];
+#ifndef _LOCAL_DISCRETIZATION
 		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4);
+#endif
 		}
 	    }
 	}
@@ -1028,7 +1032,9 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	  for(k = 0; k < ll->ld[i].partitions; k++)
 	    {	      
 	      tr->partitionData[ll->ld[i].partitionList[k]].alpha = startAlpha[i];
-	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 		
+#ifndef _LOCAL_DISCRETIZATION
+	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 
+#endif		
 	    }
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 	  revertModel++;
@@ -1172,8 +1178,10 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 		  for(j = 0; j < ll->ld[k].partitions; j++)
 		    {
 		      int index = ll->ld[k].partitionList[j];
-		      tr->partitionData[index].substRates[i] = startRates[pos * numberOfRates + i];	             	  
-		      initReversibleGTR(tr, adef, index);
+		      tr->partitionData[index].substRates[i] = startRates[pos * numberOfRates + i];
+#ifndef _LOCAL_DISCRETIZATION 	             	  
+		      initReversibleGTR(tr, index);
+#endif
 		    }
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 		  revertModel++;
@@ -2247,7 +2255,9 @@ static void autoProtein(tree *tr, analdef *adef)
 	      if(tr->partitionData[model].protModels == AUTO)
 		{
 		  tr->partitionData[model].autoProtModels = i;
-		  initReversibleGTR(tr, adef, model);  
+#ifndef _LOCAL_DISCRETIZATION 
+		  initReversibleGTR(tr, model);  
+#endif
 		}
 	    }
 	  
@@ -2283,7 +2293,9 @@ static void autoProtein(tree *tr, analdef *adef)
 	  if(tr->partitionData[model].protModels == AUTO)
 	    {
 	      tr->partitionData[model].autoProtModels = bestIndex[model];
-	      initReversibleGTR(tr, adef, model);  
+#ifndef _LOCAL_DISCRETIZATION 
+	      initReversibleGTR(tr, model);  
+#endif
 	      printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[tr->partitionData[model].autoProtModels], bestScores[model]);
 	    }	 
 	}

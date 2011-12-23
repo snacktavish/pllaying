@@ -4202,6 +4202,8 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
      the memcpy version below is just for testing and preparing the
      fine-grained MPI BlueGene version */
 
+  /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
+
  if(0)
     {
       localTree->td[0] = tr->td[0];
@@ -4283,7 +4285,16 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 {
   int 
     model;
-
+#ifdef _LOCAL_DISCRETIZATION  
+  for(model = 0; model < localTree->NumberOfModels; model++)
+    {
+      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
+      
+      memcpy(localTree->partitionData[model].substRates,        tr->partitionData[model].substRates, pl->substRatesLength * sizeof(double));
+      
+      initReversibleGTR(localTree, model);     
+    }
+#else
   if(tid > 0)
     {	 
       for(model = 0; model < localTree->NumberOfModels; model++)
@@ -4296,18 +4307,29 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 	  memcpy(localTree->partitionData[model].tipVector,   tr->partitionData[model].tipVector,   pl->tipVectorLength * sizeof(double));	      	      	     
 	}
     }
+#endif
 }
+
+
 
 static void broadCastAlpha(tree *localTree, tree *tr, int tid)
 {
   int 
     model; 
 	  
+#ifdef _LOCAL_DISCRETIZATION 
+  for(model = 0; model < localTree->NumberOfModels; model++)
+    {
+      localTree->partitionData[model].alpha = tr->partitionData[model].alpha;
+      makeGammaCats(localTree->partitionData[model].alpha, localTree->partitionData[model].gammaRates, 4); 
+    }   
+#else
   if(tid > 0)
     {	 
       for(model = 0; model < localTree->NumberOfModels; model++)
 	memcpy(localTree->partitionData[model].gammaRates, tr->partitionData[model].gammaRates, sizeof(double) * 4);
-    }	      	      	     
+    }
+#endif	      	      	     
 }
 
 static void initializePartitions(tree *tr, tree *localTree, int tid, int n);
@@ -4428,15 +4450,31 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
      
       break;                       
     case THREAD_COPY_INIT_MODEL:
+      
+      /* need to copy base freqs before local per-thread/per-process Q matrix exponentiation */
+#ifdef _LOCAL_DISCRETIZATION   
+       if(tid > 0)
+	 for(model = 0; model < localTree->NumberOfModels; model++)	    	     
+	   {
+	     const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
+	     
+	     memcpy(localTree->partitionData[model].frequencies,        tr->partitionData[model].frequencies,        pl->frequenciesLength * sizeof(double));
+	   }
+#endif
+      /* need to be very careful here ! THREAD_COPY_INIT_MODEL is also used when the program is restarted 
+	 it is hence not sufficient to just initialize everything by the default values ! */
+
        broadCastRates(localTree, tr, tid); 
        broadCastAlpha(localTree, tr, tid); 
+       
       /*
 	copy initial model parameters, the Q matrix and alpha are initially, when we start our likelihood search 
 	set to default values. 
 	Hence we need to copy all those values that are required for computing the likelihood 
 	with newview(), evaluate() and makenez() to the private memory of the threads 
       */
-      
+
+
       if(tid > 0 && localTree->rateHetModel == CAT)
 	{	  	  
 	  for(model = 0; model < localTree->NumberOfModels; model++)	    	     
@@ -4446,36 +4484,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	  memcpy(localTree->cdta->patrat,       tr->cdta->patrat,      localTree->originalCrunchedLength * sizeof(double));
 	  memcpy(localTree->cdta->patratStored, tr->cdta->patratStored, localTree->originalCrunchedLength * sizeof(double));	  
-	}     
-
-
-      /* now figure in the site pattern wieghts of those sites that have been assigned to this thread.
-	 Note that, we need to switch over the type of data distribution we are using */
-	 
-
-      if(localTree->manyPartitions)
-	for(model = 0; model < localTree->NumberOfModels; model++)
-	  {	  
-	    if(isThisMyPartition(localTree, tid, model))
-	      {
-		int localIndex;
-		
-		for(i = localTree->partitionData[model].lower, localIndex = 0; i <  localTree->partitionData[model].upper; i++, localIndex++)	     	       
-		  localTree->partitionData[model].wgt[localIndex]          = tr->cdta->aliaswgt[i];				 					       
-	      }	  
-	  }
-      else
-	for(model = 0; model < localTree->NumberOfModels; model++)
-	  {
-	    int localIndex;
-	    for(i = localTree->partitionData[model].lower, localIndex = 0; i <  localTree->partitionData[model].upper; i++)
-	      if(i % n == tid)
-		{
-		  localTree->partitionData[model].wgt[localIndex]          = tr->cdta->aliaswgt[i];				 		
-		  
-		  localIndex++;
-		}	  
-	  }
+	}          
       
       break;    
     case THREAD_RATE_CATS:            

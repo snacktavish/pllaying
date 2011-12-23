@@ -3217,7 +3217,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   
   for(l = 0; l < n; l++)		 
     f[l] = frequencies[l];	
-  /*assert(initialRates[numRates - 1] == 1.0);	*/
+    
   
   i = 0;
   
@@ -3236,6 +3236,8 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 	r[j][k] = r[k][j];
     }                         
   
+  
+
   fracchanges[model] = 0.0;         
   
   for (j = 0; j< n; j++)
@@ -3247,7 +3249,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   for(i=0; i< n; i++) 
     a[i][i] = 0;
   
-  /*assert(r[n - 2][n - 1] == 1.0);*/
+  /*  assert(r[n - 2][n - 1] == 1.0);*/
   
   for(i=0; i < n; i++) 
     {
@@ -3260,11 +3262,15 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 	}
     }             	        
 
-  makeEigen(a, n, d, e);	   	  	    
-
+  makeEigen(a, n, d, e);
+  
+ 
+  
   for(i=0; i<n; i++)     
     for(j=0; j<n; j++)       
       a[i][j] *= sqrt(f[j]);
+   
+  
   
   for (i=0; i<n; i++)
     {	  
@@ -3395,7 +3401,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
 
 
-void initReversibleGTR(tree *tr, analdef *adef, int model)
+void initReversibleGTR(tree *tr, int model)
 { 
  double   
    *fracchanges      = tr->fracchanges,    
@@ -3443,8 +3449,8 @@ void initReversibleGTR(tree *tr, analdef *adef, int model)
 	 else	  
 	   initProtMat(f, tr->partitionData[model].protModels, ext_initialRates); 		   
 	 
-	 if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
-	   assert(tr->partitionData[model].protFreqs);
+	 /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
+	   assert(tr->partitionData[model].protFreqs);*/
 	 
 	 if(!tr->partitionData[model].protFreqs)	       	  
 	   {	     	    
@@ -4048,9 +4054,11 @@ void initModel(tree *tr, rawdata *rdta, cruncheddata *cdta, analdef *adef)
       if(tr->partitionData[model].protModels == AUTO)
 	tr->partitionData[model].autoProtModels = WAG; /* initialize by WAG per default */
       
-      initReversibleGTR(tr, adef, model);               
-      
-      makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4);     
+                     
+#ifndef _LOCAL_DISCRETIZATION      
+      initReversibleGTR(tr, model);
+      makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4);    
+#endif 
     }                   		       
   
    if(tr->estimatePerSiteAA)

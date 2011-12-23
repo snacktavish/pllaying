@@ -568,7 +568,7 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
   
   if(adef->perGeneBranchLengths)
     {
-      if(tr->NumberOfModels != NUM_BRANCHES)
+      if(tr->NumberOfModels > NUM_BRANCHES)
 	{
 	  printf("You are trying to use %d partitioned models for an individual per-gene branch length estimate.\n", tr->NumberOfModels);
 	  printf("Currently only a number of %d models/partitions is hard-coded to improve efficiency.\n", NUM_BRANCHES);
