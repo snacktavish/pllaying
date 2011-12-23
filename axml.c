@@ -5265,77 +5265,111 @@ static int partCompare(const void *p1, const void *p2)
 
 static void multiprocessorScheduling(tree *tr)
 {
-  size_t   
-    checkSum = 0,
-    sum = 0;
-
-  int    
-    i,
-#ifndef _FINE_GRAIN_MPI
-    n = NumberOfThreads,
-#else
-    n = processes,
-#endif
-    p = tr->NumberOfModels,    
-    *assignments = (int *)calloc(n, sizeof(int));  
-
-  partitionType 
-    *pt = (partitionType *)malloc(sizeof(partitionType) * p);
-
-  tr->partitionAssignment = (int *)malloc(p * sizeof(int));
-
-  for(i = 0; i < p; i++)
-    {
-      pt[i].partitionNumber = i;
-      pt[i].partitionLength = tr->partitionData[i].upper - tr->partitionData[i].lower;
-      sum += (size_t)pt[i].partitionLength;
-    }
+  int 
+    s,
+    model,
+    modelStates[2] = {4, 20},
+    numberOfPartitions[2] = {0 , 0},
+    arrayLength = sizeof(modelStates) / sizeof(int);
   
-  qsort(pt, p, sizeof(partitionType), partCompare);
+    /* check that we have not addedd any new models for data types with a different number of states
+       and forgot to update modelStates */
+    
+    tr->partitionAssignment = (int *)malloc(tr->NumberOfModels * sizeof(int));
+    
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {        
+      boolean 
+	exists = FALSE;
 
-  /*for(i = 0; i < p; i++)
-    printf("%d %d\n", pt[i].partitionLength, pt[i].partitionNumber);*/
+      for(s = 0; s < arrayLength; s++)
+	{
+	  exists = exists || (tr->partitionData[model].states == modelStates[s]);
+	  if(tr->partitionData[model].states == modelStates[s])
+	    numberOfPartitions[s] += 1;
+	}
 
-  for(i = 0; i < p; i++)
-    {
-      int 
-	k, 
-	min = INT_MAX,
-	minIndex = -1;
-
-      for(k = 0; k < n; k++)	
-	if(assignments[k] < min)
-	  {
-	    min = assignments[k];
-	    minIndex = k;
-	  }
-      
-      assert(minIndex >= 0);
-      
-      assignments[minIndex] +=  pt[i].partitionLength;
-      assert(pt[i].partitionNumber >= 0 && pt[i].partitionNumber < p);
-      tr->partitionAssignment[pt[i].partitionNumber] = minIndex;
+      assert(exists);
     }
 
   printBothOpen("\nMulti-processor partition data distribution enabled (-Q option)\n");
-  
-  for(i = 0; i < n; i++)
-    {      
-      printBothOpen("Process %d has %d sites\n", i, assignments[i]);
-      checkSum += (size_t)assignments[i];
+
+  for(s = 0; s < arrayLength; s++)
+    {
+      if(numberOfPartitions[s] > 0)
+	{
+	  size_t   
+	    checkSum = 0,
+	    sum = 0;
+	  
+	  int    
+	    i,
+	    k,
+#ifndef _FINE_GRAIN_MPI
+	    n = NumberOfThreads,
+#else
+	    n = processes,
+#endif
+	    p = numberOfPartitions[s],    
+	    *assignments = (int *)calloc(n, sizeof(int));  
+	  
+	  partitionType 
+	    *pt = (partitionType *)malloc(sizeof(partitionType) * p);
+	  
+	  
+	  for(i = 0, k = 0; i < tr->NumberOfModels; i++)
+	    {
+	      if(tr->partitionData[i].states == modelStates[s])
+		{
+		  pt[k].partitionNumber = i;
+		  pt[k].partitionLength = tr->partitionData[i].upper - tr->partitionData[i].lower;
+		  sum += (size_t)pt[k].partitionLength;
+		  k++;
+		}
+	    }
+	  
+	  assert(k == p);
+	  
+	  qsort(pt, p, sizeof(partitionType), partCompare);    
+	  
+	  for(i = 0; i < p; i++)
+	    {
+	      int 
+		k, 
+		min = INT_MAX,
+		minIndex = -1;
+	      
+	      for(k = 0; k < n; k++)	
+		if(assignments[k] < min)
+		  {
+		    min = assignments[k];
+		    minIndex = k;
+		  }
+	      
+	      assert(minIndex >= 0);
+	      
+	      assignments[minIndex] +=  pt[i].partitionLength;
+	      assert(pt[i].partitionNumber >= 0 && pt[i].partitionNumber < tr->NumberOfModels);
+	      tr->partitionAssignment[pt[i].partitionNumber] = minIndex;
+	    }
+	  
+	  for(i = 0; i < n; i++)
+	    {      
+	      printBothOpen("Process %d has %d sites for %d state model \n", i, assignments[i], modelStates[s]);
+	      checkSum += (size_t)assignments[i];
+	    }
+	  
+	  printBothOpen("\n");
+	  
+	  assert(sum == checkSum);
+	  
+	  free(assignments);
+	  free(pt);
+	}
     }
-  printBothOpen("\n");
 
-  /*
-    for(i = 0; i < p; i++)
-    printf("%d ", tr->partitionAssignment[i]);
-    printf("\n");
-  */
-  
-  assert(sum == checkSum);
 
-  free(assignments);
-  free(pt);
+ 
 }
 
 #endif
