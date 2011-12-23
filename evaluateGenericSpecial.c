@@ -118,7 +118,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 
 /* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
 
-static double evaluateGAMMA_FLEX(int *ex1, int *ex2, int *wptr,
+static double evaluateGAMMA_FLEX(int *wptr,
 				 double *x1_start, double *x2_start, 
 				 double *tipVector, 
 				 unsigned char *tipX1, const int n, double *diagptable, const int states)

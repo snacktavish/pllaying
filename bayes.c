@@ -191,7 +191,7 @@ static double exp_pdf(double lambda, double x)
 
 static void printSimpleTree(tree *tr, boolean printBranchLengths, analdef *adef)
 {
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, adef, SUMMARIZE_LH, 0,0);
+  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, SUMMARIZE_LH, 0,0);
   fprintf(stderr, "%s\n", tr->tree_string);
 }
 
@@ -727,7 +727,7 @@ void mcmc(tree *tr, analdef *adef)
   printSubsRates(curstate->tr, curstate->model, curstate->numSubsRates);
 
   /* optimize the model with Brents method for reasonable starting points */
-  modOpt(curstate->tr, curstate->adef, FALSE, 5.0, FALSE); /* not by proposal, just using std raxml machinery... */
+  modOpt(curstate->tr, curstate->adef, 5.0); /* not by proposal, just using std raxml machinery... */
   evaluateGeneric(curstate->tr, curstate->tr->start, FALSE); // just for validation 
   printBothOpen("tr LH after modOpt %f\n",curstate->tr->likelihood);
   printSubsRates(curstate->tr, curstate->model, curstate->numSubsRates);

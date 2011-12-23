@@ -450,7 +450,7 @@ void putWAG(double *ext_initialRates)
 
 }
 
-static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRates, int model, tree *tr)
+static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRates)
 { 
   double q[20][20];
   double daa[400], max, temp;
@@ -3439,10 +3439,9 @@ void initReversibleGTR(tree *tr, analdef *adef, int model)
 
 	 
 	 if(tr->partitionData[model].protModels == AUTO)
-	   initProtMat(f, tr->partitionData[model].autoProtModels, ext_initialRates, model, tr);
+	   initProtMat(f, tr->partitionData[model].autoProtModels, ext_initialRates);
 	 else	  
-	   initProtMat(f, tr->partitionData[model].protModels, ext_initialRates, model, 
-		       tr); 		   
+	   initProtMat(f, tr->partitionData[model].protModels, ext_initialRates); 		   
 	 
 	 if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
 	   assert(tr->partitionData[model].protFreqs);
@@ -3997,8 +3996,8 @@ static void setupSecondaryStructureSymmetries(tree *tr)
 
 void initModel(tree *tr, rawdata *rdta, cruncheddata *cdta, analdef *adef)
 {  
-  int model, i, j;
-  double  temp, wtemp;  
+  int model, j;
+  double  temp;  
      
   optimizeRateCategoryInvocations = 1;      
   tr->numberOfInvariableColumns = 0;
@@ -4067,7 +4066,7 @@ void initModel(tree *tr, rawdata *rdta, cruncheddata *cdta, analdef *adef)
 	  
 	  /*printf("Initializing prot model with model-based freqs: %s\n", protModels[i]);*/
 
-	  initProtMat(f, i, tr->siteProtModel[i].substRates, 0, tr);
+	  initProtMat(f, i, tr->siteProtModel[i].substRates);
 	  
 	  for(l = 0; l < 20; l++)		
 	    tr->siteProtModel[i].frequencies[l] = f[l];

@@ -1117,14 +1117,13 @@ static void writeCheckpoint(tree *tr)
   printBothOpen("\nCheckpoint written to: %s likelihood: %f\n", extendedName, tr->likelihood);
 }
 
-static void readTree(tree *tr, FILE *f, analdef *adef)
+static void readTree(tree *tr, FILE *f)
 {
   int 
     nodeNumber,   
     x = tr->mxtips + 3 * (tr->mxtips - 1);
 
-  nodeptr
-    base = tr->nodeBaseAddress;
+ 
 
   
   
@@ -1188,7 +1187,7 @@ static void readTree(tree *tr, FILE *f, analdef *adef)
 }
 
 
-static void readCheckpoint(tree *tr, analdef *adef)
+static void readCheckpoint(tree *tr)
 {
   int   
     model; 
@@ -1299,16 +1298,16 @@ static void readCheckpoint(tree *tr, analdef *adef)
 
   updatePerSiteRates(tr, FALSE);  
 
-  readTree(tr, f, adef);
+  readTree(tr, f);
 
   fclose(f); 
 
 }
 
 
-void restart(tree *tr, analdef *adef)
+void restart(tree *tr)
 {  
-  readCheckpoint(tr, adef);
+  readCheckpoint(tr);
 
   switch(ckp.state)
     {
@@ -1461,7 +1460,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   int
     i,
     impr, 
-    bestTrav,
+    bestTrav = 0,
     treeVectorLength = 0,
     rearrangementsMax = 0, 
     rearrangementsMin = 0,    
@@ -1469,8 +1468,8 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
     fastIterations = 0;
    
   double 
-    lh, 
-    previousLh, 
+    lh = unlikely, 
+    previousLh = unlikely, 
     difference, 
     epsilon;              
   
@@ -1522,7 +1521,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(!adef->useCheckpoint)
     {
       if(estimateModel)
-	modOpt(tr, adef, FALSE, 10.0, FALSE);
+	modOpt(tr, adef, 10.0);
       else
 	treeEvaluate(tr, 2);  
     }
@@ -1564,7 +1563,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
       /* optimize model params more thoroughly or just optimize branch lengths */
       if(estimateModel)
-	modOpt(tr, adef, FALSE, 5.0, FALSE);
+	modOpt(tr, adef, 5.0);
       else
 	treeEvaluate(tr, 1);   
     }
@@ -1701,7 +1700,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	    printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-	    Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, adef, SUMMARIZE_LH, FALSE, FALSE);
+	    Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 
 	    if(fastIterations % 2 == 0)	      
 	      memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -1846,7 +1845,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      alone */
 
   if(estimateModel)
-    modOpt(tr, adef, FALSE, 1.0, FALSE);
+    modOpt(tr, adef, 1.0);
   else
     treeEvaluate(tr, 1.0);
 
@@ -1967,7 +1966,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 		printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 		
-		Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, adef, SUMMARIZE_LH, FALSE, FALSE);
+		Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 		
 		if(thoroughIterations % 2 == 0)	      
 		  memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2100,47 +2099,4 @@ boolean treeEvaluate (tree *tr, double smoothFactor)       /* Evaluate a user tr
 
   return TRUE;
 }
-
-static void setupBranches(tree *tr, nodeptr p,  branchInfo *bInf)
-{
-  int    
-    countBranches = tr->branchCounter;
-
-  if(isTip(p->number, tr->mxtips))    
-    {      
-      p->bInf       = &bInf[countBranches];
-      p->back->bInf = &bInf[countBranches];               	      
-
-      bInf[countBranches].oP = p;
-      bInf[countBranches].oQ = p->back;
-           
-      tr->branchCounter =  tr->branchCounter + 1;
-      return;
-    }
-  else
-    {
-      nodeptr q;
-      assert(p == p->next->next->next);
-
-      p->bInf       = &bInf[countBranches];
-      p->back->bInf = &bInf[countBranches];
-
-      bInf[countBranches].oP = p;
-      bInf[countBranches].oQ = p->back;      
-
-      tr->branchCounter =  tr->branchCounter + 1;      
-
-      q = p->next;
-
-      while(q != p)
-	{
-	  setupBranches(tr, q->back, bInf);	
-	  q = q->next;
-	}
-     
-      return;
-    }
-}
- 
-
 

@@ -303,81 +303,9 @@ static boolean isCat(analdef *adef)
     return FALSE;
 }
 
-static boolean isGamma(analdef *adef)
-{
-  if(adef->model == M_PROTGAMMA || adef->model == M_GTRGAMMA || adef->model == M_BINGAMMA || 
-     adef->model == M_32GAMMA || adef->model == M_64GAMMA)
-    return TRUE;
-  else
-    return FALSE;
-
-}
 
 
-static int stateAnalyzer(tree *tr, int model, int maxStates)
-{
-  boolean
-    counter[256],
-    previous,
-    inputError = FALSE;
-  
-  int
-    lower = tr->partitionData[model].lower,
-    upper = tr->partitionData[model].upper,
-    i,
-    j,
-    states = 0;
 
-  for(i = 0; i < 256; i++)
-    counter[i] = FALSE;
-
-  for(i = 0; i < tr->rdta->numsp; i++)
-    {
-      unsigned char *yptr =  &(tr->rdta->y0[((size_t)i) * ((size_t)tr->originalCrunchedLength)]);
-
-      for(j = lower; j < upper; j++)
-	if(yptr[j] != getUndetermined(GENERIC_32))
-	  counter[yptr[j]] = TRUE;		
-    
-    }
-  
-  for(i = 0; i < maxStates; i++)
-    {      
-      if(counter[i])
-	states++;
-    }
-  
-
-  previous = counter[0];
-  
-  for(i = 1; i < 256; i++)
-    {
-      if(previous == FALSE && counter[i] == TRUE)
-	{
-	  inputError = TRUE;
-	  break;
-	}     		
-      else
-	{
-	  if(previous == TRUE && counter[i] ==  FALSE)
-	    previous = FALSE;
-	}
-    }
-  
-  if(inputError)
-    {
-      printf("Multi State Error, characters must be used in the order they are available, i.e.\n");
-      printf("0, 1, 2, 3, 4, 5, 6, 7, 8, 9, A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T, U, V\n");
-      printf("You are using the following characters: \n");
-      for(i = 0; i < 256; i++)
-	if(counter[i])
-	  printf("%c ", inverseMeaningGeneric32[i]);
-      printf("\n");
-      exit(-1);
-    }
-
-  return states;
-}
 
 
 size_t discreteRateCategories(int rateHetModel)
@@ -714,8 +642,7 @@ static boolean setupTree (tree *tr, analdef *adef)
   nodeptr  p0, p, q;
   int
     i,
-    j,
-    k,
+    j,   
     tips,
     inter; 
 
@@ -2062,390 +1989,6 @@ static boolean makevalues(rawdata *rdta, cruncheddata *cdta, tree *tr, analdef *
 
 
 
-
-
-
-
-
-static int sequenceSimilarity(unsigned char *tipJ, unsigned char *tipK, int n)
-{
-  int i;
-
-  for(i = 0; i < n; i++)
-    if(*tipJ++ != *tipK++)
-      return 0;
-
-  return 1;
-}
-
-static void checkSequences(tree *tr, rawdata *rdta, analdef *adef)
-{
-  int n = tr->mxtips + 1;
-  int i, j;
-  int *omissionList     = (int *)calloc(n, sizeof(int));
-  int *undeterminedList = (int *)calloc((rdta->sites + 1), sizeof(int));
-  int *modelList        = (int *)malloc((rdta->sites + 1)* sizeof(int));
-  int count = 0;
-  int countNameDuplicates = 0;
-  int countUndeterminedColumns = 0;
-  int countOnlyGaps = 0;
-  int modelCounter = 1;
-  unsigned char *tipI, *tipJ;
-
-  for(i = 1; i < n; i++)
-    {
-      for(j = i + 1; j < n; j++)
-	if(strcmp(tr->nameList[i], tr->nameList[j]) == 0)
-	  {
-	    countNameDuplicates++;
-	    if(processID == 0)
-	      printBothOpen("Sequence names of taxon %d and %d are identical, they are both called %s\n", i, j, tr->nameList[i]);
-	  }
-    }
-
-  if(countNameDuplicates > 0)
-    {
-      if(processID == 0)
-	printBothOpen("ERROR: Found %d taxa that had equal names in the alignment, exiting...\n", countNameDuplicates);
-      errorExit(-1);
-    }
-
-  for(i = 1; i < n; i++)
-    {
-      j = 1;
-
-      while(j <= rdta->sites)
-	{	  
-	  if(rdta->y[i][j] != getUndetermined(tr->dataVector[j]))
-	    break;	  	  
-
-	  j++;
-	}
-
-      if(j == (rdta->sites + 1))
-	{
-	  if(processID == 0)
-	    printBothOpen("ERROR: Sequence %s consists entirely of undetermined values which will be treated as missing data\n",
-			  tr->nameList[i]);
-
-	  countOnlyGaps++;
-	}
-    }
-
-  if(countOnlyGaps > 0)
-    {
-      if(processID == 0)
-	printBothOpen("ERROR: Found %d sequences that consist entirely of undetermined values, exiting...\n", countOnlyGaps);
-
-      errorExit(-1);
-    }
-
-  for(i = 0; i <= rdta->sites; i++)
-    modelList[i] = -1;
-
-  for(i = 1; i <= rdta->sites; i++)
-    {
-      j = 1;
-
-      while(j < n)
-	{
-	  if(rdta->y[j][i] != getUndetermined(tr->dataVector[i]))
-	    break;
-
-	  
-	  j++;
-	}
-
-      if(j == n)
-	{
-	  undeterminedList[i] = 1;
-
-	  if(processID == 0)
-	    printBothOpen("IMPORTANT WARNING: Alignment column %d contains only undetermined values which will be treated as missing data\n", i);
-
-	  countUndeterminedColumns++;
-	}
-      else
-	{
-	  if(adef->useMultipleModel)
-	    {
-	      modelList[modelCounter] = tr->model[i];
-	      modelCounter++;
-	    }
-	}
-    }
-
-
-  for(i = 1; i < n; i++)
-    {
-      if(omissionList[i] == 0)
-	{
-	  tipI = &(rdta->y[i][1]);
-
-	  for(j = i + 1; j < n; j++)
-	    {
-	      if(omissionList[j] == 0)
-		{
-		  tipJ = &(rdta->y[j][1]);
-		  if(sequenceSimilarity(tipI, tipJ, rdta->sites))
-		    {
-		      if(processID == 0)
-			printBothOpen("\n\nIMPORTANT WARNING: Sequences %s and %s are exactly identical\n", tr->nameList[i], tr->nameList[j]);
-
-		      omissionList[j] = 1;
-		      count++;
-		    }
-		}
-	    }
-	}
-    }
-
-  if(count > 0 || countUndeterminedColumns > 0)
-    {
-      char noDupFile[2048];
-      char noDupModels[2048];
-      char noDupSecondary[2048];
-
-      if(count > 0 &&processID == 0)
-	{
-	  printBothOpen("\nIMPORTANT WARNING\n");
-
-	  printBothOpen("Found %d %s that %s exactly identical to other sequences in the alignment.\n", count, (count == 1)?"sequence":"sequences", (count == 1)?"is":"are");
-
-	  printBothOpen("Normally they should be excluded from the analysis.\n\n");
-	}
-
-      if(countUndeterminedColumns > 0 && processID == 0)
-	{
-	  printBothOpen("\nIMPORTANT WARNING\n");
-
-	  printBothOpen("Found %d %s that %s only undetermined values which will be treated as missing data.\n",
-			countUndeterminedColumns, (countUndeterminedColumns == 1)?"column":"columns", (countUndeterminedColumns == 1)?"contains":"contain");
-
-	  printBothOpen("Normally these columns should be excluded from the analysis.\n\n");
-	}
-
-      strcpy(noDupFile, seq_file);
-      strcat(noDupFile, ".reduced");
-
-      strcpy(noDupModels, modelFileName);
-      strcat(noDupModels, ".reduced");
-
-      strcpy(noDupSecondary, secondaryStructureFileName);
-      strcat(noDupSecondary, ".reduced");
-
-      if(processID == 0)
-	{
-	  if(adef->useSecondaryStructure)
-	    {
-	      if(countUndeterminedColumns && !filexists(noDupSecondary))
-		{
-		  FILE *newFile = myfopen(noDupSecondary, "wb");
-		  int count;
-
-		  printBothOpen("\nJust in case you might need it, a secondary structure file with \n");
-		  printBothOpen("structure assignments for undetermined columns removed is printed to file %s\n",noDupSecondary);
-
-		  for(i = 1, count = 0; i <= rdta->sites; i++)
-		    {
-		      if(undeterminedList[i] == 0)
-			fprintf(newFile, "%c", tr->secondaryStructureInput[i - 1]);
-		      else
-			count++;
-		    }
-
-		  assert(count == countUndeterminedColumns);
-
-		  fprintf(newFile,"\n");
-
-		  fclose(newFile);
-		}
-	      else
-		{
-		  if(countUndeterminedColumns)
-		    {
-		      printBothOpen("\nA secondary structure file with model assignments for undetermined\n");
-		      printBothOpen("columns removed has already been printed to  file %s\n",noDupSecondary);
-		    }
-		}
-	    }
-
-
-	  if(adef->useMultipleModel && !filexists(noDupModels) && countUndeterminedColumns)
-	    {
-	      FILE *newFile = myfopen(noDupModels, "wb");
-
-	      printBothOpen("\nJust in case you might need it, a mixed model file with \n");
-	      printBothOpen("model assignments for undetermined columns removed is printed to file %s\n",noDupModels);
-
-	      for(i = 0; i < tr->NumberOfModels; i++)
-		{
-		  boolean modelStillExists = FALSE;
-
-		  for(j = 1; (j <= rdta->sites) && (!modelStillExists); j++)
-		    {
-		      if(modelList[j] == i)
-			modelStillExists = TRUE;
-		    }
-
-		  if(modelStillExists)
-		    {
-		      int k = 1;
-		      int lower, upper;
-		      int parts = 0;
-
-
-		      switch(tr->partitionData[i].dataType)
-			{
-			case AA_DATA:
-			  {
-			    char AAmodel[1024];
-
-			    strcpy(AAmodel, protModels[tr->partitionData[i].protModels]);
-			    if(tr->partitionData[i].protFreqs)
-			      strcat(AAmodel, "F");
-
-			    fprintf(newFile, "%s, ", AAmodel);
-			  }
-			  break;
-			case DNA_DATA:
-			  fprintf(newFile, "DNA, ");
-			  break;
-			case BINARY_DATA:
-			  fprintf(newFile, "BIN, ");
-			  break;
-			case GENERIC_32:
-			  fprintf(newFile, "MULTI, ");
-			  break;
-			case GENERIC_64:
-			  fprintf(newFile, "CODON, ");
-			  break;
-			default:
-			  assert(0);
-			}
-
-		      fprintf(newFile, "%s = ", tr->partitionData[i].partitionName);
-
-		      while(k <= rdta->sites)
-			{
-			  if(modelList[k] == i)
-			    {
-			      lower = k;
-			      while((modelList[k + 1] == i) && (k <= rdta->sites))
-				k++;
-			      upper = k;
-
-			      if(lower == upper)
-				{
-				  if(parts == 0)
-				    fprintf(newFile, "%d", lower);
-				  else
-				    fprintf(newFile, ",%d", lower);
-				}
-			      else
-				{
-				  if(parts == 0)
-				    fprintf(newFile, "%d-%d", lower, upper);
-				  else
-				    fprintf(newFile, ",%d-%d", lower, upper);
-				}
-			      parts++;
-			    }
-			  k++;
-			}
-		      fprintf(newFile, "\n");
-		    }
-		}
-	      fclose(newFile);
-	    }
-	  else
-	    {
-	      if(adef->useMultipleModel)
-		{
-		  printBothOpen("\nA mixed model file with model assignments for undetermined\n");
-		  printBothOpen("columns removed has already been printed to  file %s\n",noDupModels);
-		}
-	    }
-
-
-	  if(!filexists(noDupFile))
-	    {
-	      FILE *newFile;
-
-	      printBothOpen("Just in case you might need it, an alignment file with \n");
-	      if(count && !countUndeterminedColumns)
-		printBothOpen("sequence duplicates removed is printed to file %s\n", noDupFile);
-	      if(!count && countUndeterminedColumns)
-		printBothOpen("undetermined columns removed is printed to file %s\n", noDupFile);
-	      if(count && countUndeterminedColumns)
-		printBothOpen("sequence duplicates and undetermined columns removed is printed to file %s\n", noDupFile);
-
-	      newFile = myfopen(noDupFile, "wb");
-
-	      fprintf(newFile, "%d %d\n", tr->mxtips - count, rdta->sites - countUndeterminedColumns);
-
-	      for(i = 1; i < n; i++)
-		{
-		  if(!omissionList[i])
-		    {
-		      fprintf(newFile, "%s ", tr->nameList[i]);
-		      tipI =  &(rdta->y[i][1]);
-
-		      for(j = 0; j < rdta->sites; j++)
-			{
-			  if(undeterminedList[j + 1] == 0)			    
-			    fprintf(newFile, "%c", getInverseMeaning(tr->dataVector[j + 1], tipI[j]));			      			     			 
-			}
-
-		      fprintf(newFile, "\n");
-		    }
-		}
-
-	      fclose(newFile);
-	    }
-	  else
-	    {
-	      if(count && !countUndeterminedColumns)
-		printBothOpen("An alignment file with sequence duplicates removed has already\n");
-	      if(!count && countUndeterminedColumns)
-		printBothOpen("An alignment file with undetermined columns removed has already\n");
-	      if(count && countUndeterminedColumns)
-		printBothOpen("An alignment file with undetermined columns and sequence duplicates removed has already\n");
-
-	      printBothOpen("been printed to file %s\n",  noDupFile);
-	    }
-	}
-    }
-
-  free(undeterminedList);
-  free(omissionList);
-  free(modelList);
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 static void initAdef(analdef *adef)
 {  
   adef->useSecondaryStructure  = FALSE;
@@ -2526,14 +2069,14 @@ static int modelExists(char *model, analdef *adef)
       return 1;
     }
 
-  if(strcmp(model, "BINCAT\0") == 0)
+  if(strcmp(model, "BINPSR\0") == 0)
     {
       adef->model = M_BINCAT;
       adef->useInvariant = FALSE;
       return 1;
     }
 
-  if(strcmp(model, "BINCATI\0") == 0)
+  if(strcmp(model, "BINPSRI\0") == 0)
     {
       adef->model = M_BINCAT;
       adef->useInvariant = TRUE;
@@ -2556,14 +2099,14 @@ static int modelExists(char *model, analdef *adef)
       return 1;
     }
 
-  if(strcmp(model, "MULTICAT\0") == 0)
+  if(strcmp(model, "MULTIPSR\0") == 0)
     {
       adef->model = M_32CAT;
       adef->useInvariant = FALSE;
       return 1;
     }
 
-  if(strcmp(model, "MULTICATI\0") == 0)
+  if(strcmp(model, "MULTIPSRI\0") == 0)
     {
       adef->model = M_32CAT;
       adef->useInvariant = TRUE;
@@ -2586,14 +2129,14 @@ static int modelExists(char *model, analdef *adef)
       return 1;
     }
 
-  if(strcmp(model, "CODONCAT\0") == 0)
+  if(strcmp(model, "CODONPSR\0") == 0)
     {
       adef->model = M_64CAT;
       adef->useInvariant = FALSE;
       return 1;
     }
 
-  if(strcmp(model, "CODONCATI\0") == 0)
+  if(strcmp(model, "CODONPSRI\0") == 0)
     {
       adef->model = M_64CAT;
       adef->useInvariant = TRUE;
@@ -2624,14 +2167,14 @@ static int modelExists(char *model, analdef *adef)
       return 1;
     }
 
-  if(strcmp(model, "GTRCAT\0") == 0)
+  if(strcmp(model, "GTRPSR\0") == 0)
     {
       adef->model = M_GTRCAT;
       adef->useInvariant = FALSE;
       return 1;
     }
 
-   if(strcmp(model, "GTRCAT_FLOAT\0") == 0)
+   if(strcmp(model, "GTRPSR_FLOAT\0") == 0)
     {
       adef->model = M_GTRCAT;
       adef->useInvariant = FALSE;      
@@ -2639,7 +2182,7 @@ static int modelExists(char *model, analdef *adef)
 
     }
 
-  if(strcmp(model, "GTRCATI\0") == 0)
+  if(strcmp(model, "GTRPSRI\0") == 0)
     {
       adef->model = M_GTRCAT;
       adef->useInvariant = TRUE;
@@ -2653,7 +2196,7 @@ static int modelExists(char *model, analdef *adef)
 
   /* TODO empirical FREQS */
 
-  if(strcmp(model, "PROTCATGTR\0") == 0)
+  if(strcmp(model, "PROTPSRGTR\0") == 0)
     {
       adef->model = M_PROTCAT;
       adef->proteinMatrix = GTR;
@@ -2661,7 +2204,7 @@ static int modelExists(char *model, analdef *adef)
       return 1;
     }
 
-  if(strcmp(model, "PROTCATIGTR\0") == 0)
+  if(strcmp(model, "PROTPSRIGTR\0") == 0)
     {
       adef->model = M_PROTCAT;
       adef->proteinMatrix = GTR;
@@ -2691,7 +2234,7 @@ static int modelExists(char *model, analdef *adef)
     {
       /* check CAT */
 
-      strcpy(thisModel, "PROTCAT");
+      strcpy(thisModel, "PROTPSR");
       strcat(thisModel, protModels[i]);
 
       if(strcmp(model, thisModel) == 0)
@@ -2701,9 +2244,9 @@ static int modelExists(char *model, analdef *adef)
 	  return 1;
 	}
 
-      /* check CATF */
+      /* check PSRF */
 
-      strcpy(thisModel, "PROTCAT");
+      strcpy(thisModel, "PROTPSR");
       strcat(thisModel, protModels[i]);
       strcat(thisModel, "F");
 
@@ -2715,9 +2258,9 @@ static int modelExists(char *model, analdef *adef)
 	  return 1;
 	}
 
-      /* check CAT FLOAT */
+      /* check PSR FLOAT */
 
-      strcpy(thisModel, "PROTCAT");
+      strcpy(thisModel, "PROTPSR");
       strcat(thisModel, protModels[i]);
       strcat(thisModel, "_FLOAT");
 
@@ -2729,9 +2272,9 @@ static int modelExists(char *model, analdef *adef)
 	  return 1;
 	}
 
-      /* check CATF FLOAT */
+      /* check PSRF FLOAT */
 
-      strcpy(thisModel, "PROTCAT");
+      strcpy(thisModel, "PROTPSR");
       strcat(thisModel, protModels[i]);
       strcat(thisModel, "F");
       strcat(thisModel, "_FLOAT");
@@ -2745,9 +2288,9 @@ static int modelExists(char *model, analdef *adef)
 	  return 1;
 	}
 
-      /* check CATI */
+      /* check PSRI */
 
-      strcpy(thisModel, "PROTCATI");
+      strcpy(thisModel, "PROTPSRI");
       strcat(thisModel, protModels[i]);
 
       if(strcmp(model, thisModel) == 0)
@@ -2758,9 +2301,9 @@ static int modelExists(char *model, analdef *adef)
 	  return 1;
 	}
 
-      /* check CATIF */
+      /* check PSRIF */
 
-      strcpy(thisModel, "PROTCATI");
+      strcpy(thisModel, "PROTPSRI");
       strcat(thisModel, protModels[i]);
       strcat(thisModel, "F");
 
@@ -3010,7 +2553,7 @@ static void printREADME(void)
   printf("              ATTENTION: the \"-B\" option only works with the sequential version\n");
   printf("\n");
   printf("      -c      Specify number of distinct rate catgories for RAxML when modelOfEvolution\n");
-  printf("              is set to GTRCAT\n");
+  printf("              is set to GTRPSR\n");
   printf("              Individual per-site rates are categorized into numberOfCategories rate \n");
   printf("              categories to accelerate computations. \n");
   printf("\n");
@@ -3046,14 +2589,14 @@ static void printREADME(void)
   printf("      -m      Model of  Nucleotide or Amino Acid Substitution: \n");
   printf("\n"); 
   printf("              NUCLEOTIDES:\n\n");
-  printf("                \"-m GTRCAT\"         : GTR + Optimization of substitution rates + Optimization of site-specific\n");
+  printf("                \"-m GTRPSR\"         : GTR + Optimization of substitution rates + Optimization of site-specific\n");
   printf("                                      evolutionary rates which are categorized into numberOfCategories distinct \n");
   printf("                                      rate categories for greater computational efficiency.\n");
   printf("                \"-m GTRGAMMA\"       : GTR + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
   printf("                                      to discretize the GAMMA distribution.\n");
   printf("\n");
   printf("              AMINO ACIDS:\n\n");
-  printf("                \"-m PROTCATmatrixName[F]\"         : specified AA matrix + Optimization of substitution rates + Optimization of site-specific\n");
+  printf("                \"-m PROTPSRmatrixName[F]\"         : specified AA matrix + Optimization of substitution rates + Optimization of site-specific\n");
   printf("                                                    evolutionary rates which are categorized into numberOfCategories distinct \n");
   printf("                                                    rate categories for greater computational efficiency.\n");  
   printf("                \"-m PROTGAMMAmatrixName[F]\"       : specified AA matrix + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
@@ -3087,7 +2630,7 @@ static void printREADME(void)
   printf("\n");
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   printf("      -Q      Enable alternative data/load distribution algorithm for datasets with many partitions\n");
-  printf("              In particular under CAT this can lead to parallel performance improvements of over 50 per cent\n");
+  printf("              In particular under PSR this can lead to parallel performance improvements of over 50 per cent\n");
 #endif
   printf("\n");
   printf("      -R      read in a binary checkpoint file called RAxML_binaryCheckpoint.RUN_ID_number\n");
@@ -3159,34 +2702,22 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
     resultDirSet = FALSE;
 
   char
-    resultDir[1024] = "",
-    aut[256],         
+    resultDir[1024] = "",          
     *optarg,
-    model[2048] = "",
-    secondaryModel[2048] = "",
-    multiStateModel[2048] = "",
+    model[2048] = "",       
     modelChar;
 
   double 
-    likelihoodEpsilon,    
-    wcThreshold;
+    likelihoodEpsilon;
   
   int  
     optind = 1,        
     c,
     nameSet = 0,
-    alignmentSet = 0,
-    multipleRuns = 0,
-    constraintSet = 0,
-    treeSet = 0,
-    groupSet = 0,
-    modelSet = 0,
-    treesSet  = 0;
+    alignmentSet = 0,    
+    treeSet = 0,   
+    modelSet = 0;
 
-  boolean
-    bSeedSet = FALSE,
-    xSeedSet = FALSE,
-    multipleRunsSet = FALSE;
 
   run_id[0] = 0;
   workdir[0] = 0;
@@ -3352,8 +2883,8 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	    if(processID == 0)
 	      {
 		printf("Model %s does not exist\n\n", model);               
-		printf("For DNA data use:    GTRCAT                or GTRGAMMA                or\n");	
-		printf("For AA data use:     PROTCATmatrixName[F]  or PROTGAMMAmatrixName[F]  or\n");		
+		printf("For DNA data use:    GTRPSR                or GTRGAMMA                or\n");	
+		printf("For AA data use:     PROTPSRmatrixName[F]  or PROTGAMMAmatrixName[F]  or\n");		
 		printf("The AA substitution matrix can be one of the following: \n");
 		printf("DAYHOFF, DCMUT, JTT, MTREV, WAG, RTREV, CPREV, VT, BLOSUM62, MTMAM, LG, MTART, MTZOA, PMB, HIVB, HIVW, JTTDCMUT, FLU, AUTO, GTR\n\n");
 		printf("With the optional \"F\" appendix you can specify if you want to use empirical base frequencies\n");
@@ -3891,7 +3422,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
     case TREE_EVALUATION:
 
 
-      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, adef, SUMMARIZE_LH, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
 
       logFile = myfopen(temporaryFileName, "wb");
       fprintf(logFile, "%s", tr->tree_string);
@@ -3919,7 +3450,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 		{
 		case GAMMA:
 		case GAMMA_I:
-		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, adef,
+		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
 			      SUMMARIZE_LH, FALSE, FALSE);
 
 		  logFile = myfopen(temporaryFileName, "wb");
@@ -3936,7 +3467,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 		 
 
 		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
-			      TRUE, adef, SUMMARIZE_LH, FALSE, FALSE);
+			      TRUE, SUMMARIZE_LH, FALSE, FALSE);
 
 		
 
@@ -3952,7 +3483,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 	    }
 	  else
 	    {
-	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
+	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
 			  NO_BRANCHES, FALSE, FALSE);
 	      logFile = myfopen(temporaryFileName, "wb");
 	      fprintf(logFile, "%s", tr->tree_string);
@@ -3983,7 +3514,7 @@ void printBootstrapResult(tree *tr, analdef *adef, boolean finalPrint)
     {
       if(adef->bootstrapBranchLengths)
 	{
-	  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, adef, SUMMARIZE_LH, FALSE, FALSE);
+	  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
 
 	  logFile = myfopen(fileName, "ab");
 	  fprintf(logFile, "%s", tr->tree_string);
@@ -3994,7 +3525,7 @@ void printBootstrapResult(tree *tr, analdef *adef, boolean finalPrint)
 	}
       else
 	{
-	  Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef, NO_BRANCHES, FALSE, FALSE);
+	  Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, NO_BRANCHES, FALSE, FALSE);
 	  
 	  logFile = myfopen(fileName, "ab");
 	  fprintf(logFile, "%s", tr->tree_string);
@@ -4016,12 +3547,12 @@ void printBipartitionResult(tree *tr, analdef *adef, boolean finalPrint)
     {
       FILE *logFile;
 
-      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, TRUE, finalPrint, adef, NO_BRANCHES, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, TRUE, finalPrint, NO_BRANCHES, FALSE, FALSE);
       logFile = myfopen(bipartitionsFileName, "ab");
       fprintf(logFile, "%s", tr->tree_string);
       fclose(logFile);
 
-      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef, NO_BRANCHES, TRUE, FALSE);
+      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, NO_BRANCHES, TRUE, FALSE);
 
       logFile = myfopen(bipartitionsFileNameBranchLabels, "ab");
       fprintf(logFile, "%s", tr->tree_string);
@@ -4094,7 +3625,7 @@ void printLog(tree *tr, analdef *adef, boolean finalPrint)
 	      sprintf(treeID, "%d", tr->checkPointCounter);
 	      strcat(checkPoints, treeID);
 
-	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef, NO_BRANCHES, FALSE, FALSE);
+	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, NO_BRANCHES, FALSE, FALSE);
 
 	      logFile = myfopen(checkPoints, "ab");
 	      fprintf(logFile, "%s", tr->tree_string);
@@ -4125,7 +3656,7 @@ void printStartingTree(tree *tr, analdef *adef, boolean finalPrint)
       FILE *treeFile;
       char temporaryFileName[1024] = "", treeID[64] = "";
 
-      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef, NO_BRANCHES, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, NO_BRANCHES, FALSE, FALSE);
 
       if(adef->randomStartingTree)
 	strcpy(temporaryFileName, randomFileName);
@@ -4177,7 +3708,7 @@ void writeInfoFile(analdef *adef, tree *tr, double t)
 		  strcpy(modelType, "GAMMA");
 		  break;
 		case CAT:
-		  strcpy(modelType, "CAT");
+		  strcpy(modelType, "PSR");
 		  break;
 		default:
 		  assert(0);
@@ -4301,7 +3832,7 @@ void getDataTypeString(tree *tr, int model, char typeOfData[1024])
 
 
 
-void printModelParams(tree *tr, analdef *adef)
+static void printModelParams(tree *tr)
 {
   int
     model;
@@ -4492,7 +4023,7 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 
 	  printBothOpen("\n\n");
 
-	  printModelParams(tr, adef);
+	  printModelParams(tr);
 
 	  printBothOpen("Final tree written to:                 %s\n", resultFileName);
 	  printBothOpen("Execution Log File written to:         %s\n", logFileName);
@@ -4600,7 +4131,7 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 
 
 
-boolean isThisMyPartition(tree *localTree, int tid, int model, int numberOfThreads)
+boolean isThisMyPartition(tree *localTree, int tid, int model)
 { 
   if(localTree->partitionAssignment[model] == tid)
     return TRUE;
@@ -4608,18 +4139,17 @@ boolean isThisMyPartition(tree *localTree, int tid, int model, int numberOfThrea
     return FALSE;
 }
 
-static void computeFractionMany(tree *localTree, int tid, int n)
+static void computeFractionMany(tree *localTree, int tid)
 {
   int
     sites = 0;
 
-  int
-    i,
+  int   
     model;
 
   for(model = 0; model < localTree->NumberOfModels; model++)
     {
-      if(isThisMyPartition(localTree, tid, model, n))
+      if(isThisMyPartition(localTree, tid, model))
 	{	 
 	  localTree->partitionData[model].width = localTree->partitionData[model].upper - localTree->partitionData[model].lower;
 	  sites += localTree->partitionData[model].width;
@@ -4656,61 +4186,6 @@ static void computeFraction(tree *localTree, int tid, int n)
 
 
 
-static void initPartition(tree *tr, tree *localTree, int tid)
-{
-  int model;
-
-  localTree->threadID = tid; 
-
-  if(tid > 0)
-    {
-      int totalLength = 0;
-
-      localTree->rateHetModel            = tr->rateHetModel;
-      localTree->saveMemory              = tr->saveMemory;
-      localTree->useGappedImplementation = tr->useGappedImplementation;           
-      localTree->maxCategories           = tr->maxCategories;      
-      localTree->originalCrunchedLength  = tr->originalCrunchedLength;
-      localTree->NumberOfModels          = tr->NumberOfModels;
-      localTree->mxtips                  = tr->mxtips;     
-      localTree->numBranches             = tr->numBranches;
-      localTree->lhs                     = (double*)malloc(sizeof(double)   * localTree->originalCrunchedLength);     
-      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);     
-      localTree->fracchanges = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-      localTree->partitionContributions = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-      localTree->partitionData = (pInfo*)malloc(sizeof(pInfo) * localTree->NumberOfModels);
-
-      /* extend for multi-branch */
-      localTree->td[0].count = 0;
-      localTree->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * localTree->mxtips);
-      localTree->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * localTree->NumberOfModels);
-      localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * localTree->NumberOfModels);
-
-      localTree->cdta               = (cruncheddata*)malloc(sizeof(cruncheddata));
-      localTree->cdta->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
-      localTree->cdta->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
-
-      for(model = 0; model < localTree->NumberOfModels; model++)
-	{
-	  localTree->partitionData[model].numberOfCategories    = tr->partitionData[model].numberOfCategories;
-	  localTree->partitionData[model].states     = tr->partitionData[model].states;
-	  localTree->partitionData[model].maxTipStates    = tr->partitionData[model].maxTipStates;
-	  localTree->partitionData[model].dataType   = tr->partitionData[model].dataType;
-	  localTree->partitionData[model].protModels = tr->partitionData[model].protModels;
-	  localTree->partitionData[model].protFreqs  = tr->partitionData[model].protFreqs;	  
-	  localTree->partitionData[model].lower      = tr->partitionData[model].lower;
-	  localTree->partitionData[model].upper      = tr->partitionData[model].upper;	 
-	  localTree->perPartitionLH[model]           = 0.0;
-	 
-	  totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
-	}
-
-      assert(totalLength == localTree->originalCrunchedLength);
-    }
-
-  for(model = 0; model < localTree->NumberOfModels; model++)
-    localTree->partitionData[model].width        = 0;
-}
 
 
 
@@ -4754,7 +4229,7 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
   if(tr->manyPartitions)
     for(model = 0; model < tr->NumberOfModels; model++)
       {
-	if(isThisMyPartition(tr, tid, model, n))	
+	if(isThisMyPartition(tr, tid, model))	
 	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
 	    dst[i] = src[i];       
       }
@@ -4850,11 +4325,9 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 {
   int
     i,
-    currentJob,
-    parsimonyResult,
+    currentJob,   
     model,
-    localCounter,
-    globalCounter;
+    localCounter;
 
   /* some stuff associated with the barrier implementation using Pthreads and busy wait */
 
@@ -4969,7 +4442,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	  for(model = 0; model < localTree->NumberOfModels; model++)	    	     
 	    localTree->partitionData[model].numberOfCategories      = tr->partitionData[model].numberOfCategories;	    
 
-	  /* this is only relevant for the CAT model, we can worry about this later */
+	  /* this is only relevant for the PSR model, we can worry about this later */
 
 	  memcpy(localTree->cdta->patrat,       tr->cdta->patrat,      localTree->originalCrunchedLength * sizeof(double));
 	  memcpy(localTree->cdta->patratStored, tr->cdta->patratStored, localTree->originalCrunchedLength * sizeof(double));	  
@@ -4983,7 +4456,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
       if(localTree->manyPartitions)
 	for(model = 0; model < localTree->NumberOfModels; model++)
 	  {	  
-	    if(isThisMyPartition(localTree, tid, model, n))
+	    if(isThisMyPartition(localTree, tid, model))
 	      {
 		int localIndex;
 		
@@ -5006,7 +4479,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
       
       break;    
     case THREAD_RATE_CATS:            
-      /* this is for optimizing per-site rate categories under CAT, let's worry about this later */
+      /* this is for optimizing per-site rate categories under PSR, let's worry about this later */
 
       if(tid > 0)
 	{
@@ -5041,7 +4514,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	  if(localTree->manyPartitions)
 	    {
-	      if(isThisMyPartition(localTree, tid, model, n))
+	      if(isThisMyPartition(localTree, tid, model))
 		for(localCounter = 0, i = localTree->partitionData[model].lower;  i < localTree->partitionData[model].upper; i++, localCounter++)
 		  {	     
 		    localTree->partitionData[model].rateCategory[localCounter] = tr->cdta->rateCategory[i];
@@ -5377,8 +4850,10 @@ static void multiprocessorScheduling(tree *tr)
 
 static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 { 
-  int 
-    model,
+  size_t
+    model;
+
+  int
     maxCategories;
   
 #ifdef _USE_PTHREADS
@@ -5423,7 +4898,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       localTree->cdta->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
       localTree->cdta->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
 
-      for(model = 0; model < localTree->NumberOfModels; model++)
+      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
 	{
 	  localTree->partitionData[model].numberOfCategories    = tr->partitionData[model].numberOfCategories;
 	  localTree->partitionData[model].states                = tr->partitionData[model].states;
@@ -5441,28 +4916,27 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       assert(totalLength == localTree->originalCrunchedLength);
     }
 
-  for(model = 0; model < localTree->NumberOfModels; model++)
+  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     localTree->partitionData[model].width        = 0;
 
   if(tr->manyPartitions)
-    computeFractionMany(localTree, tid, n);
+    computeFractionMany(localTree, tid);
   else
     computeFraction(localTree, tid, n);
 
 #else
   assert(tr == localTree);
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
 #endif	   
 	   
   maxCategories = localTree->maxCategories;
 
-  for(model = 0; model < localTree->NumberOfModels; model++)
+  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     {
       size_t 
-	j,
-	k,
+	j,       
 	width = localTree->partitionData[model].width;
       
       const partitionLengths 
@@ -5552,7 +5026,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 	lower = tr->partitionData[model].lower,
 	width = tr->partitionData[model].upper - lower;  
       
-      for(j = 1; j <= tr->mxtips; j++)
+      for(j = 1; j <= (size_t)tr->mxtips; j++)
 	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
       
       memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->cdta->aliaswgt[lower])),      sizeof(int) * width);            
@@ -5592,7 +5066,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     if(tr->manyPartitions)
       for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
 	{
-	  if(isThisMyPartition(localTree, tid, model, n))
+	  if(isThisMyPartition(localTree, tid, model))
 	    {
 	      assert(localTree->partitionData[model].upper - localTree->partitionData[model].lower == localTree->partitionData[model].width);
 	      
@@ -5662,10 +5136,7 @@ int main (int argc, char *argv[])
   cruncheddata *cdta;
   tree         *tr;
   analdef      *adef;
-  int
-    i,
-    countGTR = 0,
-    countOtherModel = 0;  
+  
 
 
   /* not very portable thread to core pinning if PORTABLE_PTHREADS is not defined
@@ -5892,7 +5363,7 @@ int main (int argc, char *argv[])
 #endif
 
 	  /* read checkpoint file */
-	  restart(tr, adef);
+	  restart(tr);
 
 	  /* continue tree search where we left it off */
 	  computeBIGRAPID(tr, adef, TRUE); 
@@ -5908,7 +5379,7 @@ int main (int argc, char *argv[])
 	     and do an initial likelihood computation traversal 
 	     which we maybe should skeip, TODO */
 
-	  getStartingTree(tr, adef);     
+	  getStartingTree(tr);     
 
 	  /* 
 	     here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 

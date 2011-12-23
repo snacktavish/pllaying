@@ -1493,7 +1493,6 @@ void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, do
 {
   int 
     model, 
-    localIndex, 
     i;
 
   for(model = 0; model < tr->NumberOfModels; model++)
@@ -1502,7 +1501,7 @@ void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, do
 	localIndex = 0;
 
       boolean 
-	execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model, n)) || (!tr->manyPartitions));
+	execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
 
       if(execute)
 	for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
@@ -2311,9 +2310,9 @@ static void autoProtein(tree *tr, analdef *adef)
 
 
 
-void modOpt(tree *tr, analdef *adef, boolean resetModel, double likelihoodEpsilon, boolean testGappedImplementation)
+void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
 { 
-  int i, model, catOpt = 0; 
+  int i, catOpt = 0; 
   double 
     currentLikelihood,
     modelEpsilon = 0.0001;

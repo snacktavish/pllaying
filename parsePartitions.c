@@ -1296,7 +1296,7 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 		{
 		  int 
 		    j = i,
-		    bracket,
+		    bracket = 0,
 		    openBracket,
 		    closeBracket;
 		  

@@ -1062,7 +1062,7 @@ extern void mcmc(tree *tr, analdef *adef);
 #endif
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-boolean isThisMyPartition(tree *localTree, int tid, int model, int numberOfThreads);
+boolean isThisMyPartition(tree *localTree, int tid, int model);
 #endif
 
 extern void computePlacementBias(tree *tr, analdef *adef);
@@ -1089,7 +1089,6 @@ extern const unsigned int *getBitVector(int dataType);
 extern int getUndetermined(int dataType);
 extern int getStates(int dataType);
 extern char getInverseMeaning(int dataType, unsigned char state);
-extern void printModelParams(tree *tr, analdef *adef);
 extern double gettime ( void );
 extern int gettimeSrand ( void );
 extern double randum ( long *seed );
@@ -1120,7 +1119,7 @@ extern void classifyML(tree *tr, analdef *adef);
 extern void doBootstrap ( tree *tr, analdef *adef, rawdata *rdta, cruncheddata *cdta );
 extern void doInference ( tree *tr, analdef *adef, rawdata *rdta, cruncheddata *cdta );
 extern void resetBranches ( tree *tr );
-extern void modOpt ( tree *tr, analdef *adef , boolean resetModel, double likelihoodEpsilon, boolean testGappedImplementation);
+extern void modOpt ( tree *tr, analdef *adef , double likelihoodEpsilon);
 
 
 extern void parsePartitions ( analdef *adef, rawdata *rdta, tree *tr);
@@ -1190,16 +1189,16 @@ extern boolean freeBestTree ( bestlist *bt );
 
 
 extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
-			   boolean rellTree, boolean finalPrint, analdef *adef, int perGene, boolean branchLabelSupport, boolean printSHSupport);
+			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
 
 
 
-extern int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly, analdef *adef, boolean completeTree);
+extern int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly);
 extern void treeReadTopologyString(char *treeString, tree *tr);
 extern boolean treeReadLenMULT ( FILE *fp, tree *tr, analdef *adef );
 
-extern void getStartingTree ( tree *tr, analdef *adef );
+extern void getStartingTree ( tree *tr);
 extern double treeLength(tree *tr, int model);
 
 extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef);
@@ -1320,7 +1319,7 @@ extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
 
 extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
-extern void restart(tree *tr, analdef *adef);
+extern void restart(tree *tr);
 
 #ifdef _IPTOL
 extern void writeCheckpoint();
