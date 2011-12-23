@@ -1277,6 +1277,8 @@ static void getinput(analdef *adef, rawdata *rdta, cruncheddata *cdta, tree *tr)
 	{
 	  int dataType = -1;
 	  
+	  
+
 	  tr->initialPartitionData  = (pInfo*)malloc(sizeof(pInfo));
 	  tr->initialPartitionData[0].partitionName = (char*)malloc(128 * sizeof(char));
 	  strcpy(tr->initialPartitionData[0].partitionName, "No Name Provided");
@@ -1287,6 +1289,12 @@ static void getinput(analdef *adef, rawdata *rdta, cruncheddata *cdta, tree *tr)
 	  
 	  tr->NumberOfModels = 1;
 	  
+	   if(tr->NumberOfModels < NUM_BRANCHES)
+	     {
+	       printf("\nWarning: for better performance under this partition scheme  replace the line \"#define NUM_BRANCHES   %d\" in file \"axml.h\" \n", NUM_BRANCHES);
+	       printf("by \"#define NUM_BRANCHES   %d\" and then re-compile RAxML.\n", 1);
+	     }
+
 	  if(adef->model == M_PROTCAT || adef->model == M_PROTGAMMA)
 	    dataType = AA_DATA;
 	  if(adef->model == M_GTRCAT || adef->model == M_GTRGAMMA)
@@ -1345,7 +1353,7 @@ static void getinput(analdef *adef, rawdata *rdta, cruncheddata *cdta, tree *tr)
 	tr->executeModel[i] = TRUE;
       if(!adef->readBinaryFile)
 	getyspace(rdta);
-    } 
+    }
 
   setupTree(tr, adef);
 
