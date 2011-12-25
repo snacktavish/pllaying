@@ -363,15 +363,51 @@ static void recordNNIBranchInfo(nodeptr p, int numBranches)
 }
 static showNNI_move(nodeptr p)
 {
-  printBothOpen("new NNI from p %d, pnb %d, pnnb %d \n", p->number, 
-      p->next->back->number,  p->next->next->back->number);
+  printBothOpen("NNI from p %d %.6f, pnb %d %.6f, pnnb %d %.6f\n", 
+      p->number, p->z[0],
+      p->next->back->number, p->next->back->z[0], 
+      p->next->next->back->number,  p->next->next->back->z[0]);
   nodeptr q = p->back;
-  printBothOpen("new NNI to q %d, qnb %d, qnnb %d \n", q->number, 
-      q->next->back->number,  q->next->next->back->number);
+  printBothOpen("NNI from q %d %.6f, qnb %d %.6f, qnnb %d %.6f\n", 
+      q->number, q->z[0],
+      q->next->back->number, q->next->back->z[0], 
+      q->next->next->back->number,  q->next->next->back->z[0]);
+}
+//setting this out to allow for other types of setting
+static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * s, boolean record_tmp_bl)
+{
+  int i;
+  double new_value;
+  double r,mx,mn;
+  for(i = 0; i < numBranches; i++)
+  {
+    assert(p->z[i] == p->back->z[i]);
+    if(record_tmp_bl)
+      p->z_tmp[i] = p->back->z_tmp[i] = p->z[i];   /* keep current value */
+    r = (double)rand()/(double)RAND_MAX;
+    mn = p->z[i]-(s->bl_sliding_window_w/2);
+    mx = p->z[i]+(s->bl_sliding_window_w/2);
+    new_value = fabs(mn + r * (mx-mn));
+    /* Ensure always you stay within this range */
+    if(new_value > zmax) new_value = zmax;
+    if(new_value < zmin) new_value = zmin;
+    assert(new_value <= zmax && new_value >= zmin);
+
+    p->z[i] = p->back->z[i] = new_value;
+    //assuming this will be visiting each node, and multiple threads won't be accessing this
+     s->bl_prior += log(exp_pdf(s->bl_prior_exp_lambda,new_value));
+    //s->bl_prior += 1;
+  }
+}
+static void hookupBL(nodeptr p, nodeptr q, nodeptr bl_p, state *s)
+{
+   set_branch_length_sliding_window(bl_p, s->tr->numBranches, s, FALSE);
+   hookup(p, q, bl_p->z, s->tr->numBranches);
 }
 static boolean stNNIproposal(state *s)
 {
-  s->newprior = 1;
+  //s->newprior = 1;
+  s->bl_prior = 0;
   int attempts = 0;
   do{
     s->p = selectRandomInnerSubtree(s->tr); /* TODOFER do this ad hoc for NNI requirements*/
@@ -392,28 +428,60 @@ static boolean stNNIproposal(state *s)
   recordNNIBranchInfo(p, s->tr->numBranches);
   /* do only one type of NNI, nni1 */
   double randprop = (double)rand()/(double)RAND_MAX;
+  boolean changeBL = TRUE;
   if (randprop < 1.0 / 3.0)
   {
     s->whichNNI = 1;
-    hookup(p, q, p->z, s->tr->numBranches);
-    hookup(p->next,       qb1, q->next->z, s->tr->numBranches);
-    hookup(p->next->next, pb2, p->next->next->z, s->tr->numBranches);
-    hookup(q->next,       pb1, p->next->z, s->tr->numBranches);
-    hookup(q->next->next, qb2, q->next->next->z, s->tr->numBranches);
+    if(!changeBL)
+    {
+      hookup(p, q, p->z, s->tr->numBranches);
+      hookup(p->next,       qb1, q->next->z, s->tr->numBranches);
+      hookup(p->next->next, pb2, p->next->next->z, s->tr->numBranches);
+      hookup(q->next,       pb1, p->next->z, s->tr->numBranches);
+      hookup(q->next->next, qb2, q->next->next->z, s->tr->numBranches);
+    }
+    else
+    {
+      hookupBL(p, q, p, s);
+      hookupBL(p->next,       qb1, q->next, s);
+      hookupBL(p->next->next, pb2, p->next->next, s);
+      hookupBL(q->next,       pb1, p->next, s);
+      hookupBL(q->next->next, qb2, q->next->next, s);
+    }
   }
   else if (randprop < 2.0 / 3.0)
   {
     s->whichNNI = 2;
-    hookup(p, q, p->z, s->tr->numBranches);
-    hookup(p->next,       pb1, p->next->z, s->tr->numBranches);
-    hookup(p->next->next, qb1, q->next->z, s->tr->numBranches);
-    hookup(q->next,       pb2, p->next->next->z, s->tr->numBranches);
-    hookup(q->next->next, qb2, q->next->next->z, s->tr->numBranches);
+    if(!changeBL)
+    {
+      hookup(p, q, p->z, s->tr->numBranches);
+      hookup(p->next,       pb1, p->next->z, s->tr->numBranches);
+      hookup(p->next->next, qb1, q->next->z, s->tr->numBranches);
+      hookup(q->next,       pb2, p->next->next->z, s->tr->numBranches);
+      hookup(q->next->next, qb2, q->next->next->z, s->tr->numBranches);
+    }
+    else
+    {
+      hookupBL(p, q, p, s);
+      hookupBL(p->next,       pb1, p->next, s);
+      hookupBL(p->next->next, qb1, q->next, s);
+      hookupBL(q->next,       pb2, p->next->next, s);
+      hookupBL(q->next->next, qb2, q->next->next, s);
+    }
   }
   else
   {
     /* change only the branch lengths */
     s->whichNNI = 0; 
+    if(changeBL)
+    {
+      /* do it like this for symmetry */
+      hookupBL(p, q, p, s);
+      hookupBL(p->next,       pb1, p->next, s);
+      hookupBL(p->next->next, pb2, p->next->next, s);
+      hookupBL(q->next,       qb1, q->next, s);
+      hookupBL(q->next->next, qb2, q->next->next, s);
+    }
   }
 
   newviewGeneric(s->tr, p, FALSE);
@@ -436,7 +504,7 @@ reset_stNNI(state *s)
   /* whichNNI 1*/
   if(s->whichNNI == 1)
   {
-    hookup(p, q, p->z_tmp, s->tr->numBranches);
+    hookup(p, q, q->z_tmp, s->tr->numBranches);
     hookup(p->next,       qb1, p->next->z_tmp, s->tr->numBranches);
     hookup(p->next->next, pb2, p->next->next->z_tmp, s->tr->numBranches);
     hookup(q->next,       pb1, q->next->z_tmp, s->tr->numBranches);
@@ -448,6 +516,15 @@ reset_stNNI(state *s)
     hookup(p->next,       pb1, p->next->z_tmp, s->tr->numBranches);
     hookup(p->next->next, qb1, p->next->next->z_tmp, s->tr->numBranches);
     hookup(q->next,       pb2, q->next->z_tmp, s->tr->numBranches);
+    hookup(q->next->next, qb2, q->next->next->z_tmp, s->tr->numBranches);
+  }
+  else
+  {
+    assert(s->whichNNI == 0);
+    hookup(p, q, p->z_tmp, s->tr->numBranches);
+    hookup(p->next,       pb1, p->next->z_tmp, s->tr->numBranches);
+    hookup(p->next->next, pb2, p->next->next->z_tmp, s->tr->numBranches);
+    hookup(q->next,       qb1, q->next->z_tmp, s->tr->numBranches);
     hookup(q->next->next, qb2, q->next->next->z_tmp, s->tr->numBranches);
   }
 
@@ -465,31 +542,6 @@ reset_stNNI(state *s)
 
 /* end NNI topologycal prop */
 
-//setting this out to allow for other types of setting
-static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * s)
-{
-  int i;
-  double new_value;
-  double r,mx,mn;
-  for(i = 0; i < numBranches; i++)
-  {
-    assert(p->z[i] == p->back->z[i]);
-    p->z_tmp[i] = p->back->z_tmp[i] = p->z[i];   /* keep current value */
-    r = (double)rand()/(double)RAND_MAX;
-    mn = p->z[i]-(s->bl_sliding_window_w/2);
-    mx = p->z[i]+(s->bl_sliding_window_w/2);
-    new_value = fabs(mn + r * (mx-mn));
-    /* Ensure always you stay within this range */
-    if(new_value > zmax) new_value = zmax;
-    if(new_value < zmin) new_value = zmin;
-    assert(new_value <= zmax && new_value >= zmin);
-
-    p->z[i] = p->back->z[i] = new_value;
-    //assuming this will be visiting each node, and multiple threads won't be accessing this
-     s->bl_prior += log(exp_pdf(s->bl_prior_exp_lambda,new_value));
-    //s->bl_prior += 1;
-  }
-}
 
 static void traverse_branches(nodeptr p, int *count, state * s, boolean resetBL)
 {
@@ -498,7 +550,7 @@ static void traverse_branches(nodeptr p, int *count, state * s, boolean resetBL)
   if(resetBL)
     reset_branch_length(p, s->tr->numBranches);
   else//can allow for other methods later
-    set_branch_length_sliding_window(p, s->tr->numBranches, s);
+    set_branch_length_sliding_window(p, s->tr->numBranches, s, TRUE);
   *count += 1;
 
 
@@ -704,7 +756,7 @@ static prop proposal(state * instate)
   //simple proposal
   if(randprop < 0.25) 
   {
-    if(randprop < 0.2)//SPR MOVE
+    if(randprop < 0.2)//TOPOLOGICAL MOVE
     {
       if(randprop > 0.1)//SPR MOVE
       {
@@ -894,7 +946,6 @@ void mcmc(tree *tr, analdef *adef)
     */
 
     which_proposal = proposal(curstate);
-    //which_proposal = stNNIproposal(curstate); /* force tmp for testing */
     if (first == 1)
     {
       first = 0;
@@ -922,6 +973,10 @@ void mcmc(tree *tr, analdef *adef)
       {
         //printRecomTree(tr, TRUE, "after accepted");
 	// printBothOpen("SPR new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+      }
+      else if(which_proposal == stNNI)
+      {
+	      printBothOpen("NNI new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
       }
       else if(which_proposal == UPDATE_ALL_BL)
       {
