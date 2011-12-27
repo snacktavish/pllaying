@@ -357,7 +357,7 @@ typedef struct ent entry;
 
 typedef unsigned int hashNumberType;
 
-typedef unsigned int parsimonyNumber;
+
 
 /*typedef uint_fast32_t parsimonyNumber;*/
 
@@ -400,12 +400,7 @@ typedef struct
   stringHashtable;
 
 
-typedef struct
-{
-  unsigned int  parsimonyScore;
-  unsigned int  parsimonyState;
-}
-  parsimonyVector;
+
 
 
 typedef struct ratec
@@ -439,31 +434,11 @@ typedef struct
 
 struct noderec;
 
-typedef struct epBrData
-{
-  int    *countThem;
-  int    *executeThem;
-  unsigned int *parsimonyScores;
-  double *branches;
-  double *bootstrapBranches;
-  double *likelihoods;
-  double originalBranchLength;
-  char branchLabel[64];
-  int leftNodeNumber;
-  int rightNodeNumber;
-  int *leftScaling;
-  int *rightScaling;
-  parsimonyVector *leftParsimony;
-  parsimonyVector *rightParsimony;
-  double branchLengths[NUM_BRANCHES];
-  double *left;
-  double *right;
-  int branchNumber; 
-} epaBranchData;
+
 
 typedef struct
 {
-  epaBranchData *epa;
+ 
 
   unsigned int *vector; 
   int support;   
@@ -508,6 +483,7 @@ typedef  struct noderec
   int              support;
   int              number;
   char             x;
+  char             xPars;
 }
   node, *nodeptr;
 
@@ -533,7 +509,7 @@ typedef struct iL {
 
 
 
-
+typedef unsigned int parsimonyNumber;
 
 
 typedef struct {
@@ -579,6 +555,10 @@ typedef struct {
   int               gapVectorLength;
   unsigned int     *gapVector;
   double           *gapColumn; 
+
+  size_t parsimonyLength;
+  parsimonyNumber *parsVect; 
+
 } pInfo;
 
 
@@ -666,6 +646,9 @@ typedef struct {
 } siteAAModels;
 
 typedef  struct  {
+
+  int *ti;
+
   boolean useGappedImplementation;
   boolean saveMemory;
   int              startingTree;
@@ -788,6 +771,9 @@ typedef  struct  {
   char *tree1;
   int treeStringLength;
  
+  unsigned int bestParsimony;
+  unsigned int *parsimonyScore;
+  
   double bestOfNode;
   nodeptr removeNode;
   nodeptr insertNode;
@@ -1026,11 +1012,7 @@ extern int checker ( tree *tr, nodeptr p );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
 extern void makeRandomTree ( tree *tr);
 extern void nodeRectifier ( tree *tr );
-extern void makeParsimonyTreeThorough(tree *tr, analdef *adef);
-extern void makeParsimonyTree ( tree *tr, analdef *adef );
-extern void makeParsimonyTreeFastDNA(tree *tr, analdef *adef);
-extern void makeParsimonyTreeIncomplete ( tree *tr, analdef *adef );
-extern void makeParsimonyInsertions(tree *tr, nodeptr startNodeQ, nodeptr startNodeR);
+extern void makeParsimonyTreeFast(tree *tr, analdef *adef);
 
 
 
@@ -1132,14 +1114,9 @@ extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/
 
-extern unsigned int evaluateParsimonyIterative(tree *);
-extern void newviewParsimonyIterative(tree *);
 
-extern unsigned int evaluateParsimonyIterativeFast(tree *);
-extern void newviewParsimonyIterativeFast(tree *);
 
-extern unsigned int evaluatePerSiteParsimony(tree *tr, nodeptr p, unsigned int *siteParsimony);
-extern void initravParsimonyNormal(tree *tr, nodeptr p);
+
 
 extern double evaluateGenericInitravPartition(tree *tr, nodeptr p, int model);
 extern void evaluateGenericVectorIterative(tree *, int startIndex, int endIndex);
@@ -1230,7 +1207,7 @@ extern void makenewzClassify(tree *tr, int maxiter, double *result, double *z0, 
 extern void    newviewClassify(tree *tr, branchInfo *bInf, double *z);
 
 extern void addTraverseRobIterative(tree *tr, int branchNumber);
-extern void insertionsParsimonyIterative(tree *tr, int branchNumber);
+
 
 extern void newviewClassifySpecial(tree *tr, double *x1_start, double *x2_start, double *x3_start, int *ex1, int *ex2, int *ex3,
 				   unsigned char *tipX1,  unsigned char *tipX2, int tipCase, double *pz, double *qz);

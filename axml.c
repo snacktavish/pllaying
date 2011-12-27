@@ -1117,10 +1117,13 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:vhMSDQXb", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:vhMSDQXbp", &optind, &optarg))!=-1))
     {
     switch(c)
       {    
+      case 'p':
+	tr->startingTree = parsimonyTree;
+	break;
       case 'r':
 	sscanf(optarg,"%ld", &(tr->randomNumberSeed));	
 	if(tr->randomNumberSeed <= 0)
@@ -3177,6 +3180,7 @@ int main (int argc, char *argv[])
 	     and do an initial likelihood computation traversal 
 	     which we maybe should skeip, TODO */
 	  
+
 	  switch(tr->startingTree)
 	    {
 	    case randomTree:
@@ -3186,6 +3190,8 @@ int main (int argc, char *argv[])
 	      getStartingTree(tr);     
 	      break;
 	    case parsimonyTree:	     
+	      /* runs only on process 0 ! */
+	      makeParsimonyTreeFast(tr, adef);
 	      break;
 	    default:
 	      assert(0);
