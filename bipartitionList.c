@@ -59,7 +59,6 @@
 
 #define _NEW_MRE
 
-extern FILE *INFILE;
 extern char run_id[128];
 extern char workdir[1024];
 extern char bootStrapFile[1024];

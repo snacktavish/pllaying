@@ -13,23 +13,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "axml.h"
-extern int  optimizeRatesInvocations;
-extern int  optimizeRateCategoryInvocations;
-extern int  optimizeAlphaInvocations;
-extern int  optimizeInvarInvocations;
-extern int  checkPointCounter;
-extern int  Thorough;
-extern int  partCount;
-extern char tree_file[1024];
-extern const unsigned int mask32[32];
-extern double masterTime;
 
-extern FILE   *INFILE, *permutationFile, *logFile, *infoFile;
-
-extern char seq_file[1024];
-extern char permFileName[1024], resultFileName[1024], 
-  logFileName[1024], checkpointFileName[1024], infoFileName[1024], run_id[128], workdir[1024], bootStrapFile[1024], bootstrapFileName[1024], 
-  bipartitionsFileName[1024],bipartitionsFileNameBranchLabels[1024]; 
 
  
   

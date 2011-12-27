@@ -736,20 +736,17 @@ static void checkTaxonName(char *buffer, int len)
 
 
 static void initAdef(analdef *adef)
-{  
+{   
   adef->max_rearrange          = 21;
   adef->stepwidth              = 5;
   adef->initial                = 10;
   adef->bestTrav               = 10;
-  adef->initialSet             = FALSE;
-  adef->restart                = FALSE;
+  adef->initialSet             = FALSE; 
   adef->mode                   = BIG_RAPID_MODE;
   adef->categories             = 25;
   adef->likelihoodEpsilon      = 0.1;
   adef->constraint             = FALSE;
   adef->grouping               = FALSE;
-  adef->randomStartingTree     = FALSE;
-  adef->parsimonySeed          = 0;  
   adef->permuteTreeoptimize    = FALSE; 
   adef->perGeneBranchLengths   = FALSE;  
   adef->gapyness               = 0.0; 
@@ -1113,22 +1110,36 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
   tr->manyPartitions = FALSE;
   
+  tr->startingTree = randomTree;
+  tr->randomNumberSeed = 12345;
   /********* tr inits end*************/
 
 
 
 
-  while(!bad_opt &&
-	((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:t:w:n:s:vhMSDQXb", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:vhMSDQXb", &optind, &optarg))!=-1))
     {
     switch(c)
       {    
+      case 'r':
+	sscanf(optarg,"%ld", &(tr->randomNumberSeed));	
+	if(tr->randomNumberSeed <= 0)
+	  {
+	    printf("Random number seed specified via -r must be greater than zero\n");
+	    errorExit(-1);
+	  }
+	break;
       case 'Q':
+#ifdef _USE_PTHREADS
 	tr->manyPartitions = TRUE;
+#else
+	printf("The -Q option does not have an effect in the sequential version\n");
+#endif
 	break;
       case 's':		 	
 	strcpy(byteFileName, optarg);	 	
 	byteFileSet = TRUE;
+	printf("%s \n", byteFileName);
 	break;      
       case 'S':
 	tr->saveMemory = TRUE;
@@ -1208,7 +1219,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
         break;
       case 't':
 	strcpy(tree_file, optarg);
-	adef->restart = TRUE;
+	tr->startingTree = givenTree;
 	treeSet = 1;       
 	break;     
       case 'm':
@@ -1251,12 +1262,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
       }*/
 #endif
 
-  if(adef->restart && adef->useCheckpoint)
-    {
-       if(processID == 0)
-	printf("\n Error, you must either specify a starting tree via \"-t\" or a checkpoint file via \"-R\"\n");
-      errorExit(-1);
-    }
+  
 
   if(!byteFileSet)
     {
@@ -2484,7 +2490,7 @@ static int partCompare(const void *p1, const void *p2)
   return (0);
 }
 
-static void multiprocessorScheduling(tree *tr)
+static void multiprocessorScheduling(tree *tr, int tid)
 {
   int 
     s,
@@ -2513,7 +2519,8 @@ static void multiprocessorScheduling(tree *tr)
       assert(exists);
     }
 
-  printBothOpen("\nMulti-processor partition data distribution enabled (-Q option)\n");
+  if(tid == 0)
+    printBothOpen("\nMulti-processor partition data distribution enabled (-Q option)\n");
 
   for(s = 0; s < arrayLength; s++)
     {
@@ -2574,13 +2581,16 @@ static void multiprocessorScheduling(tree *tr)
 	      tr->partitionAssignment[pt[i].partitionNumber] = minIndex;
 	    }
 	  
-	  for(i = 0; i < n; i++)
-	    {      
-	      printBothOpen("Process %d has %d sites for %d state model \n", i, assignments[i], modelStates[s]);
-	      checkSum += (size_t)assignments[i];
+	  if(tid == 0)
+	    {
+	      for(i = 0; i < n; i++)	       
+		printBothOpen("Process %d has %d sites for %d state model \n", i, assignments[i], modelStates[s]);		  		
+	      
+	      printBothOpen("\n");
 	    }
-	  
-	  printBothOpen("\n");
+
+	  for(i = 0; i < n; i++)
+	    checkSum += (size_t)assignments[i];
 	  
 	  assert(sum == checkSum);
 	  
@@ -2617,11 +2627,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       localTree->manyPartitions = tr->manyPartitions;
       localTree->NumberOfModels          = tr->NumberOfModels;
       
-      if(localTree->manyPartitions)
-	{
-	  localTree->partitionAssignment = (int*)malloc(sizeof(int) * localTree->NumberOfModels);
-	  memcpy(localTree->partitionAssignment, tr->partitionAssignment, localTree->NumberOfModels * sizeof(int));
-	}
+     
 
       localTree->rateHetModel            = tr->rateHetModel;
       localTree->saveMemory              = tr->saveMemory;
@@ -2642,7 +2648,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       localTree->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * localTree->NumberOfModels);
       localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * localTree->NumberOfModels);
 
-      /*localTree->cdta               = (cruncheddata*)malloc(sizeof(cruncheddata));*/
+      
       localTree->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
       localTree->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
 
@@ -2666,6 +2672,9 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     localTree->partitionData[model].width        = 0;
+
+  if(tr->manyPartitions)
+    multiprocessorScheduling(localTree, tid);
 
   if(tr->manyPartitions)
     computeFractionMany(localTree, tid);
@@ -3080,10 +3089,7 @@ int main (int argc, char *argv[])
 	 We have implemented very simple "standard" heuristics for solving the multiprocessor scheduling problem that turn out to work very well
 	 and are cheap to compute */
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-      if(tr->manyPartitions)
-	multiprocessorScheduling(tr);
-#endif
+    
 
 
 #ifdef _USE_PTHREADS
@@ -3170,8 +3176,20 @@ int main (int argc, char *argv[])
 	  /* get the starting tree: here we just parse the tree passed via the command line 
 	     and do an initial likelihood computation traversal 
 	     which we maybe should skeip, TODO */
-
-	  getStartingTree(tr);     
+	  
+	  switch(tr->startingTree)
+	    {
+	    case randomTree:
+	      makeRandomTree(tr);
+	      break;
+	    case givenTree:
+	      getStartingTree(tr);     
+	      break;
+	    case parsimonyTree:	     
+	      break;
+	    default:
+	      assert(0);
+	    }
 
 	  /* 
 	     here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 

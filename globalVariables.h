@@ -40,7 +40,6 @@ double *globalResult;
 
 int processID;
 infoList iList;
-FILE   *INFILE;
 
 int Thorough = 0;
 

@@ -44,7 +44,7 @@
 
 #include "axml.h"
 
-extern FILE *INFILE;
+
 extern char infoFileName[1024];
 extern char tree_file[1024];
 extern char *likelihood_key;
@@ -922,15 +922,14 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
 
 void getStartingTree(tree *tr)
 {
-  INFILE = myfopen(tree_file, "rb");
+  FILE *treeFile = myfopen(tree_file, "rb");
 
   tr->likelihood = unlikely;
    
-  treeReadLen(INFILE, tr, FALSE, FALSE, FALSE);
+  treeReadLen(treeFile, tr, FALSE, FALSE, FALSE);
                
-  fclose(INFILE);
+  fclose(treeFile);
  
-
   tr->start = tr->nodep[1];
 }
 

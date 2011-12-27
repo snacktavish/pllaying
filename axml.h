@@ -668,8 +668,8 @@ typedef struct {
 typedef  struct  {
   boolean useGappedImplementation;
   boolean saveMemory;
-  
- 
+  int              startingTree;
+  long             randomNumberSeed;
 
   double          *lhs;
   double          *patrat;      /* rates per pattern */
@@ -889,6 +889,10 @@ typedef struct {
     boolean          improved;
     } bestlist;
 
+#define randomTree    0
+#define givenTree     1 
+#define parsimonyTree 2
+
 typedef  struct {
   int              categories;
   int              bestTrav;
@@ -898,12 +902,10 @@ typedef  struct {
   boolean          initialSet;
   int              mode;
  
-  boolean          restart;
+
   boolean          constraint;
   boolean          grouping;
-  boolean          randomStartingTree;
  
-  long           parsimonySeed;
   boolean        perGeneBranchLengths;
   boolean        permuteTreeoptimize; 
   boolean        compressPatterns;
@@ -917,6 +919,9 @@ typedef  struct {
   boolean       bayesian;
 #endif
 } analdef;
+
+
+
 
 typedef struct 
 {
@@ -1018,10 +1023,8 @@ extern void thoroughOptimization ( tree *tr, analdef *adef, topolRELL_LIST *rl, 
 extern int treeOptimizeThorough ( tree *tr, int mintrav, int maxtrav);
 
 extern int checker ( tree *tr, nodeptr p );
-extern int randomInt ( int n );
-extern void makePermutation ( int *perm, int n, analdef *adef );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
-extern void makeRandomTree ( tree *tr, analdef *adef );
+extern void makeRandomTree ( tree *tr);
 extern void nodeRectifier ( tree *tr );
 extern void makeParsimonyTreeThorough(tree *tr, analdef *adef);
 extern void makeParsimonyTree ( tree *tr, analdef *adef );
