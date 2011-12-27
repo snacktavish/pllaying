@@ -129,7 +129,7 @@ static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean pri
   nodeptr p = q;
   int slot;
 
-  if(isTip(p->number, tr->rdta->numsp)) 
+  if(isTip(p->number, tr->mxtips)) 
   {	       	  
     nameptr = tr->nameList[p->number];     
     sprintf(treestr, "%s", nameptr);

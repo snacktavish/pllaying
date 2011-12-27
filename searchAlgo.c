@@ -66,7 +66,7 @@ boolean initrav (tree *tr, nodeptr p)
 { 
   nodeptr  q;
   
-  if (!isTip(p->number, tr->rdta->numsp)) 
+  if (!isTip(p->number, tr->mxtips)) 
     {      
       q = p->next;
       
@@ -146,7 +146,7 @@ boolean smooth (tree *tr, nodeptr p)
   nodeptr  q;
   
   if (! update(tr, p))               return FALSE; /*  Adjust branch */
-  if (! isTip(p->number, tr->rdta->numsp)) 
+  if (! isTip(p->number, tr->mxtips)) 
     {                                  /*  Adjust descendants */
       q = p->next;
       while (q != p) 
@@ -197,7 +197,7 @@ boolean smoothTree (tree *tr, int maxtimes)
 	tr->partitionSmoothed[i] = TRUE;		
 
       if (! smooth(tr, p->back))       return FALSE;
-      if (!isTip(p->number, tr->rdta->numsp)) 
+      if (!isTip(p->number, tr->mxtips)) 
 	{
 	  q = p->next;
 	  while (q != p) 
@@ -228,7 +228,7 @@ boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
   nodeptr  q;
   int i;
   
-  if (isTip(p->number, tr->rdta->numsp)) return FALSE;
+  if (isTip(p->number, tr->mxtips)) return FALSE;
   
    for(i = 0; i < tr->numBranches; i++)	
      tr->partitionConverged[i] = FALSE;	
@@ -332,7 +332,7 @@ boolean smoothRegion (tree *tr, nodeptr p, int region)
 
   if(region > 0)
     {
-      if (!isTip(p->number, tr->rdta->numsp)) 
+      if (!isTip(p->number, tr->mxtips)) 
 	{                                 
 	  q = p->next;
 	  while (q != p) 
@@ -353,7 +353,7 @@ boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
     nodeptr  q;
     int i;
 
-    if (isTip(p->number, tr->rdta->numsp)) return FALSE;            /* Should be an error */
+    if (isTip(p->number, tr->mxtips)) return FALSE;            /* Should be an error */
 
     for(i = 0; i < tr->numBranches; i++)
       tr->partitionConverged[i] = FALSE;
@@ -706,7 +706,7 @@ void addTraverseBIG(tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 
     }
   
-  if ((!isTip(q->number, tr->rdta->numsp)) && (--maxtrav > 0)) 
+  if ((!isTip(q->number, tr->mxtips)) && (--maxtrav > 0)) 
     {    
       addTraverseBIG(tr, p, q->next->back, mintrav, maxtrav);
       addTraverseBIG(tr, p, q->next->next->back, mintrav, maxtrav);    
@@ -729,13 +729,13 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
   
  
   
-  if (!isTip(p->number, tr->rdta->numsp) && doP) 
+  if (!isTip(p->number, tr->mxtips) && doP) 
     {     
       p1 = p->next->back;
       p2 = p->next->next->back;
       
      
-      if(!isTip(p1->number, tr->rdta->numsp) || !isTip(p2->number, tr->rdta->numsp))
+      if(!isTip(p1->number, tr->mxtips) || !isTip(p2->number, tr->mxtips))
 	{
 	  for(i = 0; i < tr->numBranches; i++)
 	    {
@@ -745,7 +745,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 	  
 	  if (! removeNodeBIG(tr, p,  tr->numBranches)) return badRear;
 	  
-	  if (!isTip(p1->number, tr->rdta->numsp)) 
+	  if (!isTip(p1->number, tr->mxtips)) 
 	    {
 	      addTraverseBIG(tr, p, p1->next->back,
 			     mintrav, maxtrav);         
@@ -753,7 +753,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 			     mintrav, maxtrav);          
 	    }
 	  
-	  if (!isTip(p2->number, tr->rdta->numsp)) 
+	  if (!isTip(p2->number, tr->mxtips)) 
 	    {
 	      addTraverseBIG(tr, p, p2->next->back,
 			     mintrav, maxtrav);
@@ -767,7 +767,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 	}
     }  
   
-  if (!isTip(q->number, tr->rdta->numsp) && maxtrav > 0 && doQ) 
+  if (!isTip(q->number, tr->mxtips) && maxtrav > 0 && doQ) 
     {
       q1 = q->next->back;
       q2 = q->next->next->back;
@@ -776,13 +776,13 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 	((!q2->tip) && (!q2->next->back->tip || !q2->next->next->back->tip))) */
       if (
 	  (
-	   ! isTip(q1->number, tr->rdta->numsp) && 
-	   (! isTip(q1->next->back->number, tr->rdta->numsp) || ! isTip(q1->next->next->back->number, tr->rdta->numsp))
+	   ! isTip(q1->number, tr->mxtips) && 
+	   (! isTip(q1->next->back->number, tr->mxtips) || ! isTip(q1->next->next->back->number, tr->mxtips))
 	   )
 	  ||
 	  (
-	   ! isTip(q2->number, tr->rdta->numsp) && 
-	   (! isTip(q2->next->back->number, tr->rdta->numsp) || ! isTip(q2->next->next->back->number, tr->rdta->numsp))
+	   ! isTip(q2->number, tr->mxtips) && 
+	   (! isTip(q2->next->back->number, tr->mxtips) || ! isTip(q2->next->next->back->number, tr->mxtips))
 	   )
 	  )
 	{
@@ -797,7 +797,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 	  
 	  mintrav2 = mintrav > 2 ? mintrav : 2;
 	  
-	  if (/*! q1->tip*/ !isTip(q1->number, tr->rdta->numsp)) 
+	  if (/*! q1->tip*/ !isTip(q1->number, tr->mxtips)) 
 	    {
 	      addTraverseBIG(tr, q, q1->next->back,
 			     mintrav2 , maxtrav);
@@ -805,7 +805,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 			     mintrav2 , maxtrav);         
 	    }
 	  
-	  if (/*! q2->tip*/ ! isTip(q2->number, tr->rdta->numsp)) 
+	  if (/*! q2->tip*/ ! isTip(q2->number, tr->mxtips)) 
 	    {
 	      addTraverseBIG(tr, q, q2->next->back,
 			     mintrav2 , maxtrav);
@@ -969,7 +969,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
 	x = p->next->next;
 	y = p->back;
 			
-	if(! isTip(x->number, tr->rdta->numsp) && isTip(y->number, tr->rdta->numsp))
+	if(! isTip(x->number, tr->mxtips) && isTip(y->number, tr->mxtips))
 	  {
 	    while ((! x->x)) 
 	      {
@@ -978,7 +978,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
 	      }
 	  }
 	
-	if(isTip(x->number, tr->rdta->numsp) && !isTip(y->number, tr->rdta->numsp))
+	if(isTip(x->number, tr->mxtips) && !isTip(y->number, tr->mxtips))
 	  {
 	    while ((! y->x)) 
 	      {		  
@@ -987,7 +987,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
 	      }
 	  }
 	
-	if(!isTip(x->number, tr->rdta->numsp) && !isTip(y->number, tr->rdta->numsp))
+	if(!isTip(x->number, tr->mxtips) && !isTip(y->number, tr->mxtips))
 	  {
 	    while ((! x->x) || (! y->x)) 
 	      {
@@ -1082,11 +1082,11 @@ static void writeCheckpoint(tree *tr)
   myfwrite(tr->tree0, sizeof(char), tr->treeStringLength, f);
   myfwrite(tr->tree1, sizeof(char), tr->treeStringLength, f);
 
-  myfwrite(tr->cdta->rateCategory, sizeof(int), tr->rdta->sites + 1, f);
-  myfwrite(tr->cdta->patrat, sizeof(double), tr->rdta->sites + 1, f);
-  myfwrite(tr->cdta->patratStored, sizeof(double), tr->rdta->sites + 1, f);
-  myfwrite(tr->wr,  sizeof(double), tr->rdta->sites + 1, f);
-  myfwrite(tr->wr2,  sizeof(double), tr->rdta->sites + 1, f);
+  myfwrite(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
+  myfwrite(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
+  myfwrite(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
+  myfwrite(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
+  myfwrite(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
   
   
   /* pInfo */
@@ -1261,11 +1261,11 @@ static void readCheckpoint(tree *tr)
 	}
     }
 
-  myfread(tr->cdta->rateCategory, sizeof(int), tr->rdta->sites + 1, f);
-  myfread(tr->cdta->patrat, sizeof(double), tr->rdta->sites + 1, f);
-  myfread(tr->cdta->patratStored, sizeof(double), tr->rdta->sites + 1, f);
-  myfread(tr->wr,  sizeof(double), tr->rdta->sites + 1, f);
-  myfread(tr->wr2,  sizeof(double), tr->rdta->sites + 1, f);
+  myfread(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
+  myfread(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
+  myfread(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
+  myfread(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
+  myfread(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
   
   
   /* pInfo */

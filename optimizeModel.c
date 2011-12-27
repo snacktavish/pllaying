@@ -1457,7 +1457,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
   for (i = lower, zeroCounter = 0; i < upper; i++, zeroCounter++) 
       {
 	double
-	  temp = tr->cdta->patrat[i];
+	  temp = tr->patrat[i];
 
 	int
 	  found = 0;
@@ -1467,7 +1467,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 	    if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
 	      {
 		found = 1;
-		tr->cdta->rateCategory[i] = k;				
+		tr->rateCategory[i] = k;				
 		break;
 	      }
 	  }
@@ -1475,7 +1475,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 	if(!found)
 	  {
 	    min = fabs(temp - rc[0].rate);
-	    tr->cdta->rateCategory[i] = 0;
+	    tr->rateCategory[i] = 0;
 
 	    for(k = 1; k < tr->partitionData[model].numberOfCategories; k++)
 	      {
@@ -1484,7 +1484,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 		if(diff < min)
 		  {
 		    min = diff;
-		    tr->cdta->rateCategory[i] = k;
+		    tr->rateCategory[i] = k;
 		  }
 	      }
 	  }
@@ -1522,8 +1522,8 @@ void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, do
 		const double epsilon = 0.00001;
 		int k;	      
 		
-		tr->cdta->patrat[i] = tr->cdta->patratStored[i];     
-		initialRate = tr->cdta->patrat[i];
+		tr->patrat[i] = tr->patratStored[i];     
+		initialRate = tr->patrat[i];
 		
 		initialLikelihood = evaluatePartialGeneric(tr, localIndex, initialRate, model); /* i is real i ??? */
 		
@@ -1566,19 +1566,19 @@ void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, do
 		  {
 		    if(rightLH > leftLH)	    
 		      {	     
-			tr->cdta->patrat[i] = rightRate;
+			tr->patrat[i] = rightRate;
 			lhs[i] = rightLH;
 		      }
 		    else
 		      {	      
-			tr->cdta->patrat[i] = leftRate;
+			tr->patrat[i] = leftRate;
 			lhs[i] = leftLH;
 		      }
 		  }
 		else
 		  lhs[i] = initialLikelihood;
 		
-		tr->cdta->patratStored[i] = tr->cdta->patrat[i];
+		tr->patratStored[i] = tr->patrat[i];
 		localIndex++;
 	      }
 	  }
@@ -1603,8 +1603,8 @@ static void optRateCatModel(tree *tr, int model, double lower_spacing, double up
       const double epsilon = 0.00001;
       int k;
       
-      tr->cdta->patrat[i] = tr->cdta->patratStored[i];     
-      initialRate = tr->cdta->patrat[i];
+      tr->patrat[i] = tr->patratStored[i];     
+      initialRate = tr->patrat[i];
       
       initialLikelihood = evaluatePartialGeneric(tr, i, initialRate, model); 
       
@@ -1647,19 +1647,19 @@ static void optRateCatModel(tree *tr, int model, double lower_spacing, double up
 	{
 	  if(rightLH > leftLH)	    
 	    {	     
-	      tr->cdta->patrat[i] = rightRate;
+	      tr->patrat[i] = rightRate;
 	      lhs[i] = rightLH;
 	    }
 	  else
 	    {	      
-	      tr->cdta->patrat[i] = leftRate;
+	      tr->patrat[i] = leftRate;
 	      lhs[i] = leftLH;
 	    }
 	}
       else
 	lhs[i] = initialLikelihood;
       
-      tr->cdta->patratStored[i] = tr->cdta->patrat[i];
+      tr->patratStored[i] = tr->patrat[i];
     }
 
 }
@@ -1701,12 +1701,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower; i < upper; i++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
 		  
 		  accWgt += w;
 		  
@@ -1725,12 +1725,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower; i < upper; i++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);	      
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
 		  
 		  accRat += (w * rate);
 		}	         
@@ -1750,12 +1750,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower; i < upper; i++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
 		  
 		  accWgt += w;
 		  
@@ -1770,11 +1770,11 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	  for(i = lower; i < upper; i++)
 	    {
 	      double
-		w = ((double)tr->cdta->aliaswgt[i]);	      
+		w = ((double)tr->aliaswgt[i]);	      
 
 	       double
 		 wtemp,
-		 temp = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		 temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 
 	       wtemp = temp * w;
 
@@ -1791,7 +1791,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      {	    	      
 		tr->partitionData[model].wr[localCount]  = tr->wr[i];
 		tr->partitionData[model].wr2[localCount] = tr->wr2[i];
-		tr->partitionData[model].rateCategory[localCount] = tr->cdta->rateCategory[i];
+		tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
 	      }
 	  }
 #endif
@@ -1818,12 +1818,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
 		  
 		  accWgt += w;
 		  
@@ -1851,12 +1851,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);	      
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
 		  
 		  accRat += (w * rate);
 		}
@@ -1878,12 +1878,12 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
 		{
 		  int 
-		    w = tr->cdta->aliaswgt[i];
+		    w = tr->aliaswgt[i];
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->cdta->rateCategory[i] && tr->cdta->rateCategory[i] < tr->maxCategories);
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
 		  
 		  accWgt += w;
 		  
@@ -1906,11 +1906,11 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
 	    {
 	      double
-		w = ((double)tr->cdta->aliaswgt[i]);	      
+		w = ((double)tr->aliaswgt[i]);	      
 
 	       double
 		 wtemp,
-		 temp = tr->partitionData[model].perSiteRates[tr->cdta->rateCategory[i]];
+		 temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 
 	       wtemp = temp * w;
 
@@ -1930,7 +1930,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    {	    	      
 	      tr->partitionData[model].wr[localCount]  = tr->wr[i];
 	      tr->partitionData[model].wr2[localCount] = tr->wr2[i];
-	      tr->partitionData[model].rateCategory[localCount] = tr->cdta->rateCategory[i];
+	      tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
 	    }
 	}
 #endif
@@ -1956,19 +1956,19 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	lower_spacing, 
 	upper_spacing,
 	initialLH = tr->likelihood,	
-	*ratStored = (double *)malloc(sizeof(double) * tr->cdta->endsite),
-	*lhs =       (double *)malloc(sizeof(double) * tr->cdta->endsite),
+	*ratStored = (double *)malloc(sizeof(double) * tr->originalCrunchedLength),
+	/**lhs =       (double *)malloc(sizeof(double) * tr->originalCrunchedLength),*/
 	**oldCategorizedRates = (double **)malloc(sizeof(double *) * tr->NumberOfModels);
 
       int  
 	i,
 	k,
 	maxCategories = _maxCategories,
-	*oldCategory =  (int *)malloc(sizeof(int) * tr->cdta->endsite),
+	*oldCategory =  (int *)malloc(sizeof(int) * tr->originalCrunchedLength),
 	model,
 	*oldNumbers = (int *)malloc(sizeof(int) * tr->NumberOfModels);
   
-      assert(isTip(tr->start->number, tr->rdta->numsp));         
+      assert(isTip(tr->start->number, tr->mxtips));         
       
       evaluateGeneric(tr, tr->start, TRUE);
 
@@ -1991,8 +1991,8 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
       
       optimizeRateCategoryInvocations++;
 
-      memcpy(oldCategory, tr->cdta->rateCategory, sizeof(int) * tr->cdta->endsite);	     
-      memcpy(ratStored,   tr->cdta->patratStored, sizeof(double) * tr->cdta->endsite);
+      memcpy(oldCategory, tr->rateCategory, sizeof(int) * tr->originalCrunchedLength);	     
+      memcpy(ratStored,   tr->patratStored, sizeof(double) * tr->originalCrunchedLength);
 
       for(model = 0; model < tr->NumberOfModels; model++)
 	{
@@ -2004,19 +2004,19 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	}      
       
 #ifdef _USE_PTHREADS
-      tr->lhs = lhs;
+      /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
       masterBarrier(THREAD_RATE_CATS, tr);
 #else
 #ifdef _FINE_GRAIN_MPI
-      tr->lhs = lhs;
+      /*      tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
       masterBarrierMPI(THREAD_RATE_CATS, tr);
 #else
       for(model = 0; model < tr->NumberOfModels; model++)      
-	optRateCatModel(tr, model, lower_spacing, upper_spacing, lhs);
+	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
 #endif     
 #endif
 
@@ -2038,14 +2038,14 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	      rc[i].rate = 0.0;
 	    }  
 	
-	  rc[0].accumulatedSiteLikelihood = lhs[lower];
-	  rc[0].rate = tr->cdta->patrat[lower];
+	  rc[0].accumulatedSiteLikelihood = tr->lhs[lower];
+	  rc[0].rate = tr->patrat[lower];
 	
-	  tr->cdta->rateCategory[lower] = 0;
+	  tr->rateCategory[lower] = 0;
 	
 	  for (i = lower + 1; i < upper; i++) 
 	    {
-	      temp = tr->cdta->patrat[i];
+	      temp = tr->patrat[i];
 	      found = 0;
 	    
 	      for(k = 0; k < where; k++)
@@ -2053,7 +2053,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 		  if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
 		    {
 		      found = 1;						
-		      rc[k].accumulatedSiteLikelihood += lhs[i];	
+		      rc[k].accumulatedSiteLikelihood += tr->lhs[i];	
 		      break;
 		    }
 		}
@@ -2061,7 +2061,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	      if(!found)
 		{	    
 		  rc[where].rate = temp;	    
-		  rc[where].accumulatedSiteLikelihood += lhs[i];	    
+		  rc[where].accumulatedSiteLikelihood += tr->lhs[i];	    
 		  where++;
 		}
 	    }
@@ -2094,8 +2094,8 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	      memcpy(tr->partitionData[model].perSiteRates, oldCategorizedRates[model], tr->maxCategories * sizeof(double));
 	    }	      
 	  
-	  memcpy(tr->cdta->patratStored, ratStored, sizeof(double) * tr->cdta->endsite);
-	  memcpy(tr->cdta->rateCategory, oldCategory, sizeof(int) * tr->cdta->endsite);	     
+	  memcpy(tr->patratStored, ratStored, sizeof(double) * tr->originalCrunchedLength);
+	  memcpy(tr->rateCategory, oldCategory, sizeof(int) * tr->originalCrunchedLength);	     
 	  
 	  updatePerSiteRates(tr, FALSE);
 	  
@@ -2112,7 +2112,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
       free(oldCategorizedRates);
       free(oldCategory);
       free(ratStored);       
-      free(lhs); 
+      /*      free(lhs); */
       free(oldNumbers);
     }
 }

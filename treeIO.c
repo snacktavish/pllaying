@@ -240,7 +240,7 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 {
   char  *nameptr;            
       
-  if(isTip(p->number, tr->rdta->numsp)) 
+  if(isTip(p->number, tr->mxtips)) 
     {	       	  
       if(printNames)
 	{
@@ -280,8 +280,8 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
     {                   
       if(rellTree || branchLabelSupport || printSHSupport)
 	{	 	 
-	  if(( !isTip(p->number, tr->rdta->numsp)) && 
-	     ( !isTip(p->back->number, tr->rdta->numsp)))
+	  if(( !isTip(p->number, tr->mxtips)) && 
+	     ( !isTip(p->back->number, tr->mxtips)))
 	    {			      
 	      assert(p->bInf != (branchInfo *)NULL);
 	      
@@ -901,7 +901,7 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
 	}    
     }
   else    
-    tr->start = findAnyTip(p, tr->rdta->numsp);    
+    tr->start = findAnyTip(p, tr->mxtips);    
   
   
  

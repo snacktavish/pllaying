@@ -41,7 +41,6 @@ double *globalResult;
 int processID;
 infoList iList;
 FILE   *INFILE;
-FILE *byteFile;
 
 int Thorough = 0;
 
@@ -51,28 +50,15 @@ char run_id[128] = "",
   workdir[1024] = "", 
   seq_file[1024] = "", 
   tree_file[1024]="", 
-  weightFileName[1024] = "", 
-  modelFileName[1024] = "", 
-  excludeFileName[1024] = "",
-  bootStrapFile[1024] = "", 
-  permFileName[1024] = "", 
+  weightFileName[1024] = "",   
   resultFileName[1024] = "", 
-  logFileName[1024] = "", 
-  checkpointFileName[1024] = "", 
+  logFileName[1024] = "",   
   infoFileName[1024] = "", 
-  randomFileName[1024] = "",   
-  bootstrapFileName[1024] = "", 
-  bootstrapFileNamePID[1024] = "",
-  bipartitionsFileName[1024] = "",
-  bipartitionsFileNameBranchLabels[1024] = "",
-  ratesFileName[1024] = "", 
-  perSiteLLsFileName[1024] = "", 
-  lengthFileName[1024] = "", 
-  lengthFileNameModel[1024] = "",
-  proteinModelFileName[1024] = "",
-  secondaryStructureFileName[1024] = "",
+  randomFileName[1024] = "",     
+  proteinModelFileName[1024] = "", 
   binaryCheckpointName[1024] = "",
-  binaryCheckpointInputName[1024] = "";
+  binaryCheckpointInputName[1024] = "",
+  byteFileName[1024] = "";
 
 char *protModels[NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
 				     "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO","GTR"};

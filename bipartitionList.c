@@ -51,22 +51,11 @@
 #include <stdint.h>
 #include "axml.h"
 
-#ifdef __SIM_SSE3
 
-#include <xmmintrin.h>
-#include <pmmintrin.h>
 
-#endif
 
-#ifdef _USE_PTHREADS
-#include <pthread.h>
-#endif
 
-#ifdef _WAYNE_MPI
-#include <mpi.h>
-extern int processID;
-extern int processes;
-#endif
+
 
 #define _NEW_MRE
 

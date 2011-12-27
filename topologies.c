@@ -100,7 +100,7 @@ static void saveTopolRELL(tree *tr, topolRELL *tpl)
     tpl->connect[i].z[k] = p->z[k];
   i++;
       
-  saveTopolRELLRec(tr, p->back, tpl, &i, tr->rdta->numsp, tr->numBranches);   
+  saveTopolRELLRec(tr, p->back, tpl, &i, tr->mxtips, tr->numBranches);   
 
   assert(i == 2 * tr->mxtips - 3);
 }
@@ -320,7 +320,7 @@ static void saveTree (tree *tr, topol *tpl)
   connptr  r;  
   
   tpl->nextlink = 0;                             /* Reset link pointer */
-  r = tpl->links + saveSubtree(minTreeTip(tr->start, tr->rdta->numsp), tpl, tr->rdta->numsp, tr->numBranches);  /* Save tree */
+  r = tpl->links + saveSubtree(minTreeTip(tr->start, tr->mxtips), tpl, tr->mxtips, tr->numBranches);  /* Save tree */
   r->sibling = 0;
   
   tpl->likelihood = tr->likelihood;
