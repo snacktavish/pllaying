@@ -1012,8 +1012,9 @@ extern int checker ( tree *tr, nodeptr p );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
 extern void makeRandomTree ( tree *tr);
 extern void nodeRectifier ( tree *tr );
-extern void makeParsimonyTreeFast(tree *tr, analdef *adef);
-
+extern void makeParsimonyTreeFast(tree *tr);
+extern void allocateParsimonyDataStructures(tree *tr);
+extern void freeParsimonyDataStructures(tree *tr);
 
 
 extern FILE *myfopen(const char *path, const char *mode);

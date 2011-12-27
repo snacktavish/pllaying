@@ -3190,8 +3190,10 @@ int main (int argc, char *argv[])
 	      getStartingTree(tr);     
 	      break;
 	    case parsimonyTree:	     
-	      /* runs only on process 0 ! */
-	      makeParsimonyTreeFast(tr, adef);
+	      /* runs only on process/thread 0 ! */
+	      allocateParsimonyDataStructures(tr);
+	      makeParsimonyTreeFast(tr);
+	      freeParsimonyDataStructures(tr);
 	      break;
 	    default:
 	      assert(0);
@@ -3212,7 +3214,13 @@ int main (int argc, char *argv[])
 	  
 #ifdef _BAYESIAN 
 	  if(adef->bayesian)
-	    mcmc(tr, adef);
+	    {
+	      /* allocate parsimony data structures for parsimony-biased SPRs */
+
+	      allocateParsimonyDataStructures(tr);
+	      mcmc(tr, adef);
+	      freeParsimonyDataStructures(tr);
+	    }
 	  else
 #endif
 	    computeBIGRAPID(tr, adef, TRUE); 	     

@@ -33,7 +33,7 @@ typedef enum
   stNNI,
   UPDATE_ALL_BL,
   UPDATE_MODEL,
-  UPDATE_GAMMA
+  UPDATE_GAMMA,
 }prop;
 
 typedef struct {
@@ -189,7 +189,7 @@ static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean pri
 
 static double exp_pdf(double lambda, double x)
 {
-  return lambda * exp(-(lambda * x)); 
+  return (lambda * exp(-(lambda * x))); 
 }
 
 static void printSimpleTree(tree *tr, boolean printBranchLengths, analdef *adef)
@@ -270,6 +270,76 @@ static void recordBranchInfo(nodeptr p, double *bl, int numBranches)
     bl[i] = p->z[i];
 }
 
+
+static nodeptr selectRandomSubtree(tree *tr)
+{
+  nodeptr 
+    p;
+
+  do
+    {
+      int 
+	exitDirection = rand() % 3; 
+     
+      p = tr->nodep[(rand() % (tr->mxtips - 2)) + 1 + tr->mxtips];
+      
+      switch(exitDirection)
+	{
+	case 0:
+	  break;
+	case 1:
+	  p = p->next;
+	  break;
+	case 2:
+	  p = p->next->next;
+	  break;
+	default:
+	  assert(0);
+	}
+    }
+  while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
+
+  assert(!isTip(p->number, tr->mxtips));
+
+  return p;
+}
+
+static void doSPR(tree *tr, state *instate)
+{
+  nodeptr    
+    p = selectRandomSubtree(tr);
+  
+  /* evaluateGeneric(tr, tr->start, TRUE);
+     printf("%f \n", tr->likelihood);*/
+
+  parsimonySPR(p, tr);
+  
+  /*evaluateGeneric(tr, tr->start, TRUE);
+    printf("%f \n", tr->likelihood);*/
+
+  instate->p = p;
+  instate->nb  = p->next->back;
+  instate->nnb = p->next->next->back;
+  
+  recordBranchInfo(instate->nb, instate->nbz, instate->tr->numBranches);
+  recordBranchInfo(instate->nnb, instate->nnbz, instate->tr->numBranches);
+
+  removeNodeBIG(tr, p,  tr->numBranches);
+  instate->q = tr->insertNode;
+  instate->r = instate->q->back;
+  recordBranchInfo(instate->q, instate->qz, instate->tr->numBranches);
+
+  assert(Thorough == 0);
+  
+  insertBIG(instate->tr, instate->p, instate->q, instate->tr->numBranches);
+  evaluateGeneric(instate->tr, instate->p->next->next, FALSE); 
+  /*testInsertBIG(tr, p, tr->insertNode);*/
+
+  printf("%f \n", tr->likelihood);
+}
+
+
+
 static nodeptr selectRandomInnerSubtree(tree *tr)
 {
   nodeptr p;
@@ -303,21 +373,23 @@ static boolean simpleNodeProposal(state * instate)
   //printBothOpen("pruned %db%d \n", instate->p->number, instate->p->back->number);
   instate->q = (nodeptr) NULL;
   naiveInsertionProposal(instate);
+  
   if(instate->q!=NULL)
-  {
-    instate->r = instate->q->back;
-    recordBranchInfo(instate->q, instate->qz, instate->tr->numBranches);
-    /*
-    printBothOpen("inserted %db%d at %db%d where bl %f, Thorough is %d \n", 
-                  instate->p->number, instate->p->back->number,
-                  instate->q->number, instate->q->back->number, 
-                  instate->q->z[0], Thorough);
-                  */
-    if (! insertBIG(instate->tr, instate->p, instate->q, instate->tr->numBranches)) assert(FALSE);
-    //TODO: breaks here evaluateGenericSpecial.c:1164: evaluateIterative: Assertion `partitionLikelihood < 0.0' failed.
-    evaluateGeneric(instate->tr, instate->p->next->next, FALSE);    
-    return TRUE;
-  }
+    {
+      instate->r = instate->q->back;
+      recordBranchInfo(instate->q, instate->qz, instate->tr->numBranches);
+      /*
+	printBothOpen("inserted %db%d at %db%d where bl %f, Thorough is %d \n", 
+	instate->p->number, instate->p->back->number,
+	instate->q->number, instate->q->back->number, 
+	instate->q->z[0], Thorough);
+      */
+      if (! insertBIG(instate->tr, instate->p, instate->q, instate->tr->numBranches)) 
+	assert(FALSE);
+      //TODO: breaks here evaluateGenericSpecial.c:1164: evaluateIterative: Assertion `partitionLikelihood < 0.0' failed.
+      evaluateGeneric(instate->tr, instate->p->next->next, FALSE);    
+      return TRUE;
+    }
   else
     return FALSE;
 }
@@ -666,18 +738,18 @@ static void simpleModelProposal(state * instate)
   double r,mx,mn;
   //using the branch length sliding window for a test
   for(state = 0;state<instate->numSubsRates ; state ++)
-  {
-    curv = instate->tr->partitionData[instate->model].substRates[state];
-    r = (double)rand()/(double)RAND_MAX;
-    mn = curv-(instate->rt_sliding_window_w/2);
-    mx = curv+(instate->rt_sliding_window_w/2);
-    new_value = fabs(mn + r * (mx-mn));
-    /* Ensure always you stay within this range */
-    if(new_value > RATE_MAX) new_value = RATE_MAX;
-    if(new_value < RATE_MIN) new_value = RATE_MIN;
-    //printf("%i %f %f\n", state, curv, new_value);
-    editSubsRates(instate->tr,instate->model, state, new_value);
-  }
+    {
+      curv = instate->tr->partitionData[instate->model].substRates[state];
+      r = (double)rand()/(double)RAND_MAX;
+      mn = curv-(instate->rt_sliding_window_w/2);
+      mx = curv+(instate->rt_sliding_window_w/2);
+      new_value = fabs(mn + r * (mx-mn));
+      /* Ensure always you stay within this range */
+      if(new_value > RATE_MAX) new_value = RATE_MAX;
+      if(new_value < RATE_MIN) new_value = RATE_MIN;
+      //printf("%i %f %f\n", state, curv, new_value);
+      editSubsRates(instate->tr,instate->model, state, new_value);
+    }
   //recalculate eigens
 #ifndef _LOCAL_DISCRETIZATION
   initReversibleGTR(instate->tr, instate->model); /* 1. recomputes Eigenvectors, Eigenvalues etc. for Q decomp. */
@@ -756,64 +828,70 @@ static prop proposal(state * instate)
   if(randprop < 0.25) 
   {
     if(randprop < 0.2)//TOPOLOGICAL MOVE
-    {
-      if(randprop > 0.1)//SPR MOVE
       {
-        proposal_type = SPR;
-        // printBothOpen("Propose SPR\n");
-        if (randprop < 0.15)
-          instate->maxradius = 1;
-        else
-          instate->maxradius = 2;
-        proposalSuccess = simpleNodeProposal(instate);
+	if(randprop > 0.1)//SPR MOVE
+	  {
+	    proposal_type = SPR;
+	    // printBothOpen("Propose SPR\n");
+	    if (randprop < 0.15)
+	      instate->maxradius = 1;
+	    else
+	      instate->maxradius = 2;
+	    
+	    doSPR(instate->tr, instate);
+
+	    proposalSuccess = TRUE;
+
+	    /* TODO */
+	    /*proposalSuccess = simpleNodeProposal(instate);*/
+	  }
+	else
+	  {
+	    proposal_type = stNNI;
+	    proposalSuccess = stNNIproposal(instate); 
+	    if(proposalSuccess == FALSE)
+	      {
+		/* TODOFER this came up with ds 20 and GTRPSR, see why */
+		printBothOpen("WARNING!! stNNI proposal failed, doing SPR\n");
+		proposal_type = SPR;
+		instate->maxradius = 1;
+		proposalSuccess = simpleNodeProposal(instate);
+	      }
+	  }
+	if(proposalSuccess == FALSE)
+	  {
+	    assert(FALSE); // this should either never happen or look below and return PROPOSAL_FAILED to react accordingly
+	  }
+	else
+	  {
+	    /* A moved has been made, previous state is in instate */
+	    if(proposal_type != stNNI) /*TODOFER delete this when bl are changed*/
+	      assert(instate->tr->startLH != instate->tr->likelihood);
+	  }
       }
-      else
-      {
-        proposal_type = stNNI;
-        proposalSuccess = stNNIproposal(instate); 
-        if(proposalSuccess == FALSE)
-        {
-          /* TODOFER this came up with ds 20 and GTRPSR, see why */
-          printBothOpen("WARNING!! stNNI proposal failed, doing SPR\n");
-          proposal_type = SPR;
-          instate->maxradius = 1;
-          proposalSuccess = simpleNodeProposal(instate);
-        }
-      }
-      if(proposalSuccess == FALSE)
-      {
-        assert(FALSE); // this should either never happen or look below and return PROPOSAL_FAILED to react accordingly
-      }
-      else
-      {
-        /* A moved has been made, previous state is in instate */
-        if(proposal_type != stNNI) /*TODOFER delete this when bl are changed*/
-          assert(instate->tr->startLH != instate->tr->likelihood);
-      }
-    }
     else{//MODEL
       proposal_type = UPDATE_MODEL;
       simpleModelProposal(instate);
     }
   }
   else
-  {
-    if(randprop < 0.95)//UPDATE_ALL_BL
     {
-      proposal_type = UPDATE_ALL_BL;
-      instate->bl_prior = 0;
-      //printBothOpen("Propose BL_UPDATE\n");
-      assert(proposal_type == UPDATE_ALL_BL);
-      proposalSuccess = simpleBranchLengthProposal(instate);
-      assert(instate->tr->startLH != instate->tr->likelihood);
-      assert(proposalSuccess);
+      if(randprop < 0.95)//UPDATE_ALL_BL
+	{
+	  proposal_type = UPDATE_ALL_BL;
+	  instate->bl_prior = 0;
+	  //printBothOpen("Propose BL_UPDATE\n");
+	  assert(proposal_type == UPDATE_ALL_BL);
+	  proposalSuccess = simpleBranchLengthProposal(instate);
+	  assert(instate->tr->startLH != instate->tr->likelihood);
+	  assert(proposalSuccess);
+	}
+      else//GAMMA
+	{
+	  proposal_type = UPDATE_GAMMA;
+	  simpleGammaProposal(instate);
+	}
     }
-    else//GAMMA
-    {
-      proposal_type = UPDATE_GAMMA;
-      simpleGammaProposal(instate);
-    }
-  }
   //record the curprior
   instate->newprior = instate->bl_prior;
   return proposal_type;
@@ -968,55 +1046,66 @@ void mcmc(tree *tr, analdef *adef)
     if(testr < acceptance)
     {
       proposalAccepted = TRUE;
-      if(which_proposal == SPR)
-      {
-        //printRecomTree(tr, TRUE, "after accepted");
-	// printBothOpen("SPR new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      }
-      else if(which_proposal == stNNI)
-      {
-	      printBothOpen("NNI new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      }
-      else if(which_proposal == UPDATE_ALL_BL)
-      {
-	//      printBothOpen("BL new , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      }
-      else if(which_proposal == UPDATE_MODEL)
-      {
-//	printBothOpen("Model new, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      }
-      else if(which_proposal == UPDATE_GAMMA)
-      {
-//	printBothOpen("Gamma new, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      }
+
+      switch(which_proposal)
+	{
+	case SPR:      
+	  //printRecomTree(tr, TRUE, "after accepted");
+	  // printBothOpen("SPR new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	   accepted_spr++;
+	  break;
+	case stNNI:	  
+	  printBothOpen("NNI new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	  accepted_nni++;
+	  break;
+	case UPDATE_ALL_BL:	  
+	  //      printBothOpen("BL new , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	  accepted_bl++;
+	  break;
+	case UPDATE_MODEL:      
+	  //	printBothOpen("Model new, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	  accepted_model++;
+	  break;
+	case UPDATE_GAMMA:      
+	  //	printBothOpen("Gamma new, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	  accepted_gamma++;
+	  break;
+	default:
+	  assert(0);
+	}
+
       curstate->tr->startLH = curstate->tr->likelihood;  //new LH
-      curstate->curprior = curstate->newprior;
-      if(which_proposal == SPR)
-        accepted_spr++;
-      else if (which_proposal == stNNI)
-        accepted_nni++;
-      else if (which_proposal == UPDATE_ALL_BL)
-        accepted_bl++;
-      else if (which_proposal == UPDATE_MODEL)
-	accepted_model++;
-      else if (which_proposal == UPDATE_GAMMA)
-	accepted_gamma++;
+      curstate->curprior = curstate->newprior;          
     }
     else
     {
       //printBothOpen("rejected , iter %d tr LH %f, startLH %f, %i \n", j, tr->likelihood, tr->startLH, which_proposal);
       resetState(which_proposal,curstate);
-      if(which_proposal == SPR)
-        rejected_spr++;
-      else if (which_proposal == stNNI)
-        rejected_nni++;
-      else if (which_proposal == UPDATE_ALL_BL)
-        rejected_bl++;
-      else if (which_proposal == UPDATE_MODEL)
-	rejected_model++;
-      else if (which_proposal == UPDATE_GAMMA)
-	rejected_gamma++;
-      evaluateGeneric(tr, tr->start, FALSE); // just for validation 
+      
+      switch(which_proposal)
+	{
+	case SPR:
+	  rejected_spr++;
+	  break;
+	case stNNI:
+	  rejected_nni++;
+	  break;
+	case UPDATE_ALL_BL:
+	  rejected_bl++;
+	  break;
+	case UPDATE_MODEL:
+	  rejected_model++;
+	  break;
+	case UPDATE_GAMMA:
+	  rejected_gamma++;
+	  break;
+	default:
+	  assert(0);
+	}
+      
+      evaluateGeneric(tr, tr->start, FALSE); 
+      
+      // just for validation 
 
       if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-10)
       {
@@ -1029,12 +1118,12 @@ void mcmc(tree *tr, analdef *adef)
     inserts++;
     
     /* need to print status */
-    if (j % 20 == 0)
+    if (j % 50 == 0)
     {
       t = gettime(); 
       printBothOpen("sampled at iter %d, tr LH %f, startLH %f, prior %f, incr %f\n",j, tr->likelihood, tr->startLH, curstate->curprior, tr->likelihood - tr->startLH);
       boolean printBranchLengths = TRUE;
-      printSimpleTree(tr, printBranchLengths, adef);
+      /*printSimpleTree(tr, printBranchLengths, adef);*/
       //TODO: print some parameters to a file 
       printStateFile(j,curstate);
       printTime += gettime() - t;

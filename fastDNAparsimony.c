@@ -1220,7 +1220,7 @@ static void buildSimpleTree (tree *tr, int ip, int iq, int ir)
 }
 
 
-static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q)
+static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBranches)
 { 
   unsigned int 
     mp;
@@ -1259,18 +1259,33 @@ static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q)
 
   if(doIt)
     {
+      double 
+	z[NUM_BRANCHES];
+      
+      if(saveBranches)
+	{
+	  int i;
+	  
+	  for(i = 0; i < tr->numBranches; i++)
+	    z[i] = q->z[i];
+	}
+
       insertParsimony(tr, p, q);   
   
-      mp = evaluateParsimony(tr, p->next->next, FALSE);          
-      
+      mp = evaluateParsimony(tr, p->next->next, FALSE);                      
+
       if(mp < tr->bestParsimony)
 	{
 	  tr->bestParsimony = mp;
 	  tr->insertNode = q;
 	  tr->removeNode = p;
 	}
-  
-      hookupDefault(q, r, tr->numBranches);
+      
+      if(saveBranches)
+	hookup(q, r, z, tr->numBranches);
+      else
+	hookupDefault(q, r, tr->numBranches);
+      
       p->next->next->back = p->next->back = (nodeptr) NULL;
     }
        
@@ -1295,15 +1310,15 @@ static void restoreTreeParsimony(tree *tr, nodeptr p, nodeptr q)
 }
 
 
-static void addTraverseParsimony (tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav, boolean doAll)
+static void addTraverseParsimony (tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav, boolean doAll, boolean saveBranches)
 {        
   if (doAll || (--mintrav <= 0))               
-    testInsertParsimony(tr, p, q);	                 
+    testInsertParsimony(tr, p, q, saveBranches);	                 
 
   if (((q->number > tr->mxtips)) && ((--maxtrav > 0) || doAll))
     {	      
-      addTraverseParsimony(tr, p, q->next->back, mintrav, maxtrav, doAll);	      
-      addTraverseParsimony(tr, p, q->next->next->back, mintrav, maxtrav, doAll);              	     
+      addTraverseParsimony(tr, p, q->next->back, mintrav, maxtrav, doAll, saveBranches);	      
+      addTraverseParsimony(tr, p, q->next->next->back, mintrav, maxtrav, doAll, saveBranches);              	     
     }
 }
 
@@ -1314,7 +1329,7 @@ static nodeptr findAnyTipFast(nodeptr p, int numsp)
 } 
 
 
-static void makePermutationFast(int *perm, int n, analdef *adef, tree *tr)
+static void makePermutationFast(int *perm, int n, tree *tr)
 {    
   int  
     i, 
@@ -1400,14 +1415,14 @@ static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boo
 
 	  if ((p1->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, p, p1->next->back, mintrav, maxtrav, doAll);         
-	      addTraverseParsimony(tr, p, p1->next->next->back, mintrav, maxtrav, doAll);          
+	      addTraverseParsimony(tr, p, p1->next->back, mintrav, maxtrav, doAll, FALSE);         
+	      addTraverseParsimony(tr, p, p1->next->next->back, mintrav, maxtrav, doAll, FALSE);          
 	    }
 	 
 	  if ((p2->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, p, p2->next->back, mintrav, maxtrav, doAll);
-	      addTraverseParsimony(tr, p, p2->next->next->back, mintrav, maxtrav, doAll);          
+	      addTraverseParsimony(tr, p, p2->next->back, mintrav, maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, p, p2->next->next->back, mintrav, maxtrav, doAll, FALSE);          
 	    }
 	    
 	   
@@ -1442,14 +1457,14 @@ static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boo
 	  
 	  if ((q1->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, q, q1->next->back, mintrav2 , maxtrav, doAll);
-	      addTraverseParsimony(tr, q, q1->next->next->back, mintrav2 , maxtrav, doAll);         
+	      addTraverseParsimony(tr, q, q1->next->back, mintrav2 , maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, q, q1->next->next->back, mintrav2 , maxtrav, doAll, FALSE);         
 	    }
 	 
 	  if ((q2->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, q, q2->next->back, mintrav2 , maxtrav, doAll);
-	      addTraverseParsimony(tr, q, q2->next->next->back, mintrav2 , maxtrav, doAll);          
+	      addTraverseParsimony(tr, q, q2->next->back, mintrav2 , maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, FALSE);          
 	    }	   
 	   
 	  hookupDefault(q->next,       q1, tr->numBranches); 
@@ -1861,7 +1876,47 @@ static void markNodesInTree(nodeptr p, tree *tr, unsigned char *nodesInTree)
 
 }
 
-void makeParsimonyTreeFast(tree *tr, analdef *adef)
+
+void allocateParsimonyDataStructures(tree *tr)
+{
+  int 
+    i,
+    *informative = (int *)malloc(sizeof(int) * (size_t)tr->originalCrunchedLength);
+ 
+  determineUninformativeSites(tr, informative);     
+
+  compressDNA(tr, informative);
+
+  for(i = tr->mxtips + 1; i <= tr->mxtips + tr->mxtips - 1; i++)
+    {
+      nodeptr 
+	p = tr->nodep[i];
+
+      p->xPars = 1;
+      p->next->xPars = 0;
+      p->next->next->xPars = 0;
+    }
+
+  tr->ti = (int*)malloc(sizeof(int) * 4 * (size_t)tr->mxtips);  
+
+  free(informative); 
+}
+
+void freeParsimonyDataStructures(tree *tr)
+{
+  size_t 
+    model;
+
+  free(tr->parsimonyScore);
+  
+  for(model = 0; model < (size_t) tr->NumberOfModels; model++)
+    free(tr->partitionData[model].parsVect);
+  
+  free(tr->ti);
+}
+
+
+void makeParsimonyTreeFast(tree *tr)
 {   
   nodeptr  
     p, 
@@ -1873,41 +1928,15 @@ void makeParsimonyTreeFast(tree *tr, analdef *adef)
   int 
     i, 
     nextsp,
-    *perm        = (int *)malloc((size_t)(tr->mxtips + 1) * sizeof(int)),
-    *informative = (int *)malloc(sizeof(int) * (size_t)tr->originalCrunchedLength);  
+    *perm        = (int *)malloc((size_t)(tr->mxtips + 1) * sizeof(int));  
 
   unsigned int 
     randomMP, 
-    startMP;        
-
-  /* double t; */
-
-  determineUninformativeSites(tr, informative);     
-
-  compressDNA(tr, informative);
-
-  free(informative); 
-
-  tr->ti = (int*)malloc(sizeof(int) * 4 * (size_t)tr->mxtips);  
- 
-
-  for(i = tr->mxtips + 1; i <= tr->mxtips + tr->mxtips - 1; i++)
-    {
-      nodeptr 
-	p = tr->nodep[i];
-
-      p->xPars = 1;
-      p->next->xPars = 0;
-      p->next->next->xPars = 0;
-    }
-     
-
-  /*t = gettime();*/
-
+    startMP;         
   
   assert(!tr->constrained);
 
-  makePermutationFast(perm, tr->mxtips, adef, tr);
+  makePermutationFast(perm, tr->mxtips, tr);
   
   tr->ntips = 0;    
   
@@ -1977,17 +2006,53 @@ void makeParsimonyTreeFast(tree *tr, analdef *adef)
   while(randomMP < startMP);
   
   printf("OPT: %d\n", tr->bestParsimony);
-
-  
-     
-  free(perm);  
-  free(tr->parsimonyScore);
-  
-  for(model = 0; model < (size_t) tr->NumberOfModels; model++)
-    free(tr->partitionData[model].parsVect);
-  
-  free(tr->ti);
 } 
+
+void parsimonySPR(nodeptr p, tree *tr)
+{
+  int i;
+
+  double   
+    p1z[NUM_BRANCHES], 
+    p2z[NUM_BRANCHES];
+
+  nodeptr 
+    p1 = p->next->back,
+    p2 = p->next->next->back;
+
+  unsigned int score = evaluateParsimony(tr, p, TRUE);
+
+  printf("parsimonyScore: %u\n", score);
+
+  for(i = 0; i < tr->numBranches; i++)
+    {
+      p1z[i] = p1->z[i];
+      p2z[i] = p2->z[i];	   	   
+    }
+  
+  tr->bestParsimony = INT_MAX; 
+
+  hookupDefault(p1, p2, tr->numBranches);
+
+  p->next->next->back = p->next->back = (node *) NULL;
+
+  if (p1->number > tr->mxtips) 
+    {
+      addTraverseParsimony(tr, p, p1->next->back, 0, 0, TRUE, TRUE);         
+      addTraverseParsimony(tr, p, p1->next->next->back, 0, 0, TRUE, TRUE);          
+    }
+  
+  if(p2->number > tr->mxtips)
+    {
+      addTraverseParsimony(tr, p, p2->next->back, 0, 0, TRUE, TRUE);
+      addTraverseParsimony(tr, p, p2->next->next->back, 0, 0, TRUE, TRUE);          
+    }
+
+  printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
+
+  hookup(p1, p->next, p1z,       tr->numBranches);
+  hookup(p2, p->next->next, p2z, tr->numBranches);
+}
 
 
 #ifdef __AVX
