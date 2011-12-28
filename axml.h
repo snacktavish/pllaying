@@ -1015,7 +1015,7 @@ extern void nodeRectifier ( tree *tr );
 extern void makeParsimonyTreeFast(tree *tr);
 extern void allocateParsimonyDataStructures(tree *tr);
 extern void freeParsimonyDataStructures(tree *tr);
-
+extern void parsimonySPR(nodeptr p, tree *tr);
 
 extern FILE *myfopen(const char *path, const char *mode);
 
