@@ -2845,14 +2845,11 @@ int main (int argc, char *argv[])
 	len = strlen(p->partitionName) + 1;
 	myBinFwrite(&len, sizeof(int), 1);
 	myBinFwrite(p->partitionName, sizeof(char), len);	    
-      }
+	myBinFwrite(tr->partitionData[model].frequencies, sizeof(double), tr->partitionData[model].states);
+      }	            
+      
     
-    myBinFwrite(rdta->y0, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
-	
-    /* SOS need to allocate frequencies first ! */
-	
-    for(model = 0; model < tr->NumberOfModels; model++)	    	            
-      myBinFwrite(tr->partitionData[model].frequencies, sizeof(double), tr->partitionData[model].states);
+    myBinFwrite(rdta->y0, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));          
   }
 
 

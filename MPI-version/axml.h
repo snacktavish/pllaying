@@ -44,11 +44,9 @@
 
 #endif
 
-#ifdef _FINE_GRAIN_MPI
 
 #include <mpi.h>
 
-#endif
 
 
 
@@ -663,7 +661,9 @@ typedef  struct  {
 
   boolean grouped;
   boolean constrained;
-
+  int *partitionAssignment;     
+ 
+  unsigned char *y_ptr; 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   /*
     do we need this stuff ?
@@ -672,9 +672,7 @@ typedef  struct  {
     hashtable *h;*/
   
     
-  int *partitionAssignment;     
- 
-  unsigned char *y_ptr; 
+  
   
   int threadID;
   double lower_spacing;

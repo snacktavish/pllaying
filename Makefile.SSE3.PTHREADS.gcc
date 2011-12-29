@@ -10,7 +10,7 @@ LIBRARIES = -lm -pthread
 
 RM = rm -f
 
-objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o
 
 all : raxmlLight-PTHREADS
 
@@ -33,6 +33,8 @@ evaluateGenericSpecial.o : evaluateGenericSpecial.c $(GLOBAL_DEPS)
 newviewGenericSpecial.o : newviewGenericSpecial.c $(GLOBAL_DEPS)
 makenewzGenericSpecial.o : makenewzGenericSpecial.c $(GLOBAL_DEPS)
 restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
+andomTree.o : randomTree.c $(GLOBAL_DEPS)
+fastDNAparsimony.o : fastDNAparsimony.c  $(GLOBAL_DEPS)
 
 clean : 
 	$(RM) *.o raxmlLight-PTHREADS

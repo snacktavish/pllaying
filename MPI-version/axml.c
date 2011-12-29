@@ -48,16 +48,7 @@
 #include <stdarg.h>
 #include <limits.h>
 
-#ifdef  _FINE_GRAIN_MPI
 #include <mpi.h>
-#endif
-
-
-
-#ifdef _USE_PTHREADS
-#include <pthread.h>
-
-#endif
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
 #include <xmmintrin.h>
@@ -158,30 +149,36 @@ void *malloc_aligned(size_t size)
 
 static void printBoth(FILE *f, const char* format, ... )
 {
-  va_list args;
-  va_start(args, format);
-  vfprintf(f, format, args );
-  va_end(args);
-
-  va_start(args, format);
-  vprintf(format, args );
-  va_end(args);
+  if(processID == 0)
+    {
+      va_list args;
+      va_start(args, format);
+      vfprintf(f, format, args );
+      va_end(args);
+      
+      va_start(args, format);
+      vprintf(format, args );
+      va_end(args);
+    }
 }
 
 void printBothOpen(const char* format, ... )
 {
-  FILE *f = myfopen(infoFileName, "ab");
-
-  va_list args;
-  va_start(args, format);
-  vfprintf(f, format, args );
-  va_end(args);
-
-  va_start(args, format);
-  vprintf(format, args );
-  va_end(args);
-
-  fclose(f);
+  if(processID == 0)
+    {
+      FILE *f = myfopen(infoFileName, "ab");
+      
+      va_list args;
+      va_start(args, format);
+      vfprintf(f, format, args );
+      va_end(args);
+      
+      va_start(args, format);
+      vprintf(format, args );
+      va_end(args);
+      
+      fclose(f);
+    }
 }
 
 void printBothOpenMPI(const char* format, ... )
@@ -1128,17 +1125,12 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	  }
 	break;
       case 'Q':
-#ifdef _USE_PTHREADS
-	tr->manyPartitions = TRUE;
-#else
-	printf("The -Q option does not have an effect in the sequential version\n");
-	tr->manyPartitions = FALSE;
-#endif
+	tr->manyPartitions = TRUE;       
 	break;
       case 's':		 	
 	strcpy(byteFileName, optarg);	 	
 	byteFileSet = TRUE;
-	printf("%s \n", byteFileName);
+	/*printf("%s \n", byteFileName);*/
 	break;      
       case 'S':
 	tr->saveMemory = TRUE;
@@ -1549,74 +1541,77 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
 
 void printResult(tree *tr, analdef *adef, boolean finalPrint)
 {
-  FILE *logFile;
-  char temporaryFileName[1024] = "", treeID[64] = "";
-
-  strcpy(temporaryFileName, resultFileName);
-
-  switch(adef->mode)
-    {    
-    case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
-
-      logFile = myfopen(temporaryFileName, "wb");
-      fprintf(logFile, "%s", tr->tree_string);
-      fclose(logFile);
-
-      if(adef->perGeneBranchLengths)
-	printTreePerGene(tr, adef, temporaryFileName, "wb");
-      break;
-    case BIG_RAPID_MODE:     
-      if(finalPrint)
-	{
-	  switch(tr->rateHetModel)
-	    {
-	    case GAMMA:
-	    case GAMMA_I:
-	      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
-			  SUMMARIZE_LH, FALSE, FALSE);
-	      
-	      logFile = myfopen(temporaryFileName, "wb");
-	      fprintf(logFile, "%s", tr->tree_string);
-	      fclose(logFile);
-	      
-	      if(adef->perGeneBranchLengths)
-		printTreePerGene(tr, adef, temporaryFileName, "wb");
-	      break;
-	    case CAT:
-	      /*Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
-		NO_BRANCHES, FALSE, FALSE);*/
-	      
-	      
-	      
-	      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
-			  TRUE, SUMMARIZE_LH, FALSE, FALSE);
-	      
-	      
-	      
-	      
-	      logFile = myfopen(temporaryFileName, "wb");
-	      fprintf(logFile, "%s", tr->tree_string);
-	      fclose(logFile);
-	      
-	      break;
-	    default:
-	      assert(0);
-	    }
-	}
-      else
-	{
-	  Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
-		      NO_BRANCHES, FALSE, FALSE);
+  if(processID == 0)
+    {
+      FILE *logFile;
+      char temporaryFileName[1024] = "", treeID[64] = "";
+      
+      strcpy(temporaryFileName, resultFileName);
+      
+      switch(adef->mode)
+	{    
+	case TREE_EVALUATION:
+	  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
+	  
 	  logFile = myfopen(temporaryFileName, "wb");
 	  fprintf(logFile, "%s", tr->tree_string);
 	  fclose(logFile);
-	}    
-      break;
-    default:
-      printf("FATAL ERROR call to printResult from undefined STATE %d\n", adef->mode);
-      exit(-1);
-      break;
+	  
+	  if(adef->perGeneBranchLengths)
+	    printTreePerGene(tr, adef, temporaryFileName, "wb");
+	  break;
+	case BIG_RAPID_MODE:     
+	  if(finalPrint)
+	    {
+	      switch(tr->rateHetModel)
+		{
+		case GAMMA:
+		case GAMMA_I:
+		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
+			      SUMMARIZE_LH, FALSE, FALSE);
+		  
+		  logFile = myfopen(temporaryFileName, "wb");
+		  fprintf(logFile, "%s", tr->tree_string);
+		  fclose(logFile);
+		  
+		  if(adef->perGeneBranchLengths)
+		    printTreePerGene(tr, adef, temporaryFileName, "wb");
+		  break;
+		case CAT:
+		  /*Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
+		    NO_BRANCHES, FALSE, FALSE);*/
+		  
+		  
+		  
+		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
+			      TRUE, SUMMARIZE_LH, FALSE, FALSE);
+		  
+		  
+		  
+		  
+		  logFile = myfopen(temporaryFileName, "wb");
+		  fprintf(logFile, "%s", tr->tree_string);
+		  fclose(logFile);
+		  
+		  break;
+		default:
+		  assert(0);
+		}
+	    }
+	  else
+	    {
+	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
+			  NO_BRANCHES, FALSE, FALSE);
+	      logFile = myfopen(temporaryFileName, "wb");
+	      fprintf(logFile, "%s", tr->tree_string);
+	      fclose(logFile);
+	    }    
+	  break;
+	default:
+	  printf("FATAL ERROR call to printResult from undefined STATE %d\n", adef->mode);
+	  exit(-1);
+	  break;
+	}
     }
 }
 
@@ -1629,18 +1624,19 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 
 void printLog(tree *tr, analdef *adef, boolean finalPrint)
 {
-  FILE *logFile;
-  double t;
-
-
-  t = gettime() - masterTime;
-  
-  logFile = myfopen(logFileName, "ab");
-
-  fprintf(logFile, "%f %f\n", t, tr->likelihood);
-
-  fclose(logFile);
-
+  if(processID == 0)
+    {
+      FILE *logFile;
+      double t;
+      
+      t = gettime() - masterTime;
+      
+      logFile = myfopen(logFileName, "ab");
+      
+      fprintf(logFile, "%f %f\n", t, tr->likelihood);
+      
+      fclose(logFile);
+    }
 	     
 }
 
@@ -1870,7 +1866,7 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 /************************************************************************************/
 
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+
 
 
 
@@ -1905,7 +1901,7 @@ static void computeFractionMany(tree *localTree, int tid)
   
 }
 
-
+#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 
 static void computeFraction(tree *localTree, int tid, int n)
 {
@@ -2470,7 +2466,7 @@ unsigned int precomputed16_bitcount (unsigned int n, char *bits_in_16bits)
 
 
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))    
+ 
 
 static int partCompare(const void *p1, const void *p2)
 {
@@ -2543,11 +2539,7 @@ static void multiprocessorScheduling(tree *tr, int tid)
 	  int    
 	    i,
 	    k,
-#ifndef _FINE_GRAIN_MPI
-	    n = NumberOfThreads,
-#else
 	    n = processes,
-#endif
 	    p = numberOfPartitions[s],    
 	    *assignments = (int *)calloc(n, sizeof(int));  
 	  
@@ -2613,9 +2605,9 @@ static void multiprocessorScheduling(tree *tr, int tid)
  
 }
 
-#endif
 
-static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
+
+static void initializePartitions(tree *tr, tree *localTree, int tid, int n, FILE *byteFile)
 { 
   size_t
     model;
@@ -2623,80 +2615,21 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
   int
     maxCategories;
 
-  localTree->threadID = tid; 
+  unsigned char *y;
+
+ 
   compute_bits_in_16bits(localTree->bits_in_16bits);
-
-
-#ifdef _USE_PTHREADS
-  if(tid > 0)
-    {
-      int totalLength = 0;
-
-      assert(localTree != tr);
-
-      localTree->manyPartitions          = tr->manyPartitions;
-      localTree->NumberOfModels          = tr->NumberOfModels;           
-      localTree->rateHetModel            = tr->rateHetModel;
-      localTree->saveMemory              = tr->saveMemory;
-      localTree->useGappedImplementation = tr->useGappedImplementation;           
-      localTree->maxCategories           = tr->maxCategories;      
-      localTree->originalCrunchedLength  = tr->originalCrunchedLength;    
-      localTree->mxtips                  = tr->mxtips;     
-      localTree->numBranches             = tr->numBranches;
-      localTree->lhs                     = (double*)malloc(sizeof(double)   * localTree->originalCrunchedLength);     
-      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);     
-      localTree->fracchanges             = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-      localTree->partitionContributions  = (double*)malloc(sizeof(double)   * localTree->NumberOfModels);
-      localTree->partitionData           = (pInfo*)malloc(sizeof(pInfo) * localTree->NumberOfModels);
-      
-      localTree->td[0].count = 0;
-      localTree->td[0].ti              = (traversalInfo *)malloc(sizeof(traversalInfo) * localTree->mxtips);
-      localTree->td[0].executeModel    = (boolean *)malloc(sizeof(boolean) * localTree->NumberOfModels);
-      localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * localTree->NumberOfModels);
-      
-      localTree->patrat       = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);
-      localTree->patratStored = (double*)malloc(sizeof(double) * localTree->originalCrunchedLength);      
-
-      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  localTree->partitionData[model].numberOfCategories    = tr->partitionData[model].numberOfCategories;
-	  localTree->partitionData[model].states                = tr->partitionData[model].states;
-	  localTree->partitionData[model].maxTipStates          = tr->partitionData[model].maxTipStates;
-	  localTree->partitionData[model].dataType              = tr->partitionData[model].dataType;
-	  localTree->partitionData[model].protModels            = tr->partitionData[model].protModels;
-	  localTree->partitionData[model].protFreqs             = tr->partitionData[model].protFreqs;	  
-	  localTree->partitionData[model].lower                 = tr->partitionData[model].lower;
-	  localTree->partitionData[model].upper                 = tr->partitionData[model].upper;	 
-	  localTree->perPartitionLH[model]                      = 0.0;
-	 
-	  totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
-	}
-
-      assert(totalLength == localTree->originalCrunchedLength);
-    }
-
+  
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     localTree->partitionData[model].width        = 0;
 
-  if(tr->manyPartitions)
-    multiprocessorScheduling(localTree, tid);
+  assert(tr->manyPartitions);
 
   if(tr->manyPartitions)
-    computeFractionMany(localTree, tid);
-  else
-    computeFraction(localTree, tid, n);
-
+    multiprocessorScheduling(localTree, processID);
   
-
-#else
-  assert(tr == localTree);
-
-  
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
-#endif	   
-	   
+  computeFractionMany(localTree, processID);
+  	   
   maxCategories = localTree->maxCategories;
 
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
@@ -2778,27 +2711,6 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 	}              
     }
 
-  
-  
-
-  
-#if ! (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-  /* figure in tip sequence data per-site pattern weights */ 
- 
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t
-	j,
-	lower = tr->partitionData[model].lower,
-	width = tr->partitionData[model].upper - lower;  
-      
-      for(j = 1; j <= (size_t)tr->mxtips; j++)
-	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
-      
-      memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
-    }  
-#else
   {
     size_t 
       model,  
@@ -2812,6 +2724,8 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     
     for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
       myLength += localTree->partitionData[model].width;         
+
+   
 
     /* assign local memory for storing sequence data */
 
@@ -2830,361 +2744,319 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 
     /* figure in data */
 
-    if(tr->manyPartitions)
-      for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  if(isThisMyPartition(localTree, tid, model))
-	    {
-	      assert(localTree->partitionData[model].upper - localTree->partitionData[model].lower == localTree->partitionData[model].width);
+    
+    for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+      {
+	size_t width = localTree->partitionData[model].upper - localTree->partitionData[model].lower;	     
+
+	memcpy(&(localTree->partitionData[model].wgt[0]), &(tr->aliaswgt[localTree->partitionData[model].lower]), sizeof(int) * width);
+      }
+   
+    y = (unsigned char *)malloc(sizeof(unsigned char) * localTree->originalCrunchedLength);
+
+    for(i = 1; i <= (size_t)localTree->mxtips; i++)
+      {
+	myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength), byteFile);
+	
+
+	for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+	  {
+	    if(isThisMyPartition(localTree, processID, model))	  
+	      {
+		memcpy(localTree->partitionData[model].yVector[i], &(y[localTree->partitionData[model].lower]), sizeof(unsigned char) * localTree->partitionData[model].width);
+		
+	
 	      
-	      for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++, localCounter++)
-		{	    
-		  localTree->partitionData[model].wgt[localCounter]          = tr->aliaswgt[globalCounter];	      	     
-		 		  
-		  for(j = 1; j <= (size_t)localTree->mxtips; j++)
-		    localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
-		  
-		  globalCounter++;
-		}
-	    }
-	  else
-	    globalCounter += (localTree->partitionData[model].upper - localTree->partitionData[model].lower);
-	}
-    else
-      for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  for(localCounter = 0, i = (size_t)localTree->partitionData[model].lower;  i < (size_t)localTree->partitionData[model].upper; i++)
-	    {
-	      if(i % (size_t)n == (size_t)tid)
-		{
-		  localTree->partitionData[model].wgt[localCounter]          = tr->aliaswgt[globalCounter];	      	     		 
-		  
-		  for(j = 1; j <= (size_t)localTree->mxtips; j++)
-		    localTree->partitionData[model].yVector[j][localCounter] = tr->yVector[j][globalCounter]; 	     
-		  
-		  localCounter++;
-		}
-	      globalCounter++;
-	    }
-	}    
+		assert(localTree->partitionData[model].width == localTree->partitionData[model].upper - localTree->partitionData[model].lower);
+	      }
+	    else
+	      assert(localTree->partitionData[model].width == 0);
+	  }
+      }
+
+    
+
+    free(y);
+
+    
+
+    /* initialize gap bit vectors at tips when memory saving option is enabled */
+    
+    if(localTree->saveMemory)
+      {
+	for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+	  {
+	    int        
+	      undetermined = getUndetermined(localTree->partitionData[model].dataType);
+	    
+	    size_t
+	      i,
+	      j,
+	      width =  localTree->partitionData[model].width;
+	    
+	    if(width > 0)
+	      {	   	    	      	    	     
+		for(j = 1; j <= (size_t)(localTree->mxtips); j++)
+		  for(i = 0; i < width; i++)
+		    if(localTree->partitionData[model].yVector[j][i] == undetermined)
+		      localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
+	      }     
+	  }
+      }
   }
-#endif
-
-  /* initialize gap bit vectors at tips when memory saving option is enabled */
-
-  if(localTree->saveMemory)
-    {
-      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  int        
-	    undetermined = getUndetermined(localTree->partitionData[model].dataType);
-	  
-	  size_t
-	    i,
-	    j,
-	    width =  localTree->partitionData[model].width;
-	  
-	  if(width > 0)
-	    {	   	    	      	    	     
-	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
-		for(i = 0; i < width; i++)
-		  if(localTree->partitionData[model].yVector[j][i] == undetermined)
-		    localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
-	    }     
-	}
-    }
 }
 
+
+static void initializeTree(tree *tr, analdef *adef)
+{
+  size_t 
+    i,
+    model;
+  
+  FILE 
+    *byteFile = fopen(byteFileName, "rb");
+
+  double **empiricalFrequencies;	 
+  
+  myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
+  myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
+  myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
+  myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
+   
+  empiricalFrequencies = (double **)malloc(sizeof(double *) * tr->NumberOfModels);
+  
+  if(adef->perGeneBranchLengths)
+    tr->numBranches = tr->NumberOfModels;
+  else
+    tr->numBranches = 1;
+  
+  /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
+     let's not worry about this right now, because it is indeed RAxML-specific */
+  
+  if(tr->searchConvergenceCriterion && processID == 0)
+    {                     
+      tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
+      tr->h = initHashTable(tr->mxtips * 4);        
+    }
+    
+  tr->aliaswgt                   = (int *)malloc(tr->originalCrunchedLength * sizeof(int));
+  myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
+  
+  tr->rateCategory    = (int *)    malloc(tr->originalCrunchedLength * sizeof(int));	  
+  tr->wr              = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
+  tr->wr2             = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
+  tr->patrat          = (double*)  malloc(tr->originalCrunchedLength * sizeof(double));
+  tr->patratStored    = (double*)  malloc(tr->originalCrunchedLength * sizeof(double)); 
+  tr->lhs             = (double*)  malloc(tr->originalCrunchedLength * sizeof(double)); 
+  
+  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * tr->NumberOfModels);
+  
+  for(i = 0; i < tr->NumberOfModels; i++)
+    tr->executeModel[i] = TRUE;
+   
+  setupTree(tr);    
+
+  for(i = 1; i <= tr->mxtips; i++)
+    {
+      int 
+	len;
+      
+      myBinFread(&len, sizeof(int), 1, byteFile);
+      tr->nameList[i] = (char*)malloc(sizeof(char) * len);
+      myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
+      addword(tr->nameList[i], tr->nameHash, i);        
+    }  
+ 
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    {      
+      int 
+	len;
+      
+      pInfo 
+	*p = &(tr->partitionData[model]);	   
+      
+      myBinFread(&(p->states),             sizeof(int), 1, byteFile);
+      myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
+      myBinFread(&(p->lower),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->upper),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->width),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->dataType),           sizeof(int), 1, byteFile);
+      myBinFread(&(p->protModels),         sizeof(int), 1, byteFile);
+      myBinFread(&(p->autoProtModels),     sizeof(int), 1, byteFile);
+      myBinFread(&(p->protFreqs),          sizeof(int), 1, byteFile);
+      myBinFread(&(p->nonGTR),             sizeof(boolean), 1, byteFile);
+      myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile);	 
+      
+      /* later on if adding secondary structure data
+	 
+	 int    *symmetryVector;
+	 int    *frequencyGrouping;
+      */
+      
+      myBinFread(&len, sizeof(int), 1, byteFile);
+      p->partitionName = (char*)malloc(sizeof(char) * len);
+      myBinFread(p->partitionName, sizeof(char), len, byteFile);
+      
+      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * p->states);
+      myBinFread(empiricalFrequencies[model], sizeof(double), p->states, byteFile);	   
+    }     
+  
+  initializePartitions(tr, tr, processID, processes, byteFile);
+
+  fclose(byteFile);
+
+  initModel(tr, adef, empiricalFrequencies); 
+ 
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    free(empiricalFrequencies[model]);
+
+  free(empiricalFrequencies[model]);
+}
 
 
 int main (int argc, char *argv[])
 { 
-  tree  *tr = (tree*)malloc(sizeof(tree));
-  
-  analdef *adef = (analdef*)malloc(sizeof(analdef));
-  
-  double **empiricalFrequencies;
-
-  /* not very portable thread to core pinning if PORTABLE_PTHREADS is not defined
-     by defualt the cod ebelow is deactivated */
-
-#if (defined(_USE_PTHREADS) && !defined(_PORTABLE_PTHREADS))  
-  pinToCore(0);
-#endif 
-
-  /* 
-     tell the CPU to ignore exceptions generated by denormalized floating point values.
-     If this is not done, depending on the input data, the likelihood functions can exhibit 
-     substantial run-time differences for vectors of equal length.
-  */
-     
-#if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
-   _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
-#endif 
-
-   /* 
-      MPI initialization stuff, worry about this later 
-   */
-
-#ifdef _FINE_GRAIN_MPI
   MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &processID);
   MPI_Comm_size(MPI_COMM_WORLD, &processes);
   printf("\nThis is RAxML FINE-GRAIN MPI Process Number: %d\n", processID);   
   MPI_Barrier(MPI_COMM_WORLD);
-#else
-  processID = 0;
-#endif
+  
+  {
+    tree  *tr = (tree*)malloc(sizeof(tree));
+  
+    analdef *adef = (analdef*)malloc(sizeof(analdef));   
 
+    /* 
+       tell the CPU to ignore exceptions generated by denormalized floating point values.
+       If this is not done, depending on the input data, the likelihood functions can exhibit 
+       substantial run-time differences for vectors of equal length.
+    */
+    
+#if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
+    _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
+#endif   
 
   /* get the start time */
-
-  masterTime = gettime();         
+   
+    masterTime = gettime();         
     
   /* initialize the analysis parameters in struct adef to default values */
     
-  initAdef(adef);
+    initAdef(adef);
 
   /* parse command line arguments: this has a side effect on tr struct and adef struct variables */
   
-  get_args(argc, argv, adef, tr); 
+    get_args(argc, argv, adef, tr); 
   
   /* generate the RAxML output file names and store them in strings */
-  
-  makeFileNames();
-  
-  {
-    size_t 
-      i,
-      model;
-    
-    unsigned char *y;
-    
-    FILE 
-      *byteFile = fopen(byteFileName, "rb");	 
-    
-    
-    myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
-    myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
-    myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
-    myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
-    
-    if(adef->perGeneBranchLengths)
-      tr->numBranches = tr->NumberOfModels;
-    else
-      tr->numBranches = 1;
 
-    /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
-     let's not worry about this right now, because it is indeed RAxML-specific */
-  
-    if(tr->searchConvergenceCriterion)
-      {                     
-	tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
-	tr->h = initHashTable(tr->mxtips * 4);        
-      }
+    if(processID == 0)
+      makeFileNames();
 
+    initializeTree(tr, adef);                               
     
-    tr->aliaswgt                   = (int *)malloc(tr->originalCrunchedLength * sizeof(int));
-    myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
-    
-    tr->rateCategory    = (int *)    malloc(tr->originalCrunchedLength * sizeof(int));	  
-    tr->wr              = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
-    tr->wr2             = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
-    tr->patrat          = (double*)  malloc(tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  malloc(tr->originalCrunchedLength * sizeof(double)); 
-    tr->lhs             = (double*)  malloc(tr->originalCrunchedLength * sizeof(double)); 
-    
-    tr->executeModel   = (boolean *)malloc(sizeof(boolean) * tr->NumberOfModels);
-    
-    for(i = 0; i < tr->NumberOfModels; i++)
-      tr->executeModel[i] = TRUE;
-    
-    empiricalFrequencies = (double **)malloc(sizeof(double *) * tr->NumberOfModels);
-    
-    y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
-    
-    tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
-    
-    for(i = 1; i <= tr->mxtips; i++)
-      tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];	
-    
-    setupTree(tr);
-    
-    for(i = 1; i <= tr->mxtips; i++)
+    if(processID == 0)  
       {
-	int len;
-	myBinFread(&len, sizeof(int), 1, byteFile);
-	tr->nameList[i] = (char*)malloc(sizeof(char) * len);
-	myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
-	/*printf("%s \n", tr->nameList[i]);*/
+	printModelAndProgramInfo(tr, adef, argc, argv);  
+	printBothOpen("Memory Saving Option: %s\n", (tr->saveMemory == TRUE)?"ENABLED":"DISABLED");   	             
       }  
-    
-    for(i = 1; i <= tr->mxtips; i++)
-      addword(tr->nameList[i], tr->nameHash, i);
-    
-    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+                         
+    /* 
+       this will re-start RAxML exactly where it has left off from a checkpoint file,
+       while checkpointing is important and has to be implemented for the library we should not worry about this right now 
+    */
+  
+   
+
+    if(adef->useCheckpoint)
       {
-	int 
-	  len;
-	
-	pInfo 
-	  *p = &(tr->partitionData[model]);	   
-	
-	myBinFread(&(p->states),             sizeof(int), 1, byteFile);
-	myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
-	myBinFread(&(p->lower),              sizeof(int), 1, byteFile);
-	myBinFread(&(p->upper),              sizeof(int), 1, byteFile);
-	myBinFread(&(p->width),              sizeof(int), 1, byteFile);
-	myBinFread(&(p->dataType),           sizeof(int), 1, byteFile);
-	myBinFread(&(p->protModels),         sizeof(int), 1, byteFile);
-	myBinFread(&(p->autoProtModels),     sizeof(int), 1, byteFile);
-	myBinFread(&(p->protFreqs),          sizeof(int), 1, byteFile);
-	myBinFread(&(p->nonGTR),             sizeof(boolean), 1, byteFile);
-	myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile);	 
-	
-	/* later on if adding secondary structure data
-	   
-	   int    *symmetryVector;
-	   int    *frequencyGrouping;
-	*/
-	
-	myBinFread(&len, sizeof(int), 1, byteFile);
-	p->partitionName = (char*)malloc(sizeof(char) * len);
-	myBinFread(p->partitionName, sizeof(char), len, byteFile);
-	
-	empiricalFrequencies[model] = (double *)malloc(sizeof(double) * tr->partitionData[model].states);
-	myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);	   
-      }
-    
-    myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
-
-    fclose(byteFile);
-  }
-                           
-
-
-#ifdef _USE_PTHREADS
-  /* 
-     this main function is the master thread, so if we want to run RAxML with n threads,
-     we use startPthreads to start the n-1 worker threads */
-  
-  startPthreads(tr);
-  
-  /* via masterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 
-     computations. Have a look at execFunction() in axml.c where we siwtch of the different types of parallel regions.
-     
-     Although not necessary, below we copy the info stored on tr->partitionData to corresponding copies in each thread.
-     While this is shared memory and we don't really need to copy stuff, it was implemented like this to allow for an easier 
-     transition to a distributed memory implementation (MPI).
-  */
-  
-  masterBarrier(THREAD_INIT_PARTITION, tr);       
-#else      
-  /* 
-     allocate the required data structures for storing likelihood vectors etc 
-  */
-  
-  initializePartitions(tr, tr, 0, 0);
-#endif
-       
-  /* print out some info on partitions, models, data types etc, not very interesting */
-  
-  printModelAndProgramInfo(tr, adef, argc, argv);
-  
-  /* Tells us if the SEV-based memory saving option has been activated in the command line or not.
-     printBothOpen() allows to simultaneously print to terminal and to the RAxML_info file, thereby making 
-     the terminal output and the info in the RAxML_info file consistent */
-  
-  printBothOpen("Memory Saving Option: %s\n", (tr->saveMemory == TRUE)?"ENABLED":"DISABLED");   	             
-  
-  /* 
-     initialize model parameters like empirical base frequencies, the rates in the Q matrix, the alpha shape parameters,
-     the per-site substitution rates to default starting values */
-  
-  initModel(tr, adef, empiricalFrequencies);                      
-  
-  
-  
-  
-  /* 
-     this will re-start RAxML exactly where it has left off from a checkpoint file,
-     while checkpointing is important and has to be implemented for the library we should not worry about this right now 
-  */
-  
-  if(adef->useCheckpoint)
-    {
 #ifdef _BAYESIAN
-      assert(0);
+	assert(0);
 #endif
       
-      /* read checkpoint file */
-      restart(tr);
-      
-      /* continue tree search where we left it off */
-      computeBIGRAPID(tr, adef, TRUE); 
-    }
-  else
-    {
-      /* not important, only used to keep track of total accumulated exec time 
-	 when checkpointing and restarts were used */
-      
-      accumulatedTime = 0.0;
-      
-      /* get the starting tree: here we just parse the tree passed via the command line 
-	 and do an initial likelihood computation traversal 
-	 which we maybe should skeip, TODO */
-      
-      
-      switch(tr->startingTree)
-	{
-	case randomTree:
-	  makeRandomTree(tr);
-	  break;
-	case givenTree:
-	  getStartingTree(tr);     
-	  break;
-	case parsimonyTree:	     
-	  /* runs only on process/thread 0 ! */
-	  allocateParsimonyDataStructures(tr);
-	  makeParsimonyTreeFast(tr);
-	  freeParsimonyDataStructures(tr);
+	/* read checkpoint file */
+	restart(tr);
+	
+	/* continue tree search where we left it off */
+	computeBIGRAPID(tr, adef, TRUE); 
+      }
+    else
+      {
+	/* not important, only used to keep track of total accumulated exec time 
+	   when checkpointing and restarts were used */
+	
+	if(processID == 0)
+	  accumulatedTime = 0.0;
+	
+	/* get the starting tree: here we just parse the tree passed via the command line 
+	   and do an initial likelihood computation traversal 
+	   which we maybe should skeip, TODO */
+	
+	
+	switch(tr->startingTree)
+	  {
+	  case randomTree:
+	    assert(0);
+	    makeRandomTree(tr);
+	    break;
+	  case givenTree:
+	    getStartingTree(tr);     
+	    break;
+	  case parsimonyTree:	     
+	    /* runs only on process/thread 0 ! */
+	    assert(0);
+	    allocateParsimonyDataStructures(tr);
+	    makeParsimonyTreeFast(tr);
+	    freeParsimonyDataStructures(tr);
 	  break;
 	default:
 	  assert(0);
 	}
+
+	
+    
       
-      /* 
-	 here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
-	 This should basically be the first call to the library that actually computes something :-)
-      */
+	/* 
+	   here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
+	   This should basically be the first call to the library that actually computes something :-)
+	*/
       
-      evaluateGeneric(tr, tr->start, TRUE);	 
+	evaluateGeneric(tr, tr->start, TRUE);	
+	
+	/* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       
-      /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
-      
-      treeEvaluate(tr, 1); 	 	 	 	 	 
-      
-      /* now start the ML search algorithm */
+	
+
+	treeEvaluate(tr, 1); 
+
+	
+
+	/* now start the ML search algorithm */
       
 #ifdef _BAYESIAN 
-      if(adef->bayesian)
-	{
-	  /* allocate parsimony data structures for parsimony-biased SPRs */
-	  
-	  allocateParsimonyDataStructures(tr);
-	  mcmc(tr, adef);
-	  freeParsimonyDataStructures(tr);
-	}
-      else
+	if(adef->bayesian)
+	  {
+	    /* allocate parsimony data structures for parsimony-biased SPRs */
+	    
+	    allocateParsimonyDataStructures(tr);
+	    mcmc(tr, adef);
+	    freeParsimonyDataStructures(tr);
+	  }
+	else
 #endif
-	computeBIGRAPID(tr, adef, TRUE); 	     
-    }            
+	  computeBIGRAPID(tr, adef, TRUE); 			     
+      }            
       
-  /* print som more nonsense into the RAxML_info file */
+    /* print som more nonsense into the RAxML_info file */
   
-  finalizeInfoFile(tr, adef);
-
+    if(processID == 0)
+      finalizeInfoFile(tr, adef);
+  }
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Finalize();
 
   return 0;
 }

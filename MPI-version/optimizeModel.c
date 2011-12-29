@@ -65,6 +65,8 @@ extern volatile int             NumberOfThreads;
 extern volatile double          *reductionBuffer;
 #endif
 
+extern int processID;
+
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
 
 
@@ -247,14 +249,13 @@ static void freeLinkageList( linkageList* ll)
 
 
 
-
 static void evaluateChange(tree *tr, int rateNumber, double *value, double *result, boolean* converged, analdef *adef, int whichFunction, int numberOfModels, linkageList *ll)
 { 
   int i, k, pos;
 
   switch(whichFunction)
     {    
-    case RATE_F:
+    case RATE_F:     
       for(i = 0, pos = 0; i < ll->entries; i++)
 	{
 	  if(ll->ld[i].valid)
@@ -270,9 +271,8 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		    {
 		      int index = ll->ld[i].partitionList[k];		  	      
 		      setRateModel(tr, index, value[pos], rateNumber);  
-#ifndef _LOCAL_DISCRETIZATION 
+
 		      initReversibleGTR(tr, index);		 
-#endif
 		    }
 		}
 	      pos++;
@@ -287,40 +287,10 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
       assert(pos == numberOfModels);
 
-#ifdef _USE_PTHREADS
-      {
-	volatile double result;
-	
-	masterBarrier(THREAD_OPT_RATE, tr);
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < NumberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
 
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_RATE, tr);     
-#else
-      evaluateGeneric(tr, tr->start, TRUE);      
-#endif
-#endif     
+      evaluateGeneric(tr, tr->start, TRUE);  
+      
+   
       
       for(i = 0, pos = 0; i < ll->entries; i++)	
 	{
@@ -346,7 +316,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	}
 
       assert(pos == numberOfModels);
-      break;
+      break;    
     case ALPHA_F:
       for(i = 0; i < ll->entries; i++)
 	{
@@ -362,46 +332,13 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		  int index = ll->ld[i].partitionList[k];
 		  tr->executeModel[index] = TRUE;
 		  tr->partitionData[index].alpha = value[i];
-#ifndef _LOCAL_DISCRETIZATION
+
 		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4);
-#endif
 		}
 	    }
 	}
-#ifdef _USE_PTHREADS   
-      {
-	volatile double result;
-	
-	masterBarrier(THREAD_OPT_ALPHA, tr);
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < NumberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
 
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_ALPHA, tr);     
-#else
       evaluateGeneric(tr, tr->start, TRUE);
-#endif
-#endif
             
       for(i = 0; i < ll->entries; i++)	
 	{	  
@@ -1033,7 +970,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	    {	      
 	      tr->partitionData[ll->ld[i].partitionList[k]].alpha = startAlpha[i];
 #ifndef _LOCAL_DISCRETIZATION
-	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 
+	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 	      
 #endif		
 	    }
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
@@ -1180,7 +1117,7 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 		      int index = ll->ld[k].partitionList[j];
 		      tr->partitionData[index].substRates[i] = startRates[pos * numberOfRates + i];
 #ifndef _LOCAL_DISCRETIZATION 	             	  
-		      initReversibleGTR(tr, index);
+		      initReversibleGTR(tr, index);		     
 #endif
 		    }
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
@@ -2333,7 +2270,7 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
   linkageList *rateList; 
   
   int *unlinked = (int *)malloc(sizeof(int) * tr->NumberOfModels);
-      
+
   modelEpsilon = 0.0001;
     
   for(i = 0; i < tr->NumberOfModels; i++)
@@ -2349,20 +2286,34 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
     {           
       currentLikelihood = tr->likelihood;     
      
+     
+
       optRatesGeneric(tr, adef, modelEpsilon, rateList);
-           
+      
+      
+      
+      
+
       evaluateGeneric(tr, tr->start, TRUE);                                       
+     
+      
+     
 
       autoProtein(tr, adef);
 
       treeEvaluate(tr, 0.0625);      
+
       
+
       switch(tr->rateHetModel)
 	{
 	case GAMMA:      
 	  optAlpha(tr, modelEpsilon, alphaList); 
+	  
 	  evaluateGeneric(tr, tr->start, TRUE); 	 	 
+	  
 	  treeEvaluate(tr, 0.1);	  	 
+	 
 	  break;
 	case CAT:
 	  if(catOpt < 3)
@@ -2376,7 +2327,7 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
 	}                   
       
        
-
+      
       printAAmatrix(tr, fabs(currentLikelihood - tr->likelihood));    
     }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
