@@ -3884,7 +3884,8 @@ void initModel(tree *tr, analdef *adef, double **empiricalFrequencies)
     }
   
   /* TODO */
-  /* updatePerSiteRates(tr, FALSE); */
+  if(tr->rateHetModel == CAT)
+    updatePerSiteRates(tr, FALSE);
  
   setupSecondaryStructureSymmetries(tr);
   

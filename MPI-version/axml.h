@@ -469,8 +469,6 @@ typedef struct
 
 typedef  struct noderec
 {
- 
-  branchInfo      *bInf;
   double           z[NUM_BRANCHES];
 #ifdef _BAYESIAN 
   double           z_tmp[NUM_BRANCHES];
@@ -478,7 +476,6 @@ typedef  struct noderec
   struct noderec  *next;
   struct noderec  *back;
   hashNumberType   hash;
-  int              support;
   int              number;
   char             x;
   char             xPars;

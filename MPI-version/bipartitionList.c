@@ -677,7 +677,7 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
 
 	  switch(function)
 	    {
-	    case BIPARTITIONS_ALL:	      
+	      /*case BIPARTITIONS_ALL:	      
 	      insertHashAll(toInsert, h, vectorLength, treeNumber, position);
 	      *countBranches =  *countBranches + 1;	
 	      break;
@@ -703,11 +703,11 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
 	    case BIPARTITIONS_BOOTSTOP:	      
 	      insertHashBootstop(toInsert, h, vectorLength, treeNumber, treeVectorLength, position);
 	      *countBranches =  *countBranches + 1;
-	      break;
+	      break;*/
 	    case BIPARTITIONS_RF:
-	      if(computeWRF)
-		assert(p->support == p->back->support);
-	      insertHashRF(toInsert, h, vectorLength, treeNumber, treeVectorLength, position, p->support, computeWRF);
+	      /*if(computeWRF)
+		assert(p->support == p->back->support);*/
+	      insertHashRF(toInsert, h, vectorLength, treeNumber, treeVectorLength, position, 0, computeWRF);
 	      *countBranches =  *countBranches + 1;
 	      break;
 	    default:

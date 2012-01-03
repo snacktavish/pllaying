@@ -1622,116 +1622,118 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
     {            
       for(model = 0; model < tr->NumberOfModels; model++)
 	{
-	  int 	       
-	    lower = tr->partitionData[model].lower,
-	    upper = tr->partitionData[model].upper;
-	  
-	  if(scaleRates)
+	  if(isThisMyPartition(tr, processID, model))
 	    {
-	      double 
-		scaler = 0.0,       
-		accRat = 0.0; 
-
-	      int 
-		accWgt     = 0;
+	      int 	       
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
 	      
-	      for(i = lower; i < upper; i++)
+	      if(scaleRates)
 		{
+		  double 
+		    scaler = 0.0,       
+		    accRat = 0.0; 
+		  
 		  int 
-		    w = tr->aliaswgt[i];
+		    accWgt     = 0;
 		  
-		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  for(i = lower; i < upper; i++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		      
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		      
+		      accWgt += w;
+		      
+		      accRat += (w * rate);
+		    }	   
 		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		  accRat /= ((double)accWgt);
 		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}	   
-	  
-	      accRat /= ((double)accWgt);
-	  
-	      scaler = 1.0 / ((double)accRat);
+		  scaler = 1.0 / ((double)accRat);
 	  	  
-	      for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
-		tr->partitionData[model].perSiteRates[i] *= scaler;	    
-
-	      accRat = 0.0;	 
+		  for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
+		    tr->partitionData[model].perSiteRates[i] *= scaler;	    
+		  
+		  accRat = 0.0;	 
+		  
+		  for(i = lower; i < upper; i++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		      
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
+		      
+		      accRat += (w * rate);
+		    }	         
+		  
+		  accRat /= ((double)accWgt);	  
+		  
+		  assert(ABS(1.0 - accRat) < 1.0E-5);
+		}
+	      else
+		{
+		  double 		   
+		    accRat = 0.0; 
+		  
+		  int 
+		    accWgt     = 0;
+		  
+		  for(i = lower; i < upper; i++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		      
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		      
+		      accWgt += w;
+		      
+		      accRat += (w * rate);
+		    }	   
+		  
+		  accRat /= ((double)accWgt);
+		  
+		  assert(ABS(1.0 - accRat) < 1.0E-5);
+		}
 	      
 	      for(i = lower; i < upper; i++)
 		{
-		  int 
-		    w = tr->aliaswgt[i];
+		  double
+		    w = ((double)tr->aliaswgt[i]);	      
 		  
 		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		    wtemp,
+		    temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
+		  wtemp = temp * w;
 		  
-		  accRat += (w * rate);
-		}	         
-
-	      accRat /= ((double)accWgt);	  
-
-	      assert(ABS(1.0 - accRat) < 1.0E-5);
-	    }
-	  else
-	    {
-	      double 		   
-		accRat = 0.0; 
-
-	      int 
-		accWgt     = 0;
-	      
-	      for(i = lower; i < upper; i++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}	   
+		  tr->wr[i]  = wtemp;
+		  tr->wr2[i] = temp * wtemp;
+		}	            	  
 	  
-	      accRat /= ((double)accWgt);
-	      
-	      assert(ABS(1.0 - accRat) < 1.0E-5);
+
+	      {
+		int 
+		  localCount = 0;
+		
+		for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		  {	    	      
+		    tr->partitionData[model].wr[localCount]  = tr->wr[i];
+		    tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+		    tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
+		  }
+	      }	      
 	    }
-
-	  for(i = lower; i < upper; i++)
-	    {
-	      double
-		w = ((double)tr->aliaswgt[i]);	      
-
-	       double
-		 wtemp,
-		 temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-
-	       wtemp = temp * w;
-
-	       tr->wr[i]  = wtemp;
-	       tr->wr2[i] = temp * wtemp;
-	    }	            	  
-	  
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-	  {
-	    int 
-	      localCount = 0;
-	    
-	    for(i = lower, localCount = 0; i < upper; i++, localCount++)
-	      {	    	      
-		tr->partitionData[model].wr[localCount]  = tr->wr[i];
-		tr->partitionData[model].wr2[localCount] = tr->wr2[i];
-		tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
-	      }
-	  }
-#endif
 	}
     }
   else
@@ -1747,144 +1749,200 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	{
 	  for(model = 0, accRat = 0.0, accWgt = 0; model < tr->NumberOfModels; model++)
 	    {
-	      int 
-		localCount = 0,
-		lower = tr->partitionData[model].lower,
-		upper = tr->partitionData[model].upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+	      if(isThisMyPartition(tr, processID, model))
 		{
 		  int 
-		    w = tr->aliaswgt[i];
+		    localCount = 0,
+		    lower = tr->partitionData[model].lower,
+		    upper = tr->partitionData[model].upper;
 		  
-		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
+		  for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		      
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		      
+		      accWgt += w;
+		      
+		      accRat += (w * rate);
+		    }
 		}
 	    }
 	  
-	  accRat /= ((double)accWgt);
+	  if(tr->manyPartitions)
+	    {
+	      double 
+		dwgt,
+		a[2],
+		r[2];
+
+	      a[0] = (double)accRat;
+	      a[1] = (double)accWgt;
+
+	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	      
+	      accRat = r[0];
+	      dwgt   = r[1];
+	      
+	      accRat /= dwgt;	     
+	    }
+	  else
+	    {
+	      assert(0);
+	      accRat /= ((double)accWgt);	      
+	    }
 	  
 	  scaler = 1.0 / ((double)accRat);
-	  
+
 	  for(model = 0; model < tr->NumberOfModels; model++)
 	    {
-	      for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
-		tr->partitionData[model].perSiteRates[i] *= scaler;
+	      if(isThisMyPartition(tr, processID, model))
+		{
+		  for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
+		    tr->partitionData[model].perSiteRates[i] *= scaler;
+		}
 	    }
 
-	  for(model = 0, accRat = 0.0; model < tr->NumberOfModels; model++)
+	  /*for(model = 0, accRat = 0.0; model < tr->NumberOfModels; model++)
 	    {
-	      int 
-		localCount = 0,
-		lower = tr->partitionData[model].lower,
-		upper = tr->partitionData[model].upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+	      if(isThisMyPartition(tr, processID, model))
 		{
 		  int 
-		    w = tr->aliaswgt[i];
+		    localCount = 0,
+		    lower = tr->partitionData[model].lower,
+		    upper = tr->partitionData[model].upper;
 		  
-		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
-		  
-		  accRat += (w * rate);
+		  for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		      
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
+		      
+		      accRat += (w * rate);
+		    }
 		}
 	    }           
 
 	  accRat /= ((double)accWgt);	  
 
-	  assert(ABS(1.0 - accRat) < 1.0E-5);
+	  assert(ABS(1.0 - accRat) < 1.0E-5);*/
 	}
       else
 	{
 	  for(model = 0, accRat = 0.0, accWgt = 0; model < tr->NumberOfModels; model++)
 	    {
-	      int 
-		localCount = 0,
-		lower = tr->partitionData[model].lower,
-		upper = tr->partitionData[model].upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+	      if(isThisMyPartition(tr, processID, model))
 		{
 		  int 
-		    w = tr->aliaswgt[i];
+		    localCount = 0,
+		    lower = tr->partitionData[model].lower,
+		    upper = tr->partitionData[model].upper;
 		  
-		  double
-		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
+		  for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		    {
+		      int 
+			w = tr->aliaswgt[i];
+		      
+		      double
+			rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];		      		      
+
+		      assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		      
+		      accWgt += w;
+		      
+		      accRat += (w * rate);
+		    }
 		}
 	    }
 	  
-	  accRat /=  (double)accWgt;
+	   if(tr->manyPartitions)
+	    {
+	      double 
+		dwgt,
+		a[2],
+		r[2];
+
+	      a[0] = (double)accRat;
+	      a[1] = (double)accWgt;
+
+	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	      
+	      accRat = r[0];
+	      dwgt   = r[1];
+	      
+	      accRat /= dwgt;	     
+	    }
+	   /*accRat /=  (double)accWgt;*/
+
+	  /*printf("%f %d\n", accRat, processID);*/
 
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
          
        for(model = 0; model < tr->NumberOfModels; model++)
 	{
-	  int 
-	    localCount = 0,
-	    lower = tr->partitionData[model].lower,
-	    upper = tr->partitionData[model].upper;
-
-	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
+	  if(isThisMyPartition(tr, processID, model))
 	    {
-	      double
-		w = ((double)tr->aliaswgt[i]);	      
-
-	       double
-		 wtemp,
-		 temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
-
-	       wtemp = temp * w;
-
-	       tr->wr[i]  = wtemp;
-	       tr->wr2[i] = temp * wtemp;
+	      int 
+		localCount = 0,
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{
+		  double
+		    w = ((double)tr->aliaswgt[i]);	      
+		  
+		  double
+		    wtemp,
+		    temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  wtemp = temp * w;
+		  
+		  tr->wr[i]  = wtemp;
+		  tr->wr2[i] = temp * wtemp;
+		}
 	    }
 	}         
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+
       for(model = 0; model < tr->NumberOfModels; model++)
-	{   	  	  	 
-	  int 
-	    localCount,
-	    lower = tr->partitionData[model].lower,
-	    upper = tr->partitionData[model].upper;	  
-	  
-	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
-	    {	    	      
-	      tr->partitionData[model].wr[localCount]  = tr->wr[i];
-	      tr->partitionData[model].wr2[localCount] = tr->wr2[i];
-	      tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
+	{  
+	  if(isThisMyPartition(tr, processID, model))	  	  	 
+	    {
+	      int 
+		localCount,
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;	  
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{	    	      
+		  tr->partitionData[model].wr[localCount]  = tr->wr[i];
+		  tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+		  tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
+		}
 	    }
 	}
-#endif
+
     }
   
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_RATE_CATS, tr);
-#endif  
-   
-#ifdef _USE_PTHREADS
-  masterBarrier(THREAD_COPY_RATE_CATS, tr);
-#endif               
+           
 }
 
 static void optimizeRateCategories(tree *tr, int _maxCategories)
 {
   assert(_maxCategories > 0);
+
+  
 
   if(_maxCategories > 1)
     {
@@ -1894,7 +1952,6 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	upper_spacing,
 	initialLH = tr->likelihood,	
 	*ratStored = (double *)malloc(sizeof(double) * tr->originalCrunchedLength),
-	/**lhs =       (double *)malloc(sizeof(double) * tr->originalCrunchedLength),*/
 	**oldCategorizedRates = (double **)malloc(sizeof(double *) * tr->NumberOfModels);
 
       int  
@@ -1907,7 +1964,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
   
       assert(isTip(tr->start->number, tr->mxtips));         
       
-      evaluateGeneric(tr, tr->start, TRUE);
+      evaluateGeneric(tr, tr->start, TRUE);     
 
       if(optimizeRateCategoryInvocations == 1)
 	{
@@ -1939,89 +1996,86 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  
 	  memcpy(oldCategorizedRates[model], tr->partitionData[model].perSiteRates, tr->maxCategories * sizeof(double));	  	 	  
 	}      
-      
-#ifdef _USE_PTHREADS
-      /*tr->lhs = lhs;*/
-      tr->lower_spacing = lower_spacing;
-      tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr);
-#else
-#ifdef _FINE_GRAIN_MPI
-      /*      tr->lhs = lhs;*/
-      tr->lower_spacing = lower_spacing;
-      tr->upper_spacing = upper_spacing;
-      masterBarrierMPI(THREAD_RATE_CATS, tr);
-#else
-      for(model = 0; model < tr->NumberOfModels; model++)      
-	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
-#endif     
-#endif
-
+      	
+      if(tr->manyPartitions)
+	{
+	  for(model = 0; model < tr->NumberOfModels; model++)      
+	    if(isThisMyPartition(tr, processID, model))
+	       optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
+	}
+      else
+	assert(0);
+     
       for(model = 0; model < tr->NumberOfModels; model++)
 	{     
-	  int 
-	    where = 1,
-	    found = 0,
-	    width = tr->partitionData[model].upper -  tr->partitionData[model].lower,
-	    upper = tr->partitionData[model].upper,
-	    lower = tr->partitionData[model].lower;
-	    
-	  rateCategorize 
-	    *rc = (rateCategorize *)malloc(sizeof(rateCategorize) * width);		 
-	
-	  for (i = 0; i < width; i++)
+	  if(isThisMyPartition(tr, processID, model))
 	    {
-	      rc[i].accumulatedSiteLikelihood = 0.0;
-	      rc[i].rate = 0.0;
-	    }  
-	
-	  rc[0].accumulatedSiteLikelihood = tr->lhs[lower];
-	  rc[0].rate = tr->patrat[lower];
-	
-	  tr->rateCategory[lower] = 0;
-	
-	  for (i = lower + 1; i < upper; i++) 
-	    {
-	      temp = tr->patrat[i];
-	      found = 0;
-	    
-	      for(k = 0; k < where; k++)
+	      int 
+		where = 1,
+		found = 0,
+		width = tr->partitionData[model].upper -  tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper,
+		lower = tr->partitionData[model].lower;
+	      
+	      rateCategorize 
+		*rc = (rateCategorize *)malloc(sizeof(rateCategorize) * width);		 
+	      
+	      for (i = 0; i < width; i++)
 		{
-		  if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
+		  rc[i].accumulatedSiteLikelihood = 0.0;
+		  rc[i].rate = 0.0;
+		}  
+	      
+	      rc[0].accumulatedSiteLikelihood = tr->lhs[lower];
+	      rc[0].rate = tr->patrat[lower];
+	      
+	      tr->rateCategory[lower] = 0;
+	      
+	      for (i = lower + 1; i < upper; i++) 
+		{
+		  temp = tr->patrat[i];
+		  found = 0;
+		  
+		  for(k = 0; k < where; k++)
 		    {
-		      found = 1;						
-		      rc[k].accumulatedSiteLikelihood += tr->lhs[i];	
-		      break;
+		      if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
+			{
+			  found = 1;						
+			  rc[k].accumulatedSiteLikelihood += tr->lhs[i];	
+			  break;
+			}
+		    }
+		  
+		  if(!found)
+		    {	    
+		      rc[where].rate = temp;	    
+		      rc[where].accumulatedSiteLikelihood += tr->lhs[i];	    
+		      where++;
 		    }
 		}
-	    
-	      if(!found)
-		{	    
-		  rc[where].rate = temp;	    
-		  rc[where].accumulatedSiteLikelihood += tr->lhs[i];	    
-		  where++;
+	      
+	      qsort(rc, where, sizeof(rateCategorize), catCompare);
+	      
+	      if(where < maxCategories)
+		{
+		  tr->partitionData[model].numberOfCategories = where;
+		  categorizePartition(tr, rc, model, lower, upper);
 		}
-	    }
+	      else
+		{
+		  tr->partitionData[model].numberOfCategories = maxCategories;	
+		  categorizePartition(tr, rc, model, lower, upper);
+		}
 	
-	  qsort(rc, where, sizeof(rateCategorize), catCompare);
-	
-	  if(where < maxCategories)
-	    {
-	      tr->partitionData[model].numberOfCategories = where;
-	      categorizePartition(tr, rc, model, lower, upper);
-	    }
-	  else
-	    {
-	      tr->partitionData[model].numberOfCategories = maxCategories;	
-	      categorizePartition(tr, rc, model, lower, upper);
-	    }
-	
-	  free(rc);
+	      free(rc);
+	    }   
 	}
-        	
+      
       updatePerSiteRates(tr, TRUE);	
-
+     
+     
       evaluateGeneric(tr, tr->start, TRUE);
+     
       
       if(tr->likelihood < initialLH)
 	{	 		  
@@ -2318,7 +2372,8 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
 	case CAT:
 	  if(catOpt < 3)
 	    {	      	     	     
-	      optimizeRateCategories(tr, tr->categories);	      	     	      	      
+	     
+	      optimizeRateCategories(tr, tr->categories);	      	     	      	      	     
 	      catOpt++;
 	    }
 	  break;	  
