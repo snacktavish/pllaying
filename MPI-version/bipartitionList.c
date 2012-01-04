@@ -53,28 +53,22 @@
 
 
 
-
-
-
-
-#define _NEW_MRE
-
-extern char run_id[128];
-extern char workdir[1024];
-extern char bootStrapFile[1024];
-extern char tree_file[1024];
-extern char infoFileName[1024];
-extern char resultFileName[1024];
-
-extern double masterTime;
-
 extern const unsigned int mask32[32];
 
-extern volatile branchInfo      **branchInfos;
-extern volatile int NumberOfThreads;
-extern volatile int NumberOfJobs;
+extern int processID;
 
+static void getxnodeBips (nodeptr p)
+{
+  nodeptr  s;
 
+  if ((s = p->next)->xBips || (s = s->next)->xBips)
+    {
+      p->xBips = s->xBips;
+      s->xBips = 0;
+    }
+
+  assert(p->xBips);
+}
 
 
 entry *initEntry(void)
@@ -129,7 +123,7 @@ hashtable *initHashTable(hashNumberType n)
 
   tableSize = initTable[i];
 
-  /* printf("Hash table init with size %u\n", tableSize); */
+ 
 
   h->table = (entry**)calloc(tableSize, sizeof(entry*));
   h->tableSize = tableSize;  
@@ -273,8 +267,11 @@ void cleanupHashTable(hashtable *h, int state)
 
 unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
 {
-  unsigned int **bitVectors = (unsigned int **)malloc(sizeof(unsigned int*) * 2 * mxtips);
-  int i;
+  unsigned int 
+    **bitVectors = (unsigned int **)malloc(sizeof(unsigned int*) * 2 * mxtips);
+  
+  int 
+    i;
 
   if(mxtips % MASK_LENGTH == 0)
     *vectorLength = mxtips / MASK_LENGTH;
@@ -284,11 +281,15 @@ unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
   for(i = 1; i <= mxtips; i++)
     {
       bitVectors[i] = (unsigned int *)calloc(*vectorLength, sizeof(unsigned int));
+      assert(bitVectors[i]);
       bitVectors[i][(i - 1) / MASK_LENGTH] |= mask32[(i - 1) % MASK_LENGTH];
     }
   
   for(i = mxtips + 1; i < 2 * mxtips; i++) 
-    bitVectors[i] = (unsigned int *)malloc(sizeof(unsigned int) * *vectorLength);
+    {
+      bitVectors[i] = (unsigned int *)malloc(sizeof(unsigned int) * *vectorLength);
+      assert(bitVectors[i]);
+    }
 
   return bitVectors;
 }
@@ -307,23 +308,30 @@ void freeBitVectors(unsigned int **v, int n)
 
 static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength)
 {
+  
   if(isTip(p->number, numsp))
     return;
   {
     nodeptr 
       q = p->next->back, 
       r = p->next->next->back;
+    
+    
+    
     unsigned int       
       *vector = bitVectors[p->number],
       *left  = bitVectors[q->number],
       *right = bitVectors[r->number];
     unsigned 
-      int i;           
+      int i;      
+    
+    assert(processID == 0);
+    
 
-    while(!p->x)
+    while(!p->xBips)
       {	
-	if(!p->x)
-	  getxnode(p);
+	if(!p->xBips)
+	  getxnodeBips(p);
       }
 
     p->hash = q->hash ^ r->hash;
@@ -344,9 +352,9 @@ static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp,
 		q = tmp;
 	      }	   
 	    	    
-	    while(!r->x)
+	    while(!r->xBips)
 	      {
-		if(!r->x)
+		if(!r->xBips)
 		  newviewBipartitions(bitVectors, r, numsp, vectorLength);
 	      }	   
 
@@ -355,11 +363,11 @@ static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp,
 	  }
 	else
 	  {	    
-	    while((!r->x) || (!q->x))
+	    while((!r->xBips) || (!q->xBips))
 	      {
-		if(!q->x)
+		if(!q->xBips)
 		  newviewBipartitions(bitVectors, q, numsp, vectorLength);
-		if(!r->x)
+		if(!r->xBips)
 		  newviewBipartitions(bitVectors, r, numsp, vectorLength);
 	      }	   	    	    	    	   
 
@@ -468,7 +476,8 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
     return;
   else
     {
-      nodeptr q = p->next;          
+      nodeptr 
+	q = p->next;          
 
       do 
 	{
@@ -479,54 +488,24 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
            
       newviewBipartitions(bitVectors, p, numsp, vectorLength);
       
-      assert(p->x);
+      assert(p->xBips);
 
-      if(traverseOnly)
-	{
-	  if(!(isTip(p->back->number, numsp)))
-	    *countBranches =  *countBranches + 1;
-	  return;
-	}
+      assert(!traverseOnly);     
 
       if(!(isTip(p->back->number, numsp)))
 	{
-	  unsigned int *toInsert  = bitVectors[p->number];
-	  hashNumberType position = p->hash % h->tableSize;
+	  unsigned int 
+	    *toInsert  = bitVectors[p->number];
+	  
+	  hashNumberType 
+	    position = p->hash % h->tableSize;
 	 
-	  assert(!(toInsert[0] & 1));	 
-
+	  assert(!(toInsert[0] & 1));
+	  assert(!computeWRF);
+	  
 	  switch(function)
-	    {
-	      /*case BIPARTITIONS_ALL:	      
-	      insertHashAll(toInsert, h, vectorLength, treeNumber, position);
-	      *countBranches =  *countBranches + 1;	
-	      break;
-	    case GET_BIPARTITIONS_BEST:	   	     
-	      insertHash(toInsert, h, vectorLength, *countBranches, position);	     
-	      
-	      p->bInf            = &bInf[*countBranches];
-	      p->back->bInf      = &bInf[*countBranches];        
-	      p->bInf->support   = 0;	  	 
-	      p->bInf->oP = p;
-	      p->bInf->oQ = p->back;
-	      
-	      *countBranches =  *countBranches + 1;		
-	      break;
-	    case DRAW_BIPARTITIONS_BEST:	     
-	      {
-		int found = countHash(toInsert, h, vectorLength, position);
-		if(found >= 0)
-		  bInf[found].support =  bInf[found].support + 1;
-		*countBranches =  *countBranches + 1;
-	      }	      
-	      break;
-	    case BIPARTITIONS_BOOTSTOP:	      
-	      insertHashBootstop(toInsert, h, vectorLength, treeNumber, treeVectorLength, position);
-	      *countBranches =  *countBranches + 1;
-	      break;*/
-	    case BIPARTITIONS_RF:
-	      /*if(computeWRF)
-		assert(p->support == p->back->support);*/
+	    {	     
+	    case BIPARTITIONS_RF:	     
 	      insertHashRF(toInsert, h, vectorLength, treeNumber, treeVectorLength, position, 0, computeWRF);
 	      *countBranches =  *countBranches + 1;
 	      break;

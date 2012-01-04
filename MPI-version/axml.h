@@ -155,23 +155,17 @@
 #define MAX(x,y)  (((x)>(y)) ?    (x)  : (y))
 #define NINT(x)   ((int) ((x)>0 ? ((x)+0.5) : ((x)-0.5)))
 
-#ifdef _USE_FPGA_LOG
-extern double log_approx (double input);
-#define LOG(x)  log_approx(x)
-#else
+
 #define LOG(x)  log(x)
-#endif
 
 
-#ifdef _USE_FPGA_EXP
-extern double exp_approx (double x);
-#define EXP(x)  exp_approx(x)
-#else
+
+
 #define EXP(x)  exp(x)
-#endif
 
 
-#define LOGF(x) logf(x)
+
+
 
 
 #define PointGamma(prob,alpha,beta)  PointChi2(prob,2.0*(alpha))/(2.0*(beta))
@@ -475,6 +469,7 @@ typedef  struct noderec
   int              number;
   char             x;
   char             xPars;
+  char             xBips;
 }
   node, *nodeptr;
 

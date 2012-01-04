@@ -583,6 +583,7 @@ static boolean setupTree (tree *tr)
 
       p->hash   =  KISS32(); /* hast table stuff */
       p->x      =  0;
+      p->xBips  =  0;
       p->number =  i;
       p->next   =  p;
       p->back   = (node *)NULL;     
@@ -596,9 +597,15 @@ static boolean setupTree (tree *tr)
 	{	 
 	  p = p0++;
 	  if(j == 1)
-	    p->x = 1;
+	    {
+	      p->xBips = 1;
+	      p->x = 1;
+	    }
 	  else
-	    p->x =  0;
+	    {
+	      p->xBips = 0;
+	      p->x =  0;
+	    }
 	  p->number = i;
 	  p->next   = q;	  
 	  p->back   = (node *) NULL;
@@ -1302,10 +1309,8 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
      
       
       
-      if(!adef->compressPatterns)
-	printBoth(infoFile, "\nAlignment has %d columns\n\n",  tr->originalCrunchedLength);
-      else
-	printBoth(infoFile, "\nAlignment has %d distinct alignment patterns\n\n",  tr->originalCrunchedLength);
+     
+      printBoth(infoFile, "\nAlignment has %d distinct alignment patterns\n\n",  tr->originalCrunchedLength);
       
      
       
@@ -1853,14 +1858,20 @@ static void multiprocessorScheduling(tree *tr, int tid)
 static void initializePartitions(tree *tr, FILE *byteFile)
 { 
   size_t
-    model;
+    i,
+    j,
+    width,
+    model,
+    offset,
+    countOffset,
+    myLength = 0;
 
   int
     maxCategories;
 
-  unsigned char *y;
+  unsigned char 
+    *y;
 
- 
   compute_bits_in_16bits(tr->bits_in_16bits);
   
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
@@ -1877,10 +1888,8 @@ static void initializePartitions(tree *tr, FILE *byteFile)
   maxCategories = tr->maxCategories;
 
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t 
-	j,       
-	width = tr->partitionData[model].width;
+    {            
+      width = tr->partitionData[model].width;
       
       const partitionLengths 
 	*pl = getPartitionLengths(&(tr->partitionData[model]));
@@ -1955,142 +1964,125 @@ static void initializePartitions(tree *tr, FILE *byteFile)
 	}              
     }
 
-  {
-    size_t 
-      model,       
-      i,     
-      offset,
-      countOffset,
-      myLength = 0;
-    
-    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-      myLength += tr->partitionData[model].width;         
-
+        
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    myLength += tr->partitionData[model].width;         
    
+  /* assign local memory for storing sequence data */
 
-    /* assign local memory for storing sequence data */
-
-    tr->y_ptr = (unsigned char *)malloc(myLength * (size_t)(tr->mxtips) * sizeof(unsigned char));
-    assert(tr->y_ptr != NULL);
+  tr->y_ptr = (unsigned char *)malloc(myLength * (size_t)(tr->mxtips) * sizeof(unsigned char));
+  assert(tr->y_ptr != NULL);
    
-    for(i = 0; i < (size_t)tr->mxtips; i++)
-      {
-	for(model = 0, offset = 0, countOffset = 0; model < (size_t)tr->NumberOfModels; model++)
-	  {
-	    tr->partitionData[model].yVector[i+1]   = &tr->y_ptr[i * myLength + countOffset];
-	    countOffset +=  tr->partitionData[model].width;
-	  }
-	assert(countOffset == myLength);
-      }
+  for(i = 0; i < (size_t)tr->mxtips; i++)
+    {
+      for(model = 0, offset = 0, countOffset = 0; model < (size_t)tr->NumberOfModels; model++)
+	{
+	  tr->partitionData[model].yVector[i+1]   = &tr->y_ptr[i * myLength + countOffset];
+	  countOffset +=  tr->partitionData[model].width;
+	}
+      assert(countOffset == myLength);
+    }
 
-    /* figure in data */
+  /* figure in data */
 
-    if(tr->manyPartitions)
-      {
-	for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-	  {
-	    if(isThisMyPartition(tr, processID, model))
-	      {
-		size_t width = tr->partitionData[model].upper - tr->partitionData[model].lower;	     
-		
-		memcpy(&(tr->partitionData[model].wgt[0]), &(tr->aliaswgt[tr->partitionData[model].lower]), sizeof(int) * width);
-	      }
-	  }
-      }
-    else
-      {
-	 size_t 	   
-	   globalCounter, 
-	   r, 
-	   localCounter;
-
-	 for(model = 0, globalCounter = 0; model < (size_t)tr->NumberOfModels; model++)
-	   {
-	     for(localCounter = 0, r = (size_t)tr->partitionData[model].lower;  r < (size_t)tr->partitionData[model].upper; r++)
-	       {
-		 if(r % (size_t)processes == (size_t)processID)
-		   {
-		     tr->partitionData[model].wgt[localCounter] = tr->aliaswgt[globalCounter];	      	     		 		  					     
-		     
-		     localCounter++;
-		   }
-		 globalCounter++;
-	       }
-	   }    
-      }
-   
-    y = (unsigned char *)malloc(sizeof(unsigned char) * tr->originalCrunchedLength);
-
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
-      {
-	myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength), byteFile);
-	
-	if(tr->manyPartitions)
-	  {
-	    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-	      {
-		if(isThisMyPartition(tr, processID, model))	  
-		  {
-		    memcpy(tr->partitionData[model].yVector[i], &(y[tr->partitionData[model].lower]), sizeof(unsigned char) * tr->partitionData[model].width);					    
-		    assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
-		  }
-		else
-		  assert(tr->partitionData[model].width == 0);
-	      }
-	  }
-	else
-	  {
-	    size_t 
-	      model, 
-	      globalCounter, 
-	      r, 
-	      localCounter;
-
-	    for(model = 0, globalCounter = 0; model < (size_t)tr->NumberOfModels; model++)
-	      {
-		for(localCounter = 0, r = (size_t)tr->partitionData[model].lower;  r < (size_t)tr->partitionData[model].upper; r++)
-		  {
-		    if(r % (size_t)processes == (size_t)processID)
-		      {
-			/*tr->partitionData[model].wgt[localCounter] = tr->aliaswgt[globalCounter];	      	     		 		  			*/
-			tr->partitionData[model].yVector[i][localCounter] = y[globalCounter]; 	     
+  if(tr->manyPartitions)
+    {
+      for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+	{
+	  if(isThisMyPartition(tr, processID, model))
+	    {
+	      width = tr->partitionData[model].upper - tr->partitionData[model].lower;	     
+	      
+	      memcpy(&(tr->partitionData[model].wgt[0]), &(tr->aliaswgt[tr->partitionData[model].lower]), sizeof(int) * width);
+	    }
+	}
+    }
+  else
+    {
+      size_t 	   
+	globalCounter, 
+	r, 
+	localCounter;
+      
+      for(model = 0, globalCounter = 0; model < (size_t)tr->NumberOfModels; model++)
+	{
+	  for(localCounter = 0, r = (size_t)tr->partitionData[model].lower;  r < (size_t)tr->partitionData[model].upper; r++)
+	    {
+	      if(r % (size_t)processes == (size_t)processID)
+		{
+		  tr->partitionData[model].wgt[localCounter] = tr->aliaswgt[globalCounter];	      	     		 		  					     
 		  
-			localCounter++;
-		      }
-		    globalCounter++;
-		  }
-	      }    
-	  }
-      }
+		  localCounter++;
+		}
+	      globalCounter++;
+	    }
+	}    
+    }
+   
+  y = (unsigned char *)malloc(sizeof(unsigned char) * tr->originalCrunchedLength);
 
-    free(y);
+  for(i = 1; i <= (size_t)tr->mxtips; i++)
+    {
+      myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength), byteFile);
+	
+      if(tr->manyPartitions)
+	{
+	  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+	    {
+	      if(isThisMyPartition(tr, processID, model))	  
+		{
+		  memcpy(tr->partitionData[model].yVector[i], &(y[tr->partitionData[model].lower]), sizeof(unsigned char) * tr->partitionData[model].width);					    
+		  assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
+		}
+	      else
+		assert(tr->partitionData[model].width == 0);
+	    }
+	}
+      else
+	{
+	  size_t 	  
+	    globalCounter, 
+	    r, 
+	    localCounter;
 
+	  for(model = 0, globalCounter = 0; model < (size_t)tr->NumberOfModels; model++)
+	    {
+	      for(localCounter = 0, r = (size_t)tr->partitionData[model].lower;  r < (size_t)tr->partitionData[model].upper; r++)
+		{
+		  if(r % (size_t)processes == (size_t)processID)
+		    {		      
+		      tr->partitionData[model].yVector[i][localCounter] = y[globalCounter]; 	     
+		      
+		      localCounter++;
+		    }
+		  globalCounter++;
+		}
+	    }    
+	}
+    }
+
+  free(y);
     
-
-    /* initialize gap bit vectors at tips when memory saving option is enabled */
-    
-    if(tr->saveMemory)
-      {
-	for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-	  {
-	    int        
-	      undetermined = getUndetermined(tr->partitionData[model].dataType);
+  /* initialize gap bit vectors at tips when memory saving option is enabled */
+  
+  if(tr->saveMemory)
+    {
+      for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+	{
+	  int        
+	    undetermined = getUndetermined(tr->partitionData[model].dataType);
+	  	 
+	  width =  tr->partitionData[model].width;
 	    
-	    size_t
-	      i,
-	      j,
-	      width =  tr->partitionData[model].width;
-	    
-	    if(width > 0)
-	      {	   	    	      	    	     
-		for(j = 1; j <= (size_t)(tr->mxtips); j++)
-		  for(i = 0; i < width; i++)
-		    if(tr->partitionData[model].yVector[j][i] == undetermined)
-		      tr->partitionData[model].gapVector[tr->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
-	      }     
-	  }
-      }
-  }
+	  if(width > 0)
+	    {	   	    	      	    	     
+	      for(j = 1; j <= (size_t)(tr->mxtips); j++)
+		for(i = 0; i < width; i++)
+		  if(tr->partitionData[model].yVector[j][i] == undetermined)
+		    tr->partitionData[model].gapVector[tr->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
+	    }     
+	}
+    }
 }
 
 
@@ -2103,7 +2095,8 @@ static void initializeTree(tree *tr, analdef *adef)
   FILE 
     *byteFile = fopen(byteFileName, "rb");
 
-  double **empiricalFrequencies;	 
+  double 
+    **empiricalFrequencies;	 
   
   myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
   myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
@@ -2120,11 +2113,7 @@ static void initializeTree(tree *tr, analdef *adef)
   /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
      let's not worry about this right now, because it is indeed RAxML-specific */
   
-  if(tr->searchConvergenceCriterion && processID == 0)
-    {                     
-      tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
-      tr->h = initHashTable(tr->mxtips * 4);        
-    }
+ 
     
   tr->aliaswgt                   = (int *)malloc(tr->originalCrunchedLength * sizeof(int));
   myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
@@ -2141,8 +2130,14 @@ static void initializeTree(tree *tr, analdef *adef)
   for(i = 0; i < (size_t)tr->NumberOfModels; i++)
     tr->executeModel[i] = TRUE;
    
-  setupTree(tr);    
-
+  setupTree(tr); 
+  
+  if(tr->searchConvergenceCriterion && processID == 0)
+    {                     
+      tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
+      tr->h = initHashTable(tr->mxtips * 4);     
+    }
+  
   for(i = 1; i <= (size_t)tr->mxtips; i++)
     {
       int 

@@ -1223,7 +1223,7 @@ static void readCheckpoint(tree *tr)
   myfread(tr->tree0, sizeof(char), tr->treeStringLength, f);
   myfread(tr->tree1, sizeof(char), tr->treeStringLength, f);
 
-  if(tr->searchConvergenceCriterion)
+  if(tr->searchConvergenceCriterion && processID == 0)
     {
       int bCounter = 0;
       
@@ -1481,7 +1481,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   
   /* initialization for the hash table to compute RF distances */
 
-  if(tr->searchConvergenceCriterion)   
+  if(tr->searchConvergenceCriterion && processID == 0)   
     treeVectorLength = 1;
      
   /* initialize two lists of size 1 and size 20 that will keep track of the best 
@@ -1686,39 +1686,43 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       /* this is the aforementioned convergence criterion that requires computing the RF,
 	 let's not worry about this right now */
 
-      if(tr->searchConvergenceCriterion)
+      if(tr->searchConvergenceCriterion && processID == 0)
 	{
-	  int bCounter = 0;	  	      	 	  	  	
+	  int 
+	    bCounter = 0; 
 
-	  if(fastIterations > 1)
+	  char 
+	    *buffer = (char*)calloc(tr->treeStringLength, sizeof(char));	  	      	 	  	  	
+
+	  if(fastIterations > 1)	    	      
 	    cleanupHashTable(tr->h, (fastIterations % 2));		
-	  
+	    	  	 
+
 	  bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, fastIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
 				  &bCounter, 1, FALSE, FALSE);	    
-	  
-	  {
-	    char 
-	      *buffer = (char*)calloc(tr->treeStringLength, sizeof(char));
+	  	  
+	   
 #ifdef _DEBUG_CHECKPOINTING
-	    printf("Storing tree in slot %d\n", fastIterations % 2);
+	  printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-	    Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+	  Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 
-	    if(fastIterations % 2 == 0)	      
-	      memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
-	    else
-	      memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
-
-	    free(buffer);
-	  }
-
-
-	  assert(bCounter == tr->mxtips - 3);	    	   
+	  if(fastIterations % 2 == 0)	      
+	    memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
+	  else
+	    memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
 	  
+	  free(buffer);	  
+
+	  assert(bCounter == tr->mxtips - 3);	    	   	  	 
+
 	  if(fastIterations > 0)
 	    {
-	      double rrf = convergenceCriterion(tr->h, tr->mxtips);
+	      double 
+		rrf = convergenceCriterion(tr->h, tr->mxtips);
+	      
+	      MPI_Bcast(&rrf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	      
 	      if(rrf <= 0.01) /* 1% cutoff */
 		{
@@ -1733,15 +1737,27 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	    }
 	}
 
+      if(tr->searchConvergenceCriterion && processID != 0 && fastIterations > 0)
+	{
+	  double 
+	    rrf;
+	  
+	  MPI_Bcast(&rrf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	 
+	  if(rrf <= 0.01) /* 1% cutoff */		   
+	    goto cleanup_fast;	      
+	}
+
+      
       /* count how many fast iterations with so-called fast SPR moves we have executed */
 
       fastIterations++;	
 
       /* optimize branch lengths */
-
+     
+     
       treeEvaluate(tr, 1.0);  
-            
+     
       /* save the tree with those branch lengths again */
       
       saveBestTree(bestT, tr);           
@@ -1811,7 +1827,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
      a copy of this book is in my office */
 
-  if(tr->searchConvergenceCriterion)
+  if(tr->searchConvergenceCriterion && processID == 0)
     {
       cleanupHashTable(tr->h, 0);
       cleanupHashTable(tr->h, 1);
@@ -1833,15 +1849,13 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      is actually stored in the tree data structure when the above loop exits */
 
   recallBestTree(bestT, 1, tr); 
-
-  {
-    /* RE-TRAVERSE THE ENTIRE TREE */
-
-    evaluateGeneric(tr, tr->start, TRUE);
+  
+  /* RE-TRAVERSE THE ENTIRE TREE */
+  
+  evaluateGeneric(tr, tr->start, TRUE);
 #ifdef _DEBUG_CHECKPOINTING
-    printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
+  printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
 #endif
-  }
     
   /* optimize model params (including branch lengths) or just 
      optimize branch lengths and leave the other model parameters (GTR rates, alhpa) 
@@ -1951,9 +1965,13 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	 
 	  /* once again the convergence criterion */
 
-	  if(tr->searchConvergenceCriterion)
+	  if(tr->searchConvergenceCriterion && processID == 0)
 	    {
-	      int bCounter = 0;	      
+	      int 
+		bCounter = 0;	   	
+	      
+	      char 
+		*buffer = (char*)calloc(tr->treeStringLength, sizeof(char));   
 
 	      if(thoroughIterations > 1)
 		cleanupHashTable(tr->h, (thoroughIterations % 2));		
@@ -1961,30 +1979,28 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	      bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, thoroughIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
 				      &bCounter, 1, FALSE, FALSE);	    
 	      	     	    	   
-	      
-	      {
-		char 
-		  *buffer = (char*)calloc(tr->treeStringLength, sizeof(char));
-
+	      	      	
 #ifdef _DEBUG_CHECKPOINTING		
-		printf("Storing tree in slot %d\n", thoroughIterations % 2);
+	      printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
-		
-		Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
-		
-		if(thoroughIterations % 2 == 0)	      
-		  memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
-		else
-		  memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
-		
-		free(buffer);
-	      }
+	      
+	      Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+	      
+	      if(thoroughIterations % 2 == 0)	      
+		memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
+	      else
+		memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
+	      
+	      free(buffer);	      
 
 	      assert(bCounter == tr->mxtips - 3);
 
 	      if(thoroughIterations > 0)
 		{
-		  double rrf = convergenceCriterion(tr->h, tr->mxtips);
+		  double 
+		    rrf = convergenceCriterion(tr->h, tr->mxtips);
+		  
+		  MPI_Bcast(&rrf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		  
 		  if(rrf <= 0.01) /* 1% cutoff */
 		    {
@@ -1995,6 +2011,17 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 		  else		    
 		    printBothOpen("ML search convergence criterion thorough cycle %d->%d Relative Robinson-Foulds %f\n", thoroughIterations - 1, thoroughIterations, rrf);
 		}
+	    }
+	  
+	  if(tr->searchConvergenceCriterion && processID != 0 && thoroughIterations > 0)
+	    {
+	      double 
+		rrf;
+	      
+	      MPI_Bcast(&rrf, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	      
+	      if(rrf <= 0.01) /* 1% cutoff */		   
+		goto cleanup;	      
 	    }
 
 	 
@@ -2056,18 +2083,16 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
  cleanup: 
   
   /* do a final full tree traversal, not sure if this is required here */
-
-  {
-    evaluateGeneric(tr, tr->start, TRUE);
+  
+  evaluateGeneric(tr, tr->start, TRUE);
     
 #ifdef _DEBUG_CHECKPOINTING
-    printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
+  printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
 #endif
-  }
-  
+    
   /* free data structures */
 
-  if(tr->searchConvergenceCriterion)
+  if(tr->searchConvergenceCriterion && processID == 0)
     {
       freeBitVectors(tr->bitVectors, 2 * tr->mxtips);
       free(tr->bitVectors);
