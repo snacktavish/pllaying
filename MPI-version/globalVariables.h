@@ -175,12 +175,4 @@ partitionLengths pLength;
 
 
 
-#ifdef _USE_PTHREADS
-volatile int             NumberOfJobs;
-volatile int             jobCycle = 0;
-volatile int             threadJob = 0;
-volatile int             NumberOfThreads;
-volatile double          *reductionBuffer;
-volatile double          *reductionBufferTwo;
-volatile char             *barrierBuffer;
-#endif
+

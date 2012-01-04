@@ -58,9 +58,7 @@ extern const unsigned int bitVectorIdentity[256];
 
 extern const partitionLengths pLengths[MAX_MODEL];
 
-#ifdef _USE_PTHREADS
-extern volatile int NumberOfThreads;
-#endif
+
 
 
 
@@ -68,87 +66,6 @@ extern FILE *byteFile;
 
 
 
-static void smoothFreqs(const int n, double *pfreqs, double *dst, pInfo *partitionData)
-{
-  int 
-    countScale = 0, 
-    l,
-    loopCounter = 0;  
-  
-
-  /*
-    for(l = 0; l < n; l++)
-    if(pfreqs[l] < FREQ_MIN)
-      countScale++;
-  */
-
-  for(l = 0; l < n; l++)
-    if(pfreqs[l] == 0.0)
-      countScale++;
-
-  if(countScale > 0)
-    {	     
-      while(countScale > 0)
-	{
-	  double correction = 0.0;
-	  double factor = 1.0;
-	  
-	  for(l = 0; l < n; l++)
-	    {
-	      if(pfreqs[l] == 0.0)		  
-		correction += FREQ_MIN;		   		  
-	      else
-		if(pfreqs[l] < FREQ_MIN)		    
-		  {
-		    correction += (FREQ_MIN - pfreqs[l]);
-		    factor -= (FREQ_MIN - pfreqs[l]);
-		  }
-	    }		      	    	    
-	  
-	  countScale = 0;
-	  
-	  for(l = 0; l < n; l++)
-	    {		    
-	      if(pfreqs[l] >= FREQ_MIN)		      
-		pfreqs[l] = pfreqs[l] - (pfreqs[l] * correction * factor);	
-	      else
-		pfreqs[l] = FREQ_MIN;
-	      
-	      if(pfreqs[l] < FREQ_MIN)
-		countScale++;
-	    }
-	  assert(loopCounter < 100);
-	  loopCounter++;
-	}		    
-    }
-
-  for(l = 0; l < n; l++)
-    dst[l] = pfreqs[l];
-
-  
-  if(partitionData->nonGTR)
-    {
-      int k;
-
-      assert(partitionData->dataType == SECONDARY_DATA_7 || partitionData->dataType == SECONDARY_DATA_6 || partitionData->dataType == SECONDARY_DATA);
-       
-      for(l = 0; l < n; l++)
-	{
-	  int count = 1;	
-	  
-	  for(k = 0; k < n; k++)
-	    {
-	      if(k != l && partitionData->frequencyGrouping[l] == partitionData->frequencyGrouping[k])
-		{
-		  count++;
-		  dst[l] += pfreqs[k];
-		}
-	    }
-	  dst[l] /= ((double)count);
-	}            
-     }  
-}
-	    
 
 
 
@@ -2812,7 +2729,7 @@ static void updateFracChange(tree *tr)
     }      
   else
     {
-      int model, i;
+      int model;
       double *modelWeights = (double *)calloc(tr->NumberOfModels, sizeof(double));
       double wgtsum = 0.0;  
      
@@ -3854,14 +3771,14 @@ static void initializeBaseFreqs(tree *tr, double **empiricalFrequencies)
   size_t 
     model;
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {
       memcpy(tr->partitionData[model].frequencies,          empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
       memcpy(tr->partitionData[model].empiricalFrequencies, empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
     }
 }
 
-void initModel(tree *tr, analdef *adef, double **empiricalFrequencies)
+void initModel(tree *tr, double **empiricalFrequencies)
 {  
   int model, j;
   double  temp;  
@@ -3917,15 +3834,7 @@ void initModel(tree *tr, analdef *adef, double **empiricalFrequencies)
       tr->fracchange /= ((double)tr->NumberOfModels);
     }  
   
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);  
-#endif
 
- 
-
-#ifdef _USE_PTHREADS
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);   
-#endif
 
  
 

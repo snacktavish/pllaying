@@ -253,11 +253,8 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
     branchReference,
     states = tr->partitionData[_model].states;
     
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-  int index = i; 
-#else
+
   int index = i - tr->partitionData[_model].lower;
-#endif
   
   if(tr->numBranches > 1)
     branchReference = _model;

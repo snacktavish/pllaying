@@ -52,15 +52,7 @@
 /* pointers to reduction buffers for storing and gathering the first and second derivative 
    of the likelihood in Pthreads and MPI */
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-extern volatile double *reductionBufferTwo;
-extern volatile int NumberOfThreads;
-#endif
 
-#ifdef _FINE_GRAIN_MPI
-extern double *globalResult;
-#endif
 
 extern int processID;
 extern const unsigned int mask32[32];
@@ -708,9 +700,9 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
   int model, branchIndex, i = 0;
   double lz;
-  double 
+  /*  double 
     buffer_dlnLdlz[NUM_BRANCHES],
-    buffer_d2lnLdlz2[NUM_BRANCHES];
+    buffer_d2lnLdlz2[NUM_BRANCHES];*/
 
   
 

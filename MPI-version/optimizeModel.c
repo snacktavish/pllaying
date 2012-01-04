@@ -60,10 +60,6 @@ extern char lengthFileNameModel[1024];
 extern char *protModels[20];
 
 
-#ifdef _USE_PTHREADS
-extern volatile int             NumberOfThreads;
-extern volatile double          *reductionBuffer;
-#endif
 
 extern int processID;
 
@@ -249,7 +245,7 @@ static void freeLinkageList( linkageList* ll)
 
 
 
-static void evaluateChange(tree *tr, int rateNumber, double *value, double *result, boolean* converged, analdef *adef, int whichFunction, int numberOfModels, linkageList *ll)
+static void evaluateChange(tree *tr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
 { 
   int i, k, pos;
 
@@ -364,7 +360,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
 
 static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double tol, double *xmin, double *result, int numberOfModels, 
-			 int whichFunction, int rateNumber, analdef *adef, tree *tr, linkageList *ll, double lim_inf, double lim_sup)
+			 int whichFunction, int rateNumber, tree *tr, linkageList *ll, double lim_inf, double lim_sup)
 {
   int iter, i;
   double 
@@ -504,7 +500,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 	    }
 	}
                  
-      evaluateChange(tr, rateNumber, u, fu, converged, adef, whichFunction, numberOfModels, ll);
+      evaluateChange(tr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll);
 
       for(i = 0; i < numberOfModels; i++)
 	{
@@ -583,7 +579,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
 		       double *fc, double lim_inf, double lim_sup, 
-		       int numberOfModels, int rateNumber, analdef *adef, int whichFunction, tree *tr, linkageList *ll)
+		       int numberOfModels, int rateNumber, int whichFunction, tree *tr, linkageList *ll)
 {
   double 
     *ulim = (double *)malloc(sizeof(double) * numberOfModels),
@@ -624,7 +620,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
    
   
-  evaluateChange(tr, rateNumber, param, fa, converged, adef, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll);
 
 
   for(i = 0; i < numberOfModels; i++)
@@ -638,7 +634,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
   
-  evaluateChange(tr, rateNumber, param, fb, converged, adef, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll);
 
   for(i = 0; i < numberOfModels; i++)  
     {
@@ -661,7 +657,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
   
  
-  evaluateChange(tr, rateNumber, param, fc, converged, adef, whichFunction, numberOfModels,  ll);
+  evaluateChange(tr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll);
 
    while(1) 
      {       
@@ -805,7 +801,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 	     }
 	 }
              
-       evaluateChange(tr, rateNumber, param, temp, converged, adef, whichFunction, numberOfModels, ll);
+       evaluateChange(tr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll);
 
        for(i = 0; i < numberOfModels; i++)
 	 {
@@ -927,9 +923,6 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
     *result     = (double *)malloc(sizeof(double) * numberOfModels),
     *_x         = (double *)malloc(sizeof(double) * numberOfModels);   
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-   int revertModel = 0;
-#endif   
 
    evaluateGeneric(tr, tr->start, TRUE);
    /* 
@@ -956,8 +949,8 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	}
     }					  
 
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, -1, (analdef*)NULL, ALPHA_F, tr, ll);       
-  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, ALPHA_F, -1, (analdef*)NULL, tr, ll, lim_inf, lim_sup);
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, -1, ALPHA_F, tr, ll);       
+  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, ALPHA_F, -1, tr, ll, lim_inf, lim_sup);
 
   for(i = 0; i < numberOfModels; i++)
     endAlpha[i] = result[i];
@@ -973,21 +966,11 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 	      
 #endif		
 	    }
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-	  revertModel++;
-#endif
+
 	}  
     }
 
-#ifdef _USE_PTHREADS
-  if(revertModel > 0)
-    masterBarrier(THREAD_COPY_ALPHA, tr);
-#endif
 
-#ifdef _FINE_GRAIN_MPI
-  if(revertModel > 0)
-    masterBarrierMPI(THREAD_COPY_ALPHA, tr);
-#endif
 
   
   free(startLH);
@@ -1007,7 +990,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
 
 
-static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 {
   int 
     i, 
@@ -1033,9 +1016,6 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
     *result = (double *)malloc(sizeof(double) * numberOfModels),
     *_x     = (double *)malloc(sizeof(double) * numberOfModels); 
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-   int revertModel = 0;
-#endif
 
    assert(states != -1);
 
@@ -1089,7 +1069,7 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 
       assert(pos == numberOfModels);
 
-      brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, i, adef, RATE_F, tr, ll);
+      brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, i, RATE_F, tr, ll);
       
       for(k = 0; k < numberOfModels; k++)
 	{
@@ -1098,16 +1078,14 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 	  assert(_c[k] >= lim_inf && _c[k] <= lim_sup);	    
 	}      
 
-      brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, RATE_F, i, adef, tr,  ll, lim_inf, lim_sup);
+      brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, RATE_F, i, tr,  ll, lim_inf, lim_sup);
 	
       for(k = 0; k < numberOfModels; k++)
 	endLH[k] = result[k];	           
       
       for(k = 0, pos = 0; k < ll->entries; k++)
 	{
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-	  revertModel = 0;
-#endif
+
 	  if(ll->ld[k].valid)
 	    { 
 	      if(startLH[pos] > endLH[pos])
@@ -1120,22 +1098,13 @@ static void optRates(tree *tr, analdef *adef, double modelEpsilon, linkageList *
 		      initReversibleGTR(tr, index);		     
 #endif
 		    }
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-		  revertModel++;
-#endif
+
 		}
 	      pos++;
 	    }
 	}
 
-#ifdef _USE_PTHREADS      
-      if(revertModel > 0)
-	masterBarrier(THREAD_COPY_RATES, tr);
-#endif
-#ifdef _FINE_GRAIN_MPI
-      if(revertModel > 0)
-	masterBarrierMPI(THREAD_COPY_RATES, tr);
-#endif
+
       
       assert(pos == numberOfModels);
     }
@@ -1175,7 +1144,7 @@ static boolean AAisGTR(tree *tr)
   return TRUE;
 }
 
-static void optRatesGeneric(tree *tr, analdef *adef, double modelEpsilon, linkageList *ll)
+static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -1214,7 +1183,7 @@ static void optRatesGeneric(tree *tr, analdef *adef, double modelEpsilon, linkag
     }   
 
   if(dnaPartitions > 0)
-    optRates(tr, adef, modelEpsilon, ll, dnaPartitions, states);
+    optRates(tr, modelEpsilon, ll, dnaPartitions, states);
   
 
   /* then SECONDARY */
@@ -1263,13 +1232,13 @@ static void optRatesGeneric(tree *tr, analdef *adef, double modelEpsilon, linkag
        switch(secondaryModel)
 	 {
 	 case SECONDARY_DATA:
-	   optRates(tr, adef, modelEpsilon, ll, secondaryPartitions, states);
+	   optRates(tr, modelEpsilon, ll, secondaryPartitions, states);
 	   break;
 	 case SECONDARY_DATA_6:
-	   optRates(tr, adef, modelEpsilon, ll, secondaryPartitions, states);
+	   optRates(tr, modelEpsilon, ll, secondaryPartitions, states);
 	   break;
 	 case SECONDARY_DATA_7:
-	   optRates(tr, adef, modelEpsilon, ll, secondaryPartitions, states);
+	   optRates(tr, modelEpsilon, ll, secondaryPartitions, states);
 	   break; 
 	 default:
 	   assert(0);
@@ -1303,7 +1272,7 @@ static void optRatesGeneric(tree *tr, analdef *adef, double modelEpsilon, linkag
 
       assert(aaPartitions == 1);     
       
-      optRates(tr, adef, modelEpsilon, ll, aaPartitions, states);
+      optRates(tr, modelEpsilon, ll, aaPartitions, states);
     }
   
   /* then multi-state */
@@ -1332,7 +1301,7 @@ static void optRatesGeneric(tree *tr, analdef *adef, double modelEpsilon, linkag
 		  if(k != i)
 		    ll->ld[k].valid = FALSE;
 		
-		optRates(tr, adef, modelEpsilon, ll, 1, states);
+		optRates(tr, modelEpsilon, ll, 1, states);
 	      }
 	      break;
 	    case AA_DATA:	    
@@ -2211,7 +2180,7 @@ static void printAAmatrix(tree *tr, double epsilon)
 }
 
 
-static void autoProtein(tree *tr, analdef *adef)
+static void autoProtein(tree *tr)
 {
   int 
     countAutos = 0,
@@ -2252,12 +2221,7 @@ static void autoProtein(tree *tr, analdef *adef)
 		}
 	    }
 	  
-#ifdef _USE_PTHREADS	
-	  masterBarrier(THREAD_COPY_RATES, tr);	   
-#endif
-#ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
-#endif
+
 	  
 	  resetBranches(tr);
 	  evaluateGeneric(tr, tr->start, TRUE);  
@@ -2293,12 +2257,7 @@ static void autoProtein(tree *tr, analdef *adef)
       
       printBothOpen("\n\n");
             
-#ifdef _USE_PTHREADS	
-	  masterBarrier(THREAD_COPY_RATES, tr);	   
-#endif
-#ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
-#endif
+
 
       resetBranches(tr);
       evaluateGeneric(tr, tr->start, TRUE); 
@@ -2313,7 +2272,7 @@ static void autoProtein(tree *tr, analdef *adef)
 
 
 
-void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
+void modOpt(tree *tr, double likelihoodEpsilon)
 { 
   int i, catOpt = 0; 
   double 
@@ -2342,7 +2301,7 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
      
      
 
-      optRatesGeneric(tr, adef, modelEpsilon, rateList);
+      optRatesGeneric(tr, modelEpsilon, rateList);
       
       
       
@@ -2353,7 +2312,7 @@ void modOpt(tree *tr, analdef *adef, double likelihoodEpsilon)
       
      
 
-      autoProtein(tr, adef);
+      autoProtein(tr);
 
       treeEvaluate(tr, 0.0625);      
 

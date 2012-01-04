@@ -1291,13 +1291,7 @@ static void readCheckpoint(tree *tr)
 #endif
     }
     
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);
-#endif
 
-#ifdef _USE_PTHREADS
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);
-#endif
 
   updatePerSiteRates(tr, FALSE);  
 
@@ -1423,7 +1417,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
       if(tr->likelihood > startLH)
 	{	 
 	  startLH = tr->likelihood; 	  	  	  
-	  printLog(tr, adef, FALSE);	  
+	  printLog(tr);	  
 	  bestTrav = maxtrav;	 
 	  impr = TRUE;
 	}
@@ -1527,7 +1521,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(!adef->useCheckpoint)
     {
       if(estimateModel)
-	modOpt(tr, adef, 10.0);
+	modOpt(tr, 10.0);
       else
 	treeEvaluate(tr, 2);  
     }
@@ -1536,7 +1530,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
   /* print some stuff to the RAxML_log file */
 
-  printLog(tr, adef, FALSE); 
+  printLog(tr); 
 
   /* save the current tree (which is the input tree parsed via -t in the bestT list */
 
@@ -1571,7 +1565,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
       /* optimize model params more thoroughly or just optimize branch lengths */
       if(estimateModel)
-	modOpt(tr, adef, 5.0);
+	modOpt(tr, 5.0);
       else
 	treeEvaluate(tr, 1);   
     }
@@ -1754,7 +1748,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
       /* print the log likelihood */
 
-      printLog(tr, adef, FALSE);    
+      printLog(tr);    
 
       /* print this intermediate tree to file */
      
@@ -1854,7 +1848,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      alone */
 
   if(estimateModel)
-    modOpt(tr, adef, 1.0);
+    modOpt(tr, 1.0);
   else
     treeEvaluate(tr, 1.0);
 
@@ -2026,7 +2020,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       /* do some bokkeeping and printouts again */
       previousLh = lh = tr->likelihood;	      
       saveBestTree(bestT, tr);     
-      printLog(tr, adef, FALSE);
+      printLog(tr);
 
       /* do a cycle of thorough SPR moves with the minimum and maximum rearrangement radii */
 
@@ -2086,7 +2080,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   freeBestTree(bt);
   free(bt);
   freeInfoList();  
-  printLog(tr, adef, FALSE);
+  printLog(tr);
   printResult(tr, adef, TRUE);
 
   /* and we are done, return to main() in axml.c  */

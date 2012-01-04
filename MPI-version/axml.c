@@ -66,7 +66,7 @@
 #include "globalVariables.h"
 
 
-#define _PORTABLE_PTHREADS
+
 
 
 /***************** UTILITY FUNCTIONS **************************/
@@ -181,26 +181,7 @@ void printBothOpen(const char* format, ... )
     }
 }
 
-void printBothOpenMPI(const char* format, ... )
-{
-#ifdef _WAYNE_MPI
-  if(processID == 0)
-#endif
-    {
-      FILE *f = myfopen(infoFileName, "ab");
 
-      va_list args;
-      va_start(args, format);
-      vfprintf(f, format, args );
-      va_end(args);
-      
-      va_start(args, format);
-      vprintf(format, args );
-      va_end(args);
-      
-      fclose(f);
-    }
-}
 
 
 boolean getSmoothFreqs(int dataType)
@@ -485,15 +466,7 @@ boolean whitechar (int ch)
 }
 
 
-static void uppercase (int *chptr)
-{
-  int  ch;
 
-  ch = *chptr;
-  if ((ch >= 'a' && ch <= 'i') || (ch >= 'j' && ch <= 'r')
-      || (ch >= 's' && ch <= 'z'))
-    *chptr = ch + 'A' - 'a';
-}
 
 
 
@@ -659,46 +632,6 @@ static boolean setupTree (tree *tr)
 }
 
 
-static void checkTaxonName(char *buffer, int len)
-{
-  int i;
-
-  for(i = 0; i < len - 1; i++)
-    {
-      boolean valid;
-
-      switch(buffer[i])
-	{
-	case '\0':
-	case '\t':
-	case '\n':
-	case '\r':
-	case ' ':
-	case ':':
-	case ',':
-	case '(':
-	case ')':
-	case ';':
-	case '[':
-	case ']':
-	  valid = FALSE;
-	  break;
-	default:
-	  valid = TRUE;
-	}
-
-      if(!valid)
-	{
-	  printf("ERROR: Taxon Name \"%s\" is invalid at position %d, it contains illegal character %c\n", buffer, i, buffer[i]);
-	  printf("Illegal characters in taxon-names are: tabulators, carriage returns, spaces, \":\", \",\", \")\", \"(\", \";\", \"]\", \"[\"\n");
-	  printf("Exiting\n");
-	  exit(-1);
-	}
-
-    }
-  assert(buffer[len - 1] == '\0');
-}
-
 
 
 
@@ -736,12 +669,7 @@ static void initAdef(analdef *adef)
 
 
 static int modelExists(char *model, tree *tr)
-{
-  int i;
-  char thisModel[1024];
-
-  /********** BINARY ********************/
-
+{  
    if(strcmp(model, "PSR\0") == 0)
     {
       tr->rateHetModel = CAT;
@@ -881,9 +809,7 @@ static void printREADME(void)
   printf("      [-M]\n");
   printf("      [-P proteinModel]\n");
   printf("      [-q multipleModelFileName] \n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   printf("      [-Q]\n");
-#endif
   printf("      [-S]\n");
   printf("      [-T numberOfThreads]\n");  
   printf("      [-v]\n"); 
@@ -970,10 +896,8 @@ static void printREADME(void)
   printf("              partitions for multiple models of substitution. For the syntax of this file\n");
   printf("              please consult the manual.\n");  
   printf("\n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   printf("      -Q      Enable alternative data/load distribution algorithm for datasets with many partitions\n");
   printf("              In particular under PSR this can lead to parallel performance improvements of over 50 per cent\n");
-#endif
   printf("\n");
   printf("      -R      read in a binary checkpoint file called RAxML_binaryCheckpoint.RUN_ID_number\n");
   printf("\n");
@@ -1068,9 +992,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
   /*********** tr inits **************/
 
-#ifdef _USE_PTHREADS
-  NumberOfThreads = 0;
-#endif
+
  
  
   tr->doCutoff = TRUE;
@@ -1134,18 +1056,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	break;          
       case 'M':
 	adef->perGeneBranchLengths = TRUE;
-	break;        
-      case 'T':
-#ifdef _USE_PTHREADS
-	sscanf(optarg,"%d", &NumberOfThreads);
-#else
-	if(processID == 0)
-	  {
-	    printf("Option -T does not have any effect with the sequential or parallel MPI version.\n");
-	    printf("It is used to specify the number of threads for the Pthreads-based parallelization\n");
-	  }
-#endif
-	break;                       
+	break;                                 
       case 'e':
 	sscanf(optarg,"%lf", &likelihoodEpsilon);
 	adef->likelihoodEpsilon = likelihoodEpsilon;
@@ -1233,15 +1144,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
       }
     }
 
-#ifdef _USE_PTHREADS
-  /*if(NumberOfThreads < 2)
-    {
-      printf("\nThe number of threads is currently set to %d\n", NumberOfThreads);
-      printf("Specify the number of threads to run via -T numberOfThreads\n");
-      printf("NumberOfThreads must be set to an integer value greater than 1\n\n");
-      errorExit(-1);
-      }*/
-#endif
+
 
   
 
@@ -1321,10 +1224,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
 void errorExit(int e)
 {
-
-#ifdef _WAYNE_MPI
-  MPI_Finalize();
-#endif
 
   exit(e);
 
@@ -1534,7 +1433,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
   if(processID == 0)
     {
       FILE *logFile;
-      char temporaryFileName[1024] = "", treeID[64] = "";
+      char temporaryFileName[1024] = "";
       
       strcpy(temporaryFileName, resultFileName);
       
@@ -1612,7 +1511,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 
 
 
-void printLog(tree *tr, analdef *adef, boolean finalPrint)
+void printLog(tree *tr)
 {
   if(processID == 0)
     {
@@ -1636,44 +1535,6 @@ void printLog(tree *tr, analdef *adef, boolean finalPrint)
 
 
 
-static void printFreqs(int n, double *f, char **names)
-{
-  int k;
-
-  for(k = 0; k < n; k++)
-    printBothOpen("freq pi(%s): %f\n", names[k], f[k]);
-}
-
-static void printRatesDNA_BIN(int n, double *r, char **names)
-{
-  int i, j, c;
-
-  for(i = 0, c = 0; i < n; i++)
-    {
-      for(j = i + 1; j < n; j++)
-	{
-	  if(i == n - 2 && j == n - 1)
-	    printBothOpen("rate %s <-> %s: %f\n", names[i], names[j], 1.0);
-	  else
-	    printBothOpen("rate %s <-> %s: %f\n", names[i], names[j], r[c]);
-	  c++;
-	}
-    }
-}
-
-static void printRatesRest(int n, double *r, char **names)
-{
-  int i, j, c;
-
-  for(i = 0, c = 0; i < n; i++)
-    {
-      for(j = i + 1; j < n; j++)
-	{
-	  printBothOpen("rate %s <-> %s: %f\n", names[i], names[j], r[c]);
-	  c++;
-	}
-    }
-}
 
 
 void getDataTypeString(tree *tr, int model, char typeOfData[1024])
@@ -1714,114 +1575,6 @@ void getDataTypeString(tree *tr, int model, char typeOfData[1024])
 
 
 
-static void printModelParams(tree *tr)
-{
-  int
-    model;
-
-  double
-    *f = (double*)NULL,
-    *r = (double*)NULL;
-
-  for(model = 0; model < tr->NumberOfModels; model++)
-    {
-     
-      char typeOfData[1024];
-
-      getDataTypeString(tr, model, typeOfData);      
-
-      printBothOpen("Model Parameters of Partition %d, Name: %s, Type of Data: %s\n",
-		    model, tr->partitionData[model].partitionName, typeOfData);
-      printBothOpen("alpha: %f\n", tr->partitionData[model].alpha);
-
-     
-
-     
-
-      f = tr->partitionData[model].frequencies;
-      r = tr->partitionData[model].substRates;
-
-      switch(tr->partitionData[model].dataType)
-	{
-	case AA_DATA:
-	  {
-	    char *freqNames[20] = {"A", "R", "N ","D", "C", "Q", "E", "G",
-				   "H", "I", "L", "K", "M", "F", "P", "S",
-				   "T", "W", "Y", "V"};
-
-	    printRatesRest(20, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(20, f, freqNames);
-	  }
-	  break;
-	case GENERIC_32:
-	  {
-	    char *freqNames[32] = {"0", "1", "2", "3", "4", "5", "6", "7", 
-				   "8", "9", "A", "B", "C", "D", "E", "F",
-				   "G", "H", "I", "J", "K", "L", "M", "N",
-				   "O", "P", "Q", "R", "S", "T", "U", "V"}; 
-
-	    printRatesRest(32, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(32, f, freqNames);
-	  }
-	  break;
-	case GENERIC_64:
-	  assert(0);
-	  break;
-	case DNA_DATA:
-	  {
-	    char *freqNames[4] = {"A", "C", "G", "T"};
-
-	    printRatesDNA_BIN(4, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(4, f, freqNames);
-	  }
-	  break;
-	case SECONDARY_DATA_6:
-	   {
-	    char *freqNames[6] = {"AU", "CG", "GC", "GU", "UA", "UG"};
-
-	    printRatesRest(6, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(6, f, freqNames);
-	  }
-	  break;
-	case SECONDARY_DATA_7:
-	  {
-	    char *freqNames[7] = {"AU", "CG", "GC", "GU", "UA", "UG", "REST"};
-
-	    printRatesRest(7, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(7, f, freqNames);
-	  }
-	  break;
-	case SECONDARY_DATA:
-	  {
-	    char *freqNames[16] = {"AA", "AC", "AG", "AU", "CA", "CC", "CG", "CU",
-				   "GA", "GC", "GG", "GU", "UA", "UC", "UG", "UU"};
-
-	    printRatesRest(16, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(16, f, freqNames);
-	  }
-	  break;
-	case BINARY_DATA:
-	  {
-	    char *freqNames[2] = {"0", "1"};
-
-	    printRatesDNA_BIN(2, r, freqNames);
-	    printBothOpen("\n");
-	    printFreqs(2, f, freqNames);
-	  }
-	  break;
-	default:
-	  assert(0);
-	}
-
-      printBothOpen("\n");
-    }
-}
 
 static void finalizeInfoFile(tree *tr, analdef *adef)
 {
@@ -2097,7 +1850,7 @@ static void multiprocessorScheduling(tree *tr, int tid)
 
 
 
-static void initializePartitions(tree *tr, int tid, int n, FILE *byteFile)
+static void initializePartitions(tree *tr, FILE *byteFile)
 { 
   size_t
     model;
@@ -2204,11 +1957,8 @@ static void initializePartitions(tree *tr, int tid, int n, FILE *byteFile)
 
   {
     size_t 
-      model,  
-      j,
-      i,
-      globalCounter = 0,
-      localCounter  = 0,
+      model,       
+      i,     
       offset,
       countOffset,
       myLength = 0;
@@ -2239,9 +1989,12 @@ static void initializePartitions(tree *tr, int tid, int n, FILE *byteFile)
       {
 	for(model = 0; model < (size_t)tr->NumberOfModels; model++)
 	  {
-	    size_t width = tr->partitionData[model].upper - tr->partitionData[model].lower;	     
-	    
-	    memcpy(&(tr->partitionData[model].wgt[0]), &(tr->aliaswgt[tr->partitionData[model].lower]), sizeof(int) * width);
+	    if(isThisMyPartition(tr, processID, model))
+	      {
+		size_t width = tr->partitionData[model].upper - tr->partitionData[model].lower;	     
+		
+		memcpy(&(tr->partitionData[model].wgt[0]), &(tr->aliaswgt[tr->partitionData[model].lower]), sizeof(int) * width);
+	      }
 	  }
       }
     else
@@ -2385,12 +2138,12 @@ static void initializeTree(tree *tr, analdef *adef)
   
   tr->executeModel   = (boolean *)malloc(sizeof(boolean) * tr->NumberOfModels);
   
-  for(i = 0; i < tr->NumberOfModels; i++)
+  for(i = 0; i < (size_t)tr->NumberOfModels; i++)
     tr->executeModel[i] = TRUE;
    
   setupTree(tr);    
 
-  for(i = 1; i <= tr->mxtips; i++)
+  for(i = 1; i <= (size_t)tr->mxtips; i++)
     {
       int 
 	len;
@@ -2435,16 +2188,16 @@ static void initializeTree(tree *tr, analdef *adef)
       myBinFread(empiricalFrequencies[model], sizeof(double), p->states, byteFile);	   
     }     
   
-  initializePartitions(tr, processID, processes, byteFile);
+  initializePartitions(tr, byteFile);
 
   fclose(byteFile);
 
-  initModel(tr, adef, empiricalFrequencies); 
+  initModel(tr, empiricalFrequencies); 
  
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     free(empiricalFrequencies[model]);
 
-  free(empiricalFrequencies[model]);
+  free(empiricalFrequencies);
 }
 
 

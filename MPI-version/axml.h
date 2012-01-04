@@ -38,11 +38,7 @@
 #define BYTE_ALIGNMENT 16
 #endif
 
-#ifdef _USE_PTHREADS
 
-#include <pthread.h>
-
-#endif
 
 
 #include <mpi.h>
@@ -661,21 +657,7 @@ typedef  struct  {
   int *partitionAssignment;     
  
   unsigned char *y_ptr; 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  /*
-    do we need this stuff ?
-  */
-  /*unsigned int **bitVectors;
-    hashtable *h;*/
-  
-    
-  
-  
-  int threadID;
-  double lower_spacing;
-  double upper_spacing; 
-#endif
-  
+
 
 
  
@@ -933,9 +915,9 @@ typedef struct
 extern void mcmc(tree *tr, analdef *adef);
 #endif
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+
 boolean isThisMyPartition(tree *localTree, int tid, int model);
-#endif
+
 
 extern void computePlacementBias(tree *tr, analdef *adef);
 
@@ -973,7 +955,7 @@ extern void errorExit ( int e );
 extern void printResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint );
-extern void printLog ( tree *tr, analdef *adef, boolean finalPrint );
+extern void printLog ( tree *tr);
 extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 extern int main ( int argc, char *argv[] );
@@ -984,13 +966,13 @@ extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
 extern void makeGammaCats (double alpha, double *gammaRates, int K);
-extern void initModel ( tree *tr, analdef *adef, double **empiricalFrequencies);
+extern void initModel ( tree *tr, double **empiricalFrequencies);
 extern void doAllInOne ( tree *tr, analdef *adef );
 
 extern void classifyML(tree *tr, analdef *adef);
 
 extern void resetBranches ( tree *tr );
-extern void modOpt ( tree *tr, analdef *adef , double likelihoodEpsilon);
+extern void modOpt ( tree *tr, double likelihoodEpsilon);
 
 
 
@@ -1150,7 +1132,6 @@ extern void addword(char *s, stringHashtable *h, int nodeNumber);
 
 
 extern void printBothOpen(const char* format, ... );
-extern void printBothOpenMPI(const char* format, ... );
 extern void initRateMatrix(tree *tr);
 
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
@@ -1180,104 +1161,9 @@ extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
 
-#ifdef _IPTOL
-extern void writeCheckpoint();
-#endif
-
-#ifdef _WAYNE_MPI
-
-extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *adef, double *pearsonAverage);
-
-#endif
-
-
-#ifdef _USE_PTHREADS
-
-extern void makenewzClassify(tree *tr, int maxiter, double *result, double *z0, double *x1_start, double *x2_start,
-			     unsigned char *tipX1,  unsigned char *tipX2, int tipCase, boolean *partitionConverged);
-
-extern void    newviewClassify(tree *tr, branchInfo *bInf, double *z);
-
-extern void addTraverseRobIterative(tree *tr, int branchNumber);
-
-
-extern void newviewClassifySpecial(tree *tr, double *x1_start, double *x2_start, double *x3_start, int *ex1, int *ex2, int *ex3,
-				   unsigned char *tipX1,  unsigned char *tipX2, int tipCase, double *pz, double *qz);
-extern double evalCL(tree *tr, double *x2, int *ex2, unsigned char *tip, double *pz);
-
-extern void testInsertThoroughIterative(tree *tr, int branchNumber, boolean bootstrap);
-
-
-/* work tags for parallel regions */
-
-#define THREAD_NEWVIEW                0        
-#define THREAD_EVALUATE               1
-#define THREAD_MAKENEWZ               2 
-#define THREAD_MAKENEWZ_FIRST         3
-#define THREAD_RATE_CATS              4
-#define THREAD_COPY_RATE_CATS         5
-#define THREAD_COPY_INIT_MODEL        6
-#define THREAD_INIT_PARTITION         7
-#define THREAD_OPT_ALPHA              8
-#define THREAD_OPT_RATE               9
-#define THREAD_COPY_ALPHA             10
-#define THREAD_COPY_RATES             11
 
 
 
-
-typedef struct
-{
-  tree *tr;
-  int threadNumber;
-}
-  threadData;
-
-void threadMakeVector(tree *tr, int tid);
-void threadComputeAverage(tree *tr, int tid);
-void threadComputePearson(tree *tr, int tid);
-
-extern void masterBarrier(int jobType, tree *tr);
-
-#endif
-
-#if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
-extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
-void allocNodex(tree *tr, int tid, int n);
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#define THREAD_COPY_RATE_CATS  0
-#define THREAD_COPY_INIT_MODEL 1
-#define THREAD_NEWVIEW         2
-#define THREAD_EVALUATE        3
-#define THREAD_MAKENEWZ_FIRST  4
-#define THREAD_MAKENEWZ        5
-#define THREAD_OPT_RATE        6
-#define THREAD_COPY_RATES      7
-#define THREAD_RATE_CATS       8
-#define THREAD_NEWVIEW_MASKED  9
-#define THREAD_OPT_ALPHA       10
-#define THREAD_COPY_ALPHA      11
-#define THREAD_OPTIMIZE_PER_SITE_AA 12
-#define EXIT_GRACEFULLY        13
-
-
-
-
-    
-
-
-extern void masterBarrierMPI(int jobType, tree *tr);
-extern void fineGrainWorker(tree *tr);
-extern void startFineGrainMpi(tree *tr, analdef *adef);
-
-MPI_Datatype traversalDescriptor;
-MPI_Datatype jobDescriptor;
-
-
-#endif
 
 
 #ifdef __AVX

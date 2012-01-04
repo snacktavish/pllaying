@@ -1259,25 +1259,10 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 
       storeExecuteMaskInTraversalDescriptor(tr);      
       
-#ifdef _USE_PTHREADS
-      /* do the parallel for join for pthreads
-	 not that we do not need a reduction operation here, but just a barrier to make 
-	 sure that all threads are done with their partition */
 
-      masterBarrier(THREAD_NEWVIEW, tr);
-#else
-#ifdef _FINE_GRAIN_MPI
-
-      /* same as above but for MPI */
-
-      masterBarrierMPI(THREAD_NEWVIEW, tr);
-#else
-      /* in the sequential case we now simply call newviewIterative() */
 
       newviewIterative(tr, 0);
-#endif
-#endif
-      
+
     }
 
   /* clean up */

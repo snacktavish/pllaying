@@ -1323,10 +1323,6 @@ static void addTraverseParsimony (tree *tr, nodeptr p, nodeptr q, int mintrav, i
 }
 
 
-static nodeptr findAnyTipFast(nodeptr p, int numsp)
-{ 
-  return  (p->number <= numsp)? p : findAnyTipFast(p->next->back, numsp);
-} 
 
 
 static void makePermutationFast(int *perm, int n, tree *tr)
@@ -1864,17 +1860,7 @@ static void stepwiseAddition(tree *tr, nodeptr p, nodeptr q)
     }
 }
 
-static void markNodesInTree(nodeptr p, tree *tr, unsigned char *nodesInTree)
-{
-  if(isTip(p->number, tr->mxtips))
-    nodesInTree[p->number] = 1;
-  else
-    {
-      markNodesInTree(p->next->back, tr, nodesInTree);
-      markNodesInTree(p->next->next->back, tr, nodesInTree);
-    }
 
-}
 
 
 void allocateParsimonyDataStructures(tree *tr)
@@ -1921,9 +1907,6 @@ void makeParsimonyTreeFast(tree *tr)
   nodeptr  
     p, 
     f;    
-
-  size_t
-    model;
 
   int 
     i, 

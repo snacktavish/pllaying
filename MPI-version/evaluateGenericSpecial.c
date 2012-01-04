@@ -62,10 +62,6 @@
 */
 
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-extern volatile int NumberOfThreads;
-#endif
 extern const char inverseMeaningDNA[16];
 extern int processID;
 
@@ -727,60 +723,10 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      traversal descriptor list of nodes needs to be broadcast once again */
   
   tr->td[0].traversalHasChanged = TRUE;
-#ifdef _USE_PTHREADS 
-
-  /* now here we enter the fork-join region for Pthreads */
-
-    
-  /* start the parallel region and tell all threads to compute the log likelihood for 
-     their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
-  */
-  
-  masterBarrier(THREAD_EVALUATE, tr); 
-  
-  /* and now here we explicitly do the reduction operation , that is add over the 
-     per-thread and per-partition log likelihoods to obtain the overall log like 
-     over all sites and partitions */
-  
-  
-  /* 
-     for unpartitioned data that's easy, we just sum over the log likes computed 
-     by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
-     reductionBuffer[1] and so on 
-  */
-  
-  /* This reduction for the partitioned case is more complicated because each thread 
-     needs to store the partial log like of each partition and we then need to collect 
-     and add everything */
-  
-              	  
-  for(model = 0; model < tr->NumberOfModels; model++)
-    { 
-      volatile double 
-	partitionResult = 0.0;  
-      
-      for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
-	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
-      
-      tr->perPartitionLH[model] = partitionResult;
-    }
-       
-#else
-#ifdef _FINE_GRAIN_MPI
-
-  /* MPI parallel region, in terms of logic or programming paradigm this is also 
-     just like a fork join */
-
-  masterBarrierMPI(THREAD_EVALUATE, tr);  		  
-  
-#else
-  /* and here is just the sequential case, we directly call evaluateIterative() above 
-     without having to tell the threads/processes that they need to compute this function now */
 
   evaluateIterative(tr);  
     		
-#endif   
-#endif
+
 
   if(0)
     {
