@@ -60,7 +60,6 @@ extern char *protModels[20];
 
 
 #ifdef _USE_PTHREADS
-extern volatile int             NumberOfThreads;
 extern volatile double          *reductionBuffer;
 #endif
 
@@ -293,7 +292,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	masterBarrier(THREAD_OPT_RATE, tr);
 	if(tr->NumberOfModels == 1)
 	  {
-	    for(i = 0, result = 0.0; i < NumberOfThreads; i++)    	  
+	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
 	      result += reductionBuffer[i];  	        
 	    tr->perPartitionLH[0] = result;
 	  }
@@ -306,7 +305,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
 	    for(j = 0; j < tr->NumberOfModels; j++)
 	      {
-		for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
+		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
 		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
 		result +=  partitionResult;
 		tr->perPartitionLH[j] = partitionResult;
@@ -374,7 +373,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	masterBarrier(THREAD_OPT_ALPHA, tr);
 	if(tr->NumberOfModels == 1)
 	  {
-	    for(i = 0, result = 0.0; i < NumberOfThreads; i++)    	  
+	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
 	      result += reductionBuffer[i];  	        
 	    tr->perPartitionLH[0] = result;
 	  }
@@ -387,7 +386,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
 	    for(j = 0; j < tr->NumberOfModels; j++)
 	      {
-		for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
+		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
 		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
 		result +=  partitionResult;
 		tr->perPartitionLH[j] = partitionResult;

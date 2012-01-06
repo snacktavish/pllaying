@@ -998,11 +998,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
   /*********** tr inits **************/
 
-#ifdef _USE_PTHREADS
-  NumberOfThreads = 0;
-#endif
- 
- 
+  tr->numberOfThreads = 1; 
   tr->doCutoff = TRUE;
   tr->secondaryStructureModel = SEC_16; /* default setting */
   tr->searchConvergenceCriterion = FALSE;
@@ -1071,7 +1067,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	break;        
       case 'T':
 #ifdef _USE_PTHREADS
-	sscanf(optarg,"%d", &NumberOfThreads);
+	sscanf(optarg,"%d", &(tr->numberOfThreads));
 #else      
 	printf("Option -T does not have any effect with the sequential or parallel MPI version.\n");
 	printf("It is used to specify the number of threads for the Pthreads-based parallelization\n");       
@@ -1158,15 +1154,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
       }
     }
 
-#ifdef _USE_PTHREADS
-  /*if(NumberOfThreads < 2)
-    {
-      printf("\nThe number of threads is currently set to %d\n", NumberOfThreads);
-      printf("Specify the number of threads to run via -T numberOfThreads\n");
-      printf("NumberOfThreads must be set to an integer value greater than 1\n\n");
-      exit(-1);
-      }*/
-#endif
+
 
   
 
@@ -2021,7 +2009,7 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 void masterBarrier(int jobType, tree *tr)
 {
   const int 
-    n = NumberOfThreads;
+    n = tr->numberOfThreads;
   
   int 
     i, 
@@ -2076,7 +2064,7 @@ static void *likelihoodThread(void *tData)
     myCycle = 0;
 
   const int 
-    n = NumberOfThreads,
+    n = td->tr->numberOfThreads,
     tid = td->threadNumber;
 
 #ifndef _PORTABLE_PTHREADS
@@ -2113,17 +2101,17 @@ static void startPthreads(tree *tr)
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-  threads    = (pthread_t *)malloc((size_t)NumberOfThreads * sizeof(pthread_t));
-  tData      = (threadData *)malloc((size_t)NumberOfThreads * sizeof(threadData));
+  threads    = (pthread_t *)malloc((size_t)tr->numberOfThreads * sizeof(pthread_t));
+  tData      = (threadData *)malloc((size_t)tr->numberOfThreads * sizeof(threadData));
 
-  reductionBuffer          = (volatile double *)malloc(sizeof(volatile double) *  (size_t)NumberOfThreads * (size_t)tr->NumberOfModels);
-  reductionBufferTwo       = (volatile double *)malloc(sizeof(volatile double) *  (size_t)NumberOfThreads * (size_t)tr->NumberOfModels);  
-  barrierBuffer            = (volatile char *)  malloc(sizeof(volatile char)   *  (size_t)NumberOfThreads);
+  reductionBuffer          = (volatile double *)malloc(sizeof(volatile double) *  (size_t)tr->numberOfThreads * (size_t)tr->NumberOfModels);
+  reductionBufferTwo       = (volatile double *)malloc(sizeof(volatile double) *  (size_t)tr->numberOfThreads * (size_t)tr->NumberOfModels);  
+  barrierBuffer            = (volatile char *)  malloc(sizeof(volatile char)   *  (size_t)tr->numberOfThreads);
   
-  for(t = 0; t < NumberOfThreads; t++)
+  for(t = 0; t < tr->numberOfThreads; t++)
     barrierBuffer[t] = 0;
  
-  for(t = 1; t < NumberOfThreads; t++)
+  for(t = 1; t < tr->numberOfThreads; t++)
     {
       tData[t].tr  = tr;
       tData[t].threadNumber = t;
@@ -2260,7 +2248,7 @@ static void multiprocessorScheduling(tree *tr, int tid)
 	    i,
 	    k,
 #ifndef _FINE_GRAIN_MPI
-	    n = NumberOfThreads,
+	    n = tr->numberOfThreads,
 #else
 	    n = processes,
 #endif

@@ -54,10 +54,6 @@ extern const unsigned int bitVectorIdentity[256];
 
 extern const partitionLengths pLengths[MAX_MODEL];
 
-#ifdef _USE_PTHREADS
-extern volatile int NumberOfThreads;
-#endif
-
 
 
 extern FILE *byteFile;

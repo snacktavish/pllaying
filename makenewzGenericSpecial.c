@@ -55,7 +55,6 @@
 #ifdef _USE_PTHREADS
 extern volatile double *reductionBuffer;
 extern volatile double *reductionBufferTwo;
-extern volatile int NumberOfThreads;
 #endif
 
 #ifdef _FINE_GRAIN_MPI
@@ -953,7 +952,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	  {
 	    dlnLdlz[b] = 0.0;
 	    d2lnLdlz2[b] = 0.0;
-	    for(i = 0; i < NumberOfThreads; i++)
+	    for(i = 0; i < tr->numberOfThreads; i++)
 	      {
 		dlnLdlz[b]   += reductionBuffer[i * tr->numBranches + b];
 		d2lnLdlz2[b] += reductionBufferTwo[i * tr->numBranches + b];

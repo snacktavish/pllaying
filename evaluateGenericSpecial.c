@@ -64,7 +64,6 @@
 
 #ifdef _USE_PTHREADS
 extern volatile double *reductionBuffer;
-extern volatile int NumberOfThreads;
 #endif
 
 /* a pre-computed 32-bit integer mask */
@@ -755,7 +754,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
       volatile double 
 	partitionResult = 0.0;  
       
-      for(i = 0, partitionResult = 0.0; i < NumberOfThreads; i++)          	      
+      for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
 	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
       
       tr->perPartitionLH[model] = partitionResult;

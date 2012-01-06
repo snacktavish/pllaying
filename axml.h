@@ -609,30 +609,28 @@ typedef struct List_{
 #define FAST_SPRS     2
 #define SLOW_SPRS     3
 
+
 typedef struct {
  
   int state;
 
-  unsigned int vLength;
-  
-  int    rearrangementsMax;
-  int    rearrangementsMin;
-  int    thoroughIterations;
-  int    fastIterations;
-  int    treeVectorLength;  
-  int    mintrav;
-  int    maxtrav;
-  int    bestTrav;
-  int    Thorough;
-  int    optimizeRateCategoryInvocations;  
-  double accumulatedTime;
+  /*unsigned int vLength;*/
+  double accumulatedTime;  
+  int rearrangementsMax;
+  int rearrangementsMin;
+  int thoroughIterations;
+  int fastIterations;
+  int mintrav;
+  int maxtrav;
+  int bestTrav;
   double startLH; 
   double lh;
   double previousLh;
   double difference;
   double epsilon;  
   boolean impr;
-  boolean cutoff;         
+  boolean cutoff;  
+       
   double tr_startLH;
   double tr_endLH;
   double tr_likelihood;
@@ -643,7 +641,21 @@ typedef struct {
   int    tr_NumberOfCategories;
   int    tr_itCount;  
   int    tr_doCutoff;
-                                                                    
+  int    tr_thoroughInsertion;
+  int    tr_optimizeRateCategoryInvocations;
+
+ 
+  /* prevent users from doing stupid things */
+
+ 
+  int searchConvergenceCriterion;
+  int rateHetModel;
+  int maxCategories;
+  int NumberOfModels;
+  int numBranches;
+  int originalCrunchedLength;    
+  int mxtips;
+  char seq_file[1024];
 } checkPointState;
 
 
@@ -668,6 +680,7 @@ typedef  struct  {
   boolean grouped;
   boolean constrained;
   int threadID;
+  volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   /*
