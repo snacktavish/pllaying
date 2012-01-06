@@ -95,7 +95,7 @@ stringHashtable *initStringHashTable(hashNumberType n)
 
   tableSize = initTable[i];  
 
-  h->table = (stringEntry**)calloc(tableSize, sizeof(stringEntry*));
+  h->table = (stringEntry**)calloc((size_t)tableSize, sizeof(stringEntry*));
   h->tableSize = tableSize;    
 
   return h;
@@ -130,7 +130,7 @@ void addword(char *s, stringHashtable *h, int nodeNumber)
   assert(p);
   
   p->nodeNumber = nodeNumber;
-  p->word = (char *)malloc((strlen(s) + 1) * sizeof(char));
+  p->word = (char *)malloc(((size_t)strlen(s) + 1) * sizeof(char));
 
   strcpy(p->word, s);
   

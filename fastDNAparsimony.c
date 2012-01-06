@@ -81,8 +81,6 @@
 extern const unsigned int mask32[32]; 
 /* vector-specific stuff */
 
-extern char **globalArgv;
-extern int globalArgc;
 
 #ifdef __SIM_SSE3
 
@@ -96,7 +94,6 @@ extern int globalArgc;
 #define VECTOR_BIT_OR  _mm_or_si128
 #define VECTOR_STORE  _mm_store_si128
 #define VECTOR_AND_NOT _mm_andnot_si128
-#define BYTE_ALIGNMENT 16
 
 #endif
 
@@ -112,17 +109,14 @@ extern int globalArgc;
 #define VECTOR_BIT_OR  _mm256_or_pd
 #define VECTOR_STORE  _mm256_store_pd
 #define VECTOR_AND_NOT _mm256_andnot_pd
-#define BYTE_ALIGNMENT 32
 
 #endif
 
-#if !(defined(__SIM_SSE3) || defined(__AVX))
-#define BYTE_ALIGNMENT 16
-#endif
+
 
 extern double masterTime;
-extern char  workdir[1024];
-extern char run_id[128];
+/*extern char  workdir[1024];
+  extern char run_id[128];*/
 
 /********************************DNA FUNCTIONS *****************************************************************/
 
@@ -217,20 +211,7 @@ static void computeTraversalInfoParsimony(nodeptr p, int *ti, int *counter, int 
 
 
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
-#define BIT_COUNT(x, y)  precomputed16_bitcount(x, y)
 
-/* 
-   The critical speed of this function
-   is mostly a machine/architecure issue
-   Nontheless, I decided not to use 
-   __builtin_popcount(x)
-   for better general portability, albeit it's worth testing
-   on x86 64 bit architectures
-*/
-#else
-#define BIT_COUNT(x, y)  precomputed16_bitcount(x, y)
-#endif
 
 
 
@@ -544,8 +525,8 @@ static inline unsigned int evaluatePopcount(INT_TYPE v_N, char *precomputed)
 	     
   _mm256_store_pd((double*)res, v_N);
   
-  a = __builtin_popcountl(res[0], precomputed) + __builtin_popcountl(res[1], precomputed);
-  b = __builtin_popcountl(res[2], precomputed) + __builtin_popcountl(res[3], precomputed);
+  a = __builtin_popcountl(res[0]) + __builtin_popcountl(res[1]);
+  b = __builtin_popcountl(res[2]) + __builtin_popcountl(res[3]);
 	     
   return (a + b);	            
 #else      	       
@@ -1177,20 +1158,7 @@ static void insertParsimony (tree *tr, nodeptr p, nodeptr q)
   newviewParsimony(tr, p);     
 } 
 
-/*
-  static nodeptr buildNewTip (tree *tr, nodeptr p)
-  { 
-  nodeptr  q;
-  
-  q = tr->nodep[(tr->nextnode)++];
-  hookupDefault(p, q, tr->numBranches);
-  q->next->back = (nodeptr)NULL;
-  q->next->next->back = (nodeptr)NULL;
-  assert(q == q->next->next->next);
-  assert(q->xPars || q->next->xPars || q->next->next->xPars);
-  return  q;
-  } 
-*/
+
 
 static nodeptr buildNewTip (tree *tr, nodeptr p)
 { 
@@ -1323,10 +1291,7 @@ static void addTraverseParsimony (tree *tr, nodeptr p, nodeptr q, int mintrav, i
 }
 
 
-static nodeptr findAnyTipFast(nodeptr p, int numsp)
-{ 
-  return  (p->number <= numsp)? p : findAnyTipFast(p->next->back, numsp);
-} 
+
 
 
 static void makePermutationFast(int *perm, int n, tree *tr)
@@ -1864,17 +1829,6 @@ static void stepwiseAddition(tree *tr, nodeptr p, nodeptr q)
     }
 }
 
-static void markNodesInTree(nodeptr p, tree *tr, unsigned char *nodesInTree)
-{
-  if(isTip(p->number, tr->mxtips))
-    nodesInTree[p->number] = 1;
-  else
-    {
-      markNodesInTree(p->next->back, tr, nodesInTree);
-      markNodesInTree(p->next->next->back, tr, nodesInTree);
-    }
-
-}
 
 
 void allocateParsimonyDataStructures(tree *tr)
@@ -1921,9 +1875,6 @@ void makeParsimonyTreeFast(tree *tr)
   nodeptr  
     p, 
     f;    
-
-  size_t
-    model;
 
   int 
     i, 

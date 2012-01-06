@@ -1293,7 +1293,7 @@ static void readCheckpoint(tree *tr)
     
 
 
-  updatePerSiteRates(tr, FALSE);  
+  /*updatePerSiteRates(tr, FALSE);  */
 
   readTree(tr, f);
 

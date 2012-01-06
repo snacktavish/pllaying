@@ -35,7 +35,26 @@
 #ifdef __AVX
 #define BYTE_ALIGNMENT 32
 #else
+#ifdef __SIM_SSE3
 #define BYTE_ALIGNMENT 16
+#else
+#define BYTE_ALIGNMENT 1
+#endif
+#endif
+
+#if (defined(__SIM_SSE3) || defined(__AVX))
+#define BIT_COUNT(x, y) precomputed16_bitcount(x, y)
+
+/* 
+   The critical speed of this function
+   is mostly a machine/architecure issue
+   Nontheless, I decided not to use 
+   __builtin_popcount(x)
+   for better general portability, albeit it's worth testing
+   on x86 64 bit architectures
+*/
+#else
+#define BIT_COUNT(x, y)  precomputed16_bitcount(x, y)
 #endif
 
 #ifdef _USE_PTHREADS
@@ -484,6 +503,7 @@ typedef  struct noderec
   int              number;
   char             x;
   char             xPars;
+  char             xBips;
 }
   node, *nodeptr;
 
@@ -595,55 +615,39 @@ typedef struct {
 
   unsigned int vLength;
   
-  int rearrangementsMax;
-  int rearrangementsMin;
-  int thoroughIterations;
-  int fastIterations;
-  int treeVectorLength;  
-  int mintrav;
-  int maxtrav;
-  int bestTrav;
+  int    rearrangementsMax;
+  int    rearrangementsMin;
+  int    thoroughIterations;
+  int    fastIterations;
+  int    treeVectorLength;  
+  int    mintrav;
+  int    maxtrav;
+  int    bestTrav;
   int    Thorough;
-  int    optimizeRateCategoryInvocations;
-  
+  int    optimizeRateCategoryInvocations;  
   double accumulatedTime;
-
   double startLH; 
   double lh;
   double previousLh;
   double difference;
-  double epsilon;
-  
+  double epsilon;  
   boolean impr;
-  boolean cutoff;  
-       
+  boolean cutoff;         
   double tr_startLH;
   double tr_endLH;
   double tr_likelihood;
-  double tr_bestOfNode;
-  
+  double tr_bestOfNode;  
   double tr_lhCutoff;
   double tr_lhAVG;
   double tr_lhDEC;
   int    tr_NumberOfCategories;
   int    tr_itCount;  
   int    tr_doCutoff;
-
                                                                     
 } checkPointState;
 
 
-typedef struct {
-  double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));             
-  double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                
-  double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double substRates[190];        
-  double frequencies[20] ;      
-  double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double fracchange[1];
-  double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-} siteAAModels;
+
 
 typedef  struct  {
 
@@ -663,6 +667,7 @@ typedef  struct  {
 
   boolean grouped;
   boolean constrained;
+  int threadID;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
   /*
@@ -676,7 +681,6 @@ typedef  struct  {
  
   unsigned char *y_ptr; 
   
-  int threadID;
   double lower_spacing;
   double upper_spacing; 
 #endif
@@ -806,6 +810,10 @@ typedef  struct  {
   char bits_in_16bits [0x1u << 16];
   
 
+  int optimizeRateCategoryInvocations;
+
+  checkPointState ckp;
+  boolean thoroughInsertion;
 } tree;
 
 
@@ -960,7 +968,7 @@ extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits)
 
 extern size_t discreteRateCategories(int rateHetModel);
 
-extern partitionLengths * getPartitionLengths(pInfo *p);
+extern const partitionLengths * getPartitionLengths(pInfo *p);
 extern boolean getSmoothFreqs(int dataType);
 extern const unsigned int *getBitVector(int dataType);
 extern int getUndetermined(int dataType);
@@ -974,11 +982,10 @@ extern void getxnode ( nodeptr p );
 extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
 extern void hookupDefault ( nodeptr p, nodeptr q, int numBranches);
 extern boolean whitechar ( int ch );
-extern void errorExit ( int e );
 extern void printResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint );
-extern void printLog ( tree *tr, analdef *adef, boolean finalPrint );
+extern void printLog ( tree *tr);
 extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 extern int main ( int argc, char *argv[] );
@@ -989,13 +996,13 @@ extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
 extern void makeGammaCats (double alpha, double *gammaRates, int K);
-extern void initModel ( tree *tr, analdef *adef, double **empiricalFrequencies);
+extern void initModel ( tree *tr, double **empiricalFrequencies);
 extern void doAllInOne ( tree *tr, analdef *adef );
 
 extern void classifyML(tree *tr, analdef *adef);
 
 extern void resetBranches ( tree *tr );
-extern void modOpt ( tree *tr, analdef *adef , double likelihoodEpsilon);
+extern void modOpt ( tree *tr, double likelihoodEpsilon);
 
 
 
@@ -1023,9 +1030,7 @@ extern boolean smooth ( tree *tr, nodeptr p );
 extern boolean smoothTree ( tree *tr, int maxtimes );
 extern boolean localSmooth ( tree *tr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
-extern void initInfoList ( int n );
-extern void freeInfoList ( void );
-extern void insertInfoList ( nodeptr node, double likelihood );
+
 extern boolean smoothRegion ( tree *tr, nodeptr p, int region );
 extern boolean regionalSmooth ( tree *tr, nodeptr p, int maxtimes, int region );
 extern nodeptr removeNodeBIG ( tree *tr, nodeptr p, int numBranches);
@@ -1036,7 +1041,6 @@ extern boolean testInsertBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void addTraverseBIG ( tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
 extern int rearrangeBIG ( tree *tr, nodeptr p, int mintrav, int maxtrav );
 extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
-extern double treeOptimizeRapid ( tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt);
 extern boolean testInsertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( tree *tr );
 extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt );
@@ -1155,13 +1159,12 @@ extern void addword(char *s, stringHashtable *h, int nodeNumber);
 
 
 extern void printBothOpen(const char* format, ... );
-extern void printBothOpenMPI(const char* format, ... );
 extern void initRateMatrix(tree *tr);
 
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
-				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF);
+				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
 
-extern int getIncrement(tree *tr, int model);
+
 
 
 
@@ -1198,19 +1201,6 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 
 #ifdef _USE_PTHREADS
 
-extern void makenewzClassify(tree *tr, int maxiter, double *result, double *z0, double *x1_start, double *x2_start,
-			     unsigned char *tipX1,  unsigned char *tipX2, int tipCase, boolean *partitionConverged);
-
-extern void    newviewClassify(tree *tr, branchInfo *bInf, double *z);
-
-extern void addTraverseRobIterative(tree *tr, int branchNumber);
-
-
-extern void newviewClassifySpecial(tree *tr, double *x1_start, double *x2_start, double *x3_start, int *ex1, int *ex2, int *ex3,
-				   unsigned char *tipX1,  unsigned char *tipX2, int tipCase, double *pz, double *qz);
-extern double evalCL(tree *tr, double *x2, int *ex2, unsigned char *tip, double *pz);
-
-extern void testInsertThoroughIterative(tree *tr, int branchNumber, boolean bootstrap);
 
 
 /* work tags for parallel regions */
@@ -1287,22 +1277,22 @@ MPI_Datatype jobDescriptor;
 
 #ifdef __AVX
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
-			   double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+		       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+		       unsigned char *tipX1, unsigned char *tipX2,
 		       int n,  double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGenericCATPROT_AVX(int tipCase, double *extEV,
 			       int *cptr,
 			       double *x1, double *x2, double *x3, double *tipVector,
-			       int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			       unsigned char *tipX1, unsigned char *tipX2,
 			       int n, double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGTRGAMMA_AVX(int tipCase,
 			 double *x1_start, double *x2_start, double *x3_start,
 			 double *EV, double *tipVector,
-			 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			 unsigned char *tipX1, unsigned char *tipX2,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 );
 

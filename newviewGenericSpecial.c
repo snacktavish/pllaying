@@ -60,10 +60,6 @@ const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
 #endif
 
 
-extern int processID;
-
-/* bit mask */
-
 extern const unsigned int mask32[32];
 
 
@@ -947,7 +943,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  for(j = 0; j < (size_t)tr->partitionData[model].gapVectorLength; j++)
 		    {		     
 		      x3_gap[j] = x1_gap[j] & x2_gap[j];
-		      setBits += (size_t)(precomputed16_bitcount(x3_gap[j], tr->bits_in_16bits));		      
+		      setBits += (size_t)(BIT_COUNT(x3_gap[j], tr->bits_in_16bits));		      
 		    }
 		      		  		 
 		  requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		

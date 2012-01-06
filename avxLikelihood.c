@@ -14,6 +14,19 @@
 #include <pmmintrin.h>
 #include <immintrin.h>
 
+
+#ifdef __AVX
+
+#ifdef __SIM_SSE3
+
+#define _SSE3_WAS_DEFINED
+
+#undef __SIM_SSE3
+
+#endif
+
+#endif
+
 const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
 {
   uint64_t i[4];
@@ -57,7 +70,7 @@ static inline __m256d hadd3(__m256d v)
 void  newviewGTRGAMMA_AVX(int tipCase,
 			 double *x1, double *x2, double *x3,
 			 double *extEV, double *tipVector,
-			 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			 unsigned char *tipX1, unsigned char *tipX2,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 )
 {
@@ -501,9 +514,9 @@ static void  newviewGTRGAMMA_AVX2(int tipCase,
 */
 
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
-			   double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-			   int n,  double *left, double *right, int *wgt, int *scalerIncrement)
+		       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+		       unsigned char *tipX1, unsigned char *tipX2,
+		       int n,  double *left, double *right, int *wgt, int *scalerIncrement)
 {
   double
     *le,
@@ -658,7 +671,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
 void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 			       int *cptr,
 			       double *x1, double *x2, double *x3, double *tipVector,
-			       int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			       unsigned char *tipX1, unsigned char *tipX2,
 			       int n, double *left, double *right, int *wgt, int *scalerIncrement)
 {
   double
@@ -930,3 +943,15 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
   
   *scalerIncrement = addScale;
 }
+
+#ifdef __AVX
+
+#ifdef _SSE3_WAS_DEFINED
+
+#define __SIM_SSE3
+
+#undef _SSE3_WAS_DEFINED
+
+#endif
+
+#endif

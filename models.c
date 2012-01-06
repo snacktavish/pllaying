@@ -45,11 +45,7 @@
 
 #include "axml.h"
 
-extern int optimizeRatesInvocations;
-extern int optimizeRateCategoryInvocations;
-extern int optimizeAlphaInvocations;
-extern int optimizeTTRatioInvocations;
-extern int optimizeInvarInvocations;
+
 
 extern const unsigned int bitVectorSecondary[256];
 extern const unsigned int bitVector32[33];
@@ -67,88 +63,6 @@ extern volatile int NumberOfThreads;
 extern FILE *byteFile;
 
 
-
-static void smoothFreqs(const int n, double *pfreqs, double *dst, pInfo *partitionData)
-{
-  int 
-    countScale = 0, 
-    l,
-    loopCounter = 0;  
-  
-
-  /*
-    for(l = 0; l < n; l++)
-    if(pfreqs[l] < FREQ_MIN)
-      countScale++;
-  */
-
-  for(l = 0; l < n; l++)
-    if(pfreqs[l] == 0.0)
-      countScale++;
-
-  if(countScale > 0)
-    {	     
-      while(countScale > 0)
-	{
-	  double correction = 0.0;
-	  double factor = 1.0;
-	  
-	  for(l = 0; l < n; l++)
-	    {
-	      if(pfreqs[l] == 0.0)		  
-		correction += FREQ_MIN;		   		  
-	      else
-		if(pfreqs[l] < FREQ_MIN)		    
-		  {
-		    correction += (FREQ_MIN - pfreqs[l]);
-		    factor -= (FREQ_MIN - pfreqs[l]);
-		  }
-	    }		      	    	    
-	  
-	  countScale = 0;
-	  
-	  for(l = 0; l < n; l++)
-	    {		    
-	      if(pfreqs[l] >= FREQ_MIN)		      
-		pfreqs[l] = pfreqs[l] - (pfreqs[l] * correction * factor);	
-	      else
-		pfreqs[l] = FREQ_MIN;
-	      
-	      if(pfreqs[l] < FREQ_MIN)
-		countScale++;
-	    }
-	  assert(loopCounter < 100);
-	  loopCounter++;
-	}		    
-    }
-
-  for(l = 0; l < n; l++)
-    dst[l] = pfreqs[l];
-
-  
-  if(partitionData->nonGTR)
-    {
-      int k;
-
-      assert(partitionData->dataType == SECONDARY_DATA_7 || partitionData->dataType == SECONDARY_DATA_6 || partitionData->dataType == SECONDARY_DATA);
-       
-      for(l = 0; l < n; l++)
-	{
-	  int count = 1;	
-	  
-	  for(k = 0; k < n; k++)
-	    {
-	      if(k != l && partitionData->frequencyGrouping[l] == partitionData->frequencyGrouping[k])
-		{
-		  count++;
-		  dst[l] += pfreqs[k];
-		}
-	    }
-	  dst[l] /= ((double)count);
-	}            
-     }  
-}
-	    
 
 
 
@@ -2812,8 +2726,8 @@ static void updateFracChange(tree *tr)
     }      
   else
     {
-      int model, i;
-      double *modelWeights = (double *)calloc(tr->NumberOfModels, sizeof(double));
+      int model;
+      double *modelWeights = (double *)calloc((size_t)tr->NumberOfModels, sizeof(double));
       double wgtsum = 0.0;  
      
       assert(tr->NumberOfModels > 1);
@@ -3047,22 +2961,22 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
     m, 
     l;  
 
-  r    = (double **)malloc(n * sizeof(double *));
-  EIGV = (double **)malloc(n * sizeof(double *));  
-  a    = (double **)malloc(n * sizeof(double *));	  
+  r    = (double **)malloc((size_t)n * sizeof(double *));
+  EIGV = (double **)malloc((size_t)n * sizeof(double *));  
+  a    = (double **)malloc((size_t)n * sizeof(double *));	  
   
   for(i = 0; i < n; i++)
     {
-      a[i]    = (double*)malloc(n * sizeof(double));
-      EIGV[i] = (double*)malloc(n * sizeof(double));
-      r[i]    = (double*)malloc(n * sizeof(double));
+      a[i]    = (double*)malloc((size_t)n * sizeof(double));
+      EIGV[i] = (double*)malloc((size_t)n * sizeof(double));
+      r[i]    = (double*)malloc((size_t)n * sizeof(double));
     }
 
-  f       = (double*)malloc(n * sizeof(double));
-  e       = (double*)malloc(n * sizeof(double));
-  d       = (double*)malloc(n * sizeof(double));
-  invfreq = (double*)malloc(n * sizeof(double));
-  EIGN    = (double*)malloc(n * sizeof(double));
+  f       = (double*)malloc((size_t)n * sizeof(double));
+  e       = (double*)malloc((size_t)n * sizeof(double));
+  d       = (double*)malloc((size_t)n * sizeof(double));
+  invfreq = (double*)malloc((size_t)n * sizeof(double));
+  EIGN    = (double*)malloc((size_t)n * sizeof(double));
   
   for(l = 0; l < n; l++)		 
     f[l] = frequencies[l];	
@@ -3531,7 +3445,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K)
 {
   int i;
   double factor, lnga1, alfa, beta;
-  double *gammaProbs = (double *)malloc(K * sizeof(double));
+  double *gammaProbs = (double *)malloc((size_t)K * sizeof(double));
 
   alfa = beta = alpha;
 
@@ -3854,19 +3768,19 @@ static void initializeBaseFreqs(tree *tr, double **empiricalFrequencies)
   size_t 
     model;
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {
       memcpy(tr->partitionData[model].frequencies,          empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
       memcpy(tr->partitionData[model].empiricalFrequencies, empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
     }
 }
 
-void initModel(tree *tr, analdef *adef, double **empiricalFrequencies)
+void initModel(tree *tr, double **empiricalFrequencies)
 {  
   int model, j;
   double  temp;  
      
-  optimizeRateCategoryInvocations = 1;      
+  tr->optimizeRateCategoryInvocations = 1;      
   tr->numberOfInvariableColumns = 0;
   tr->weightOfInvariableColumns = 0;	       
   

@@ -16,7 +16,6 @@
 #include "axml.h"
 
 extern int Thorough;
-extern int optimizeRateCategoryInvocations;
 extern infoList iList;
 extern char seq_file[1024];
 extern char resultFileName[1024];
