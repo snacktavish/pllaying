@@ -15,7 +15,6 @@
 
 #include "axml.h"
 
-extern int Thorough;
 extern infoList iList;
 extern char seq_file[1024];
 extern char resultFileName[1024];
@@ -323,12 +322,27 @@ static void doSPR(tree *tr, state *instate)
   recordBranchInfo(instate->nb, instate->nbz, instate->tr->numBranches);
   recordBranchInfo(instate->nnb, instate->nnbz, instate->tr->numBranches);
 
-  removeNodeBIG(tr, p,  tr->numBranches);
+  /* removeNodeBIG(tr, p,  tr->numBranches); */
+  /* remove node p */
+  double   zqr[NUM_BRANCHES];
+  int i;
+  for(i = 0; i < tr->numBranches; i++)
+  {
+    zqr[i] = instate->nb->z[i] * instate->nnb->z[i];        
+    if(zqr[i] > zmax) zqr[i] = zmax;
+    if(zqr[i] < zmin) zqr[i] = zmin;
+  }
+  hookup(instate->nb, instate->nnb, zqr, tr->numBranches); 
+  p->next->next->back = p->next->back = (node *) NULL;
+  /* done remove node p (omitted BL opt) */
+
+
   instate->q = tr->insertNode;
   instate->r = instate->q->back;
   recordBranchInfo(instate->q, instate->qz, instate->tr->numBranches);
 
-  assert(Thorough == 0);
+  assert(tr->thoroughInsertion == 0);
+  /* insertBIG wont change the BL if we are not in thorough mode */
   
   insertBIG(instate->tr, instate->p, instate->q, instate->tr->numBranches);
   evaluateGeneric(instate->tr, instate->p->next->next, FALSE); 
@@ -1001,7 +1015,7 @@ void mcmc(tree *tr, analdef *adef)
   printSubsRates(curstate->tr, curstate->model, curstate->numSubsRates);
 
   /* optimize the model with Brents method for reasonable starting points */
-  modOpt(curstate->tr, curstate->adef, 5.0); /* not by proposal, just using std raxml machinery... */
+  modOpt(curstate->tr, 5.0); /* not by proposal, just using std raxml machinery... */
   evaluateGeneric(curstate->tr, curstate->tr->start, FALSE); // just for validation 
   printBothOpen("tr LH after modOpt %f\n",curstate->tr->likelihood);
   printSubsRates(curstate->tr, curstate->model, curstate->numSubsRates);
@@ -1112,7 +1126,8 @@ void mcmc(tree *tr, analdef *adef)
       }
       //printRecomTree(tr, TRUE, "after reset");
       //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10);
+      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); /* TODOFER check threshold*/
+      assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
     }       
     inserts++;
     
