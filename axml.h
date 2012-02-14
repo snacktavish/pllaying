@@ -180,6 +180,8 @@
 #define MAX(x,y)  (((x)>(y)) ?    (x)  : (y))
 #define NINT(x)   ((int) ((x)>0 ? ((x)+0.5) : ((x)-0.5)))
 
+#define FABS(x) fabs(x)
+
 #ifdef _USE_FPGA_LOG
 extern double log_approx (double input);
 #define LOG(x)  log_approx(x)

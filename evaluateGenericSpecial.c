@@ -166,7 +166,7 @@ static double evaluateGAMMA_FLEX(int *wptr,
 	     Under the GAMMA model the 4 discrete GAMMA rates all have the same probability 
 	     of 0.25 */
 
-	  term = LOG(0.25 * term);
+	  term = LOG(0.25 * FABS(term));
 	 	 	  
 	  sum += wptr[i] * term;
 	}     
@@ -184,7 +184,7 @@ static double evaluateGAMMA_FLEX(int *wptr,
 	    for(k = 0; k < states; k++)
 	      term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 	          	  	  	      	  
-	  term = LOG(0.25 * term);
+	  term = LOG(0.25 * FABS(term));
 	  	  
 	  sum += wptr[i] * term;
 	}                      	
@@ -239,7 +239,7 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
 	  
 	  /* take the log */
 
-	  term = LOG(term);
+	  term = LOG(FABS(term));
 	  	  
 	  /* 
 	     multiply the log with the pattern weight of this site. 
@@ -265,7 +265,7 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
 	  for(l = 0, term = 0.0; l < states; l++)
 	    term += left[l] * right[l] * diagptable[l];	
 	  
-	  term = LOG(term);	 
+	  term = LOG(FABS(term));	 
 	  
 	  sum += wptr[i] * term;      
 	}
@@ -850,7 +850,7 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
 	  
 
 	  
-	  term = LOG(0.25 * term);	  
+	  term = LOG(0.25 * FABS(term));	  
 	  
 	  sum += wptr[i] * term;
 	}    	        
@@ -893,7 +893,7 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
 	  _mm_storel_pd(&term, tv);	  
 	  
 	 
-	  term = LOG(0.25 * term);
+	  term = LOG(0.25 * FABS(term));
 	
 	  
 	  sum += wptr[i] * term;
@@ -937,7 +937,7 @@ static double evaluateGTRGAMMAPROT (int *wptr,
 	  
 	  
 	 
-	  term = LOG(0.25 * term);
+	  term = LOG(0.25 * FABS(term));
 		   
 	  
 	  sum += wptr[i] * term;
@@ -965,7 +965,7 @@ static double evaluateGTRGAMMAPROT (int *wptr,
 	  _mm_storel_pd(&term, tv);	  
 	  
 	
-	  term = LOG(0.25 * term);
+	  term = LOG(0.25 * FABS(term));
 	  
 	  
 	  sum += wptr[i] * term;
@@ -1009,7 +1009,7 @@ static double evaluateGTRCATPROT (int *cptr, int *wptr,
 	  _mm_storel_pd(&term, tv);
   
 	  
-	  term = LOG(term);
+	  term = LOG(FABS(term));
 	  	  
 	  sum += wptr[i] * term;
 	}      
@@ -1039,7 +1039,7 @@ static double evaluateGTRCATPROT (int *cptr, int *wptr,
 	  tv = _mm_hadd_pd(tv, tv);
 	  _mm_storel_pd(&term, tv);
 	  	  
-	  term = LOG(term);	 
+	  term = LOG(FABS(term));	 
 	  
 	  sum += wptr[i] * term;      
 	}
@@ -1099,7 +1099,7 @@ static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
 	  _mm_storel_pd(&term, tv);
     
 	  
-	  term = LOG(term);
+	  term = LOG(FABS(term));
 	  	  
 	  sum += wptr[i] * term;
 	}      
@@ -1142,7 +1142,7 @@ static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
 	  tv = _mm_hadd_pd(tv, tv);
 	  _mm_storel_pd(&term, tv);
 	  	  
-	  term = LOG(term);	 
+	  term = LOG(FABS(term));	 
 	  
 	  sum += wptr[i] * term;      
 	}
@@ -1202,7 +1202,7 @@ static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
 	  
 	  _mm_store_pd(t, x1v1);
 	  	  
-	  term = LOG(t[0] + t[1]);
+	  term = LOG(FABS(t[0] + t[1]));
 	      
 	 
 
@@ -1252,7 +1252,7 @@ static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
 	  _mm_store_pd(t, x1v1);
 	  
 	 
-	  term = LOG(t[0] + t[1]);
+	  term = LOG(FABS(t[0] + t[1]));
 	  
 	  sum += wptr[i] * term;
 	}    
@@ -1323,7 +1323,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
 	  _mm_store_pd(t, termv);	  	 
 
 	 
-	  term = LOG(0.25 * (t[0] + t[1]));
+	  term = LOG(0.25 * FABS(t[0] + t[1]));
 	   
 	  
 	  sum += wptr[i] * term;
@@ -1380,7 +1380,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
 	  _mm_store_pd(t, termv);
 
 	 
-	  term = LOG(0.25 * (t[0] + t[1]));
+	  term = LOG(0.25 * FABS(t[0] + t[1]));
 	 	  
 	  
 	  sum += wptr[i] * term;
@@ -1442,7 +1442,7 @@ static double evaluateGTRGAMMA(int *wptr,
 	  
 	  
 	
-	  term = LOG(0.25 * (t[0] + t[1]));
+	  term = LOG(0.25 * FABS(t[0] + t[1]));
 	  
 
 	  
@@ -1488,7 +1488,7 @@ static double evaluateGTRGAMMA(int *wptr,
 	  _mm_store_pd(t, termv);
 
 	  
-	    term = LOG(0.25 * (t[0] + t[1]));
+	    term = LOG(0.25 * FABS(t[0] + t[1]));
 	 	  
 
 	  
@@ -1541,7 +1541,7 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 	  _mm_store_pd(t, x1v1);
 	  
 	  
-	  term = LOG(t[0] + t[1]);
+	  term = LOG(FABS(t[0] + t[1]));
 	  
 
 	  sum += wptr[i] * term;
@@ -1579,7 +1579,7 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 	  _mm_store_pd(t, x1v1);
 	  
 	 
-	  term = LOG(t[0] + t[1]);
+	  term = LOG(FABS(t[0] + t[1]));
 	  
 
 	  sum += wptr[i] * term;
