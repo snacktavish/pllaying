@@ -661,6 +661,7 @@ static void initAdef(analdef *adef)
    
 #ifdef _BAYESIAN 
   adef->bayesian               = FALSE;
+  adef->num_generations        = 10000;
 #endif
 
 }
@@ -1025,7 +1026,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:vhMSDQXbp", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:g:vhMSDQXbp", &optind, &optarg))!=-1))
     {
     switch(c)
       {    
@@ -1146,6 +1147,20 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	break;
 #else
 	printf("recompile with Bayesian Makefile to use the -b option \n");
+	exit(-1);
+	break;
+#endif
+      case 'g':
+#ifdef _BAYESIAN 	
+	sscanf(optarg,"%d", &(adef->num_generations));	
+	if(adef->num_generations <= 0)
+  {
+	  printf("-g generations must be larger than 0 \n");
+	  exit(-1);
+  }
+	break;
+#else
+	printf("recompile with Bayesian Makefile to use the -g option \n");
 	exit(-1);
 	break;
 #endif

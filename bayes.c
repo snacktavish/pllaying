@@ -348,11 +348,11 @@ static void doSPR(tree *tr, state *instate)
   evaluateGeneric(instate->tr, instate->p->next->next, FALSE); 
   /*testInsertBIG(tr, p, tr->insertNode);*/
 
-  printf("%f \n", tr->likelihood);
+  //printf("%f \n", tr->likelihood);
 }
 
 
-
+/*
 static nodeptr selectRandomInnerSubtree(tree *tr)
 {
   nodeptr p;
@@ -368,21 +368,21 @@ static nodeptr selectRandomInnerSubtree(tree *tr)
   //printBothOpen("Selected %db%d to prune\n", p->number, p->back->number);
   return p;
 }
+*/
 
+/*
 static boolean simpleNodeProposal(state * instate)
 {
   //prior is flat for these moves
   instate->newprior = 1;
-  instate->p = selectRandomInnerSubtree(instate->tr);
-  /* records info pre-pruning */
+  //instate->p = selectRandomInnerSubtree(instate->tr);
+  instate->p = selectRandomSubtree(instate->tr);
   instate->nb = instate->p->next->back;
   instate->nnb = instate->p->next->next->back;
   //printBothOpen("selected prune node %db%d bl %f \n", instate->p->number, instate->p->back->number, instate->p->z[0]);
   recordBranchInfo(instate->nb, instate->nbz, instate->tr->numBranches);
   recordBranchInfo(instate->nnb, instate->nnbz, instate->tr->numBranches);
-  /* prune subtree p */
   if (removeNodeBIG(instate->tr, instate->p,  instate->tr->numBranches) == NULL) assert(FALSE);
-  /* insert somewhere else, but it must not be in the pruned subtree */
   //printBothOpen("pruned %db%d \n", instate->p->number, instate->p->back->number);
   instate->q = (nodeptr) NULL;
   naiveInsertionProposal(instate);
@@ -391,23 +391,17 @@ static boolean simpleNodeProposal(state * instate)
     {
       instate->r = instate->q->back;
       recordBranchInfo(instate->q, instate->qz, instate->tr->numBranches);
-      /*
-	printBothOpen("inserted %db%d at %db%d where bl %f, Thorough is %d \n", 
-	instate->p->number, instate->p->back->number,
-	instate->q->number, instate->q->back->number, 
-	instate->q->z[0], Thorough);
-      */
       if (! insertBIG(instate->tr, instate->p, instate->q, instate->tr->numBranches)) 
 	assert(FALSE);
-      //TODO: breaks here evaluateGenericSpecial.c:1164: evaluateIterative: Assertion `partitionLikelihood < 0.0' failed.
       evaluateGeneric(instate->tr, instate->p->next->next, FALSE);    
       return TRUE;
     }
   else
     return FALSE;
 }
+*/
 
-static void resetSimpleNodeProposal(state * instate)
+static void resetSPR(state * instate)
 {
   /* prune the insertion */
   hookup(instate->q, instate->r, instate->qz, instate->tr->numBranches);
@@ -494,7 +488,7 @@ static boolean stNNIproposal(state *s)
   s->bl_prior = 0;
   int attempts = 0;
   do{
-    s->p = selectRandomInnerSubtree(s->tr); /* TODOFER do this ad hoc for NNI requirements*/
+    s->p = selectRandomSubtree(s->tr); 
     if (++attempts > 500)
       return FALSE;
   }while(isTip(s->p->number, s->tr->mxtips) || isTip(s->p->back->number, s->tr->mxtips));
@@ -772,6 +766,8 @@ static void simpleModelProposal(state * instate)
 
   evaluateGeneric(instate->tr, instate->tr->start, TRUE); /* 2. re-traverse the full tree to update all vectors */
   //TODO: without this, the run will fail after a successful model, but failing SPR
+  //TODOFER: what did we have in mind regarding the comment above?
+  
   evaluateGeneric(instate->tr, instate->tr->start, FALSE);
   //for prior, just use dirichlet
   // independent gamma distribution for each parameter
@@ -841,70 +837,66 @@ static prop proposal(state * instate)
   if(randprop < 0.25) 
   {
     if(randprop < 0.2)//TOPOLOGICAL MOVE
+    {
+      if(randprop > 0.1)//SPR MOVE
       {
-	if(randprop > 0.1)//SPR MOVE
-	  {
-	    proposal_type = SPR;
-	    // printBothOpen("Propose SPR\n");
-	    if (randprop < 0.15)
-	      instate->maxradius = 1;
-	    else
-	      instate->maxradius = 2;
-	    
-	    doSPR(instate->tr, instate);
+        proposal_type = SPR;
+        if (randprop < 0.15)
+          instate->maxradius = 1;
+        else
+          instate->maxradius = 2;
 
-	    proposalSuccess = TRUE;
+        doSPR(instate->tr, instate);
 
-	    /* TODO */
-	    /*proposalSuccess = simpleNodeProposal(instate);*/
-	  }
-	else
-	  {
-	    proposal_type = stNNI;
-	    proposalSuccess = stNNIproposal(instate); 
-	    if(proposalSuccess == FALSE)
-	      {
-		/* TODOFER this came up with ds 20 and GTRPSR, see why */
-		printBothOpen("WARNING!! stNNI proposal failed, doing SPR\n");
-		proposal_type = SPR;
-		instate->maxradius = 1;
-		proposalSuccess = simpleNodeProposal(instate);
-	      }
-	  }
-	if(proposalSuccess == FALSE)
-	  {
-	    assert(FALSE); // this should either never happen or look below and return PROPOSAL_FAILED to react accordingly
-	  }
-	else
-	  {
-	    /* A moved has been made, previous state is in instate */
-	    if(proposal_type != stNNI) /*TODOFER delete this when bl are changed*/
-	      assert(instate->tr->startLH != instate->tr->likelihood);
-	  }
+        proposalSuccess = TRUE;
+
+        /* TODO  shall we still want to use this as an alternative to the parsimony-informed SPR?*/
+        /*proposalSuccess = simpleNodeProposal(instate);*/
       }
+      else
+      {
+        proposal_type = stNNI;
+        proposalSuccess = stNNIproposal(instate); 
+        if(proposalSuccess == FALSE)
+        {
+          printBothOpen("ERROR: stNNI proposal failed\n");
+          assert(FALSE);
+        }
+      }
+      if(proposalSuccess == FALSE)
+      {
+        assert(FALSE); // this should either never happen or look below and return PROPOSAL_FAILED to react accordingly
+      }
+      else
+      {
+        /* A moved has been made, previous state is in instate */
+        if(proposal_type != stNNI) /*TODOFER delete this when bl are changed (bl should change always in the stNNI?)*/
+          assert(instate->tr->startLH != instate->tr->likelihood);
+      }
+    }
     else{//MODEL
       proposal_type = UPDATE_MODEL;
       simpleModelProposal(instate);
     }
   }
   else
+  {
+    if(randprop < 0.95)//UPDATE_ALL_BL
     {
-      if(randprop < 0.95)//UPDATE_ALL_BL
-	{
-	  proposal_type = UPDATE_ALL_BL;
-	  instate->bl_prior = 0;
-	  //printBothOpen("Propose BL_UPDATE\n");
-	  assert(proposal_type == UPDATE_ALL_BL);
-	  proposalSuccess = simpleBranchLengthProposal(instate);
-	  assert(instate->tr->startLH != instate->tr->likelihood);
-	  assert(proposalSuccess);
-	}
-      else//GAMMA
-	{
-	  proposal_type = UPDATE_GAMMA;
-	  simpleGammaProposal(instate);
-	}
+      proposal_type = UPDATE_ALL_BL;
+      instate->bl_prior = 0;
+      //printBothOpen("Propose BL_UPDATE\n");
+      assert(proposal_type == UPDATE_ALL_BL);
+      proposalSuccess = simpleBranchLengthProposal(instate);
+      assert(instate->tr->startLH != instate->tr->likelihood);
+      assert(proposalSuccess);
     }
+    else//GAMMA
+    {
+      proposal_type = UPDATE_GAMMA;
+      simpleGammaProposal(instate);
+    }
+  }
   //record the curprior
   instate->newprior = instate->bl_prior;
   return proposal_type;
@@ -915,7 +907,7 @@ static void resetState(prop proposal_type, state * curstate)
   switch(proposal_type)
   {
     case SPR:
-      resetSimpleNodeProposal(curstate);
+      resetSPR(curstate);
       break;
     case stNNI:
       reset_stNNI(curstate);
@@ -973,13 +965,14 @@ void mcmc(tree *tr, analdef *adef)
   printBothOpen("start minimalistic search with LH %f\n", tr->likelihood);
   printBothOpen("tr LH %f, startLH %f\n", tr->likelihood, tr->startLH);
   
+  printBothOpen("%d generations\n", adef->num_generations);
   int insert_id;
   int j;
 
   int maxradius = 30;
   int accepted_spr = 0, accepted_nni = 0, accepted_bl = 0, accepted_model = 0, accepted_gamma = 0, inserts = 0;
   int rejected_spr = 0, rejected_nni = 0, rejected_bl = 0, rejected_model = 0, rejected_gamma = 0;
-  int num_moves = 10000;
+  int num_moves = adef->num_generations;
   boolean proposalAccepted;
   boolean proposalSuccess;
   prop which_proposal;
@@ -1068,7 +1061,7 @@ void mcmc(tree *tr, analdef *adef)
 	   accepted_spr++;
 	  break;
 	case stNNI:	  
-	  printBothOpen("NNI new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+	  //printBothOpen("NNI new topology , iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
 	  accepted_nni++;
 	  break;
 	case UPDATE_ALL_BL:	  
@@ -1126,8 +1119,8 @@ void mcmc(tree *tr, analdef *adef)
       }
       //printRecomTree(tr, TRUE, "after reset");
       //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); /* TODOFER check threshold*/
-      assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
+      assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
+      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
     }       
     inserts++;
     

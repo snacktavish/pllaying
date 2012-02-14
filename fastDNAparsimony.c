@@ -1973,7 +1973,7 @@ void parsimonySPR(nodeptr p, tree *tr)
 
   unsigned int score = evaluateParsimony(tr, p, TRUE);
 
-  printf("parsimonyScore: %u\n", score);
+  //printf("parsimonyScore: %u\n", score);
 
   for(i = 0; i < tr->numBranches; i++)
     {
@@ -1999,7 +1999,7 @@ void parsimonySPR(nodeptr p, tree *tr)
       addTraverseParsimony(tr, p, p2->next->next->back, 0, 0, TRUE, TRUE);          
     }
 
-  printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
+  //printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
 
   hookup(p1, p->next, p1z,       tr->numBranches);
   hookup(p2, p->next->next, p2z, tr->numBranches);

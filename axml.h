@@ -920,6 +920,7 @@ typedef  struct {
  
 #ifdef _BAYESIAN 
   boolean       bayesian;
+  int           num_generations;
 #endif
 } analdef;
 
