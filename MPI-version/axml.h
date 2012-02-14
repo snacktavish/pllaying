@@ -158,7 +158,7 @@
 
 #define LOG(x)  log(x)
 
-
+#define FABS(x) fabs(x)
 
 
 #define EXP(x)  exp(x)

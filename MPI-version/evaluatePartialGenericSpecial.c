@@ -234,7 +234,7 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
   for(k = 0; k < states; k++) 
     term += x1[k] * x2[k] * d[k];       
 
-  term = LOG(term) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
 
   term = term * w;
 
@@ -513,7 +513,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
   for(l = 0; l < 20; l++)
     term += x1[l] * x2[l] * d[l];   
 
-  term = LOG(term) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
 
   term = term * w;
 
@@ -733,7 +733,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
 	term += x1[l] * x2[20 * j + l] * d[j * 20 + l];	      
     }
   
-  term = LOG(0.25 * term) + (scale * LOG(minlikelihood));   
+  term = LOG(0.25 * FABS(term)) + (scale * LOG(minlikelihood));   
 
   term = term * w;
 
@@ -882,7 +882,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
   term += x1[2] * x2[2] * d[1];
   term += x1[3] * x2[3] * d[2];     
 
-  term = LOG(term) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
 
   term = term * w;
 
