@@ -326,7 +326,7 @@ FILE *myfopen(const char *path, const char *mode)
       else
 	{
 	  if(processID == 0)
-	    printf("The file %s you want to open for reading does not exist, exiting ...\n", path);
+	    printf("\n Error: the file %s you want to open for reading does not exist, exiting ...\n\n", path);
 	  errorExit(-1);
 	  return (FILE *)NULL;
 	}
@@ -338,7 +338,7 @@ FILE *myfopen(const char *path, const char *mode)
       else
 	{
 	  if(processID == 0)
-	    printf("The file %s RAxML wants to open for writing or appending can not be opened [mode: %s], exiting ...\n",
+	    printf("\n Error: the file %s you want to open for writing or appending can not be opened [mode: %s], exiting ...\n\n",
 		   path, mode);
 	  errorExit(-1);
 	  return (FILE *)NULL;
@@ -1905,7 +1905,42 @@ static int dataExists(char *model, analdef *adef)
   return 0;
 }
 
+/*********************************************************************************************/
 
+static void printVersionInfo(void)
+{
+  printf("\n\nThis is %s version %s released by Alexandros Stamatakis on %s.\n\n",  programName, programVersion, programDate); 
+}
+
+static void printREADME(void)
+{
+  printVersionInfo();
+  printf("\n");  
+  printf("\nTo report bugs send an email to raxml@h-its.org\n");
+  printf("Please send me all input files, the exact invocation, details of the HW and operating system,\n");
+  printf("as well as all error messages printed to screen.\n\n\n");
+
+  printf("parser\n");
+  printf("      -s sequenceFileName\n");
+  printf("      -n outputFileName\n");
+  printf("      -m substitutionModel\n");
+  printf("      [-q]\n");
+  printf("      [-h]\n");
+  printf("\n"); 
+  printf("      -m Model of  Nucleotide or Amino Acid Substitution:\n");
+  printf("\n"); 
+  printf("              For DNA data use:    DNA\n");	
+  printf("              For AA data use:     PROT\n");			   
+  printf("\n"); 
+  printf("      -q      Specify the file name which contains the assignment of models to alignment\n");
+  printf("              partitions for multiple models of substitution. For the syntax of this file\n");
+  printf("              please consult the manual.\n");  
+  printf("\n");
+  printf("      -h      Display this help message.\n");
+  printf("\n");
+  printf("\n\n\n\n");
+
+}
 
 static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optarg)
 {
@@ -1916,7 +1951,9 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
   if(sp == 1)
     {
       if(*optind >= argc || argv[*optind][0] != '-' || argv[*optind][1] == '\0')
-	return -1;
+        {
+	  return -1;
+        }
     }
   else
     {
@@ -1930,7 +1967,6 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
   c = argv[*optind][sp];
   if(c == ':' || (cp=strchr(opts, c)) == 0)
     {
-      printf(": illegal option -- %c \n", c);
       if(argv[*optind][++sp] == '\0')
 	{
 	  *optind =  *optind + 1;
@@ -1950,9 +1986,14 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 	  *optind =  *optind + 1;
 	  if(*optind >= argc)
 	    {
-	      printf(": option requires an argument -- %c\n", c);
-	      sp = 1;
-	      return('?');
+	      if ( c != 'h')	
+                {
+	          sp = 1;
+	          return('?');
+                  printf("\n Error: option requires an argument -- %c\n\n", c);
+                }
+               else
+                  return ( c );
 	    }
 	  else
 	    {
@@ -1975,15 +2016,8 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
   }
 
 
+/*********************************************************************************************/
 
-
-/*********************************** *********************************************************/
-
-
-static void printVersionInfo(void)
-{
-  printf("\n\nThis is %s version %s released by Alexandros Stamatakis on %s.\n\n",  programName, programVersion, programDate); 
-}
 
 static void printMinusFUsage(void)
 {
@@ -2005,151 +2039,6 @@ static void printMinusFUsage(void)
 }
 
 
-static void printREADME(void)
-{
-  printVersionInfo();
-  printf("\n");  
-  printf("\nTo report bugs send an email to raxml@h-its.org\n");
-  printf("Please send me all input files, the exact invocation, details of the HW and operating system,\n");
-  printf("as well as all error messages printed to screen.\n\n\n");
-
-  printf("raxmlLight|raxmlLight-PTHREADS|raxmlLight-MPI\n");
-  printf("      -s sequenceFileName| -G binarySequnceFile\n");
-  printf("      -n outputFileName\n");
-  printf("      -m substitutionModel\n");
-  printf("      -t userStartingTree| -R binaryCheckpointFile\n");
-  printf("      [-B]\n"); 
-  printf("      [-c numberOfCategories]\n");
-  printf("      [-D]\n");
-  printf("      [-e likelihoodEpsilon] \n");
-  printf("      [-f d|o]\n");    
-  printf("      [-h] \n");
-  printf("      [-i initialRearrangementSetting] \n");
-  printf("      [-M]\n");
-  printf("      [-P proteinModel]\n");
-  printf("      [-q multipleModelFileName] \n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  printf("      [-Q]\n");
-#endif
-  printf("      [-S]\n");
-  printf("      [-T numberOfThreads]\n");  
-  printf("      [-v]\n"); 
-  printf("      [-w outputDirectory] \n"); 
-  printf("      [-X]\n");
-  printf("\n");
-  printf("      -B      Parse phylip file and conduct pattern compression, then store the output in a \n");
-  printf("              binary file called sequenceFileName.binary that can be read via the \"-G\" option\n");
-  printf("              ATTENTION: the \"-B\" option only works with the sequential version\n");
-  printf("\n");
-  printf("      -c      Specify number of distinct rate catgories for RAxML when modelOfEvolution\n");
-  printf("              is set to GTRPSR\n");
-  printf("              Individual per-site rates are categorized into numberOfCategories rate \n");
-  printf("              categories to accelerate computations. \n");
-  printf("\n");
-  printf("              DEFAULT: 25\n");
-  printf("\n");
-  printf("      -D      ML search convergence criterion. This will break off ML searches if the relative \n");
-  printf("              Robinson-Foulds distance between the trees obtained from two consecutive lazy SPR cycles\n");
-  printf("              is smaller or equal to 1%s. Usage recommended for very large datasets in terms of taxa.\n", "%");
-  printf("              On trees with more than 500 taxa this will yield execution time improvements of approximately 50%s\n",  "%");
-  printf("              While yielding only slightly worse trees.\n");
-  printf("\n");
-  printf("              DEFAULT: OFF\n");    
-  printf("\n");
-  printf("      -e      set model optimization precision in log likelihood units for final\n");
-  printf("              optimization of model parameters\n");
-  printf("\n");
-  printf("              DEFAULT: 0.1 \n"); 
-  printf("\n");
-  printf("      -f      select algorithm:\n");
-
-  printMinusFUsage();
- 
-  printf("\n");
-  printf("      -G      Read in a binary alignment file (instead of a text-based phylip file with \"-s\") that was previsouly\n");
-  printf("              generated with the \"-B\" option. This can substantially save time spent in input parsing \n");
-  printf("              for very large parallel runs\n");
-  printf("\n");
-  printf("      -h      Display this help message.\n");
-  printf("\n");  
-  printf("      -i      Initial rearrangement setting for the subsequent application of topological \n");
-  printf("              changes phase\n");
-  printf("\n");
-  printf("      -m      Model of  Nucleotide or Amino Acid Substitution: \n");
-  printf("\n"); 
-  printf("              NUCLEOTIDES:\n\n");
-  printf("                \"-m GTRPSR\"         : GTR + Optimization of substitution rates + Optimization of site-specific\n");
-  printf("                                      evolutionary rates which are categorized into numberOfCategories distinct \n");
-  printf("                                      rate categories for greater computational efficiency.\n");
-  printf("                \"-m GTRGAMMA\"       : GTR + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
-  printf("                                      to discretize the GAMMA distribution.\n");
-  printf("\n");
-  printf("              AMINO ACIDS:\n\n");
-  printf("                \"-m PROTPSRmatrixName[F]\"         : specified AA matrix + Optimization of substitution rates + Optimization of site-specific\n");
-  printf("                                                    evolutionary rates which are categorized into numberOfCategories distinct \n");
-  printf("                                                    rate categories for greater computational efficiency.\n");  
-  printf("                \"-m PROTGAMMAmatrixName[F]\"       : specified AA matrix + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
-  printf("                                                    to discretize the GAMMA distribution.\n");
-  printf("\n");
-  printf("                Available AA substitution models: DAYHOFF, DCMUT, JTT, MTREV, WAG, RTREV, CPREV, VT, BLOSUM62, MTMAM, LG, MTART, MTZOA,\n");
-  printf("                PMB, HIVB, HIVW, JTTDCMUT, FLU, AUTO, GTR\n");
-  printf("                With the optional \"F\" appendix you can specify if you want to use empirical base frequencies\n");
-  printf("                Please note that for mixed models you can in addition specify the per-gene AA model in\n");
-  printf("                the mixed model file (see manual for details). Also note that if you estimate AA GTR parameters on a partitioned\n");
-  printf("                dataset, they will be linked (estimated jointly) across all partitions to avoid over-parametrization\n");
-  printf("                When AUTO is used RAxML will conduct an ML estimate of all available pre-defined AA models (excluding GTR) every time the model parameters\n");
-  printf("                are optimized during the tree search.\n");
-  printf("                WARNING: we have not figured out yet how to best do this for partitioned analyses, so don't use AUTO for datasets with partitions\n");
-  printf("\n");
-  printf("      -M      Switch on estimation of individual per-partition branch lengths. Only has effect when used in combination with \"-q\"\n");
-  printf("              Branch lengths for individual partitions will be printed to separate files\n");
-  printf("              A weighted average of the branch lengths is computed by using the respective partition lengths\n");
-  printf("\n"),
-  printf("              DEFAULT: OFF\n");
-  printf("\n");
-  printf("      -n      Specifies the name of the output file.\n");
-  printf("\n"); 
-  printf("      -P      Specify the file name of a user-defined AA (Protein) substitution model. This file must contain\n");
-  printf("              420 entries, the first 400 being the AA substitution rates (this must be a symmetric matrix) and the\n");
-  printf("              last 20 are the empirical base frequencies\n");
-  printf("\n");
-  printf("      -q      Specify the file name which contains the assignment of models to alignment\n");
-  printf("              partitions for multiple models of substitution. For the syntax of this file\n");
-  printf("              please consult the manual.\n");  
-  printf("\n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  printf("      -Q      Enable alternative data/load distribution algorithm for datasets with many partitions\n");
-  printf("              In particular under PSR this can lead to parallel performance improvements of over 50 per cent\n");
-#endif
-  printf("\n");
-  printf("      -R      read in a binary checkpoint file called RAxML_binaryCheckpoint.RUN_ID_number\n");
-  printf("\n");
-  printf("      -s      Specify the name of the alignment data file in PHYLIP format\n");
-  printf("\n");
-  printf("      -S      turn on memory saving option for gappy multi-gene alignments. For large and gappy datasets specify -S to save memory\n");
-  printf("              This will produce slightly different likelihood values, may be a bit slower but can reduce memory consumption\n");
-  printf("              from 70GB to 19GB on very large and gappy datasets\n");
-  printf("\n");
-  printf("      -t      Specify a user starting tree file name in Newick format\n");
-  printf("\n");
-  printf("      -T      PTHREADS VERSION ONLY! Specify the number of threads you want to run.\n");
-  printf("              Make sure to set \"-T\" to at most the number of CPUs you have on your machine,\n");
-  printf("              otherwise, there will be a huge performance decrease!\n");
-  printf("\n");  
-  printf("      -v      Display version information\n");
-  printf("\n");
-  printf("      -w      FULL (!) path to the directory into which RAxML shall write its output files\n");
-  printf("\n");
-  printf("              DEFAULT: current directory\n"); 
-  printf("\n");
-  printf("      -X      EXPERIMENTAL OPTION: This option will do a per-site estimate of protein substitution models\n");
-  printf("              by looping over all given, fixed models LG, WAG, JTT, etc and using their respective base frequencies to independently\n");
-  printf("              assign a prot subst. model to each site via ML optimization\n");
-  printf("              At present this option only works with the GTR+GAMMA model, unpartitioned datasets, and in the sequential\n");
-  printf("              version only.\n");
-  printf("\n\n\n\n");
-
-}
 
 
 
@@ -2162,13 +2051,13 @@ static void analyzeRunId(char id[128])
     {    
       if(i >= 128)
 	{
-	  printf("Error: run id after \"-n\" is too long, it has %d characters please use a shorter one\n", i);
+	  printf("\n Error: run id after \"-n\" is too long, it has %d characters please use a shorter one\n\n", i);
 	  assert(0);
 	}
       
       if(id[i] == '/')
 	{
-	  printf("Error character %c not allowed in run ID\n", id[i]);
+	  printf("\n Error character %c not allowed in run ID\n\n", id[i]);
 	  assert(0);
 	}
 
@@ -2178,11 +2067,12 @@ static void analyzeRunId(char id[128])
 
   if(i == 0)
     {
-      printf("Error: please provide a string for the run id after \"-n\" \n");
+      printf("\n Error: please provide a string for the run id after \"-n\" \n\n");
       assert(0);
     }
 
 }
+
 
 static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 {
@@ -2220,8 +2110,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   NumberOfThreads = 0;
 #endif
   
-
-
  
   tr->bootStopCriterion = -1;
   tr->wcThreshold = 0.03;
@@ -2240,11 +2128,14 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   /********* tr inits end*************/
 
 
-    while(!bad_opt &&
-	  ((c = mygetopt(argc,argv,"q:s:n:m:", &optind, &optarg))!=-1))
+    while( !bad_opt && ( ( c = mygetopt(argc,argv,"q:s:n:m:h", &optind, &optarg ) ) != -1 ) )
     {
     switch(c)
       {                
+      case 'h':
+        printREADME();
+	errorExit(-1);
+        break;                 
       case 'q':
 	strcpy(modelFileName,optarg);
 	adef->useMultipleModel = TRUE;
@@ -2261,16 +2152,17 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
       case 'm':
 	strcpy(model,optarg);
 	if(dataExists(model, adef) == 0)
-	  {	    
-	    printf("Model %s does not exist\n\n", model);               
-	    printf("For DNA data use:    DNA\n");	
-	    printf("For AA data use:     PROT\n");			   
+	  {
+            printREADME();	    
+	    printf("\n Error: model %s does not exist\n\n", model);               
 	    errorExit(-1);
 	  }
 	else
 	  modelSet = 1;
 	break; 
       default:
+        printREADME();
+        printf("\n Error: illegal option -- %c \n\n", c);
 	errorExit(-1);
     }
   }  
@@ -2278,14 +2170,20 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   if(!adef->useMultipleModel && !modelSet)
     {
       if(processID == 0)
-	printf("\n Error, you must specify a data type for unpartitioned alignment with the \"-m\" option\n");
+        {
+          printREADME();	    
+	  printf("\n Error, you must specify a data type for unpartitioned alignment with the \"-m\" option\n\n");
+        }
       errorExit(-1);
     }
 
   if(!nameSet)
     {
       if(processID == 0)
-	printf("\n Error: please specify a name for this run with -n\n");
+        {
+          printREADME();	    
+	  printf("\n Error: please specify a name for this run with -n\n\n");
+        }
       errorExit(-1);
     }
 
@@ -2293,7 +2191,10 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   if(!alignmentSet)
     {
       if(processID == 0)
-	printf("\n Error: please specify an alignment for this run with -s\n");
+        {
+          printREADME();	    
+	  printf("\n Error: please specify an alignment for this run with -s\n\n");
+        } 
       errorExit(-1);
     }
   
@@ -2309,9 +2210,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
        
        if(infoFileExists)
 	 {
-	   printf("RAxML output files with the run ID <%s> already exist \n", run_id);
-	   printf("...... exiting\n");
-	   
+	   printf("\n Error: output files with the run ID <%s> already exist... exiting\n\n", run_id);
 	   exit(-1);
 	 }
      }
@@ -2319,15 +2218,15 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   strcat(byteFileName, run_id);
   strcat(byteFileName, ".binary");
   
-  printf("%s\n", byteFileName);
-
   if(filexists(byteFileName))
     {
-      printf("\n\nError: Binary compressed file %s you want to generate already exists ... exiting\n\n", byteFileName);
+      printf("\n Error: binary compressed file %s you want to generate already exists... exiting\n\n", byteFileName);
       exit(0);
     }
 
-  byteFile = fopen(byteFileName, "wb"); 
+  byteFile = fopen(byteFileName, "wb");
+  if ( !byteFile )  
+    printf("%s\n", byteFileName);
 
   return;
 }
