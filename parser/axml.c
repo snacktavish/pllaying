@@ -373,21 +373,21 @@ static void getnums (rawdata *rdta)
   if (fscanf(INFILE, "%d %d", & rdta->numsp, & rdta->sites) != 2)
     {
       if(processID == 0)
-	printf("ERROR: Problem reading number of species and sites\n");
+	printf("\n Error: problem reading number of species and sites\n\n");
       errorExit(-1);
     }
 
   if (rdta->numsp < 4)
     {
       if(processID == 0)
-	printf("TOO FEW SPECIES\n");
+	printf("\n Error: too few species\n\n");
       errorExit(-1);
     }
 
   if (rdta->sites < 1)
     {
       if(processID == 0)
-	printf("TOO FEW SITES\n");
+	printf("\n Error: too few sites\n\n");
       errorExit(-1);
     }
 
@@ -557,7 +557,7 @@ static boolean setupTree (tree *tr, analdef *adef)
 
   if (!(p0 = (nodeptr) malloc((tips + 3*inter) * sizeof(node))))
     {
-      printf("ERROR: Unable to obtain sufficient tree memory\n");
+      printf("\n Error: unable to obtain sufficient tree memory\n\n");
       return  FALSE;
     }
   
@@ -566,7 +566,7 @@ static boolean setupTree (tree *tr, analdef *adef)
 
   if (!(tr->nodep = (nodeptr *) malloc((2*tr->mxtips) * sizeof(nodeptr))))
     {
-      printf("ERROR: Unable to obtain sufficient tree memory, too\n");
+      printf("\n Error: unable to obtain sufficient tree memory, too\n\n");
       return  FALSE;
       }*/
 
@@ -613,9 +613,9 @@ static void checkTaxonName(char *buffer, int len)
 
       if(!valid)
 	{
-	  printf("ERROR: Taxon Name \"%s\" is invalid at position %d, it contains illegal character %c\n", buffer, i, buffer[i]);
-	  printf("Illegal characters in taxon-names are: tabulators, carriage returns, spaces, \":\", \",\", \")\", \"(\", \";\", \"]\", \"[\"\n");
-	  printf("Exiting\n");
+	  printf("\n Error: Taxon Name \"%s\" is invalid at position %d, it contains illegal character %c\n\n", buffer, i, buffer[i]);
+	  printf(" Illegal characters in taxon-names are: tabulators, carriage returns, spaces, \":\", \",\", \")\", \"(\", \";\", \"]\", \"[\"\n");
+	  printf(" Exiting\n");
 	  exit(-1);
 	}
 
@@ -830,7 +830,7 @@ static boolean getdata(analdef *adef, rawdata *rdta, tree *tr)
 		{
 		  if(!whitechar(ch))
 		    {
-		      printf("ERROR: Bad base (%c) at site %d of sequence %d\n",
+		      printf("\n Error: bad base (%c) at site %d of sequence %d\n\n",
 			     ch, j + 1, i);
 		      return FALSE;
 		    }
@@ -839,7 +839,7 @@ static boolean getdata(analdef *adef, rawdata *rdta, tree *tr)
 
 	  if (ch == EOF)
 	    {
-	      printf("ERROR: End-of-file at site %d of sequence %d\n", j + 1, i);
+	      printf("\n Error: end-of-file at site %d of sequence %d\n\n", j + 1, i);
 	      return  FALSE;
 	    }
 
@@ -852,7 +852,7 @@ static boolean getdata(analdef *adef, rawdata *rdta, tree *tr)
 	      else
 		if (j != basesnew)
 		  {
-		    printf("ERROR: Sequences out of alignment\n");
+		    printf("\n Error: sequences out of alignment\n");
 		    printf("%d (instead of %d) residues read in sequence %d %s\n",
 			   j - basesread, basesnew - basesread, i, tr->nameList[i]);
 		    return  FALSE;
@@ -1972,6 +1972,7 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 	  *optind =  *optind + 1;
 	  sp = 1;
 	}
+      printf("\n Error: illegal option -- %c\n\n", c);
       return('?');
     }
   if(*++cp == ':')
@@ -1989,8 +1990,8 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 	      if ( c != 'h')	
                 {
 	          sp = 1;
+                  printf("\n Error: option -- %c requires an argument\n\n", c);
 	          return('?');
-                  printf("\n Error: option requires an argument -- %c\n\n", c);
                 }
                else
                   return ( c );
@@ -2153,7 +2154,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	strcpy(model,optarg);
 	if(dataExists(model, adef) == 0)
 	  {
-            printREADME();	    
 	    printf("\n Error: model %s does not exist\n\n", model);               
 	    errorExit(-1);
 	  }
@@ -2161,8 +2161,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	  modelSet = 1;
 	break; 
       default:
-        printREADME();
-        printf("\n Error: illegal option -- %c \n\n", c);
 	errorExit(-1);
     }
   }  

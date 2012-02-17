@@ -359,7 +359,7 @@ FILE *myfopen(const char *path, const char *mode)
 	return fp;
       else
 	{	  
-	  printf("The file %s you want to open for reading does not exist, exiting ...\n", path);
+	  printf("\n Error: the file %s you want to open for reading does not exist, exiting ...\n\n", path);
 	  exit(-1);
 	  return (FILE *)NULL;
 	}
@@ -370,7 +370,7 @@ FILE *myfopen(const char *path, const char *mode)
 	return fp;
       else
 	{	 
-	  printf("The file %s RAxML wants to open for writing or appending can not be opened [mode: %s], exiting ...\n",
+	  printf("\n Error: the file %s you want to open for writing or appending can not be opened [mode: %s], exiting ...\n\n",
 		 path, mode);
 	  exit(-1);
 	  return (FILE *)NULL;
@@ -714,7 +714,7 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
   c = argv[*optind][sp];
   if(c == ':' || (cp=strchr(opts, c)) == 0)
     {
-      printf(": illegal option -- %c \n", c);
+      printf("\n Error: illegal option \"-%c\" \n\n", c);
       if(argv[*optind][++sp] == '\0')
 	{
 	  *optind =  *optind + 1;
@@ -734,7 +734,7 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 	  *optind =  *optind + 1;
 	  if(*optind >= argc)
 	    {
-	      printf(": option requires an argument -- %c\n", c);
+	      printf("\n Error: option \"-%c\" requires an argument\n\n", c);
 	      sp = 1;
 	      return('?');
 	    }
@@ -788,6 +788,30 @@ static void printMinusFUsage(void)
   printf("\n");
 }
 
+static void printREADMEshort(void)
+{
+  printVersionInfo();
+  printf("\n");  
+  printf("\nTo report bugs send an email to raxml@h-its.org\n");
+  printf("Please send me all input files, the exact invocation, details of the HW and operating system,\n");
+  printf("as well as all error messages printed to screen.\n\n\n");
+
+  printf("raxmlLight|raxmlLight-PTHREADS|raxmlLight-MPI\n");
+  printf("      -s binarySequenceFile\n");
+  printf("      -n outputFileName\n");
+  printf("      -m substitutionModel\n");
+  printf("      [-h] \n");
+  printf("      -h      Display the full help message.\n");
+  printf("\n");  
+  printf("      -m      Model of Nucleotide or Amino Acid substitution. \n");
+  printf("\n");
+  printf("      -n      Specify the name of the output file.\n");
+  printf("\n"); 
+  printf("      -s      Specify the name of the alignment data file in PHYLIP format.\n");
+  printf("\n\n\n\n");
+
+}
+
 
 static void printREADME(void)
 {
@@ -798,10 +822,9 @@ static void printREADME(void)
   printf("as well as all error messages printed to screen.\n\n\n");
 
   printf("raxmlLight|raxmlLight-PTHREADS|raxmlLight-MPI\n");
-  printf("      -s sequenceFileName| -G binarySequnceFile\n");
+  printf("      -s binarySequenceFile\n");
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
-  printf("      -t userStartingTree| -R binaryCheckpointFile\n");
   printf("      [-B]\n"); 
   printf("      [-c numberOfCategories]\n");
   printf("      [-D]\n");
@@ -816,6 +839,7 @@ static void printREADME(void)
   printf("      [-Q]\n");
 #endif
   printf("      [-S]\n");
+  printf("      [-t userStartingTree| -R binaryCheckpointFile]\n");
   printf("      [-T numberOfThreads]\n");  
   printf("      [-v]\n"); 
   printf("      [-w outputDirectory] \n"); 
@@ -826,7 +850,7 @@ static void printREADME(void)
   printf("              ATTENTION: the \"-B\" option only works with the sequential version\n");
   printf("\n");
   printf("      -c      Specify number of distinct rate catgories for RAxML when modelOfEvolution\n");
-  printf("              is set to GTRPSR\n");
+  printf("              is set to PSR\n");
   printf("              Individual per-site rates are categorized into numberOfCategories rate \n");
   printf("              categories to accelerate computations. \n");
   printf("\n");
@@ -862,10 +886,10 @@ static void printREADME(void)
   printf("      -m      Model of  Nucleotide or Amino Acid Substitution: \n");
   printf("\n"); 
   printf("              NUCLEOTIDES:\n\n");
-  printf("                \"-m GTRPSR\"         : GTR + Optimization of substitution rates + Optimization of site-specific\n");
+  printf("                \"-m PSR\"            : GTR + Optimization of substitution rates + Optimization of site-specific\n");
   printf("                                      evolutionary rates which are categorized into numberOfCategories distinct \n");
   printf("                                      rate categories for greater computational efficiency.\n");
-  printf("                \"-m GTRGAMMA\"       : GTR + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
+  printf("                \"-m GAMMA\"          : GTR + GAMMA model of rate heterogeneity. This uses 4 hard-coded discrete rates\n");
   printf("                                      to discretize the GAMMA distribution.\n");
   printf("\n");
   printf("              AMINO ACIDS:\n\n");
@@ -891,7 +915,7 @@ static void printREADME(void)
   printf("\n"),
   printf("              DEFAULT: OFF\n");
   printf("\n");
-  printf("      -n      Specifies the name of the output file.\n");
+  printf("      -n      Specify the name of the output file.\n");
   printf("\n"); 
   printf("      -P      Specify the file name of a user-defined AA (Protein) substitution model. This file must contain\n");
   printf("              420 entries, the first 400 being the AA substitution rates (this must be a symmetric matrix) and the\n");
@@ -908,7 +932,7 @@ static void printREADME(void)
   printf("\n");
   printf("      -R      read in a binary checkpoint file called RAxML_binaryCheckpoint.RUN_ID_number\n");
   printf("\n");
-  printf("      -s      Specify the name of the alignment data file in PHYLIP format\n");
+  printf("      -s      Specify the binary sequence file name of the alignment data file created by the parser\n");
   printf("\n");
   printf("      -S      turn on memory saving option for gappy multi-gene alignments. For large and gappy datasets specify -S to save memory\n");
   printf("              This will produce slightly different likelihood values, may be a bit slower but can reduce memory consumption\n");
@@ -946,13 +970,13 @@ static void analyzeRunId(char id[128])
     {    
       if(i >= 128)
 	{
-	  printf("Error: run id after \"-n\" is too long, it has %d characters please use a shorter one\n", i);
+	  printf("\n Error: run id after \"-n\" is too long, it has %d characters please use a shorter one\n\n", i);
 	  assert(0);
 	}
       
       if(id[i] == '/')
 	{
-	  printf("Error character %c not allowed in run ID\n", id[i]);
+	  printf("\n Error: character %c not allowed in run ID\n\n", id[i]);
 	  assert(0);
 	}
 
@@ -962,7 +986,7 @@ static void analyzeRunId(char id[128])
 
   if(i == 0)
     {
-      printf("Error: please provide a string for the run id after \"-n\" \n");
+      printf("\n Error: please provide a string for the run id after \"-n\" \n\n");
       assert(0);
     }
 
@@ -1045,7 +1069,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 #ifdef _USE_PTHREADS
 	tr->manyPartitions = TRUE;
 #else
-	printf("The -Q option does not have an effect in the sequential version\n");
+	printf("The \"-Q\" option does not have an effect in the sequential version\n");
 	tr->manyPartitions = FALSE;
 #endif
 	break;
@@ -1104,7 +1128,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	    break;	    	  	  	     
 	  default:
 	    {	     	      
-	      printf("Error select one of the following algorithms via -f :\n");
+	      printf("\n Error: select one of the following algorithms via -f :\n");
 	      printMinusFUsage();	      
 	      exit(-1);
 	    }
@@ -1132,9 +1156,9 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	strcpy(model,optarg);
 	if(modelExists(model, tr) == 0)
 	  {	    
-	    printf("Rate heterogeneity Model %s does not exist\n\n", model);               
-	    printf("For per site rates (called CAT in previous versions) use: PSR\n");	
-	    printf("For GAMMA use: GAMMA\n");			  
+	    printf("\n Error: rate heterogeneity model %s does not exist\n\n", model);               
+	    printf(" For per site rates (called CAT in previous versions) use: PSR\n");	
+	    printf(" For GAMMA use: GAMMA\n");			  
 	    exit(-1);
 	  }
 	else
@@ -1146,7 +1170,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	printf("EXPERIMENTAL BAYESIAN ANALYSIS\n");
 	break;
 #else
-	printf("recompile with Bayesian Makefile to use the -b option \n");
+	printf("recompile with Bayesian Makefile to use the \"-b\" option \n");
 	exit(-1);
 	break;
 #endif
@@ -1160,7 +1184,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   }
 	break;
 #else
-	printf("recompile with Bayesian Makefile to use the -g option \n");
+	printf("recompile with Bayesian Makefile to use the \"-g\" option \n");
 	exit(-1);
 	break;
 #endif
@@ -1170,24 +1194,24 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
     }
 
 
-
-  
-
   if(!byteFileSet)
-    {      
-      printf("\n Error, you must specify a binary format data file with the \"-s\" option\n");
+    {
+      printREADMEshort();      
+      printf("\n Error: you must specify a binary format data file with the \"-s\" option\n\n");
       exit(-1);
     }
 
   if(!modelSet)
     {     
-      printf("\n Error, you must specify a model of rate heterogeneity with the \"-m\" option\n");
+      printREADMEshort();      
+      printf("\n Error: you must specify a model of rate heterogeneity with the \"-m\" option\n\n");
       exit(-1);
     }
 
   if(!nameSet)
     {     
-      printf("\n Error: please specify a name for this run with -n\n");
+      printREADMEshort();      
+      printf("\n Error: please specify a name for this run with -n\n\n");
       exit(-1);
     }
 
@@ -2249,7 +2273,7 @@ static void multiprocessorScheduling(tree *tr, int tid)
     }
 
   if(tid == 0)
-    printBothOpen("\nMulti-processor partition data distribution enabled (-Q option)\n");
+    printBothOpen("\nMulti-processor partition data distribution enabled (\"-Q\" option)\n");
 
   for(s = 0; s < arrayLength; s++)
     {
