@@ -25,6 +25,8 @@ extern double accumulatedTime;
 
 extern partitionLengths pLengths[MAX_MODEL];
 
+char statesFileName[1024];
+
 typedef enum
 {
   SPR,
@@ -926,10 +928,11 @@ static void resetState(prop proposal_type, state * curstate)
       assert(FALSE);
   }
 }
-
 static void printStateFile(int iter, state * curstate)
 { 
-  FILE *f = myfopen("sampled_states.txt", "ab");
+  strcpy(statesFileName, "RAxML_states.");
+  strcat(statesFileName, run_id);
+  FILE *f = myfopen(statesFileName, "ab");
   fprintf(f,"%d\t%f",iter, curstate->tr->likelihood);
   int i;
   for(i = 0;i < curstate->numSubsRates; i++)
@@ -943,9 +946,11 @@ static void printStateFile(int iter, state * curstate)
 
 static void printStateFileHeader(state * curstate)
 { 
+  strcpy(statesFileName, "RAxML_states.");
+  strcat(statesFileName, run_id);
   //DELETE THE FILE IF IT EXISTS, obviously this should be better later
-  remove("sampled_states.txt");
-  FILE *f = myfopen("sampled_states.txt", "ab");
+  remove(statesFileName);
+  FILE *f = myfopen(statesFileName, "ab");
   fprintf(f,"iter\tlikelihood");
   int i;
   for(i = 0;i < curstate->numSubsRates; i++)
