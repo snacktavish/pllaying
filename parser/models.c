@@ -45,7 +45,11 @@
 
 #include "axml.h"
 
-
+extern int optimizeRatesInvocations;
+extern int optimizeRateCategoryInvocations;
+extern int optimizeAlphaInvocations;
+extern int optimizeTTRatioInvocations;
+extern int optimizeInvarInvocations;
 
 extern const unsigned int bitVectorSecondary[256];
 extern const unsigned int bitVector32[33];
@@ -54,18 +58,271 @@ extern const unsigned int bitVectorIdentity[256];
 
 extern const partitionLengths pLengths[MAX_MODEL];
 
+#ifdef _USE_PTHREADS
+extern volatile int NumberOfThreads;
+#endif
+
 
 
 extern FILE *byteFile;
 
 
 
+static void smoothFreqs(const int n, double *pfreqs, double *dst, pInfo *partitionData)
+{
+  int 
+    countScale = 0, 
+    l,
+    loopCounter = 0;  
+  
+
+  /*
+    for(l = 0; l < n; l++)
+    if(pfreqs[l] < FREQ_MIN)
+      countScale++;
+  */
+
+  for(l = 0; l < n; l++)
+    if(pfreqs[l] == 0.0)
+      countScale++;
+
+  if(countScale > 0)
+    {	     
+      while(countScale > 0)
+	{
+	  double correction = 0.0;
+	  double factor = 1.0;
+	  
+	  for(l = 0; l < n; l++)
+	    {
+	      if(pfreqs[l] == 0.0)		  
+		correction += FREQ_MIN;		   		  
+	      else
+		if(pfreqs[l] < FREQ_MIN)		    
+		  {
+		    correction += (FREQ_MIN - pfreqs[l]);
+		    factor -= (FREQ_MIN - pfreqs[l]);
+		  }
+	    }		      	    	    
+	  
+	  countScale = 0;
+	  
+	  for(l = 0; l < n; l++)
+	    {		    
+	      if(pfreqs[l] >= FREQ_MIN)		      
+		pfreqs[l] = pfreqs[l] - (pfreqs[l] * correction * factor);	
+	      else
+		pfreqs[l] = FREQ_MIN;
+	      
+	      if(pfreqs[l] < FREQ_MIN)
+		countScale++;
+	    }
+	  assert(loopCounter < 100);
+	  loopCounter++;
+	}		    
+    }
+
+  for(l = 0; l < n; l++)
+    dst[l] = pfreqs[l];
+
+  
+  if(partitionData->nonGTR)
+    {
+      int k;
+
+      assert(partitionData->dataType == SECONDARY_DATA_7 || partitionData->dataType == SECONDARY_DATA_6 || partitionData->dataType == SECONDARY_DATA);
+       
+      for(l = 0; l < n; l++)
+	{
+	  int count = 1;	
+	  
+	  for(k = 0; k < n; k++)
+	    {
+	      if(k != l && partitionData->frequencyGrouping[l] == partitionData->frequencyGrouping[k])
+		{
+		  count++;
+		  dst[l] += pfreqs[k];
+		}
+	    }
+	  dst[l] /= ((double)count);
+	}            
+     }  
+}
+	    
+
+static void genericBaseFrequencies(tree *tr, const int numFreqs, rawdata *rdta, cruncheddata *cdta, int lower, int upper, int model, boolean smoothFrequencies,
+				   const unsigned int *bitMask)
+{
+  double 
+    wj, 
+    acc,
+    pfreqs[64], 
+    sumf[64],   
+    temp[64];
+ 
+  int     
+    i, 
+    j, 
+    k, 
+    l;
+
+  unsigned char  *yptr;  
+	  
+  for(l = 0; l < numFreqs; l++)	    
+    pfreqs[l] = 1.0 / ((double)numFreqs);
+	  
+  for (k = 1; k <= 8; k++) 
+    {	     	   	    	      			
+      for(l = 0; l < numFreqs; l++)
+	sumf[l] = 0.0;
+	      
+      for (i = 0; i < rdta->numsp; i++) 
+	{		 
+	  yptr =  &(rdta->y0[((size_t)i) * ((size_t)tr->originalCrunchedLength)]);
+	  
+	  for(j = lower; j < upper; j++) 
+	    {
+	      unsigned int code = bitMask[yptr[j]];
+	      assert(code >= 1);
+	      
+	      for(l = 0; l < numFreqs; l++)
+		{
+		  if((code >> l) & 1)
+		    temp[l] = pfreqs[l];
+		  else
+		    temp[l] = 0.0;
+		}		      	      
+	      
+	      for(l = 0, acc = 0.0; l < numFreqs; l++)
+		{
+		  if(temp[l] != 0.0)
+		    acc += temp[l];
+		}
+	      
+	      wj = ((double)cdta->aliaswgt[j]) / acc;
+	      
+	      for(l = 0; l < numFreqs; l++)
+		{
+		  if(temp[l] != 0.0)		    
+		    sumf[l] += wj * temp[l];			     				   			     		   
+		}
+	    }
+	}	    	      
+      
+      for(l = 0, acc = 0.0; l < numFreqs; l++)
+	{
+	  if(sumf[l] != 0.0)
+	    acc += sumf[l];
+	}
+	      
+      for(l = 0; l < numFreqs; l++)
+	pfreqs[l] = sumf[l] / acc;	     
+    }
+  
+  if(smoothFrequencies)         
+    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));	   
+  else    
+    {
+      boolean 
+	zeroFreq = FALSE;
+
+      char 
+	typeOfData[1024];
+
+      getDataTypeString(tr, model, typeOfData);  
+
+      for(l = 0; l < numFreqs; l++)
+	{
+	  if(pfreqs[l] == 0.0)
+	    {
+	      printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
+	      printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
+	      zeroFreq = TRUE;
+	    }
+	}
+
+      if(zeroFreq)
+	exit(-1);
+
+      for(l = 0; l < numFreqs; l++)
+	{
+	  assert(pfreqs[l] > 0.0);
+	  tr->partitionData[model].frequencies[l] = pfreqs[l];
+	}     
+    }  
+ 
+}
 
 
 
 
 
 
+
+void baseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, tree *tr)
+{  
+  int 
+    model,
+    lower,
+    upper,
+    states;
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {      
+      lower = tr->partitionData[model].lower;
+      upper = tr->partitionData[model].upper;	  	 
+      states = tr->partitionData[model].states;
+	
+      switch(tr->partitionData[model].dataType)
+	{
+	case GENERIC_32:
+	  switch(tr->multiStateModel)
+	    {
+	    case ORDERED_MULTI_STATE:
+	    case MK_MULTI_STATE:	   
+	      {	       
+		int i;
+		double 
+		  freq = 1.0 / (double)states,
+		  acc = 0.0;
+
+		for(i = 0; i < states; i++)
+		  {
+		    acc += freq;
+		    tr->partitionData[model].frequencies[i] = freq;
+		    /*printf("%f \n", freq);*/
+		  }
+		/*printf("Frequency Deviation: %1.60f\n", acc);*/
+	      }
+	      break;
+	     case GTR_MULTI_STATE:
+	      genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, TRUE,
+				     bitVector32);
+	      break;
+	    default:
+	      assert(0);
+	    }
+	  break;
+	case GENERIC_64:	 
+	  assert(0);
+	  break;
+	case SECONDARY_DATA_6:
+	case SECONDARY_DATA_7:
+	case SECONDARY_DATA:
+	case AA_DATA:
+	case DNA_DATA:
+	case BINARY_DATA:	  
+	  genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, 
+				 getSmoothFreqs(tr->partitionData[model].dataType),
+				 getBitVector(tr->partitionData[model].dataType));	  	 
+	  break;	
+	default:
+	  assert(0);     
+	}      
+    }
+  
+  return;
+}
 
 void putWAG(double *ext_initialRates)
 { 
@@ -2722,35 +2979,19 @@ static void updateFracChange(tree *tr)
     }      
   else
     {
-      int model;
-      double *modelWeights = (double *)calloc((size_t)tr->NumberOfModels, sizeof(double));
+      int model, i;
+      double *modelWeights = (double *)calloc(tr->NumberOfModels, sizeof(double));
       double wgtsum = 0.0;  
      
       assert(tr->NumberOfModels > 1);
 
       tr->fracchange = 0.0;	         
       
-       for(model = 0; model < tr->NumberOfModels; model++)      
-	 {
-	   size_t
-	     lower = tr->partitionData[model].lower,
-	     upper = tr->partitionData[model].upper,
-	     i;
-	   
-	   for(i = lower; i < upper; i++)
-	     {
-	       modelWeights[model] += (double)tr->aliaswgt[i];
-	       wgtsum              += (double)tr->aliaswgt[i];
-	     }
-	 }
-
-       /*for(i = 0; i < tr->originalCrunchedLength; i++)
+      for(i = 0; i < tr->cdta->endsite; i++)
 	{
-	  modelWeights[tr->model[i]]  += (double)tr->aliaswgt[i];
-	  wgtsum                      += (double)tr->aliaswgt[i];
-	  }*/  
-
-      
+	  modelWeights[tr->model[i]]  += (double)tr->cdta->aliaswgt[i];
+	  wgtsum                      += (double)tr->cdta->aliaswgt[i];
+	}  
  	        
       for(model = 0; model < tr->NumberOfModels; model++)      
 	{	      	  	 
@@ -2957,22 +3198,22 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
     m, 
     l;  
 
-  r    = (double **)malloc((size_t)n * sizeof(double *));
-  EIGV = (double **)malloc((size_t)n * sizeof(double *));  
-  a    = (double **)malloc((size_t)n * sizeof(double *));	  
+  r    = (double **)malloc(n * sizeof(double *));
+  EIGV = (double **)malloc(n * sizeof(double *));  
+  a    = (double **)malloc(n * sizeof(double *));	  
   
   for(i = 0; i < n; i++)
     {
-      a[i]    = (double*)malloc((size_t)n * sizeof(double));
-      EIGV[i] = (double*)malloc((size_t)n * sizeof(double));
-      r[i]    = (double*)malloc((size_t)n * sizeof(double));
+      a[i]    = (double*)malloc(n * sizeof(double));
+      EIGV[i] = (double*)malloc(n * sizeof(double));
+      r[i]    = (double*)malloc(n * sizeof(double));
     }
 
-  f       = (double*)malloc((size_t)n * sizeof(double));
-  e       = (double*)malloc((size_t)n * sizeof(double));
-  d       = (double*)malloc((size_t)n * sizeof(double));
-  invfreq = (double*)malloc((size_t)n * sizeof(double));
-  EIGN    = (double*)malloc((size_t)n * sizeof(double));
+  f       = (double*)malloc(n * sizeof(double));
+  e       = (double*)malloc(n * sizeof(double));
+  d       = (double*)malloc(n * sizeof(double));
+  invfreq = (double*)malloc(n * sizeof(double));
+  EIGN    = (double*)malloc(n * sizeof(double));
   
   for(l = 0; l < n; l++)		 
     f[l] = frequencies[l];	
@@ -3441,7 +3682,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K)
 {
   int i;
   double factor, lnga1, alfa, beta;
-  double *gammaProbs = (double *)malloc((size_t)K * sizeof(double));
+  double *gammaProbs = (double *)malloc(K * sizeof(double));
 
   alfa = beta = alpha;
 
@@ -3759,32 +4000,22 @@ static void setupSecondaryStructureSymmetries(tree *tr)
 
 }
 
-static void initializeBaseFreqs(tree *tr, double **empiricalFrequencies)
-{
-  size_t 
-    model;
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      memcpy(tr->partitionData[model].frequencies,          empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
-      memcpy(tr->partitionData[model].empiricalFrequencies, empiricalFrequencies[model], sizeof(double) * tr->partitionData[model].states);
-    }
-}
-
-void initModel(tree *tr, double **empiricalFrequencies)
+void initModel(tree *tr, rawdata *rdta, cruncheddata *cdta, analdef *adef)
 {  
   int model, j;
   double  temp;  
      
-  tr->optimizeRateCategoryInvocations = 1;      
+  optimizeRateCategoryInvocations = 1;      
   tr->numberOfInvariableColumns = 0;
-  tr->weightOfInvariableColumns = 0;	       
+  tr->weightOfInvariableColumns = 0;	 
+    
   
-  for (j = 0; j < tr->originalCrunchedLength; j++) 
+  
+  for (j = 0; j < tr->cdta->endsite; j++) 
     {
-      tr->patrat[j] = temp = 1.0;
-      tr->patratStored[j] = 1.0;
-      tr->rateCategory[j] = 0;           
+      tr->cdta->patrat[j] = temp = 1.0;
+      tr->cdta->patratStored[j] = 1.0;
+      tr->cdta->rateCategory[j] = 0;           
     } 
 
   for(model = 0; model < tr->NumberOfModels; model++)
@@ -3792,14 +4023,30 @@ void initModel(tree *tr, double **empiricalFrequencies)
       tr->partitionData[model].numberOfCategories = 1;           
       tr->partitionData[model].perSiteRates[0] = 1.0; 
     }
-    
+  
+ 
+  
   updatePerSiteRates(tr, FALSE);
  
   setupSecondaryStructureSymmetries(tr);
   
   initRateMatrix(tr); 
 
-  initializeBaseFreqs(tr, empiricalFrequencies);
+  if(adef->readBinaryFile)
+    {
+      int model;
+
+      for(model = 0; model < tr->NumberOfModels; model++)	    	    
+	myBinFread(tr->partitionData[model].frequencies, sizeof(double), tr->partitionData[model].states);
+	
+      fclose(byteFile);
+    }
+#ifndef _FINE_GRAIN_MPI
+  else
+    {      
+      baseFrequenciesGTR(rdta, cdta, tr);  
+    }
+#endif
   
   for(model = 0; model < tr->NumberOfModels; model++)
     {
@@ -3814,7 +4061,38 @@ void initModel(tree *tr, double **empiricalFrequencies)
 #endif 
     }                   		       
   
-   
+   if(tr->estimatePerSiteAA)
+    {
+      int i;
+      
+      for(i = 0; i < NUM_PROT_MODELS - 2; i++)
+	{
+	  double 
+	    f[20];
+	  int 
+	    l;
+	  
+	  /*printf("Initializing prot model with model-based freqs: %s\n", protModels[i]);*/
+
+	  initProtMat(f, i, tr->siteProtModel[i].substRates);
+	  
+	  for(l = 0; l < 20; l++)		
+	    tr->siteProtModel[i].frequencies[l] = f[l];
+
+	  initGeneric(20, 
+		      bitVectorAA, 
+		      23, 
+		      tr->siteProtModel[i].fracchange,
+		      tr->siteProtModel[i].EIGN, 
+		      tr->siteProtModel[i].EV, 
+		      tr->siteProtModel[i].EI, 
+		      tr->siteProtModel[i].frequencies, 
+		      tr->siteProtModel[i].substRates,
+		      tr->siteProtModel[i].tipVector, 
+		      0); 
+	}
+
+    }
 
   if(tr->NumberOfModels > 1)
     {

@@ -55,6 +55,7 @@
 
 extern const unsigned int mask32[32];
 
+extern int processID;
 
 static void getxnodeBips (nodeptr p)
 {
@@ -124,7 +125,7 @@ hashtable *initHashTable(hashNumberType n)
 
  
 
-  h->table = (entry**)calloc((size_t)tableSize, sizeof(entry*));
+  h->table = (entry**)calloc(tableSize, sizeof(entry*));
   h->tableSize = tableSize;  
   h->entryCount = 0;  
 
@@ -267,7 +268,7 @@ void cleanupHashTable(hashtable *h, int state)
 unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
 {
   unsigned int 
-    **bitVectors = (unsigned int **)malloc(sizeof(unsigned int*) * 2 * (size_t)mxtips);
+    **bitVectors = (unsigned int **)malloc(sizeof(unsigned int*) * 2 * mxtips);
   
   int 
     i;
@@ -279,14 +280,14 @@ unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
   
   for(i = 1; i <= mxtips; i++)
     {
-      bitVectors[i] = (unsigned int *)calloc((size_t)(*vectorLength), sizeof(unsigned int));
+      bitVectors[i] = (unsigned int *)calloc(*vectorLength, sizeof(unsigned int));
       assert(bitVectors[i]);
       bitVectors[i][(i - 1) / MASK_LENGTH] |= mask32[(i - 1) % MASK_LENGTH];
     }
   
   for(i = mxtips + 1; i < 2 * mxtips; i++) 
     {
-      bitVectors[i] = (unsigned int *)malloc(sizeof(unsigned int) * (size_t)(*vectorLength));
+      bitVectors[i] = (unsigned int *)malloc(sizeof(unsigned int) * *vectorLength);
       assert(bitVectors[i]);
     }
 
@@ -305,7 +306,7 @@ void freeBitVectors(unsigned int **v, int n)
 
 
 
-static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, int processID)
+static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength)
 {
   
   if(isTip(p->number, numsp))
@@ -354,7 +355,7 @@ static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp,
 	    while(!r->xBips)
 	      {
 		if(!r->xBips)
-		  newviewBipartitions(bitVectors, r, numsp, vectorLength, processID);
+		  newviewBipartitions(bitVectors, r, numsp, vectorLength);
 	      }	   
 
 	    for(i = 0; i < vectorLength; i++)
@@ -365,9 +366,9 @@ static void newviewBipartitions(unsigned int **bitVectors, nodeptr p, int numsp,
 	    while((!r->xBips) || (!q->xBips))
 	      {
 		if(!q->xBips)
-		  newviewBipartitions(bitVectors, q, numsp, vectorLength, processID);
+		  newviewBipartitions(bitVectors, q, numsp, vectorLength);
 		if(!r->xBips)
-		  newviewBipartitions(bitVectors, r, numsp, vectorLength, processID);
+		  newviewBipartitions(bitVectors, r, numsp, vectorLength);
 	      }	   	    	    	    	   
 
 	    for(i = 0; i < vectorLength; i++)
@@ -415,13 +416,13 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
       e = initEntry(); 
        
       /*e->bitVector  = (unsigned int*)calloc(vectorLength, sizeof(unsigned int));*/
-      e->bitVector = (unsigned int*)malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      e->bitVector = (unsigned int*)malloc_aligned(vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
 
-      e->treeVector = (unsigned int*)calloc((size_t)treeVectorLength, sizeof(unsigned int));
+      e->treeVector = (unsigned int*)calloc(treeVectorLength, sizeof(unsigned int));
       if(computeWRF)
-	e->supportVector = (int*)calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)calloc(treeVectorLength * MASK_LENGTH, sizeof(int));
 
       e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
       if(computeWRF)
@@ -442,12 +443,12 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
        
       /*e->bitVector  = (unsigned int*)calloc(vectorLength, sizeof(unsigned int)); */
 
-      e->bitVector = (unsigned int*)malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      e->bitVector = (unsigned int*)malloc_aligned(vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
-      e->treeVector = (unsigned int*)calloc((size_t)treeVectorLength, sizeof(unsigned int));
+      e->treeVector = (unsigned int*)calloc(treeVectorLength, sizeof(unsigned int));
       if(computeWRF)	
-	e->supportVector = (int*)calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)calloc(treeVectorLength * MASK_LENGTH, sizeof(int));
 
 
       e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
@@ -469,7 +470,7 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
 
 
 void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf, 
-			     int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID)
+			     int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF)
 {
   if(isTip(p->number, numsp))
     return;
@@ -480,12 +481,12 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
 
       do 
 	{
-	  bitVectorInitravSpecial(bitVectors, q->back, numsp, vectorLength, h, treeNumber, function, bInf, countBranches, treeVectorLength, traverseOnly, computeWRF, processID);
+	  bitVectorInitravSpecial(bitVectors, q->back, numsp, vectorLength, h, treeNumber, function, bInf, countBranches, treeVectorLength, traverseOnly, computeWRF);
 	  q = q->next;
 	}
       while(q != p);
            
-      newviewBipartitions(bitVectors, p, numsp, vectorLength, processID);
+      newviewBipartitions(bitVectors, p, numsp, vectorLength);
       
       assert(p->xBips);
 

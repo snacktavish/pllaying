@@ -28,25 +28,34 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
-double masterTime;
-double accumulatedTime;
+
+
+
+
+
+#ifdef _FINE_GRAIN_MPI
+int processes;
+double *globalResult;
+#endif
+
+int processID;
+infoList iList;
+FILE   *INFILE;
+FILE *byteFile;
+
 
 char run_id[128] = "", 
-  workdir[1024] = "", 
-  seq_file[1024] = "", 
-  tree_file[1024]="", 
-  weightFileName[1024] = "",   
-  resultFileName[1024] = "", 
-  logFileName[1024] = "",   
-  infoFileName[1024] = "", 
-  randomFileName[1024] = "",     
-  proteinModelFileName[1024] = "", 
-  binaryCheckpointName[1024] = "",
-  binaryCheckpointInputName[1024] = "",
-  byteFileName[1024] = "";
+  seq_file[1024] = "",
+  weightFileName[1024] = "",
+  modelFileName[1024] = "", 
+  byteFileName[1024] = "",
+  infoFileName[1024] = "",
+  secondaryStructureFileName[1024] = "",
+  excludeFileName[1024],
+  proteinModelFileName[1024];
 
-const char *protModels[NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
-					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO","GTR"};
+char *protModels[NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
+				     "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO","GTR"};
 
 const char inverseMeaningBINARY[4] = {'_', '0', '1', '-'};
 const char inverseMeaningDNA[16]   = {'_', 'A', 'C', 'M', 'G', 'R', 'S', 'V', 'T', 'W', 'Y', 'H', 'K', 'D', 'B', '-'};
@@ -116,7 +125,16 @@ const unsigned int mask32[32] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 20
 const char *secondaryModelList[21] = { "S6A (GTR)", "S6B", "S6C", "S6D", "S6E", "S7A (GTR)", "S7B", "S7C", "S7D", "S7E", "S7F", "S16 (GTR)", "S16A", "S16B", "S16C", 
 				       "S16D", "S16E", "S16F", "S16I", "S16J", "S16K"};
 
-const partitionLengths pLengths[MAX_MODEL] = {
+double masterTime;
+double accumulatedTime;
+int partCount = 0;
+int optimizeRateCategoryInvocations = 1;
+
+
+
+
+
+partitionLengths pLengths[MAX_MODEL] = {
   
   /* BINARY */
   {4,   4,   2,  4,  2, 1, 2,  8, 2, 2, FALSE, 3, inverseMeaningBINARY, 2, FALSE, bitVectorIdentity},
@@ -146,15 +164,19 @@ const partitionLengths pLengths[MAX_MODEL] = {
   {4096, 4096, 64, 4096, 4096, 2016, 64, 4160, 64, 2016, FALSE, 64, (char*)NULL, 64, TRUE, (unsigned int*)NULL}
 };
 
+partitionLengths pLength;
+
+     
+
+
+
+
 #ifdef _USE_PTHREADS
+volatile int             NumberOfJobs;
 volatile int             jobCycle = 0;
 volatile int             threadJob = 0;
+volatile int             NumberOfThreads;
 volatile double          *reductionBuffer;
 volatile double          *reductionBufferTwo;
-volatile char            *barrierBuffer;
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-int processes;
-double *globalResult;
+volatile char             *barrierBuffer;
 #endif

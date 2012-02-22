@@ -32,46 +32,17 @@
 #include <assert.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef __AVX
 #define BYTE_ALIGNMENT 32
 #else
-#ifdef __SIM_SSE3
 #define BYTE_ALIGNMENT 16
-#else
-#define BYTE_ALIGNMENT 1
-#endif
 #endif
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
-#define BIT_COUNT(x, y) precomputed16_bitcount(x, y)
 
-/* 
-   The critical speed of this function
-   is mostly a machine/architecure issue
-   Nontheless, I decided not to use 
-   __builtin_popcount(x)
-   for better general portability, albeit it's worth testing
-   on x86 64 bit architectures
-*/
-#else
-#define BIT_COUNT(x, y)  precomputed16_bitcount(x, y)
-#endif
 
-#ifdef _USE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-#ifdef _FINE_GRAIN_MPI
 
 #include <mpi.h>
 
-#endif
 
 
 
@@ -184,25 +155,17 @@ extern "C" {
 #define MAX(x,y)  (((x)>(y)) ?    (x)  : (y))
 #define NINT(x)   ((int) ((x)>0 ? ((x)+0.5) : ((x)-0.5)))
 
+
+#define LOG(x)  log(x)
+
 #define FABS(x) fabs(x)
 
-#ifdef _USE_FPGA_LOG
-extern double log_approx (double input);
-#define LOG(x)  log_approx(x)
-#else
-#define LOG(x)  log(x)
-#endif
 
-
-#ifdef _USE_FPGA_EXP
-extern double exp_approx (double x);
-#define EXP(x)  exp_approx(x)
-#else
 #define EXP(x)  exp(x)
-#endif
 
 
-#define LOGF(x) logf(x)
+
+
 
 
 #define PointGamma(prob,alpha,beta)  PointChi2(prob,2.0*(alpha))/(2.0*(beta))
@@ -496,8 +459,6 @@ typedef struct
 
 typedef  struct noderec
 {
- 
-  branchInfo      *bInf;
   double           z[NUM_BRANCHES];
 #ifdef _BAYESIAN 
   double           z_tmp[NUM_BRANCHES];
@@ -505,7 +466,6 @@ typedef  struct noderec
   struct noderec  *next;
   struct noderec  *back;
   hashNumberType   hash;
-  int              support;
   int              number;
   char             x;
   char             xPars;
@@ -615,57 +575,61 @@ typedef struct List_{
 #define FAST_SPRS     2
 #define SLOW_SPRS     3
 
-
 typedef struct {
  
   int state;
 
-  /*unsigned int vLength;*/
-  double accumulatedTime;  
+  unsigned int vLength;
+  
   int rearrangementsMax;
   int rearrangementsMin;
   int thoroughIterations;
   int fastIterations;
+  int treeVectorLength;  
   int mintrav;
   int maxtrav;
   int bestTrav;
+  int    Thorough;
+  int    optimizeRateCategoryInvocations;
+  
+  double accumulatedTime;
+
   double startLH; 
   double lh;
   double previousLh;
   double difference;
-  double epsilon;  
+  double epsilon;
+  
   boolean impr;
   boolean cutoff;  
        
   double tr_startLH;
   double tr_endLH;
   double tr_likelihood;
-  double tr_bestOfNode;  
+  double tr_bestOfNode;
+  
   double tr_lhCutoff;
   double tr_lhAVG;
   double tr_lhDEC;
   int    tr_NumberOfCategories;
   int    tr_itCount;  
   int    tr_doCutoff;
-  int    tr_thoroughInsertion;
-  int    tr_optimizeRateCategoryInvocations;
 
- 
-  /* prevent users from doing stupid things */
-
- 
-  int searchConvergenceCriterion;
-  int rateHetModel;
-  int maxCategories;
-  int NumberOfModels;
-  int numBranches;
-  int originalCrunchedLength;    
-  int mxtips;
-  char seq_file[1024];
+                                                                    
 } checkPointState;
 
 
-
+typedef struct {
+  double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));             
+  double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                
+  double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double substRates[190];        
+  double frequencies[20] ;      
+  double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double fracchange[1];
+  double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+} siteAAModels;
 
 typedef  struct  {
 
@@ -685,25 +649,10 @@ typedef  struct  {
 
   boolean grouped;
   boolean constrained;
-  int threadID;
-  volatile int numberOfThreads;
-
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  /*
-    do we need this stuff ?
-  */
-  /*unsigned int **bitVectors;
-    hashtable *h;*/
-  
-    
   int *partitionAssignment;     
  
   unsigned char *y_ptr; 
-  
-  double lower_spacing;
-  double upper_spacing; 
-#endif
-  
+
 
 
  
@@ -829,10 +778,6 @@ typedef  struct  {
   char bits_in_16bits [0x1u << 16];
   
 
-  int optimizeRateCategoryInvocations;
-
-  checkPointState ckp;
-  boolean thoroughInsertion;
 } tree;
 
 
@@ -926,7 +871,6 @@ typedef  struct {
  
 #ifdef _BAYESIAN 
   boolean       bayesian;
-  int           num_generations;
 #endif
 } analdef;
 
@@ -966,9 +910,9 @@ typedef struct
 extern void mcmc(tree *tr, analdef *adef);
 #endif
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+
 boolean isThisMyPartition(tree *localTree, int tid, int model);
-#endif
+
 
 extern void computePlacementBias(tree *tr, analdef *adef);
 
@@ -988,7 +932,7 @@ extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits)
 
 extern size_t discreteRateCategories(int rateHetModel);
 
-extern const partitionLengths * getPartitionLengths(pInfo *p);
+extern partitionLengths * getPartitionLengths(pInfo *p);
 extern boolean getSmoothFreqs(int dataType);
 extern const unsigned int *getBitVector(int dataType);
 extern int getUndetermined(int dataType);
@@ -1002,6 +946,7 @@ extern void getxnode ( nodeptr p );
 extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
 extern void hookupDefault ( nodeptr p, nodeptr q, int numBranches);
 extern boolean whitechar ( int ch );
+extern void errorExit ( int e );
 extern void printResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint );
@@ -1050,7 +995,9 @@ extern boolean smooth ( tree *tr, nodeptr p );
 extern boolean smoothTree ( tree *tr, int maxtimes );
 extern boolean localSmooth ( tree *tr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
-
+extern void initInfoList ( int n );
+extern void freeInfoList ( void );
+extern void insertInfoList ( nodeptr node, double likelihood );
 extern boolean smoothRegion ( tree *tr, nodeptr p, int region );
 extern boolean regionalSmooth ( tree *tr, nodeptr p, int maxtimes, int region );
 extern nodeptr removeNodeBIG ( tree *tr, nodeptr p, int numBranches);
@@ -1061,6 +1008,7 @@ extern boolean testInsertBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void addTraverseBIG ( tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
 extern int rearrangeBIG ( tree *tr, nodeptr p, int mintrav, int maxtrav );
 extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
+extern double treeOptimizeRapid ( tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt);
 extern boolean testInsertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( tree *tr );
 extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt );
@@ -1182,9 +1130,9 @@ extern void printBothOpen(const char* format, ... );
 extern void initRateMatrix(tree *tr);
 
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
-				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
+				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF);
 
-
+extern int getIncrement(tree *tr, int model);
 
 
 
@@ -1208,119 +1156,30 @@ extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
 
-#ifdef _IPTOL
-extern void writeCheckpoint();
-#endif
-
-#ifdef _WAYNE_MPI
-
-extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *adef, double *pearsonAverage);
-
-#endif
-
-
-#ifdef _USE_PTHREADS
 
 
 
-/* work tags for parallel regions */
-
-#define THREAD_NEWVIEW                0        
-#define THREAD_EVALUATE               1
-#define THREAD_MAKENEWZ               2 
-#define THREAD_MAKENEWZ_FIRST         3
-#define THREAD_RATE_CATS              4
-#define THREAD_COPY_RATE_CATS         5
-#define THREAD_COPY_INIT_MODEL        6
-#define THREAD_INIT_PARTITION         7
-#define THREAD_OPT_ALPHA              8
-#define THREAD_OPT_RATE               9
-#define THREAD_COPY_ALPHA             10
-#define THREAD_COPY_RATES             11
-
-
-
-
-typedef struct
-{
-  tree *tr;
-  int threadNumber;
-}
-  threadData;
-
-void threadMakeVector(tree *tr, int tid);
-void threadComputeAverage(tree *tr, int tid);
-void threadComputePearson(tree *tr, int tid);
-
-extern void masterBarrier(int jobType, tree *tr);
-
-#endif
-
-#if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
-extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
-void allocNodex(tree *tr, int tid, int n);
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#define THREAD_COPY_RATE_CATS  0
-#define THREAD_COPY_INIT_MODEL 1
-#define THREAD_NEWVIEW         2
-#define THREAD_EVALUATE        3
-#define THREAD_MAKENEWZ_FIRST  4
-#define THREAD_MAKENEWZ        5
-#define THREAD_OPT_RATE        6
-#define THREAD_COPY_RATES      7
-#define THREAD_RATE_CATS       8
-#define THREAD_NEWVIEW_MASKED  9
-#define THREAD_OPT_ALPHA       10
-#define THREAD_COPY_ALPHA      11
-#define THREAD_OPTIMIZE_PER_SITE_AA 12
-#define EXIT_GRACEFULLY        13
-
-
-
-
-    
-
-
-extern void masterBarrierMPI(int jobType, tree *tr);
-extern void fineGrainWorker(tree *tr);
-extern void startFineGrainMpi(tree *tr, analdef *adef);
-
-MPI_Datatype traversalDescriptor;
-MPI_Datatype jobDescriptor;
-
-
-#endif
 
 
 #ifdef __AVX
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
-		       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-		       unsigned char *tipX1, unsigned char *tipX2,
+			   double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
 		       int n,  double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGenericCATPROT_AVX(int tipCase, double *extEV,
 			       int *cptr,
 			       double *x1, double *x2, double *x3, double *tipVector,
-			       unsigned char *tipX1, unsigned char *tipX2,
+			       int *ex3, unsigned char *tipX1, unsigned char *tipX2,
 			       int n, double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGTRGAMMA_AVX(int tipCase,
 			 double *x1_start, double *x2_start, double *x3_start,
 			 double *EV, double *tipVector,
-			 unsigned char *tipX1, unsigned char *tipX2,
+			 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 );
 
-#endif
-
-void reorder( double *x, int n, int span );
-void reorder_back( double *x, int n, int span );
-
-#ifdef __cplusplus
-} // extern "C"
 #endif

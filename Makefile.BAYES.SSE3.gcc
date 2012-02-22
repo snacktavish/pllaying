@@ -10,7 +10,7 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = axml.o  bayes.o optimizeModel.o trash.o searchAlgo.o topologies.o parsePartitions.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o
+objs    = axml.o  bayes.o optimizeModel.o trash.o searchAlgo.o fastDNAparsimony.o randomTree.o topologies.o  treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o
 
 all : raxmlBayes
 
@@ -27,7 +27,6 @@ trash.o : trash.c $(GLOBAL_DEPS)
 axml.o : axml.c $(GLOBAL_DEPS)
 searchAlgo.o : searchAlgo.c $(GLOBAL_DEPS)
 topologies.o : topologies.c $(GLOBAL_DEPS)
-parsePartitions.o : parsePartitions.c $(GLOBAL_DEPS)
 treeIO.o : treeIO.c $(GLOBAL_DEPS)
 models.o : models.c $(GLOBAL_DEPS)
 evaluatePartialGenericSpecial.o : evaluatePartialGenericSpecial.c $(GLOBAL_DEPS)
@@ -35,6 +34,8 @@ evaluateGenericSpecial.o : evaluateGenericSpecial.c $(GLOBAL_DEPS)
 newviewGenericSpecial.o : newviewGenericSpecial.c $(GLOBAL_DEPS)
 makenewzGenericSpecial.o : makenewzGenericSpecial.c $(GLOBAL_DEPS)
 restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
+randomTree.o : randomTree.c $(GLOBAL_DEPS)
+fastDNAparsimony.o : fastDNAparsimony.c  $(GLOBAL_DEPS)
 
 
 clean : 

@@ -568,7 +568,7 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
   
   if(adef->perGeneBranchLengths)
     {
-      if(tr->NumberOfModels != NUM_BRANCHES)
+      if(tr->NumberOfModels > NUM_BRANCHES)
 	{
 	  printf("You are trying to use %d partitioned models for an individual per-gene branch length estimate.\n", tr->NumberOfModels);
 	  printf("Currently only a number of %d models/partitions is hard-coded to improve efficiency.\n", NUM_BRANCHES);
@@ -578,10 +578,23 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
 	  exit(-1);
 	}
       else
-	{
-	  tr->multiBranch = 1;
+	{	  
+	  if(tr->NumberOfModels != NUM_BRANCHES)
+	    {
+	      printf("\nWarning: for better performance under this partition scheme replace the line \"#define NUM_BRANCHES   %d\" in file \"axml.h\" \n", NUM_BRANCHES);
+	      printf("by \"#define NUM_BRANCHES   %d\" and then re-compile RAxML.\n", tr->NumberOfModels);
+	    }
+
 	  tr->numBranches = tr->NumberOfModels;
 	}
+    }
+  else
+    {
+       if(tr->NumberOfModels < NUM_BRANCHES)
+	 {
+	     printf("\nWarning: for better performance under this partition scheme  replace the line \"#define NUM_BRANCHES   %d\" in file \"axml.h\" \n", NUM_BRANCHES);
+	     printf("by \"#define NUM_BRANCHES   %d\" and then re-compile RAxML.\n", 1);
+	 }
     }
 }
 
@@ -1271,8 +1284,7 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 		  exit(-1);
 		}
 	      else
-		{
-		  tr->multiBranch = 1;
+		{		  
 		  tr->numBranches = tr->NumberOfModels;
 		}
 	    }
@@ -1298,7 +1310,7 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 		{
 		  int 
 		    j = i,
-		    bracket,
+		    bracket = 0,
 		    openBracket,
 		    closeBracket;
 		  

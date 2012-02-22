@@ -62,9 +62,8 @@
 */
 
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-#endif
+extern const char inverseMeaningDNA[16];
+extern int processID;
 
 /* a pre-computed 32-bit integer mask */
 
@@ -139,12 +138,6 @@ static double evaluateGAMMA_FLEX(int *wptr,
   const int 
     span = states * 4;
 
-
-  if( tipX1 == 0 ) {
-      reorder_back( x1_start, n, span );
-  }
-  reorder_back( x2_start, n, span );
-
   /* we distingusih between two cases here: one node of the two nodes defining the branch at which we put the virtual root is 
      a tip. Both nodes can not be tips because we do not allow for two-taxon trees ;-) 
      Nota that, if a node is a tip, this will always be tipX1. This is done for code simplicity and the flipping of the nodes
@@ -195,11 +188,6 @@ static double evaluateGAMMA_FLEX(int *wptr,
 	  sum += wptr[i] * term;
 	}                      	
     }
-  if( tipX1 == 0 ) {
-      reorder( x1_start, n, span );
-  }
-  reorder( x2_start, n, span );
-
 
   return sum;
 } 
@@ -532,6 +520,8 @@ void evaluateIterative(tree *tr)
 	
 	    }
 
+	 
+	  
 
 	  /* if we are using a per-partition branch length estimate, the branch has an index, otherwise, for a joint branch length
 	     estimate over all partitions we just use the branch length value with index 0 */
@@ -630,7 +620,7 @@ void evaluateIterative(tree *tr)
 #endif
 	  
 	  /* check that there was no major numerical screw-up, the log likelihood should be < 0.0 always */
-	 
+	 	  
 	  assert(partitionLikelihood < 0.0);
 	  	     		      
 	  /* now here is a nasty part, for each partition and each node we maintain an integer counter to count how often 
@@ -733,70 +723,56 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      traversal descriptor list of nodes needs to be broadcast once again */
   
   tr->td[0].traversalHasChanged = TRUE;
-#ifdef _USE_PTHREADS 
-
-  /* now here we enter the fork-join region for Pthreads */
-
-    
-  /* start the parallel region and tell all threads to compute the log likelihood for 
-     their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
-  */
-  
-  masterBarrier(THREAD_EVALUATE, tr); 
-  
-  /* and now here we explicitly do the reduction operation , that is add over the 
-     per-thread and per-partition log likelihoods to obtain the overall log like 
-     over all sites and partitions */
-  
-  
-  /* 
-     for unpartitioned data that's easy, we just sum over the log likes computed 
-     by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
-     reductionBuffer[1] and so on 
-  */
-  
-  /* This reduction for the partitioned case is more complicated because each thread 
-     needs to store the partial log like of each partition and we then need to collect 
-     and add everything */
-  
-              	  
-  for(model = 0; model < tr->NumberOfModels; model++)
-    { 
-      volatile double 
-	partitionResult = 0.0;  
-      
-      for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
-      
-      tr->perPartitionLH[model] = partitionResult;
-    }
-       
-#else
-#ifdef _FINE_GRAIN_MPI
-
-  /* MPI parallel region, in terms of logic or programming paradigm this is also 
-     just like a fork join */
-
-  masterBarrierMPI(THREAD_EVALUATE, tr);  		  
-  
-#else
-  /* and here is just the sequential case, we directly call evaluateIterative() above 
-     without having to tell the threads/processes that they need to compute this function now */
 
   evaluateIterative(tr);  
     		
-#endif   
-#endif
 
-  for(model = 0; model < tr->NumberOfModels; model++)
-    result += tr->perPartitionLH[model];
+
+  if(0)
+    {
+      double *recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
+      
+      MPI_Allreduce(tr->perPartitionLH, recv, tr->NumberOfModels, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+      
+      for(model = 0; model < tr->NumberOfModels; model++)
+	{
+	  /* TODO ??? */
+	  /*tr->perPartitionLH[model] = recv[model];	*/
+	  result += recv[model];
+	}
+      
+      free(recv);
+    }
+  else
+    {
+      double *recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
+      
+      MPI_Reduce(tr->perPartitionLH, recv, tr->NumberOfModels, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+      MPI_Bcast(recv, tr->NumberOfModels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      
+      for(model = 0; model < tr->NumberOfModels; model++)
+	{
+	  /* TODO ??? */
+	  tr->perPartitionLH[model] = recv[model];
+	  result += recv[model];
+	}
+      
+      free(recv);
+      
+    }
+
+
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
+  
+  /*MPI_Barrier(MPI_COMM_WORLD);
+  printf("Process %d likelihood: %f\n", processID, tr->likelihood);
+  MPI_Barrier(MPI_COMM_WORLD);*/
 
   /* do some bookkeeping to have traversalHasChanged in a consistent state */
 
-  tr->td[0].traversalHasChanged = FALSE;
+  tr->td[0].traversalHasChanged = FALSE;  
 }
 
 
@@ -949,7 +925,7 @@ static double evaluateGTRGAMMAPROT (int *wptr,
 	  
 	 
 	  term = LOG(0.25 * FABS(term));
-		   
+		 
 	  
 	  sum += wptr[i] * term;
 	}    	        
@@ -1455,7 +1431,7 @@ static double evaluateGTRGAMMA(int *wptr,
 	
 	  term = LOG(0.25 * FABS(t[0] + t[1]));
 	  
-
+	 
 	  
 	  sum += wptr[i] * term;
 	}     

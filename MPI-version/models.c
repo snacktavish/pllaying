@@ -45,7 +45,11 @@
 
 #include "axml.h"
 
-
+extern int optimizeRatesInvocations;
+extern int optimizeRateCategoryInvocations;
+extern int optimizeAlphaInvocations;
+extern int optimizeTTRatioInvocations;
+extern int optimizeInvarInvocations;
 
 extern const unsigned int bitVectorSecondary[256];
 extern const unsigned int bitVector32[33];
@@ -56,7 +60,10 @@ extern const partitionLengths pLengths[MAX_MODEL];
 
 
 
+
+
 extern FILE *byteFile;
+
 
 
 
@@ -2723,7 +2730,7 @@ static void updateFracChange(tree *tr)
   else
     {
       int model;
-      double *modelWeights = (double *)calloc((size_t)tr->NumberOfModels, sizeof(double));
+      double *modelWeights = (double *)calloc(tr->NumberOfModels, sizeof(double));
       double wgtsum = 0.0;  
      
       assert(tr->NumberOfModels > 1);
@@ -2957,22 +2964,22 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
     m, 
     l;  
 
-  r    = (double **)malloc((size_t)n * sizeof(double *));
-  EIGV = (double **)malloc((size_t)n * sizeof(double *));  
-  a    = (double **)malloc((size_t)n * sizeof(double *));	  
+  r    = (double **)malloc(n * sizeof(double *));
+  EIGV = (double **)malloc(n * sizeof(double *));  
+  a    = (double **)malloc(n * sizeof(double *));	  
   
   for(i = 0; i < n; i++)
     {
-      a[i]    = (double*)malloc((size_t)n * sizeof(double));
-      EIGV[i] = (double*)malloc((size_t)n * sizeof(double));
-      r[i]    = (double*)malloc((size_t)n * sizeof(double));
+      a[i]    = (double*)malloc(n * sizeof(double));
+      EIGV[i] = (double*)malloc(n * sizeof(double));
+      r[i]    = (double*)malloc(n * sizeof(double));
     }
 
-  f       = (double*)malloc((size_t)n * sizeof(double));
-  e       = (double*)malloc((size_t)n * sizeof(double));
-  d       = (double*)malloc((size_t)n * sizeof(double));
-  invfreq = (double*)malloc((size_t)n * sizeof(double));
-  EIGN    = (double*)malloc((size_t)n * sizeof(double));
+  f       = (double*)malloc(n * sizeof(double));
+  e       = (double*)malloc(n * sizeof(double));
+  d       = (double*)malloc(n * sizeof(double));
+  invfreq = (double*)malloc(n * sizeof(double));
+  EIGN    = (double*)malloc(n * sizeof(double));
   
   for(l = 0; l < n; l++)		 
     f[l] = frequencies[l];	
@@ -3441,7 +3448,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K)
 {
   int i;
   double factor, lnga1, alfa, beta;
-  double *gammaProbs = (double *)malloc((size_t)K * sizeof(double));
+  double *gammaProbs = (double *)malloc(K * sizeof(double));
 
   alfa = beta = alpha;
 
@@ -3776,7 +3783,7 @@ void initModel(tree *tr, double **empiricalFrequencies)
   int model, j;
   double  temp;  
      
-  tr->optimizeRateCategoryInvocations = 1;      
+  optimizeRateCategoryInvocations = 1;      
   tr->numberOfInvariableColumns = 0;
   tr->weightOfInvariableColumns = 0;	       
   
@@ -3792,8 +3799,10 @@ void initModel(tree *tr, double **empiricalFrequencies)
       tr->partitionData[model].numberOfCategories = 1;           
       tr->partitionData[model].perSiteRates[0] = 1.0; 
     }
-    
-  updatePerSiteRates(tr, FALSE);
+  
+  /* TODO */
+  if(tr->rateHetModel == CAT)
+    updatePerSiteRates(tr, FALSE);
  
   setupSecondaryStructureSymmetries(tr);
   
@@ -3825,15 +3834,7 @@ void initModel(tree *tr, double **empiricalFrequencies)
       tr->fracchange /= ((double)tr->NumberOfModels);
     }  
   
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);  
-#endif
 
- 
-
-#ifdef _USE_PTHREADS
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);   
-#endif
 
  
 

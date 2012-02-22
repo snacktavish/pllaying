@@ -52,16 +52,9 @@
 /* pointers to reduction buffers for storing and gathering the first and second derivative 
    of the likelihood in Pthreads and MPI */
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-extern volatile double *reductionBufferTwo;
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-extern double *globalResult;
-#endif
 
 
+extern int processID;
 extern const unsigned int mask32[32];
 
 /*******************/
@@ -257,9 +250,6 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
     *right, 
     *sum;
 
-
-
-
   switch(tipCase)
     {
     case TIP_TIP:
@@ -279,7 +269,6 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 	}
       break;
     case TIP_INNER:
-      reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
 	{
 	  left = &(tipVector[states * tipX1[i]]);
@@ -294,11 +283,8 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 
 	    }
 	}
-      reorder( x2, n, span );
       break;
     case INNER_INNER:
-      reorder_back( x1, n, span );
-      reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
 	{
 	  for(l = 0; l < 4; l++)
@@ -312,8 +298,6 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 		sum[k] = left[k] * right[k];
 	    }
 	}
-      reorder( x1, n, span );
-      reorder( x2, n, span );
       break;
     default:
       assert(0);
@@ -591,8 +575,7 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
   
 }
 
-void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
-                          unsigned char *tipX1, unsigned char *tipX2, int n, const int states);
+
 /* the function below is called only once at the very beginning of each Newton-Raphson procedure for optimizing barnch lengths.
    It initially invokes an iterative newview call to get a consistent pair of vectors at the left and the right end of the 
    branch and thereafter invokes the one-time only precomputation of values (sumtable) that can be re-used in each Newton-Raphson 
@@ -651,7 +634,7 @@ void makenewzIterative(tree *tr)
 	    sumCAT_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
 			width, states);
 	  else
-	    sumGAMMA_FLEX_reorder(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+	    sumGAMMA_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
 			  width, states);
 #else
 	  switch(states)
@@ -715,11 +698,13 @@ void makenewzIterative(tree *tr)
 
 void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
-  int model, branchIndex;
+  int model, branchIndex, i = 0;
   double lz;
+  /*  double 
+    buffer_dlnLdlz[NUM_BRANCHES],
+    buffer_d2lnLdlz2[NUM_BRANCHES];*/
 
-  _dlnLdlz[0]   = 0.0;
-  _d2lnLdlz2[0] = 0.0;
+  
 
   /* loop over partitions */
 
@@ -761,6 +746,12 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	    }
 	  else
 	    {
+	      if(i == 0)
+		{
+		  _dlnLdlz[0]   = 0.0; 
+		  _d2lnLdlz2[0] = 0.0;
+		}
+	      i++;
 	      branchIndex = 0;	      
 	      lz = tr->td[0].parameterValues[0];
 	    }
@@ -826,6 +817,9 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	    }			       	    	   
 	}
     }
+
+
+
 
 }
 
@@ -931,80 +925,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
 
-#ifdef _USE_PTHREADS
-      
-      /* if this is the first iteration of NR we will need to first do this one-time call 
-	 of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
-	 subsequent calls to masterBarrier(THREAD_MAKENEWZ, tr); will not require this
-      */
-      if(firstIteration)
-	{
-	  tr->td[0].traversalHasChanged = TRUE;	 
-	  masterBarrier(THREAD_MAKENEWZ_FIRST, tr);
-	  firstIteration = FALSE;
-	  tr->td[0].traversalHasChanged = FALSE;
-	}
-      else
-	{	 
-	  masterBarrier(THREAD_MAKENEWZ, tr);
-	}
 
-      /* here again we collect the first and secdon derivatives from the various threads 
-	 and sum them up. It's similar to what we do in evaluateGeneric() 
-	 with the only difference that we have to collect two values (firsrt and second derivative) 
-	 instead of onyly one (the log likelihood */
-      
-      {
-	int 
-	  b;
-	
-	for(b = 0; b < tr->numBranches; b++)
-	  {
-	    dlnLdlz[b] = 0.0;
-	    d2lnLdlz2[b] = 0.0;
-	    for(i = 0; i < tr->numberOfThreads; i++)
-	      {
-		dlnLdlz[b]   += reductionBuffer[i * tr->numBranches + b];
-		d2lnLdlz2[b] += reductionBufferTwo[i * tr->numBranches + b];
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-
-      /* same as for pthreads, but the reduction is implemented in a slightly different
-	 way using the MPI_Reduce() command that can compute reductions on more than one element 
-      */
-
-      if(firstIteration)
-	{
-	  masterBarrierMPI(THREAD_MAKENEWZ_FIRST, tr);
-	  firstIteration = FALSE;
-	}
-      else
-	masterBarrierMPI(THREAD_MAKENEWZ, tr);
-
-      if(tr->numBranches == 1)
-	{
-	  int 
-	    model;	  	  
-	  	
-	  dlnLdlz[0]   = globalResult[0];
-	  d2lnLdlz2[0] = globalResult[1];	  	  	 
-	}
-      else
-	{
-	  int
-	    model;
-	  
-	  for(model = 0; model < tr->NumberOfModels; model++)
-	    {	     	     
-	      dlnLdlz[model]   = globalResult[model * 2 + 0];
-	      d2lnLdlz2[model] = globalResult[model * 2 + 1];	    
-	    }
-	}
-
-#else
 
       /* sequential part, if this is the first newton-raphson implementation,
 	 do the precomputations as well, otherwise just execute the computation
@@ -1015,8 +936,50 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	  firstIteration = FALSE;
 	}
       execCore(tr, dlnLdlz, d2lnLdlz2);
-#endif
-#endif
+
+      {
+	double 
+	  *send = (double *)malloc(sizeof(double) * tr->numBranches * 2),
+	  *recv = (double *)malloc(sizeof(double) * tr->numBranches * 2);
+
+	int
+	  model;		
+  
+	for(model = 0; model < tr->numBranches; model++)
+	  {	     
+	    send[model * 2 + 0]   = dlnLdlz[model];
+	    send[model * 2 + 1]   = d2lnLdlz2[model];	    
+	  }
+	
+	if(0)
+	  {
+	    /* MPI_Allreduce is apparently not deterministic */
+
+	    MPI_Allreduce(send, recv, tr->numBranches * 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	    
+	    /*printf("process %d after MNZ allred\n", processID);*/
+	    
+	    for(model = 0; model < tr->numBranches; model++)
+	      {	     
+		dlnLdlz[model]  = recv[model * 2 + 0];
+		d2lnLdlz2[model] =  recv[model * 2 + 1];
+	      }	
+	  }
+	else
+	  {
+	    MPI_Reduce(send, recv, tr->numBranches * 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	    MPI_Bcast(recv, tr->numBranches * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+	    for(model = 0; model < tr->numBranches; model++)
+	      {	     
+		dlnLdlz[model]  = recv[model * 2 + 0];
+		d2lnLdlz2[model] =  recv[model * 2 + 1];
+	      }	
+	  }
+
+	free(send);
+	free(recv);
+      }
      
       /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 
 	 shorten branch */

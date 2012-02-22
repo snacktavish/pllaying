@@ -95,7 +95,7 @@ stringHashtable *initStringHashTable(hashNumberType n)
 
   tableSize = initTable[i];  
 
-  h->table = (stringEntry**)calloc((size_t)tableSize, sizeof(stringEntry*));
+  h->table = (stringEntry**)calloc(tableSize, sizeof(stringEntry*));
   h->tableSize = tableSize;    
 
   return h;
@@ -130,7 +130,7 @@ void addword(char *s, stringHashtable *h, int nodeNumber)
   assert(p);
   
   p->nodeNumber = nodeNumber;
-  p->word = (char *)malloc(((size_t)strlen(s) + 1) * sizeof(char));
+  p->word = (char *)malloc((strlen(s) + 1) * sizeof(char));
 
   strcpy(p->word, s);
   
@@ -282,15 +282,18 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 	{	 	 
 	  if(( !isTip(p->number, tr->mxtips)) && 
 	     ( !isTip(p->back->number, tr->mxtips)))
-	    {			      
-	      assert(p->bInf != (branchInfo *)NULL);
+	    {	
+	      assert(0);
+		      
+	      /*assert(p->bInf != (branchInfo *)NULL);*/
 	      
-	      if(rellTree)
+	      /*if(rellTree)
 		sprintf(treestr, "%d:%8.20f", p->bInf->support, p->z[0]);
 	      if(branchLabelSupport)
 		sprintf(treestr, ":%8.20f[%d]", p->z[0], p->bInf->support);
 	      if(printSHSupport)
 		sprintf(treestr, ":%8.20f[%d]", getBranchLength(tr, perGene, p), p->bInf->support);
+	      */
 	      
 	    }
 	  else		
@@ -660,7 +663,7 @@ static boolean addElementLen (FILE *fp, tree *tr, nodeptr p, boolean readBranchL
 	      assert(val == 1);
 
 	      /*printf("LABEL %s Number %d\n", label, support);*/
-	      p->support = q->support = support;
+	      /*p->support = q->support = support;*/
 	      /*printf("%d %d %d %d\n", p->support, q->support, p->number, q->number);*/
 	      assert(p->number > tr->mxtips && q->number > tr->mxtips);
 	      *lcount = *lcount + 1;
@@ -809,8 +812,8 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
   for (i = 1; i <= tr->mxtips; i++) 
     {
       tr->nodep[i]->back = (node *) NULL; 
-      if(topologyOnly)
-	tr->nodep[i]->support = -1;
+      /*if(topologyOnly)
+	tr->nodep[i]->support = -1;*/
     }
 
   for(i = tr->mxtips + 1; i < 2 * tr->mxtips; i++)
@@ -822,12 +825,12 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
       tr->nodep[i]->next->number = i;
       tr->nodep[i]->next->next->number = i;
 
-      if(topologyOnly)
+      /*if(topologyOnly)
 	{
 	  tr->nodep[i]->support = -2;
 	  tr->nodep[i]->next->support = -2;
 	  tr->nodep[i]->next->next->support = -2;
-	}
+	  }*/
     }
 
   if(topologyOnly)
