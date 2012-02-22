@@ -827,7 +827,19 @@ static void resetSimpleGammaProposal(state * instate)
 
   evaluateGeneric(instate->tr, instate->tr->start, TRUE);
 }
-
+static void print_proposal(prop proposal_type)
+{
+  switch(proposal_type)
+  {
+    case SPR: printBothOpen("prosing SPR\n"); break;
+    case stNNI: printBothOpen("prosing stNNI\n"); break;
+    case UPDATE_ALL_BL: printBothOpen("prosing UPDATE_ALL_BL\n"); break;
+    case UPDATE_MODEL:printBothOpen("prosing MODEL\n"); break;
+    case UPDATE_GAMMA:printBothOpen("prosing GAMMA\n"); break;
+    default:
+      assert(FALSE);
+  }
+}
 static prop proposal(state * instate)
 /* so here the idea would be to randomly choose among proposals? we can use typedef enum to label each, and return that */ 
 {
@@ -901,6 +913,7 @@ static prop proposal(state * instate)
   }
   //record the curprior
   instate->newprior = instate->bl_prior;
+  //print_proposal(proposal_type);
   return proposal_type;
 }
 
@@ -1118,14 +1131,15 @@ void mcmc(tree *tr, analdef *adef)
       
       // just for validation 
 
-      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-10)
+      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-9)
       {
+        print_proposal(which_proposal);
         printBothOpen("WARNING: LH diff %.10f\n", curstate->tr->startLH - tr->likelihood);
       }
       //printRecomTree(tr, TRUE, "after reset");
       //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
-      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
+      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
+      assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
     }       
     inserts++;
     

@@ -46,7 +46,7 @@ def run_raxml(version, set, starting_tree, generations)
     raxmlbin = VERSIONS[version][:bin]
     name = dataset + "_" + version + "_" + starting_tree
     if File.exists?(raxmlbin) 
-      search = "PSR"
+      search = "GAMMA"
       tree = File.join DATADIR, treefile
       data = File.join DATADIR, dataset
       call = "./#{raxmlbin} -s #{data} -m #{search}"
