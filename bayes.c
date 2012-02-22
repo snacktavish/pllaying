@@ -210,7 +210,7 @@ static void printRecomTree(tree *tr, boolean printBranchLengths, char *title)
   if (printBranchLengths)
     printBothOpen("%s\n", tr->tree_string);
   printBothOpen("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  system("bin/nw_display tmp.nw");
+  //system("bin/nw_display tmp.nw");
 }  
 
 static void set_start_prior(state *s)
@@ -461,9 +461,11 @@ static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * 
   double r,mx,mn;
   for(i = 0; i < numBranches; i++)
   {
-    assert(p->z[i] == p->back->z[i]);
     if(record_tmp_bl)
+    {
+      assert(p->z[i] == p->back->z[i]); 
       p->z_tmp[i] = p->back->z_tmp[i] = p->z[i];   /* keep current value */
+    }
     r = (double)rand()/(double)RAND_MAX;
     mn = p->z[i]-(s->bl_sliding_window_w/2);
     mx = p->z[i]+(s->bl_sliding_window_w/2);
@@ -481,8 +483,9 @@ static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * 
 }
 static void hookupBL(nodeptr p, nodeptr q, nodeptr bl_p, state *s)
 {
-   set_branch_length_sliding_window(bl_p, s->tr->numBranches, s, FALSE);
+   /* first hook, then set BL */
    hookup(p, q, bl_p->z, s->tr->numBranches);
+   set_branch_length_sliding_window(bl_p, s->tr->numBranches, s, FALSE);
 }
 static boolean stNNIproposal(state *s)
 {
@@ -564,6 +567,7 @@ static boolean stNNIproposal(state *s)
     }
   }
 
+  //printf("did nni type %d\n", s->whichNNI);
   newviewGeneric(s->tr, p, FALSE);
   newviewGeneric(s->tr, p->back, FALSE);
   evaluateGeneric(s->tr, p, FALSE);
@@ -1037,7 +1041,6 @@ void mcmc(tree *tr, analdef *adef)
   for(j=0; j<num_moves; j++)
   {
     //printBothOpen("iter %d, tr LH %f, startLH %f\n",j, tr->likelihood, tr->startLH);
-    //printRecomTree(tr, TRUE, "startiter");
     proposalAccepted = FALSE;
     t = gettime(); 
 
@@ -1097,12 +1100,14 @@ void mcmc(tree *tr, analdef *adef)
 	  assert(0);
 	}
 
+      //printBothOpen("accepted , iter %d tr LH %f, startLH %f, %i \n", j, tr->likelihood, tr->startLH, which_proposal);
       curstate->tr->startLH = curstate->tr->likelihood;  //new LH
       curstate->curprior = curstate->newprior;          
     }
     else
     {
       //printBothOpen("rejected , iter %d tr LH %f, startLH %f, %i \n", j, tr->likelihood, tr->startLH, which_proposal);
+    //print_proposal(which_proposal);
       resetState(which_proposal,curstate);
       
       switch(which_proposal)
@@ -1132,11 +1137,10 @@ void mcmc(tree *tr, analdef *adef)
 
       if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-15)
       {
-        print_proposal(which_proposal);
+        printRecomTree(tr, TRUE, "after reset");
         printBothOpen("WARNING: LH diff %.20f\n", curstate->tr->startLH - tr->likelihood);
+        printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
       }
-      //printRecomTree(tr, TRUE, "after reset");
-      //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
       //assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
       assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
     }       

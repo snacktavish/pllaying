@@ -11,13 +11,15 @@ VERSIONS = {
   "bayes" => {:bin => "raxmlBayes", :makefile => "Makefile.BAYES.SSE3.gcc"}
 }
 STARTING_TREE_OPTS = %w(treefile random parsimony)
+VALID_MODELS = %w(GAMMA PSR)
 DATADIR="testdata"
 
 # helpers
 def print_usage 
-    puts "rake run[dataset,version,starting_tree,generations]"
+    puts "rake run[dataset,version,model,starting_tree,generations]"
     puts "Valid datasets are #{VALID_SETS.keys.join(",")}, expected in folder #{DATADIR}"
     puts "Valid versions are #{VERSIONS.keys.join(",")}"
+    puts "Valid models are #{VALID_MODELS.join(",")}"
     puts "Valid starting_trees are #{STARTING_TREE_OPTS.join(",")}"
     puts "generations is only relevant for the bayesian case"
 end
@@ -37,19 +39,18 @@ def inform_and_delete_extension_files(extension, silent = false)
   end
 end
 
-def run_raxml(version, set, starting_tree, generations)
+def run_raxml(version, set, model, starting_tree, generations)
   begin
     raise "invalid version #{version}" unless VERSIONS.keys.include?(version)
     raise "invalid dataset #{set}" unless VALID_SETS.keys.include?(set)
     treefile = VALID_SETS[set][:treefile] 
     dataset =  VALID_SETS[set][:dataset]
     raxmlbin = VERSIONS[version][:bin]
-    name = dataset + "_" + version + "_" + starting_tree
+    name = [dataset, version, starting_tree, model].join("_")
     if File.exists?(raxmlbin) 
-      search = "GAMMA"
       tree = File.join DATADIR, treefile
       data = File.join DATADIR, dataset
-      call = "./#{raxmlbin} -s #{data} -m #{search}"
+      call = "./#{raxmlbin} -s #{data} -m #{model}"
       call += " -n #{name}" 
       case starting_tree
         when "treefile" then call += " -t #{tree}"
@@ -108,12 +109,25 @@ task :compile, [:version] => [:clean_compile] do |t, args|
 end
 
 desc "run[set,version,generations]"
-task :run, [:set, :version, :starting_tree, :generations] => [:clean_infos] do |t, args|
-  args.with_defaults(:set => "20", :version => "std", :generations => 1000, :starting_tree => "treefile")
+task :run, [:set, :version, :model, :starting_tree, :generations] => [:clean_infos] do |t, args|
+  args.with_defaults(:set => "20", :version => "std", :model => "GAMMA", 
+                     :generations => 1000, :starting_tree => "treefile")
   puts "run raxml"
-  run_name = run_raxml(args.version, args.set, args.starting_tree, args.generations)
+  run_name = run_raxml(args.version, args.set, args.model, args.starting_tree, args.generations)
   #puts "  ========  tail info  ============="
   #system("tail -n 22 RAxML_info.#{run_name}")
+end
+
+desc "testrun[set,generations]"
+task :testrun, [:set, :generations] => [:clean_infos] do |t, args|
+  args.with_defaults(:set => "20", :generations => 10000) 
+  VERSIONS.keys.each do |version|
+    VALID_MODELS.each do |model|
+      STARTING_TREE_OPTS.each do |starting_tree|
+        run_name = run_raxml(version, args.set, model, starting_tree, args.generations)
+      end
+    end
+  end
 end
 
 desc "update ctags"
