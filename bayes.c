@@ -784,7 +784,7 @@ static void simpleModelProposal(state * instate)
 static void resetSimpleModelProposal(state * instate)
 {
   restoreSubsRates(instate->tr, instate->adef, instate->model, instate->numSubsRates, instate->curSubsRates);
-  evaluateGeneric(instate->tr, instate->tr->start, FALSE);
+  //evaluateGeneric(instate->tr, instate->tr->start, FALSE);
 }
 
 //simple sliding window
@@ -1041,10 +1041,9 @@ void mcmc(tree *tr, analdef *adef)
     proposalAccepted = FALSE;
     t = gettime(); 
 
-    /*
-      evaluateGeneric(tr, tr->start); // just for validation 
-      printBothOpen("before proposal, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-    */
+      evaluateGeneric(tr, tr->start, FALSE); // just for validation (make sure we compare the same)
+      //printBothOpen("before proposal, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+      tr->startLH = tr->likelihood;
 
     which_proposal = proposal(curstate);
     if (first == 1)
@@ -1131,10 +1130,10 @@ void mcmc(tree *tr, analdef *adef)
       
       // just for validation 
 
-      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-9)
+      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-15)
       {
         print_proposal(which_proposal);
-        printBothOpen("WARNING: LH diff %.10f\n", curstate->tr->startLH - tr->likelihood);
+        printBothOpen("WARNING: LH diff %.20f\n", curstate->tr->startLH - tr->likelihood);
       }
       //printRecomTree(tr, TRUE, "after reset");
       //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
