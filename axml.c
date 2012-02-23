@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include "cycle.h"
 
 #ifdef  _FINE_GRAIN_MPI
 #include <mpi.h>
@@ -2898,8 +2899,14 @@ int main (int argc, char *argv[])
 	 here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
 	 This should basically be the first call to the library that actually computes something :-)
       */
-      
+     
+      ticks t1 = getticks();
+ 
       evaluateGeneric(tr, tr->start, TRUE);	 
+      
+      ticks t2 = getticks();
+      printf( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
+      return 0;
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       

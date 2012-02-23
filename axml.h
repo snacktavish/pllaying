@@ -1321,6 +1321,13 @@ void newviewGTRGAMMA_AVX(int tipCase,
 void reorder( double *x, int n, int span );
 void reorder_back( double *x, int n, int span );
 
+
+static int virtual_width( int n ) {
+    const int global_vw = 2;
+    return (n+1) / global_vw * global_vw;
+}
+
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

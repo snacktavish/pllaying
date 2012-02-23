@@ -850,7 +850,6 @@ void newviewGAMMA_FLEX_reorder(int tipCase, double *x1, double *x2, double *x3, 
 
 
 
-
 void newviewIterative (tree *tr, int startIndex)
 {
   traversalInfo 
@@ -859,7 +858,7 @@ void newviewIterative (tree *tr, int startIndex)
   int 
     i, 
     model;
-
+  int nvc = 0;
   double *last_x3 = 0;
 
   int last_width = -1;
@@ -972,11 +971,14 @@ void newviewIterative (tree *tr, int startIndex)
 		  requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		
 		}
 	      else
+                {
 		/* if we are not trying to save memory the space required to store an inner likelihood array 
 		   is the number of sites in the partition times the number of states of the data type in the partition 
 		   times the number of discrete GAMMA rates (1 for CAT essentially) times 8 bytes */
-		requiredLength  =  width * rateHet * states * sizeof(double);
-
+                  requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
+                
+//                   printf( "req: %d %d %d %d\n", requiredLength, width, virtual_width(width), model );
+                }
 	      /* Initially, even when not using memory saving no space is allocated for inner likelihood arrats hence 
 		 availableLength will be zero at the very first time we traverse the tree.
 		 Hence we need to allocate something here */
@@ -1088,12 +1090,12 @@ void newviewIterative (tree *tr, int startIndex)
 	        assert( states == 4 );
 //		newviewCAT_FLEX(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
 //				x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
-//				ex3, tipX1, tipX2,
+//				0, tipX1, tipX2,
 //				width, left, right, wgt, &scalerIncrement, states);
 
 		newviewGTRCAT(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
 		                                      x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
-		                                      ex3, tipX1, tipX2,
+		                                      tipX1, tipX2,
 		                                      width, left, right, wgt, &scalerIncrement);
 
 
@@ -1102,7 +1104,7 @@ void newviewIterative (tree *tr, int startIndex)
 		if( tInfo->tipCase == TIP_TIP ) {
                     newviewCAT_FLEX_reorder(tInfo->tipCase,  tr->partitionData[model].EV, tr->partitionData[model].rateCategory,
                                             x1_start, x2_start, x3_start, tr->partitionData[model].tipVector,
-                                            ex3, tipX1, tipX2,
+                                            0, tipX1, tipX2,
                                             width, left, right, wgt, &scalerIncrement, states);
 		}
                 ticks t3 = getticks();
@@ -1116,34 +1118,21 @@ void newviewIterative (tree *tr, int startIndex)
 	          ticks t1 = getticks();
 	          int old_scale = scalerIncrement;
 
-#if 0
-#if 0
-                  newviewGAMMA_FLEX(tInfo->tipCase,
-                                                    x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-                                                    ex3, tipX1, tipX2,
-                                                    width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
-#else
-                  newviewGTRGAMMA(tInfo->tipCase,
-                                 x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-                                 ex3, tipX1, tipX2,
-                                 width, left, right, wgt, &scalerIncrement);
-#endif
-#endif
 	          ticks t2 = getticks();
                   if( 1 || tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
                      newviewGAMMA_FLEX_reorder(tInfo->tipCase,
                                               x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
-                                              ex3, tipX1, tipX2,
+                                              0, tipX1, tipX2,
                                               width, left, right, wgt, &scalerIncrement, states, getUndetermined(tr->partitionData[model].dataType) + 1);
                   }
 
 	          ticks t3 = getticks();
 
-                 double d1 = elapsed(t2, t1);
+//                 double d1 = elapsed(t2, t1);
                  double d2 = elapsed(t3, t2);
 
                  const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
-
+               //  printf( "d: %d %d %f %s\n", nvc++, tInfo->tipCase, d2, scaling_text );
 //                 printf( "ticks: %d %f %f%s\n", tInfo->tipCase, d1, d2, scaling_text );
                  last_x3 = x3_start;
                  last_width = width;

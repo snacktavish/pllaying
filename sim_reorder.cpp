@@ -105,17 +105,62 @@ void makeP(double z1, double z2, double *rptr, double *EI, double *EIGN,
 }
 
 template<typename oiter>
-void reorder_tip_block(uint8_t *tip_idx, double *tip_vec, size_t block_start,
-        size_t entry_width, oiter ostart, size_t vw) {
+inline void reorder_tip_block(uint8_t *tip_idx, double *tip_vec, size_t block_start,
+        const size_t entry_width, oiter ostart, const size_t vw, size_t n) {
 
+//     typedef vector_unit<double,2> vu:
+//     typedef vu::vec_t vec_t;
+//     
     int i = block_start;
-    for (size_t j = 0; j < entry_width; ++j) {
-
-        for (size_t k = 0; k < vw; ++k, ++ostart) {
-            *ostart = tip_vec[entry_width * tip_idx[i + k] + j];
+    
+    if( i + vw < n ) {
+        
+//         const int off0 = tip_idx[i] * entry_width;
+//         const int off1 = tip_idx[i+1] * entry_width;
+//         
+//         
+//         for (size_t j = 0; j < entry_width; ++j) {
+//             //tmp0[j] = tip_vec[off0 + j];
+//             //tmp1[j] = tip_vec[off1 + j];
+//             
+//             *ostart = tip_vec[off0 + j];
+//             ++ostart;
+//             *ostart = tip_vec[off1 + j];
+//             ++ostart;
+//             
+//         }
+//             for (size_t k = 0; k < vw; ++k, ++ostart) {
+//                 // do the padding on the fly. most likely very inefficient.
+//                 int ti = tip_idx[i+k];
+//                 
+//                 *ostart = tip_vec[entry_width * ti + j];
+//             }
+        
+        for (size_t j = 0; j < entry_width; ++j) {
+            
+            for (size_t k = 0; k < vw; ++k, ++ostart) {
+                // do the padding on the fly. most likely very inefficient.
+                int ti = tip_idx[i+k];
+                
+                *ostart = tip_vec[entry_width * ti + j];
+            }
+        }
+    } else {
+    
+        for (size_t j = 0; j < entry_width; ++j) {
+            
+            for (size_t k = 0; k < vw; ++k, ++ostart) {
+                // do the padding on the fly. most likely very inefficient.
+                int ti;
+                if( i + k < n ) {
+                    ti = tip_idx[i+k];
+                } else {
+                    ti = tip_idx[0];
+                }
+                *ostart = tip_vec[entry_width * ti + j];
+            }
         }
     }
-
 }
 
 template<typename oiter>
@@ -516,6 +561,12 @@ struct arrays {
 
 };
 
+
+template<const size_t VW>
+inline int virtual_width( int n ) {
+    return (n + 1) / VW * VW;
+}
+
 arrays arr;
 
 template<typename state_t, size_t VW, size_t states>
@@ -546,7 +597,11 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 
     ticks t1, t2;
 
-    assert( n % VW == 0);
+    int vn = virtual_width<VW>( n );
+    
+//     std::cout << "n: " << n << " " << vn << "\n";
+    
+    //assert( n % VW == 0);
 
     if (!arr.valid()) {
         arr.u_x1.resize(VW * span);
@@ -556,13 +611,16 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 //        arr.x2_ro.resize(span * n, 0.0);
 //
 //        arr.x3_ro.resize(span * n, 0.0);
-        arr.x3_tmp.resize(span * n, 0.0);
-
+        
         arr.umpX1.resize(precomputeLength);
         arr.umpX2.resize(precomputeLength);
 
     }
+    if( arr.x3_tmp.size() < span * vn ) {
+        arr.x3_tmp.resize( span * vn, 0.0 );
+    }
 
+    
     switch (tipCase) {
     case TIP_TIP: {
         /* allocate pre-compute memory space */
@@ -573,32 +631,55 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
          */
 
 
-        t1 = getticks();
+//         t1 = getticks();
         for (i = 0; i < maxStateValue; i++) {
             v = &(tipVector[states * i]);
 
             for (k = 0; k < span; k++) {
 
-                arr.umpX1[span * i + k] = 0.0;
-                arr.umpX2[span * i + k] = 0.0;
+//                 arr.umpX1[span * i + k] = 0.0;
+//                 arr.umpX2[span * i + k] = 0.0;
 
-                for (l = 0; l < states; l++) {
-                    arr.umpX1[span * i + k] += v[l] * left[k * states + l];
-                    arr.umpX2[span * i + k] += v[l] * right[k * states + l];
+// using temp values for accumulation helps in this case (but not for TIP/INNER)
+                double tmp1 = 0.0;
+                double tmp2 = 0.0;
+                
+                for (l = 0; l != states; l++) {
+                    tmp1 += v[l] * left[k * states + l];
+                    tmp2 += v[l] * right[k * states + l];
                 }
+                arr.umpX1[span * i + k] = tmp1;
+                arr.umpX2[span * i + k] = tmp2;
 
             }
         }
 
-        for (i = 0; i < n; i += VW) {
+        
+        
+//         std::vector<uint8_t> last_tip1;
+//         std::vector<uint8_t> last_tip2;
+//         last_tip1.push_back(uint8_t(-1));
+//         last_tip1.push_back(uint8_t(-1));
+//         last_tip2.push_back(uint8_t(-1));
+//         last_tip2.push_back(uint8_t(-1));
+//         
+        
+        for (i = 0; i < vn; i += VW) {
             /* access the precomputed arrays (pre-computed multiplication of conditional with the tip state)
              */
 
-            reorder_tip_block(tipX1, arr.umpX1.data(), i, span,
-                    arr.u_x1.begin(), VW);
-            reorder_tip_block(tipX2, arr.umpX2.data(), i, span,
-                    arr.u_x2.begin(), VW);
-
+//             if( !std::equal( last_tip1.begin(), last_tip1.end(), tipX1 + i ) ) {
+                reorder_tip_block(tipX1, arr.umpX1.data(), i, span,
+                                  arr.u_x1.begin(), VW, n);
+//                 std::copy( tipX1 + i, tipX1 + i + VW, last_tip1.begin() );
+//             }
+            
+//             if( !std::equal( last_tip2.begin(), last_tip2.end(), tipX2 + i ) ) {
+            
+                reorder_tip_block(tipX2, arr.umpX2.data(), i, span,
+                                  arr.u_x2.begin(), VW, n);
+//                 std::copy( tipX2 + i, tipX2 + i + VW, last_tip2.begin() );
+//             }
             /* loop over discrete GAMMA rates */
 
             for (j = 0; j < 4; j++) {
@@ -673,7 +754,7 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
         //        free(umpX2);
 
 
-        t2 = getticks();
+//         t2 = getticks();
 
 
         //        std::copy( x3, x3 + n * span, std::ostream_iterator<double>(std::cout, " "));
@@ -695,7 +776,7 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 //            std::copy( x2, x2 + n * span, arr.x2_ro.begin() );
 //        }
 
-        t1 = getticks();
+//         t1 = getticks();
 
         for (i = 0; i < maxStateValue; i++) {
             v = &(tipVector[states * i]);
@@ -703,19 +784,25 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
             for (k = 0; k < span; k++) {
 
                 arr.umpX1[span * i + k] = 0.0;
-
-                for (l = 0; l < states; l++)
+//                 double tmp1 = 0.0;
+                
+                
+                for (l = 0; l != states; l++) {
                     arr.umpX1[span * i + k] += v[l] * left[k * states + l];
-
+//                     tmp1 += v[l] * left[k * states + l];
+                    
+                    
+                }
+//                 arr.umpX1[span * i + k] = tmp1;
             }
         }
 
 
 
-        for (i = 0; i < n; i+=VW) {
+        for (i = 0; i < vn; i+=VW) {
             /* access pre-computed value based on the raw sequence data tipX1 that is used as an index */
 
-            reorder_tip_block(tipX1, arr.umpX1.data(), i, span, arr.u_x1.begin(), VW);
+            reorder_tip_block(tipX1, arr.umpX1.data(), i, span, arr.u_x1.begin(), VW, n );
             //uX1 = &arr.umpX1[span * tipX1[i]];
 
             /* loop over discrete GAMMA rates */
@@ -858,7 +945,7 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 
         //        std::copy( x3, x3 + n * span, std::ostream_iterator<double>(std::cout, " "));
         //        std::cout << "<<<<<< T/I\n";
-        t2 = getticks();
+//         t2 = getticks();
 
 
 
@@ -876,7 +963,7 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 //        }
         t1 = getticks();
 
-        for (i = 0; i < n; i += VW) {
+        for (i = 0; i < vn; i += VW) {
             vec_t max_v = vu::setzero();
 
             for (k = 0; k < 4; k++) {
@@ -998,6 +1085,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
                 if (max_tmp[j] < minlikelihood) {
                     max_tmp[j] = twotothe256;
                     do_scale = true;
+                    addScale += wgt[i + j];
+
                 } else {
                     max_tmp[j] = 1.0;
                 }
@@ -1117,12 +1206,13 @@ void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2, double
     typedef typename vu::vec_t vec_t;
 
 
-    assert( n % VW == 0 );
-
+//     assert( n % VW == 0 );
+    int vn = virtual_width<VW>(n);
+        
     switch(tipCase)
     {
     case TIP_TIP:
-        for(i = 0; i < n; i++)
+        for(i = 0; i < vn; i++)
         {
             left  = &(tipVector[states * tipX1[i]]);
             right = &(tipVector[states * tipX2[i]]);
@@ -1138,10 +1228,10 @@ void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2, double
         }
         break;
     case TIP_INNER:
-        for(i = 0; i < n; i+=VW)
+        for(i = 0; i < vn; i+=VW)
         {
 
-            reorder_tip_block(tipX1, tipVector, i, states, arr.u_x1.begin(), VW );
+            reorder_tip_block(tipX1, tipVector, i, states, arr.u_x1.begin(), VW, n );
 
             //left = &(tipVector[states * tipX1[i]]);
 
@@ -1164,7 +1254,7 @@ void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2, double
         }
         break;
     case INNER_INNER:
-        for(i = 0; i < n; i+=VW)
+        for(i = 0; i < vn; i+=VW)
         {
             for(l = 0; l < 4; l++)
             {
