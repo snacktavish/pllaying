@@ -25,6 +25,8 @@ extern double accumulatedTime;
 
 extern partitionLengths pLengths[MAX_MODEL];
 
+char statesFileName[1024];
+
 typedef enum
 {
   SPR,
@@ -208,7 +210,7 @@ static void printRecomTree(tree *tr, boolean printBranchLengths, char *title)
   if (printBranchLengths)
     printBothOpen("%s\n", tr->tree_string);
   printBothOpen("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n");
-  system("bin/nw_display tmp.nw");
+  //system("bin/nw_display tmp.nw");
 }  
 
 static void set_start_prior(state *s)
@@ -459,9 +461,11 @@ static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * 
   double r,mx,mn;
   for(i = 0; i < numBranches; i++)
   {
-    assert(p->z[i] == p->back->z[i]);
     if(record_tmp_bl)
+    {
+      assert(p->z[i] == p->back->z[i]); 
       p->z_tmp[i] = p->back->z_tmp[i] = p->z[i];   /* keep current value */
+    }
     r = (double)rand()/(double)RAND_MAX;
     mn = p->z[i]-(s->bl_sliding_window_w/2);
     mx = p->z[i]+(s->bl_sliding_window_w/2);
@@ -479,8 +483,9 @@ static void set_branch_length_sliding_window(nodeptr p, int numBranches,state * 
 }
 static void hookupBL(nodeptr p, nodeptr q, nodeptr bl_p, state *s)
 {
-   set_branch_length_sliding_window(bl_p, s->tr->numBranches, s, FALSE);
+   /* first hook, then set BL */
    hookup(p, q, bl_p->z, s->tr->numBranches);
+   set_branch_length_sliding_window(bl_p, s->tr->numBranches, s, FALSE);
 }
 static boolean stNNIproposal(state *s)
 {
@@ -562,6 +567,7 @@ static boolean stNNIproposal(state *s)
     }
   }
 
+  //printf("did nni type %d\n", s->whichNNI);
   newviewGeneric(s->tr, p, FALSE);
   newviewGeneric(s->tr, p->back, FALSE);
   evaluateGeneric(s->tr, p, FALSE);
@@ -782,7 +788,7 @@ static void simpleModelProposal(state * instate)
 static void resetSimpleModelProposal(state * instate)
 {
   restoreSubsRates(instate->tr, instate->adef, instate->model, instate->numSubsRates, instate->curSubsRates);
-  evaluateGeneric(instate->tr, instate->tr->start, FALSE);
+  //evaluateGeneric(instate->tr, instate->tr->start, FALSE);
 }
 
 //simple sliding window
@@ -825,7 +831,19 @@ static void resetSimpleGammaProposal(state * instate)
 
   evaluateGeneric(instate->tr, instate->tr->start, TRUE);
 }
-
+static void print_proposal(prop proposal_type)
+{
+  switch(proposal_type)
+  {
+    case SPR: printBothOpen("prosing SPR\n"); break;
+    case stNNI: printBothOpen("prosing stNNI\n"); break;
+    case UPDATE_ALL_BL: printBothOpen("prosing UPDATE_ALL_BL\n"); break;
+    case UPDATE_MODEL:printBothOpen("prosing MODEL\n"); break;
+    case UPDATE_GAMMA:printBothOpen("prosing GAMMA\n"); break;
+    default:
+      assert(FALSE);
+  }
+}
 static prop proposal(state * instate)
 /* so here the idea would be to randomly choose among proposals? we can use typedef enum to label each, and return that */ 
 {
@@ -899,6 +917,7 @@ static prop proposal(state * instate)
   }
   //record the curprior
   instate->newprior = instate->bl_prior;
+  //print_proposal(proposal_type);
   return proposal_type;
 }
 
@@ -926,10 +945,11 @@ static void resetState(prop proposal_type, state * curstate)
       assert(FALSE);
   }
 }
-
 static void printStateFile(int iter, state * curstate)
 { 
-  FILE *f = myfopen("sampled_states.txt", "ab");
+  strcpy(statesFileName, "RAxML_states.");
+  strcat(statesFileName, run_id);
+  FILE *f = myfopen(statesFileName, "ab");
   fprintf(f,"%d\t%f",iter, curstate->tr->likelihood);
   int i;
   for(i = 0;i < curstate->numSubsRates; i++)
@@ -943,9 +963,11 @@ static void printStateFile(int iter, state * curstate)
 
 static void printStateFileHeader(state * curstate)
 { 
+  strcpy(statesFileName, "RAxML_states.");
+  strcat(statesFileName, run_id);
   //DELETE THE FILE IF IT EXISTS, obviously this should be better later
-  remove("sampled_states.txt");
-  FILE *f = myfopen("sampled_states.txt", "ab");
+  remove(statesFileName);
+  FILE *f = myfopen(statesFileName, "ab");
   fprintf(f,"iter\tlikelihood");
   int i;
   for(i = 0;i < curstate->numSubsRates; i++)
@@ -1019,14 +1041,12 @@ void mcmc(tree *tr, analdef *adef)
   for(j=0; j<num_moves; j++)
   {
     //printBothOpen("iter %d, tr LH %f, startLH %f\n",j, tr->likelihood, tr->startLH);
-    //printRecomTree(tr, TRUE, "startiter");
     proposalAccepted = FALSE;
     t = gettime(); 
 
-    /*
-      evaluateGeneric(tr, tr->start); // just for validation 
-      printBothOpen("before proposal, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-    */
+      evaluateGeneric(tr, tr->start, FALSE); // just for validation (make sure we compare the same)
+      //printBothOpen("before proposal, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
+      tr->startLH = tr->likelihood;
 
     which_proposal = proposal(curstate);
     if (first == 1)
@@ -1080,12 +1100,14 @@ void mcmc(tree *tr, analdef *adef)
 	  assert(0);
 	}
 
+      //printBothOpen("accepted , iter %d tr LH %f, startLH %f, %i \n", j, tr->likelihood, tr->startLH, which_proposal);
       curstate->tr->startLH = curstate->tr->likelihood;  //new LH
       curstate->curprior = curstate->newprior;          
     }
     else
     {
       //printBothOpen("rejected , iter %d tr LH %f, startLH %f, %i \n", j, tr->likelihood, tr->startLH, which_proposal);
+    //print_proposal(which_proposal);
       resetState(which_proposal,curstate);
       
       switch(which_proposal)
@@ -1113,14 +1135,14 @@ void mcmc(tree *tr, analdef *adef)
       
       // just for validation 
 
-      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-10)
+      if(fabs(curstate->tr->startLH - tr->likelihood) > 1.0E-15)
       {
-        printBothOpen("WARNING: LH diff %.10f\n", curstate->tr->startLH - tr->likelihood);
+        printRecomTree(tr, TRUE, "after reset");
+        printBothOpen("WARNING: LH diff %.20f\n", curstate->tr->startLH - tr->likelihood);
+        printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
       }
-      //printRecomTree(tr, TRUE, "after reset");
-      //printBothOpen("after reset, iter %d tr LH %f, startLH %f\n", j, tr->likelihood, tr->startLH);
-      assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
-      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
+      //assert(fabs(curstate->tr->startLH - tr->likelihood) < 1.0E-10); 
+      assert(fabs(curstate->tr->startLH - tr->likelihood) < 0.1);
     }       
     inserts++;
     
