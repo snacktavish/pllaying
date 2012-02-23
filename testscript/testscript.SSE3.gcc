@@ -2,11 +2,11 @@
 # EDIT BELOW ACCORDINGLY
 # This is the stable version of the library
 LIBPHYLOLIKEVER="0.0.0"
-# This is the URL from where we download the current stable version of the library
+# This is the URL from where you will download the current stable version of the library
 LIBPHYLOLIKEURL="http://sco.h-its.org/exelixis/libphylolike"
-# This is the where we keep the version being developed
+# This is where you keep the version being developed by yourself
 LOCALVER="/home/pississn/Library/local"
-# This is the working directory we want to run the test from
+# This is the working directory you want to run the test from
 WORKINGDIR="/home/pississn/Library/local/testscript"
 # NO NEED TO EDIT BEYOND THIS POINT
 # Choose an identification number for the output of the stable version
@@ -76,11 +76,11 @@ fi
 
 echo "\n"
 echo "Installed programme:"
-echo " libphylolike-${LIBPHYLOLIKEVER}/raxmlLight"
+echo " ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight"
 
 if [ $# -eq 0 ] ; then
 	echo "\n"
-	echo " usage: sh script.sh [raxml options]"
+	echo " usage: sh testscript.SSE3.gcc [raxml options]"
 	echo "\n"
 	exit 1
 fi
@@ -89,7 +89,7 @@ fi
 find . -type f -iname "RAxML_*.${OUTPUTID1}*" -exec rm {} \;
 find . -type f -iname "RAxML_*.${OUTPUTID2}*" -exec rm {} \;
 
-#Run the two versions from the working dir
+#Run the two versions from the working dir you chose
 cd ${WORKINGDIR}
 ${LOCALVER}/raxmlLight $@ -n ${OUTPUTID1}
 ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight $@ -n ${OUTPUTID2}
@@ -97,7 +97,7 @@ echo "\n"
 echo " Testscript finished successfully. Check the messages below."
 echo "\n"
 
-#Check the likelihood and the tree
+#Check the likelihoods
 LIKELIHOOD1=`grep -i "Likelihood   :" RAxML_info.${OUTPUTID1}`
 LIKELIHOOD2=`grep -i "Likelihood   :" RAxML_info.${OUTPUTID2}`
 
@@ -110,6 +110,7 @@ else
 
 fi
 
+#Check the trees
 TREE1=`cat ${WORKINGDIR}/RAxML_result.${OUTPUTID1}`
 TREE2=`cat ${WORKINGDIR}/RAxML_result.${OUTPUTID2}`
 
