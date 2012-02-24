@@ -43,46 +43,46 @@ echo " ${WGET}"
 echo " ${TAR}"
 echo " ${BZIP2}"
 
-if [ ! -f ${LOCALVER}/raxmlLight ] ; then
-        echo " Building ${LIBPHYLOLIKELOC}/raxmlLight ...";
+if [ ! -f ${LOCALVER}/raxmlLight-PTHREADS ] ; then
+        echo " Building ${LIBPHYLOLIKELOC}/raxmlLight-PTHREADS ...";
         cd ${LOCALVER}
-        make clean -f Makefile.SSE3.gcc
-        make -f Makefile.SSE3.gcc
+        make clean -f Makefile.SSE3.PTHREADS.gcc
+        make -f Makefile.SSE3.PTHREADS.gcc
 fi
 
-if [ ! -f ${LOCALVER}/raxmlLight ] ; then
+if [ ! -f ${LOCALVER}/raxmlLight-PTHREADS ] ; then
 	echo "\n";
-        echo " Error: failed to build ${LOCALVER}/raxmlLight. Please check the messages above!!!";
+        echo " Error: failed to build ${LOCALVER}/raxmlLight-PTHREADS. Please check the messages above!!!";
 	echo "\n";
         exit 1
 fi
 
-if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight ] ; then
+if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS ] ; then
         cd ${WORKINGDIR}
-        echo " Building ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight ...";
+        echo " Building ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS ...";
         ${WGET} ${LIBPHYLOLIKEURL}/libphylolike-${LIBPHYLOLIKEVER}.tar.bz2
         ${BZIP2} -d libphylolike-${LIBPHYLOLIKEVER}.tar.bz2
         ${TAR} -xvf libphylolike-${LIBPHYLOLIKEVER}.tar
         rm libphylolike-${LIBPHYLOLIKEVER}.tar
         cd ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}
-        make clean -f Makefile.SSE3.gcc
-        make -f Makefile.SSE3.gcc
+        make clean -f Makefile.SSE3.PTHREADS.gcc
+        make -f Makefile.SSE3.PTHREADS.gcc
 fi
 
-if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight ] ; then
+if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS ] ; then
 	echo "\n"
-        echo " Error: failed to build ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight. Please check the messages above!!!"
+        echo " Error: failed to build ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS. Please check the messages above!!!"
 	echo "\n"
         exit 1
 fi
 
 echo "\n"
 echo "Installed programme:"
-echo " ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight"
+echo " ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS"
 
 if [ $# -eq 0 ] ; then
 	echo "\n"
-	echo " usage: sh testscript.SSE3.gcc [raxml options]"
+	echo " usage: sh testscript.SSE3.PTHREADS.gcc [raxml options]"
 	echo "\n"
 	exit 1
 fi
@@ -94,8 +94,8 @@ find . -type f -iname "RAxML_*.${OUTPUTID2}*" -exec rm {} \;
 
 #Run the two versions from the working dir you chose
 cd ${WORKINGDIR}
-${LOCALVER}/raxmlLight $@ -n ${OUTPUTID1}
-${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight $@ -n ${OUTPUTID2}
+${LOCALVER}/raxmlLight-PTHREADS $@ -n ${OUTPUTID1}
+${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS $@ -n ${OUTPUTID2}
 echo "\n"
 echo " Testscript finished successfully. Check the messages below."
 echo "\n"
