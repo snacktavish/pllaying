@@ -110,7 +110,7 @@ else
 	echo "\n Error: the computed likelihoods are different!!!"
 	echo "  $LIKELIHOOD1 (stable version)"
 	echo "  $LIKELIHOOD2 (developed version)"
-
+	exit 1
 fi
 
 #Check the trees
@@ -123,6 +123,8 @@ else
 	echo "\n Error: the computed trees are different!!!!"
 	echo "  diff <tree_stable_version> <tree_developed_version>:"
         diff ${WORKINGDIR}/RAxML_result.${OUTPUTID1} ${WORKINGDIR}/RAxML_result.${OUTPUTID2}
+	exit 1
 fi
 
 echo "\n"
+exit 0
