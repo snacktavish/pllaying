@@ -4,10 +4,12 @@
 LIBPHYLOLIKEVER="0.0.0"
 # This is the URL from where you will download the current stable version of the library
 LIBPHYLOLIKEURL="http://sco.h-its.org/exelixis/libphylolike"
-# This is where you keep the version being developed by yourself
-LOCALVER="/home/pississn/Library/local"
 # This is the working directory you want to run the test from
-WORKINGDIR="/home/pississn/Library/local/testscript"
+WORKINGDIR=`pwd`
+# This is where you keep the version being developed by yourself
+cd ..
+LOCALVER=`pwd`
+cd ${WORKINGDIR}
 # NO NEED TO EDIT BEYOND THIS POINT
 # Choose an identification number for the output of the stable version
 OUTPUTID1="131313"
