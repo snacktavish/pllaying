@@ -21,7 +21,7 @@ fi
 
 if [ $# -eq 0 ] ; then
 	echo "\n"
-	echo " usage: supertestscript.sh [raxml options]"
+	echo " usage: sh supertestscript.sh [raxml options]"
 	echo "\n"
 	exit 1
 fi
