@@ -1,16 +1,20 @@
 #! /bin/sh
 # This is the working directory you want to run the test from
-WORKINGDIR="/home/pississn/Library/local/testscript"
-DATADIR="/home/pississn/Library/local/testdata"
+WORKINGDIR=`pwd`
+DATADIR=`pwd`/../testdata
 # NO NEED TO EDIT BEYOND THIS POINT
 AVX_GCC="testscript.AVX.gcc"
 AVX_PTHREADS_GCC="testscript.PTHREADS.AVX.gcc"
 SSE3_GCC="testscript.SSE3.gcc"
 SSE3_PTHREADS_GCC="testscript.SSE3.PTHREADS.gcc"
 
+# KEEP A LOG OF STDOUT OF RAxML
+LOGFILE=RAxML_log.txt
+ERRLOGFILE=RAxML_ERR_log.txt
+
 run_AVX_GCC()
 {
-  	sh ${WORKINGDIR}/${AVX_GCC} ${OPTIONS}
+  	sh ${WORKINGDIR}/${AVX_GCC} ${OPTIONS} 
   	RETVAL=$?
   	if [ $RETVAL -ne 0 ] ; then
   		echo " Error: testscript.AVX.gcc failed. Check the messages above ...";
@@ -108,28 +112,28 @@ if [ $# -eq 1 ] ; then
 		exit 1
         fi
 	if [ $1 -eq 0 ] ; then
-		TEST1="${DATADIR}/7.dna.binary"
-		TEST2="${DATADIR}/7.dna.singlegene.binary"
-		TEST3="${DATADIR}/7.aa.binary"
-		TEST4="${DATADIR}/7.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/7.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/7.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/7.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/7.aa.singlegene.binary"
         fi
 	if [ $1 -eq 1 ] ; then
-		TEST1="${DATADIR}/20.dna.binary"
-		TEST2="${DATADIR}/20.dna.singlegene.binary"
-		TEST3="${DATADIR}/20.aa.binary"
-		TEST4="${DATADIR}/20.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/20.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/20.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/20.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/20.aa.singlegene.binary"
         fi
 	if [ $1 -eq 2 ] ; then
-		TEST1="${DATADIR}/5K.dna.binary"
-		TEST2="${DATADIR}/5K.dna.singlegene.binary"
-		TEST3="${DATADIR}/5K.aa.binary"
-		TEST4="${DATADIR}/5K.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/5K.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/5K.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/5K.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/5K.aa.singlegene.binary"
         fi
 	if [ $1 -eq 3 ] ; then
-		TEST1="${DATADIR}/40K.dna.binary"
-		TEST2="${DATADIR}/40K.dna.singlegene.binary"
-		TEST3="${DATADIR}/40K.aa.binary"
-		TEST4="${DATADIR}/40K.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/40K.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/40K.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/40K.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/40K.aa.singlegene.binary"
         fi
 
 	SIMPLE="" 
@@ -138,51 +142,33 @@ if [ $# -eq 1 ] ; then
 	BL_PARTITION_GAPPY="-M -S"
 	SIMPLE_RF_CONV="-D"
 
+  echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
+  echo "Starting superscript `date`, Log" > $LOGFILE 
+
 	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
   	do 
-    		# DNA MODEL loop
     		for MODEL in PSR GAMMA 
      		do
-       			for DATA_PARTITIONED in ${TEST2} 
+       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} #${TEST_AA_PARTITIONED}
          		do
             			for FLAGS in ${BL_PARTITION} ${BL_PARTITION_GAPPY} 
               			do
                 			OPTIONS="-m ${MODEL} -s ${DATA_PARTITIONED} ${FLAGS}"
-					run_${VERSION}
+                      echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
+                      (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
               			done
          		done
-       			for DATA_SINGLE in ${TEST1} 
+       			for DATA_SINGLE in ${TEST_DNA_SINGLE} #${TEST_AA_SINGLE}
          		do
             			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
               			do
                 			OPTIONS="-m ${MODEL} -s ${DATA_SINGLE} ${FLAGS}"
-					run_${VERSION}
+                      echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
+                      (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
               			done
          		done
      		done
-
-    		# AA MODEL loop
-#    		for MODEL in PROTPSRAUTO PROTPSRGAMMA PROTPSRAUTOF PROTGAMMAAUTOF
-#     		do
-#       			for DATA_PARTITIONED in ${TEST4} 
-#         		do
-#            			for FLAGS in ${BL_PARTITION} ${BL_PARTITION_GAPPY} 
-#              			do
-#                			OPTIONS="-m ${MODEL} -s ${DATA_PARTITIONED} ${FLAGS}"
-#					run_${VERSION}
-#              			done
-#         		done
-#       			for DATA_SINGLE in ${TEST3} 
-#         		do
-#            			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
-#              			do
-#                			OPTIONS="-m ${MODEL} -s ${DATA_SINGLE} ${FLAGS}"
-#					run_${VERSION}
-#              			done
-#         		done
-#     		done
   	done
-
 else
 	OPTIONS="$@"
 	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
