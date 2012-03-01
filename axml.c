@@ -1386,7 +1386,7 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
 	case AA_DATA:
 	  assert(tr->partitionData[model].protModels >= 0 && tr->partitionData[model].protModels < NUM_PROT_MODELS);
 	  printBoth(infoFile, "DataType: AA\n");	      
-	  printBoth(infoFile, "Substitution Matrix: %s\n", tr->partitionData[model].protModels);
+	  printBoth(infoFile, "Substitution Matrix: %s\n", protModels[tr->partitionData[model].protModels]);
 	  printBoth(infoFile, "%s Base Frequencies:\n", (tr->partitionData[model].protFreqs == 1)?"Empirical":"Fixed");	     
 	  break;
 	case BINARY_DATA:
