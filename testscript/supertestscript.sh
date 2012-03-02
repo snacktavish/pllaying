@@ -103,37 +103,37 @@ if [ $# -eq 1 ] ; then
 		echo "\n"
 		echo " usage: sh supertestscript.sh [ [ 0-3 ] | [raxml options] ]"
 		echo " options: "
-		echo "        [0]  supertiny size test"
-		echo "        [1]  tiny size test"
+		echo "        [0]  tiny size test"
+		echo "        [1]  small size test"
 		echo "        [2]  medium size test"
-		echo "        [3]  huge size test"
+		echo "        [3]  large size test"
 		echo "        [raxml options]  specific test"
 		echo "\n"
 		exit 1
         fi
 	if [ $1 -eq 0 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/7.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/7.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/7.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/7.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/tiny.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/tiny.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/tiny.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/tiny.aa.singlegene.binary"
         fi
 	if [ $1 -eq 1 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/20.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/20.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/20.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/20.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/small.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/small.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/small.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/small.aa.singlegene.binary"
         fi
 	if [ $1 -eq 2 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/5K.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/5K.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/5K.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/5K.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/medium.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/medium.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
         fi
 	if [ $1 -eq 3 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/40K.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/40K.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/40K.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/40K.aa.singlegene.binary"
+		TEST_DNA_PARTITIONED="${DATADIR}/large.dna.binary"
+		TEST_DNA_SINGLE="${DATADIR}/large.dna.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/large.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/large.aa.singlegene.binary"
         fi
 
 	SIMPLE="" 
@@ -149,7 +149,7 @@ if [ $# -eq 1 ] ; then
   	do 
     		for MODEL in PSR GAMMA 
      		do
-       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} #${TEST_AA_PARTITIONED}
+       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} ${TEST_AA_PARTITIONED}
          		do
             			for FLAGS in ${BL_PARTITION} ${BL_PARTITION_GAPPY} 
               			do
@@ -158,7 +158,7 @@ if [ $# -eq 1 ] ; then
                       (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
               			done
          		done
-       			for DATA_SINGLE in ${TEST_DNA_SINGLE} #${TEST_AA_SINGLE}
+       			for DATA_SINGLE in ${TEST_DNA_SINGLE} ${TEST_AA_SINGLE}
          		do
             			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
               			do
