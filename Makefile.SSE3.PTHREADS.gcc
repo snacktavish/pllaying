@@ -33,7 +33,7 @@ evaluateGenericSpecial.o : evaluateGenericSpecial.c $(GLOBAL_DEPS)
 newviewGenericSpecial.o : newviewGenericSpecial.c $(GLOBAL_DEPS)
 makenewzGenericSpecial.o : makenewzGenericSpecial.c $(GLOBAL_DEPS)
 restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
-andomTree.o : randomTree.c $(GLOBAL_DEPS)
+randomTree.o : randomTree.c $(GLOBAL_DEPS)
 fastDNAparsimony.o : fastDNAparsimony.c  $(GLOBAL_DEPS)
 
 clean : 

@@ -544,8 +544,8 @@ static inline unsigned int evaluatePopcount(INT_TYPE v_N, char *precomputed)
 	     
   _mm256_store_pd((double*)res, v_N);
   
-  a = __builtin_popcountl(res[0], precomputed) + __builtin_popcountl(res[1], precomputed);
-  b = __builtin_popcountl(res[2], precomputed) + __builtin_popcountl(res[3], precomputed);
+  a = __builtin_popcountl(res[0]) + __builtin_popcountl(res[1]);
+  b = __builtin_popcountl(res[2]) + __builtin_popcountl(res[3]);
 	     
   return (a + b);	            
 #else      	       
