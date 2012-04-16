@@ -783,6 +783,9 @@ static void printMinusFUsage(void)
   printf("              \"-f o\": old and slower rapid hill-climbing without heuristic cutoff\n");
   
   printf("\n");
+  printf("              \"-f b\": benchmark for gpu just do a full traversal and evaluate the LH\n");
+  
+  printf("\n");
 
   printf("              DEFAULT for \"-f\": new rapid hill climbing\n");
 
@@ -1127,6 +1130,10 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	    adef->mode = BIG_RAPID_MODE;
 	    tr->doCutoff = FALSE;
 	    break;	    	  	  	     
+	  case 'b':
+	    adef->mode = GPU_BENCHMARK;
+	    tr->doCutoff = TRUE;
+	    break;	  
 	  default:
 	    {	     	      
 	      printf("\n Error: select one of the following algorithms via -f :\n");
@@ -1355,6 +1362,9 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
     {	
     case  BIG_RAPID_MODE:	 
       printBoth(infoFile, "\nRAxML rapid hill-climbing mode\n\n");
+      break;	
+    case  GPU_BENCHMARK:	 
+      printBoth(infoFile, "\nRAxML GPU benchmark\n\n");
       break;	
     default:
       assert(0);
@@ -2903,6 +2913,11 @@ int main (int argc, char *argv[])
       ticks t1 = getticks();
  
       evaluateGeneric(tr, tr->start, TRUE);	 
+      if(adef->mode == GPU_BENCHMARK)
+      {
+        printBothOpen("LH: %f\n", tr->likelihood);
+        return 0;
+      }
       
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
