@@ -231,6 +231,8 @@ extern double exp_approx (double x);
 #define  MORPH_CALIBRATOR_PARSIMONY 25
 #define  SH_LIKE_SUPPORTS           28
 
+#define  GPU_BENCHMARK              29
+
 #define M_GTRCAT         1
 #define M_GTRGAMMA       2
 #define M_BINCAT         3
