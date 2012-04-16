@@ -1077,6 +1077,9 @@ void newviewIterative (tree *tr, int startIndex)
 
 
 #ifndef _OPTIMIZED_FUNCTIONS
+        /* FER for the gpu-impl. we consider only GAMMA + DNA*/
+	      assert(tr->rateHetModel == GAMMA);
+	      assert( states == 4 );
 
 	      /* memory saving not implemented */
 
@@ -1120,6 +1123,7 @@ void newviewIterative (tree *tr, int startIndex)
 
 	          ticks t2 = getticks();
                   if( 1 || tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
+                     /* FER this is what we want to compute in the GPU device */
                      newviewGAMMA_FLEX_reorder(tInfo->tipCase,
                                               x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
                                               0, tipX1, tipX2,
