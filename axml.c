@@ -2910,18 +2910,20 @@ int main (int argc, char *argv[])
 	 This should basically be the first call to the library that actually computes something :-)
       */
      
-      ticks t1 = getticks();
- 
-      evaluateGeneric(tr, tr->start, TRUE);	 
+      /* For this branch we are only interested in testing with -f b  */
       if(adef->mode == GPU_BENCHMARK)
       {
-        printBothOpen("LH: %f\n", tr->likelihood);
+        ticks t1 = getticks();
+        evaluateGeneric(tr, tr->start, TRUE);	 
+        ticks t2 = getticks();
+        printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
         return 0;
       }
-      
-      ticks t2 = getticks();
-      printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
-      return 0;
+      else
+      {
+        printBothOpen( "Run with -f b\n");
+      }
+      assert(adef->mode == GPU_BENCHMARK);
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       
