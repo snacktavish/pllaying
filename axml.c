@@ -2905,7 +2905,7 @@ int main (int argc, char *argv[])
       evaluateGeneric(tr, tr->start, TRUE);	 
       
       ticks t2 = getticks();
-      printf( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
+      printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
       return 0;
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
