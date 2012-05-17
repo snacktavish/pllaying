@@ -549,58 +549,85 @@ static int  findTreeInList (bestlist *bt, tree *tr)
 } 
 
 
-int  saveBestTree (bestlist *bt, tree *tr)
+int  saveBestTree (bestlist *bt, tree *tr, boolean keepIdenticalTrees)
 {    
-  topol  *tpl, *reuse;
-  int  tplNum, scrNum, reuseScrNum, reuseTplNum, i, oldValid, newValid;
+  topol  
+    *tpl, 
+    *reuse;
+  
+  int  
+    tplNum, 
+    scrNum, 
+    reuseScrNum, 
+    reuseTplNum, 
+    i, 
+    oldValid, 
+    newValid;
   
   tplNum = findTreeInList(bt, tr);
   tpl = bt->byScore[0];
   oldValid = newValid = bt->nvalid;
   
-  if (tplNum > 0) {                      /* Topology is in list  */
-    reuse = bt->byTopol[tplNum];         /* Matching topol  */
-    reuseScrNum = reuse->scrNum;
-    reuseTplNum = reuse->tplNum;
-  }
+  if(tplNum > 0) 
+    {                      
+      /* Topology is in list  */
+
+      if(!keepIdenticalTrees)
+	return 0;
+
+      reuse = bt->byTopol[tplNum];         /* Matching topol  */
+      reuseScrNum = reuse->scrNum;
+      reuseTplNum = reuse->tplNum;
+    }
   /* Good enough to keep? */
-  else if (tr->likelihood < bt->worst)  return 0;
-  
-  else {                                 /* Topology is not in list */
-    tplNum = -tplNum;                    /* Add to list (not replace) */
-    if (newValid < bt->nkeep) bt->nvalid = ++newValid;
-    reuseScrNum = newValid;              /* Take worst tree */
-    reuse = bt->byScore[reuseScrNum];
-    reuseTplNum = (newValid > oldValid) ? newValid : reuse->tplNum;
-    if (tr->likelihood > bt->start->likelihood) bt->improved = TRUE;
-  }
+  else
+    {
+      if(tr->likelihood < bt->worst)  
+	return 0;  
+      else 
+	{                                 /* Topology is not in list */
+	  tplNum = -tplNum;                    /* Add to list (not replace) */
+	  if (newValid < bt->nkeep) bt->nvalid = ++newValid;
+	  reuseScrNum = newValid;              /* Take worst tree */
+	  reuse = bt->byScore[reuseScrNum];
+	  reuseTplNum = (newValid > oldValid) ? newValid : reuse->tplNum;
+	  if (tr->likelihood > bt->start->likelihood) 
+	    bt->improved = TRUE;
+	}
+    }
   
   scrNum = findInList((void *) tpl, (void **) (& (bt->byScore[1])),
 		      oldValid, cmpTplScore);
   scrNum = ABS(scrNum);
   
   if (scrNum < reuseScrNum)
-    for (i = reuseScrNum; i > scrNum; i--)
-      (bt->byScore[i] = bt->byScore[i-1])->scrNum = i;
+    {
+      for (i = reuseScrNum; i > scrNum; i--)
+	(bt->byScore[i] = bt->byScore[i-1])->scrNum = i;
+    }
+  else
+    {
+      if (scrNum > reuseScrNum) 
+	{
+	  scrNum--;
+	  for (i = reuseScrNum; i < scrNum; i++)
+	    (bt->byScore[i] = bt->byScore[i+1])->scrNum = i;
+	}
+    }
   
-  else if (scrNum > reuseScrNum) {
-    scrNum--;
-    for (i = reuseScrNum; i < scrNum; i++)
-      (bt->byScore[i] = bt->byScore[i+1])->scrNum = i;
-  }
-  
-  if (tplNum < reuseTplNum)
+  if(tplNum < reuseTplNum)
     for (i = reuseTplNum; i > tplNum; i--)
-      (bt->byTopol[i] = bt->byTopol[i-1])->tplNum = i;
-  
-  else if (tplNum > reuseTplNum) {
-    tplNum--;
-    for (i = reuseTplNum; i < tplNum; i++)
-      (bt->byTopol[i] = bt->byTopol[i+1])->tplNum = i;
-  }
-  
-  
-  
+      (bt->byTopol[i] = bt->byTopol[i-1])->tplNum = i;  
+  else 
+    {
+      if (tplNum > reuseTplNum) 
+	{
+	  tplNum--;
+	  for (i = reuseTplNum; i < tplNum; i++)
+	    (bt->byTopol[i] = bt->byTopol[i+1])->tplNum = i;
+	}
+    }
+      
   tpl->scrNum = scrNum;
   tpl->tplNum = tplNum;
   bt->byTopol[tplNum] = bt->byScore[scrNum] = tpl;

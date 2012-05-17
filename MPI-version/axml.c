@@ -806,7 +806,7 @@ static void printREADME(void)
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
   printf("      -t userStartingTree| -R binaryCheckpointFile\n");
-  printf("      [-B]\n"); 
+  printf("      [-B numberOfMLtreesToSave]\n"); 
   printf("      [-c numberOfCategories]\n");
   printf("      [-D]\n");
   printf("      [-e likelihoodEpsilon] \n");
@@ -823,9 +823,7 @@ static void printREADME(void)
   printf("      [-w outputDirectory] \n"); 
   printf("      [-X]\n");
   printf("\n");
-  printf("      -B      Parse phylip file and conduct pattern compression, then store the output in a \n");
-  printf("              binary file called sequenceFileName.binary that can be read via the \"-G\" option\n");
-  printf("              ATTENTION: the \"-B\" option only works with the sequential version\n");
+  printf("      -B     specify the number of best ML trees to save and print to file\n");
   printf("\n");
   printf("      -c      Specify number of distinct rate catgories for RAxML when modelOfEvolution\n");
   printf("              is set to GTRPSR\n");
@@ -983,7 +981,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   double 
     likelihoodEpsilon;
   
-  int  
+  int     
     optind = 1,        
     c,
     nameSet = 0,
@@ -997,10 +995,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
  
  
 
-  /*********** tr inits **************/
-
-
- 
+  /*********** tr inits **************/ 
  
   tr->doCutoff = TRUE;
   tr->secondaryStructureModel = SEC_16; /* default setting */
@@ -1022,16 +1017,25 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   tr->constrained = FALSE;
 
   tr->gapyness               = 0.0; 
+  tr->saveBestTrees          = 0;
 
   /********* tr inits end*************/
 
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:vhMSDQXbp", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:B:e:c:f:i:m:r:t:w:n:s:vhMSDQXbp", &optind, &optarg))!=-1))
     {
     switch(c)
       {    
+      case 'B':
+	sscanf(optarg,"%d", &(tr->saveBestTrees));
+	if(tr->saveBestTrees < 0)
+	  {
+	    printf("Number of best trees to save must be greater than 0!\n");
+	    errorExit(-1);	 
+	  }
+	break;
       case 'p':
 	tr->startingTree = parsimonyTree;
 	break;
@@ -1621,6 +1625,8 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 
 boolean isThisMyPartition(tree *tr, int tid, int model)
 { 
+  assert(tr->manyPartitions);
+
   if(tr->partitionAssignment[model] == tid)
     return TRUE;
   else
@@ -1634,6 +1640,8 @@ static void computeFractionMany(tree *tr, int tid)
 
   int   
     model;
+
+  assert(tr->manyPartitions);
 
   for(model = 0; model < tr->NumberOfModels; model++)
     {

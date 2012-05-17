@@ -52,6 +52,7 @@ extern infoList iList;
 extern char seq_file[1024];
 extern char resultFileName[1024];
 extern char tree_file[1024];
+extern char workdir[1024];
 extern char run_id[128];
 extern double masterTime;
 extern double accumulatedTime;
@@ -555,7 +556,7 @@ boolean insertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
 }
 
 
-static void restoreTopologyOnly(tree *tr, bestlist *bt)
+static void restoreTopologyOnly(tree *tr, bestlist *bt, bestlist *bestML)
 { 
   nodeptr p = tr->removeNode;
   nodeptr q = tr->insertNode;
@@ -608,7 +609,9 @@ static void restoreTopologyOnly(tree *tr, bestlist *bt)
   
   tr->likelihood = tr->bestOfNode;
     
-  saveBestTree(bt, tr);
+  saveBestTree(bt, tr, TRUE);
+  if(tr->saveBestTrees)
+    saveBestTree(bestML, tr, FALSE);
   
   tr->likelihood = currentLH;
   
@@ -828,7 +831,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
 
 
-double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt)
+double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, bestlist *bestML)
 {
   int i, index,
     *perm = (int*)NULL;   
@@ -894,12 +897,14 @@ double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, best
 		{			   	     
 		  restoreTreeFast(tr);	 	 
 		  tr->startLH = tr->endLH = tr->likelihood;	 
-		  saveBestTree(bt, tr);
+		  saveBestTree(bt, tr, TRUE); 
+		  if(tr->saveBestTrees)
+		    saveBestTree(bestML, tr, FALSE);
 		}
 	      else
 		{ 		  
 		  if(tr->bestOfNode != unlikely)		    	     
-		    restoreTopologyOnly(tr, bt);		    
+		    restoreTopologyOnly(tr, bt, bestML);		    
 		}	   
 	    }
 	  else
@@ -928,14 +933,16 @@ double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, best
 		{	 	     
 		  restoreTreeFast(tr);	 	 
 		  tr->startLH = tr->endLH = tr->likelihood;	 
-		  saveBestTree(bt, tr);
+		  saveBestTree(bt, tr, TRUE);
+		  if(tr->saveBestTrees)
+		    saveBestTree(bestML, tr, FALSE);
 		}
 	      else
 		{ 
 	      
 		  if(tr->bestOfNode != unlikely)
 		    {	     
-		      restoreTopologyOnly(tr, bt);
+		      restoreTopologyOnly(tr, bt, bestML);
 		    }	
 		}      
 	    }
@@ -1319,7 +1326,7 @@ void restart(tree *tr)
     }
 }
 
-int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bestlist *bt)
+int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bestlist *bt, bestlist *bestML)
 {
   const 
     int MaxFast = 26;
@@ -1408,7 +1415,9 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 	}
       
       treeEvaluate(tr, 0.25);
-      saveBestTree(bt, tr); 
+      saveBestTree(bt, tr, TRUE); 
+      if(tr->saveBestTrees)
+	saveBestTree(bestML, tr, FALSE);
                                          
 #ifdef _DEBUG_CHECKPOINTING
       printBothOpen("TRAV: %d lh %f\n", maxtrav, tr->likelihood);
@@ -1474,6 +1483,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
     epsilon;              
   
   bestlist 
+    *bestML,
     *bestT, 
     *bt;        
  
@@ -1493,8 +1503,20 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       
   bt = (bestlist *) malloc(sizeof(bestlist));      
   bt->ninit = 0;
-  initBestTree(bt, 20, tr->mxtips); 
+  initBestTree(bt, 20, tr->mxtips);    
 
+
+
+  if(tr->saveBestTrees > 0)
+    { 
+      bestML = (bestlist *) malloc(sizeof(bestlist));      
+      bestML->ninit = 0;
+      initBestTree(bestML, tr->saveBestTrees, tr->mxtips);  
+    }
+  else
+    bestML = (bestlist *)NULL;
+  
+  
   /* initialize an additional data structure used by the search algo, all of this is pretty 
      RAxML-specific and should probably not be in the library */
 
@@ -1534,7 +1556,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
   /* save the current tree (which is the input tree parsed via -t in the bestT list */
 
-  saveBestTree(bestT, tr);
+  saveBestTree(bestT, tr, TRUE);
   
   /* if the rearrangmenet radius has been set by the user ie. adef->initailSet == TRUE 
      then just set the apppropriate parameter.
@@ -1548,7 +1570,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
     {
       if((!adef->useCheckpoint) || (adef->useCheckpoint && ckp.state == REARR_SETTING))
 	{
-	  bestTrav = adef->bestTrav = determineRearrangementSetting(tr, adef, bestT, bt);     	  
+	  bestTrav = adef->bestTrav = determineRearrangementSetting(tr, adef, bestT, bt, bestML);     	  
 	  printBothOpen("\nBest rearrangement radius: %d\n", bestTrav);
 	}
     }
@@ -1573,7 +1595,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   /* save the current tree again, while the topology has not changed, the branch lengths have changed in the meantime, hence
      we need to store them again */
 
-  saveBestTree(bestT, tr); 
+  saveBestTree(bestT, tr, TRUE); 
 
   /* set the loop variable to TRUE */
 
@@ -1756,11 +1778,11 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       /* optimize branch lengths */
      
      
-      treeEvaluate(tr, 1.0);  
+      treeEvaluate(tr, 1.0);    
      
       /* save the tree with those branch lengths again */
       
-      saveBestTree(bestT, tr);           
+      saveBestTree(bestT, tr, TRUE);           
 
       /* print the log likelihood */
 
@@ -1776,7 +1798,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
             
       /* in here we actually do a cycle of SPR moves */
 
-      treeOptimizeRapid(tr, 1, bestTrav, adef, bt);   
+      treeOptimizeRapid(tr, 1, bestTrav, adef, bt, bestML);   
           
       /* set impr to 0 since in the immediately following for loop we check if the SPR moves above have generated 
 	 a better tree */
@@ -1809,7 +1831,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	    {
 	      impr = 1;	       
 	      lh = tr->likelihood;	       	     
-	      saveBestTree(bestT, tr);
+	      saveBestTree(bestT, tr, TRUE);
 	      
 	    }	   	   
 	}
@@ -2046,12 +2068,12 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      
       /* do some bokkeeping and printouts again */
       previousLh = lh = tr->likelihood;	      
-      saveBestTree(bestT, tr);     
+      saveBestTree(bestT, tr, TRUE);     
       printLog(tr);
 
       /* do a cycle of thorough SPR moves with the minimum and maximum rearrangement radii */
 
-      treeOptimizeRapid(tr, rearrangementsMin, rearrangementsMax, adef, bt);
+      treeOptimizeRapid(tr, rearrangementsMin, rearrangementsMax, adef, bt, bestML);
 	
       impr = 0;			      		            
 
@@ -2071,7 +2093,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	    {
 	      impr = 1;	       
 	      lh = tr->likelihood;	  	     
-	      saveBestTree(bestT, tr);
+	      saveBestTree(bestT, tr, TRUE);
 	    }	   	   
 	}  
 
@@ -2089,7 +2111,56 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 #ifdef _DEBUG_CHECKPOINTING
   printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
 #endif
-    
+   
+  printBothOpen("\nLikelihood of best tree: %f\n", tr->likelihood);
+  /* print the absolut best tree */
+
+  printLog(tr);
+  printResult(tr, adef, TRUE);
+
+  /* print other good trees encountered during the search */
+
+  if(tr->saveBestTrees > 0)
+    { 
+      char 
+	fileName[2048] = "",
+	buf[64] = "";
+     
+      printBothOpen("\n\nEvaluating %d other good ML trees\n\n", bestML->nvalid);
+      
+      for(i = 1; i <= bestML->nvalid; i++)
+	{		 
+	  recallBestTree(bestML, i, tr);	 	    	    		  
+	  /*treeEvaluate(tr, 0.25);*/
+	  printBothOpen("tree %d likelihood %1.80f\n", i, tr->likelihood);
+
+	  if(processID == 0)
+	    { 	      		
+	      FILE 
+		*treeFile;
+
+	      strcpy(fileName,       workdir);
+	      strcat(fileName, "RAxML_");
+	      sprintf(buf, "%d", bestML->nvalid);
+	      strcat(fileName, buf);
+	      strcat(fileName, "_goodTrees.");
+	      strcat(fileName, run_id);
+
+	      treeFile = myfopen(fileName, "a");
+	     
+	      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, TRUE, SUMMARIZE_LH, FALSE, FALSE);
+	       
+	      fprintf(treeFile, "%s", tr->tree_string);
+	      fclose(treeFile);	      
+	    }
+
+	  
+	}      
+	
+      printBothOpen("\n\nOther good trees written to file %s\n", fileName);			
+    }
+
+
   /* free data structures */
 
   if(tr->searchConvergenceCriterion && processID == 0)
@@ -2105,8 +2176,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   freeBestTree(bt);
   free(bt);
   freeInfoList();  
-  printLog(tr);
-  printResult(tr, adef, TRUE);
+  
 
   /* and we are done, return to main() in axml.c  */
 

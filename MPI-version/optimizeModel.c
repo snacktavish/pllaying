@@ -1702,7 +1702,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		    tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
 		  }
 	      }	      
-	    }
+	    }	 
 	}
     }
   else
@@ -1851,8 +1851,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      
 	      accRat /= dwgt;	     
 	    }
-	   /*accRat /=  (double)accWgt;*/
 
+	   /*accRat /=  (double)accWgt;*/
 	  /*printf("%f %d\n", accRat, processID);*/
 
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
@@ -1902,9 +1902,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    }
 	}
 
-    }
-  
-           
+    }          
 }
 
 static void optimizeRateCategories(tree *tr, int _maxCategories)

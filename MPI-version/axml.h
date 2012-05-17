@@ -636,8 +636,9 @@ typedef  struct  {
   int *ti;
 
   boolean useGappedImplementation;
-  boolean saveMemory;
+  boolean saveMemory;  
   int              startingTree;
+  int              saveBestTrees;
   long             randomNumberSeed;
 
   double          *lhs;
@@ -1008,10 +1009,10 @@ extern boolean testInsertBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void addTraverseBIG ( tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
 extern int rearrangeBIG ( tree *tr, nodeptr p, int mintrav, int maxtrav );
 extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
-extern double treeOptimizeRapid ( tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt);
+extern double treeOptimizeRapid ( tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, bestlist *bestML);
 extern boolean testInsertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( tree *tr );
-extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt );
+extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt, bestlist *bestML);
 extern void computeBIGRAPID ( tree *tr, analdef *adef, boolean estimateModel);
 extern boolean treeEvaluate ( tree *tr, double smoothFactor );
 extern boolean treeEvaluatePartition ( tree *tr, double smoothFactor, int model );
@@ -1024,7 +1025,7 @@ extern void restoreTL ( topolRELL_LIST *rl, tree *tr, int n );
 extern void resetTL ( topolRELL_LIST *rl );
 extern void saveTL ( topolRELL_LIST *rl, tree *tr, int index );
 
-extern int  saveBestTree (bestlist *bt, tree *tr);
+extern int  saveBestTree (bestlist *bt, tree *tr, boolean keepIdenticalTrees);
 extern int  recallBestTree (bestlist *bt, int rank, tree *tr);
 extern int initBestTree ( bestlist *bt, int newkeep, int numsp );
 extern void resetBestTree ( bestlist *bt );
