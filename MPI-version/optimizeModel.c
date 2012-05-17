@@ -60,7 +60,7 @@ extern char lengthFileNameModel[1024];
 extern char *protModels[20];
 
 
-
+extern int processes;
 extern int processID;
 
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
@@ -1581,6 +1581,227 @@ static void optRateCatModel(tree *tr, int model, double lower_spacing, double up
    of 1.0
 */
 
+static size_t calcSendBufferSize(tree *tr, int tid)
+{
+  size_t 
+    length = 0;
+
+  int 
+    model;  
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    if(isThisMyPartition(tr, tid, model))
+      {
+	length += ((size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower);       
+      }
+
+  return length;
+}
+
+static void gatherCatsWorker(tree *tr, int tid)
+{  
+  size_t 
+    model,   
+    sendBufferSize = calcSendBufferSize(tr, tid);
+
+  int   
+    *catBufSend = (int *)malloc(sendBufferSize * sizeof(int));
+
+  double 
+    *rateBufSend = (double *)malloc(sendBufferSize * sizeof(double)),
+    *patBufSend = (double *)malloc(sendBufferSize * sizeof(double)),
+    *patStoredBufSend =  (double *)malloc(sendBufferSize * sizeof(double)),
+    *lhsBufSend = (double *)malloc(sendBufferSize * sizeof(double));
+
+  size_t
+    offsets = 0; 
+
+  for(model = 0, offsets = 0; model < (size_t)tr->NumberOfModels; model++)
+    {               	
+      size_t
+	start = (size_t)tr->partitionData[model].lower,
+	width = (size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower;
+      
+      if(isThisMyPartition(tr, tid, model))
+	{	 	  
+	  
+	  memcpy(&catBufSend[offsets],       &tr->rateCategory[start], sizeof(int) * width);
+	  memcpy(&rateBufSend[offsets],      tr->partitionData[model].perSiteRates, sizeof(double) * tr->maxCategories);
+	  memcpy(&patBufSend[offsets],       &tr->patrat[start],       sizeof(double) * width);
+	  memcpy(&patStoredBufSend[offsets], &tr->patratStored[start], sizeof(double) * width);
+	  memcpy(&lhsBufSend[offsets],       &tr->lhs[start],          sizeof(double) * width);
+	  
+	  offsets += width;	  
+	}		 		
+    }
+    
+  MPI_Gatherv(catBufSend,       sendBufferSize, MPI_INT,    (int*)NULL, (int*)NULL, (int*)NULL, MPI_INT,    0, MPI_COMM_WORLD);
+  MPI_Gatherv(rateBufSend,      sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(patBufSend,       sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(patStoredBufSend, sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(lhsBufSend,       sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  
+  free(catBufSend);
+  free(rateBufSend);
+  free(patBufSend);
+  free(patStoredBufSend);
+  free(lhsBufSend);
+}
+
+
+static void gatherCatsMaster(tree *tr, int tid, int n)
+{
+  int  
+    offsets = 0,
+    *countArray  = (int *)calloc(n, sizeof(int)),
+    *offsetArray = (int *)calloc(n, sizeof(int)),
+    *modelOffsets = (int *)calloc(tr->NumberOfModels, sizeof(int)), 
+    i,
+    p;
+  
+  size_t
+    model,
+    sendBufferSize = calcSendBufferSize(tr, tid),
+    recvBufferSize = (size_t)tr->originalCrunchedLength;
+
+  int   
+    *catBufSend = (int *)malloc(sendBufferSize * sizeof(int)),
+    *catBufRecv = (int *)malloc(recvBufferSize * sizeof(int));
+
+  double   
+    *rateBufSend =       (double *)malloc(sendBufferSize * sizeof(double)),   
+    *patBufSend =        (double *)malloc(sendBufferSize * sizeof(double)),
+    *patStoredBufSend =  (double *)malloc(sendBufferSize * sizeof(double)),
+    *lhsBufSend =        (double *)malloc(sendBufferSize * sizeof(double)),
+    
+     *rateBufRecv =      (double *)malloc(recvBufferSize * sizeof(double)),
+    *patBufRecv =        (double *)malloc(recvBufferSize * sizeof(double)),
+    *patStoredBufRecv =  (double *)malloc(recvBufferSize * sizeof(double)),
+    *lhsBufRecv =        (double *)malloc(recvBufferSize * sizeof(double));
+
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    countArray[tr->partitionAssignment[model]] += (int)(tr->partitionData[model].upper - tr->partitionData[model].lower);
+
+  for(i = 0, offsets = 0; i < n; i++)
+    {
+      offsetArray[i] = offsets;
+      offsets += countArray[i];
+    }
+
+  for(p = 0; p < n; p++)    
+    {
+      int
+	localOffset = 0,
+	globalOffset = offsetArray[p];
+      
+      for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+	if(tr->partitionAssignment[model] == p)
+	  {
+	    modelOffsets[model] = globalOffset + localOffset;
+	    localOffset += (tr->partitionData[model].upper - tr->partitionData[model].lower);
+	  }
+    }
+
+
+  assert((size_t)offsets == recvBufferSize); 
+
+  for(model = 0, offsets = 0; model < (size_t)tr->NumberOfModels; model++)
+    {               	        
+      size_t       
+	start = (size_t)tr->partitionData[model].lower,
+	width = (size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower;
+      
+      if(isThisMyPartition(tr, tid, model))
+	{		  	  
+	  memcpy(&catBufSend[offsets],       &tr->rateCategory[start], sizeof(int)    * width);
+	  memcpy(&rateBufSend[offsets],      tr->partitionData[model].perSiteRates, sizeof(double) * tr->maxCategories);
+	  memcpy(&patBufSend[offsets],       &tr->patrat[start],       sizeof(double) * width);
+	  memcpy(&patStoredBufSend[offsets], &tr->patratStored[start], sizeof(double) * width);
+	  memcpy(&lhsBufSend[offsets],       &tr->lhs[start],          sizeof(double) * width);	 
+
+	  offsets += width; 	 	 
+	}	      
+    }
+   
+  MPI_Gatherv(catBufSend,       sendBufferSize, MPI_INT,    catBufRecv,       countArray, offsetArray, MPI_INT,    0, MPI_COMM_WORLD);
+  MPI_Gatherv(rateBufSend,      sendBufferSize, MPI_DOUBLE, rateBufRecv,      countArray, offsetArray, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(patBufSend,       sendBufferSize, MPI_DOUBLE, patBufRecv,       countArray, offsetArray, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(patStoredBufSend, sendBufferSize, MPI_DOUBLE, patStoredBufRecv, countArray, offsetArray, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(lhsBufSend,       sendBufferSize, MPI_DOUBLE, lhsBufRecv,       countArray, offsetArray, MPI_DOUBLE, 0, MPI_COMM_WORLD);	
+
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    {        
+      size_t
+	start  = (size_t)tr->partitionData[model].lower,
+	width  = (size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower;            
+      
+      memcpy(&tr->rateCategory[start], &catBufRecv[modelOffsets[model]],       sizeof(int) * width);
+      memcpy(tr->partitionData[model].perSiteRates,       &rateBufRecv[modelOffsets[model]],       sizeof(double) * tr->maxCategories);
+      memcpy(&tr->patrat[start],       &patBufRecv[modelOffsets[model]],       sizeof(double) * width);
+      memcpy(&tr->patratStored[start], &patStoredBufRecv[modelOffsets[model]], sizeof(double) * width);
+      memcpy(&tr->lhs[start],          &lhsBufRecv[modelOffsets[model]],       sizeof(double) * width); 
+      
+      {	
+	int 	  
+	  *numCAT = (int *)calloc(tr->maxCategories, sizeof(int)),
+	  k, 
+	  numCats = 0;
+
+	for(k = tr->partitionData[model].lower; k < tr->partitionData[model].upper; k++)
+	  numCAT[tr->rateCategory[k]] = 1;
+
+	for(k = 0; k < tr->maxCategories; k++)
+	  if(numCAT[k] == 1)
+	    numCats++;
+	
+	if(isThisMyPartition(tr, processID, model))
+	  assert(tr->partitionData[model].numberOfCategories == numCats);
+
+	tr->partitionData[model].numberOfCategories = numCats;
+
+	
+
+	free(numCAT);
+      }
+
+    }
+  
+  /* 
+     {
+    double sum = 0.0;
+    
+    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+      {        
+	int i;
+	printf("\nModel %d cats %d\n", model, tr->partitionData[model].numberOfCategories);
+	for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)	
+	  {
+	    printf("%d %f %f %f\n", tr->rateCategory[i], tr->patrat[i], tr->patratStored[i], tr->lhs[i]);     
+	    sum += tr->lhs[i];
+	    }	
+      }
+    
+    printf("likelihood: %f\n", sum);
+    }
+  */
+  
+  free(modelOffsets);
+  free(countArray);
+  free(offsetArray);
+ 
+  free(catBufSend);
+  free(rateBufSend);
+  free(patBufSend);
+  free(patStoredBufSend);
+  free(lhsBufSend);
+
+  free(catBufRecv);
+  free(rateBufRecv);
+  free(patBufRecv);
+  free(patStoredBufRecv);
+  free(lhsBufRecv);
+}
+
 void updatePerSiteRates(tree *tr, boolean scaleRates)
 {
   int 
@@ -1763,7 +1984,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	  else
 	    {
 	      assert(0);
-	      accRat /= ((double)accWgt);	      
+	      /* accRat /= ((double)accWgt); */
 	    }
 	  
 	  scaler = 1.0 / ((double)accRat);
@@ -1777,7 +1998,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		}
 	    }
 
-	  /*for(model = 0, accRat = 0.0; model < tr->NumberOfModels; model++)
+	  for(model = 0, accRat = 0.0; model < tr->NumberOfModels; model++)
 	    {
 	      if(isThisMyPartition(tr, processID, model))
 		{
@@ -1800,10 +2021,32 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		    }
 		}
 	    }           
+	
+	  if(tr->manyPartitions)
+	    {
+	      double 
+		dwgt,
+		a[2],
+		r[2];
 
-	  accRat /= ((double)accWgt);	  
+	      a[0] = (double)accRat;
+	      a[1] = (double)accWgt;
 
-	  assert(ABS(1.0 - accRat) < 1.0E-5);*/
+	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	      
+	      accRat = r[0];
+	      dwgt   = r[1];
+	      
+	      accRat /= dwgt;	     
+	    }
+	  else
+	    {
+	      assert(0);
+	      /* accRat /= ((double)accWgt); */
+	    }	    		  
+
+	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
       else
 	{
@@ -1851,9 +2094,10 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      
 	      accRat /= dwgt;	     
 	    }
+	   else
+	     assert(0);
 
-	   /*accRat /=  (double)accWgt;*/
-	  /*printf("%f %d\n", accRat, processID);*/
+	  
 
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
@@ -1902,7 +2146,33 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    }
 	}
 
-    }          
+    }  
+
+  /*if(processID == 0)
+    {
+      for(model = 0; model < tr->NumberOfModels; model++) 
+	if(isThisMyPartition(tr, processID, model))
+	{	  
+	  int 	
+	    localCount = 0,
+	    lower = tr->partitionData[model].lower,
+	    upper = tr->partitionData[model].upper;	  
+							
+	  printf("\n\nModel %d\n", model);
+	  for(i = lower; i < upper; i++, localCount++)
+	    printf("%d %d, ", tr->partitionData[model].rateCategory[localCount], tr->rateCategory[i]);
+	  printf("\n");
+	}      
+	}*/
+
+  if(processID == 0)
+    {
+      gatherCatsMaster(tr, processID, processes);
+    }
+  else
+    {
+      gatherCatsWorker(tr, processID);
+    }
 }
 
 static void optimizeRateCategories(tree *tr, int _maxCategories)

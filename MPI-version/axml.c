@@ -2126,7 +2126,7 @@ static void initializeTree(tree *tr, analdef *adef)
   tr->aliaswgt                   = (int *)malloc(tr->originalCrunchedLength * sizeof(int));
   myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
   
-  tr->rateCategory    = (int *)    malloc(tr->originalCrunchedLength * sizeof(int));	  
+  tr->rateCategory    = (int *)    calloc(tr->originalCrunchedLength, sizeof(int));	  
   tr->wr              = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
   tr->wr2             = (double *) malloc(tr->originalCrunchedLength * sizeof(double)); 
   tr->patrat          = (double*)  malloc(tr->originalCrunchedLength * sizeof(double));
