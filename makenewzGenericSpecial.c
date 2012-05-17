@@ -257,6 +257,9 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
     *right, 
     *sum;
 
+
+
+
   switch(tipCase)
     {
     case TIP_TIP:
@@ -276,6 +279,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 	}
       break;
     case TIP_INNER:
+      reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
 	{
 	  left = &(tipVector[states * tipX1[i]]);
@@ -290,8 +294,11 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 
 	    }
 	}
+      reorder( x2, n, span );
       break;
     case INNER_INNER:
+      reorder_back( x1, n, span );
+      reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
 	{
 	  for(l = 0; l < 4; l++)
@@ -305,6 +312,8 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 		sum[k] = left[k] * right[k];
 	    }
 	}
+      reorder( x1, n, span );
+      reorder( x2, n, span );
       break;
     default:
       assert(0);
@@ -582,7 +591,8 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
   
 }
 
-
+void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
+                          unsigned char *tipX1, unsigned char *tipX2, int n, const int states);
 /* the function below is called only once at the very beginning of each Newton-Raphson procedure for optimizing barnch lengths.
    It initially invokes an iterative newview call to get a consistent pair of vectors at the left and the right end of the 
    branch and thereafter invokes the one-time only precomputation of values (sumtable) that can be re-used in each Newton-Raphson 
@@ -641,7 +651,7 @@ void makenewzIterative(tree *tr)
 	    sumCAT_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
 			width, states);
 	  else
-	    sumGAMMA_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+	    sumGAMMA_FLEX_reorder(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
 			  width, states);
 #else
 	  switch(states)

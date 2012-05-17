@@ -47,6 +47,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include "cycle.h"
 
 #ifdef  _FINE_GRAIN_MPI
 #include <mpi.h>
@@ -782,6 +783,9 @@ static void printMinusFUsage(void)
   printf("              \"-f o\": old and slower rapid hill-climbing without heuristic cutoff\n");
   
   printf("\n");
+  printf("              \"-f b\": benchmark for gpu just do a full traversal and evaluate the LH\n");
+  
+  printf("\n");
 
   printf("              DEFAULT for \"-f\": new rapid hill climbing\n");
 
@@ -1126,6 +1130,10 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	    adef->mode = BIG_RAPID_MODE;
 	    tr->doCutoff = FALSE;
 	    break;	    	  	  	     
+	  case 'b':
+	    adef->mode = GPU_BENCHMARK;
+	    tr->doCutoff = TRUE;
+	    break;	  
 	  default:
 	    {	     	      
 	      printf("\n Error: select one of the following algorithms via -f :\n");
@@ -1354,6 +1362,9 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
     {	
     case  BIG_RAPID_MODE:	 
       printBoth(infoFile, "\nRAxML rapid hill-climbing mode\n\n");
+      break;	
+    case  GPU_BENCHMARK:	 
+      printBoth(infoFile, "\nRAxML GPU benchmark\n\n");
       break;	
     default:
       assert(0);
@@ -2898,8 +2909,21 @@ int main (int argc, char *argv[])
 	 here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
 	 This should basically be the first call to the library that actually computes something :-)
       */
-      
-      evaluateGeneric(tr, tr->start, TRUE);	 
+     
+      /* For this branch we are only interested in testing with -f b  */
+      if(adef->mode == GPU_BENCHMARK)
+      {
+        ticks t1 = getticks();
+        evaluateGeneric(tr, tr->start, TRUE);	 
+        ticks t2 = getticks();
+        printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
+        return 0;
+      }
+      else
+      {
+        printBothOpen( "Run with -f b\n");
+      }
+      assert(adef->mode == GPU_BENCHMARK);
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       

@@ -32,6 +32,10 @@
 #include <assert.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __AVX
 #define BYTE_ALIGNMENT 32
 #else
@@ -230,6 +234,8 @@ extern double exp_approx (double x);
 #define  FAST_SEARCH                24
 #define  MORPH_CALIBRATOR_PARSIMONY 25
 #define  SH_LIKE_SUPPORTS           28
+
+#define  GPU_BENCHMARK              29
 
 #define M_GTRCAT         1
 #define M_GTRGAMMA       2
@@ -1312,4 +1318,18 @@ void newviewGTRGAMMA_AVX(int tipCase,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 );
 
+#endif
+
+void reorder( double *x, int n, int span );
+void reorder_back( double *x, int n, int span );
+
+
+static int virtual_width( int n ) {
+    const int global_vw = 2;
+    return (n+1) / global_vw * global_vw;
+}
+
+
+#ifdef __cplusplus
+} // extern "C"
 #endif

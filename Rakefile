@@ -2,9 +2,12 @@
 
 # define what you wanna play with...
 VALID_SETS = {
-  '20' => {:treefile => "intree20",                      :dataset => "20.binary"},
-  '49' =>{:treefile => "intree49",                       :dataset => "49.binary"},
-  '1288' =>{:treefile => "intree1288",                   :dataset => "1288.binary"},
+  '7aa' => {:treefile => "",       :dataset => "7.aa.singlegene.binary"}, # AA support?
+  '7' => {:treefile => "",       :dataset => "7.dna.singlegene.binary"},
+  '20' => {:treefile => "intree20",       :dataset => "20.dna.singlegene.binary"},
+  '20part' => {:treefile => "intree20",   :dataset => "20.dna.binary"},   # partition support?
+  '49' =>{:treefile => "intree49",        :dataset => "49.binary"},
+  '1288' =>{:treefile => "intree1288",    :dataset => "1288.binary"},
 } 
 VERSIONS = {
   "std" => {:bin => "raxmlLight", :makefile => "Makefile.SSE3.gcc"},

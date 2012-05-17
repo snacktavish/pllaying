@@ -139,6 +139,16 @@ static double evaluateGAMMA_FLEX(int *wptr,
   const int 
     span = states * 4;
 
+
+  int vn = virtual_width(n);  
+    
+  printf( "n: %d %d\n", n, vn );
+  
+  if( tipX1 == 0 ) {
+      reorder_back( x1_start, vn, span );
+  }
+  reorder_back( x2_start, vn, span );
+
   /* we distingusih between two cases here: one node of the two nodes defining the branch at which we put the virtual root is 
      a tip. Both nodes can not be tips because we do not allow for two-taxon trees ;-) 
      Nota that, if a node is a tip, this will always be tipX1. This is done for code simplicity and the flipping of the nodes
@@ -189,6 +199,11 @@ static double evaluateGAMMA_FLEX(int *wptr,
 	  sum += wptr[i] * term;
 	}                      	
     }
+  if( tipX1 == 0 ) {
+      reorder( x1_start, vn, span );
+  }
+  reorder( x2_start, vn, span );
+
 
   return sum;
 } 
