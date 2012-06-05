@@ -647,7 +647,8 @@ void evaluateIterative(tree *tr)
 
 	     There's a copy of this book in my office 
 	  */
-	     
+	  
+	  
 
 	  partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
 

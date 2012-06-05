@@ -2889,7 +2889,7 @@ int main (int argc, char *argv[])
       
       switch(tr->startingTree)
 	{
-	case randomTree:
+	case randomTree:	 
 	  makeRandomTree(tr);
 	  break;
 	case givenTree:
@@ -2909,21 +2909,78 @@ int main (int argc, char *argv[])
 	 here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
 	 This should basically be the first call to the library that actually computes something :-)
       */
+      
+
+      /* please do not remove this code from here ! */
+      
+      evaluateGeneric(tr, tr->start, TRUE);
+      
+      /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
+
+      if(0)
+	{
+	  int
+	    l,
+	    i,
+	    model;
+
+	  double 
+	    lh_standard,
+	    lh_perSite = 0.0;
+
+	  /* call the standard library implementation to obtain the overall log likelihood */
+
+	  evaluateGeneric(tr, tr->start, TRUE);
+
+	  lh_standard = tr->likelihood;
+
+	  /* Now call the per-site log likelihood calculation 
+	     that is normally used for optimizing per-site rates 
+	     under PSR.
+
+	     Here, we just iterate over all alignment sites and re-traverse 
+	     the tree for each site separately (and redundantly) to obtain the per-site 
+	     log likelihood score.
+
+	     Note that, because of the slightly faster numerical scaling procedure we use in the standard likelihood evaluation of  
+	     the tree (invoked above) we are not able to obtain correct per-site log likelihoods by a call to evaluateGeneric(tr, tr->start, TRUE);
+	  */
+
+
+	  
+	  for(model = 0; model < tr->NumberOfModels; model++)
+	    {
+	      int 	       
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
+	      
+	      /* 
+		 call evaluatePartialGeneric, i is the site index (be careful there are differences between 
+		 the sequential and Pthreads-based indexing with i. 1.0 is the evolutionary rate.
+	      */
+
+	      for(i = lower, l = 0; i < upper; i++, l++)
+		lh_perSite += evaluatePartialGeneric(tr, i, 1.0, model);
+	    }
+
+	  /* new just print the two likelihoods: */
+
+	  printf("likelihood: %1.40f, per-site likelihood: %1.40f\n", lh_standard, lh_perSite);	 
+	}
+
      
       /* For this branch we are only interested in testing with -f b  */
       if(adef->mode == GPU_BENCHMARK)
-      {
-        ticks t1 = getticks();
-        evaluateGeneric(tr, tr->start, TRUE);	 
-        ticks t2 = getticks();
-        printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
-        return 0;
-      }
-      else
-      {
-        printBothOpen( "Run with -f b\n");
-      }
-      assert(adef->mode == GPU_BENCHMARK);
+	{
+	  ticks t1 = getticks();
+	  evaluateGeneric(tr, tr->start, TRUE);	 
+	  ticks t2 = getticks();
+	  printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
+	  return 0;
+	}
+     
+	
+      
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       
