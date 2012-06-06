@@ -1924,6 +1924,7 @@ static void printREADME(void)
   printf("      -s sequenceFileName\n");
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
+  printf("      [-c]\n");
   printf("      [-q]\n");
   printf("      [-h]\n");
   printf("\n"); 
@@ -1932,6 +1933,8 @@ static void printREADME(void)
   printf("              For DNA data use:    DNA\n");	
   printf("              For AA data use:     PROT\n");			   
   printf("\n"); 
+  printf("      -c      disable site pattern compression\n");
+  printf("\n");
   printf("      -q      Specify the file name which contains the assignment of models to alignment\n");
   printf("              partitions for multiple models of substitution. For the syntax of this file\n");
   printf("              please consult the manual.\n");  
@@ -2020,24 +2023,7 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 /*********************************************************************************************/
 
 
-static void printMinusFUsage(void)
-{
-  printf("\n");
- 
 
-  printf("              \"-f d\": new rapid hill-climbing \n");
-  printf("                      DEFAULT: ON\n");
-
-  printf("\n");
-
-  printf("              \"-f o\": old and slower rapid hill-climbing without heuristic cutoff\n");
-  
-  printf("\n");
-
-  printf("              DEFAULT for \"-f\": new rapid hill climbing\n");
-
-  printf("\n");
-}
 
 
 
@@ -2129,10 +2115,13 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   /********* tr inits end*************/
 
 
-    while( !bad_opt && ( ( c = mygetopt(argc,argv,"q:s:n:m:h", &optind, &optarg ) ) != -1 ) )
+    while( !bad_opt && ( ( c = mygetopt(argc,argv,"q:s:n:m:hc", &optind, &optarg ) ) != -1 ) )
     {
     switch(c)
       {                
+      case 'c':
+	adef->compressPatterns = FALSE;
+	break;
       case 'h':
         printREADME();
 	errorExit(-1);
@@ -2629,6 +2618,7 @@ int main (int argc, char *argv[])
   cdta = (cruncheddata *)malloc(sizeof(cruncheddata));
   tr   = (tree *)malloc(sizeof(tree));
 
+
   /* the initialization below is required for the hash tables that are used */
 
   compute_bits_in_16bits();
@@ -2645,6 +2635,8 @@ int main (int argc, char *argv[])
      written in C++ by Marc Holder */
   
   getinput(adef, rdta, cdta, tr);  
+
+  printBothOpen("Pattern compression: %s\n", (adef->compressPatterns)?"ON":"OFF");
 
   makeweights(adef, rdta, cdta, tr);         
       
