@@ -829,6 +829,7 @@ static void printREADME(void)
   printf("      -s binarySequenceFile\n");
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
+  printf("      -a\n");
   printf("      [-B]\n"); 
   printf("      [-c numberOfCategories]\n");
   printf("      [-D]\n");
@@ -848,6 +849,10 @@ static void printREADME(void)
   printf("      [-v]\n"); 
   printf("      [-w outputDirectory] \n"); 
   printf("      [-X]\n");
+  printf("\n");
+  printf("      -a      use the median for the discrete approximation of the GAMMA model of rate heterogeneity\n");
+  printf("\n");
+  printf("              DEFAULT: OFF\n");
   printf("\n");
   printf("      -B      Parse phylip file and conduct pattern compression, then store the output in a \n");
   printf("              binary file called sequenceFileName.binary that can be read via the \"-G\" option\n");
@@ -1048,16 +1053,20 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   tr->constrained = FALSE;
 
   tr->gapyness               = 0.0; 
+  tr->useMedian = FALSE;
 
   /********* tr inits end*************/
 
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:g:vhMSDQXbp", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:g:vhMSDQXbpa", &optind, &optarg))!=-1))
     {
     switch(c)
-      {    
+      { 
+      case 'a':
+	tr->useMedian = TRUE;
+	break;   
       case 'p':
 	tr->startingTree = parsimonyTree;
 	break;
@@ -1341,8 +1350,10 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
   char modelType[128];
   
   
-  
-  strcpy(modelType, "GAMMA");   
+  if(tr->useMedian)
+    strcpy(modelType, "GAMMA with Median");
+  else
+    strcpy(modelType, "GAMMA");
   
   printBoth(infoFile, "\n\nThis is %s version %s released by Alexandros Stamatakis in %s.\n\n",  programName, programVersion, programDate);
   
@@ -1819,7 +1830,7 @@ static void broadCastAlpha(tree *localTree, tree *tr, int tid)
   for(model = 0; model < localTree->NumberOfModels; model++)
     {
       localTree->partitionData[model].alpha = tr->partitionData[model].alpha;
-      makeGammaCats(localTree->partitionData[model].alpha, localTree->partitionData[model].gammaRates, 4); 
+      makeGammaCats(localTree->partitionData[model].alpha, localTree->partitionData[model].gammaRates, 4, tr->useMedian); 
     }   
 #else
   if(tid > 0)
@@ -2389,6 +2400,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       localTree->manyPartitions          = tr->manyPartitions;
       localTree->NumberOfModels          = tr->NumberOfModels;           
       localTree->rateHetModel            = tr->rateHetModel;
+      localTree->useMedian               = tr->useMedian;
       localTree->saveMemory              = tr->saveMemory;
       localTree->useGappedImplementation = tr->useGappedImplementation;           
       localTree->maxCategories           = tr->maxCategories;      

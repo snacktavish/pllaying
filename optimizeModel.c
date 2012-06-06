@@ -459,7 +459,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		  tr->partitionData[index].alpha = value[i];
 #ifndef _LOCAL_DISCRETIZATION
 		  /* re-compute the discrete gamma function approximation for the new alpha parameter */
-		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4);
+		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4, tr->useMedian);
 #endif
 		}
 	    }
@@ -1142,7 +1142,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	    {	      
 	      tr->partitionData[ll->ld[i].partitionList[k]].alpha = startAlpha[i];
 #ifndef _LOCAL_DISCRETIZATION
-	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4); 
+	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4, tr->useMedian); 
 #endif		
 	    }
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))

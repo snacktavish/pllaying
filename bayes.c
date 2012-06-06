@@ -808,7 +808,7 @@ static void simpleGammaProposal(state * instate)
   instate->tr->partitionData[instate->model].alpha = newalpha;
 
 #ifndef _LOCAL_DISCRETIZATION
-  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4);
+  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4, tr->useMedian);
 #endif
 
   /* TODO: for the parallel version: need to broadcast the gamma rates before re-evaluating !!!! 
