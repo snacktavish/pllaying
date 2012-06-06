@@ -656,7 +656,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
 	for(l = 0; l < 80; l+=2)
 	  {
 	    __m128d ex3v = _mm_mul_pd(_mm_load_pd(&x3[l]),twoto);
-	    _mm_store_pd(&x3[l], ex3v, twoto);	
+	    _mm_store_pd(&x3[l], ex3v);	
 	  }
 
 	*eVector = *eVector + 1;
