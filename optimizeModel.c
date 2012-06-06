@@ -66,6 +66,12 @@ extern volatile double          *reductionBuffer;
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
 
 
+/* the following function is used to set rates in the Q matrix 
+   the data structure called symmetryVector is used to 
+   define the symmetries between rates as they are specified 
+   in some of the secondary structure substitution models that 
+   generally don't use GTR matrices but more restricted forms thereof */
+
 static void setRateModel(tree *tr, int model, double rate, int position)
 {
   int
@@ -116,8 +122,25 @@ static void setRateModel(tree *tr, int model, double rate, int position)
 }
 
 
+/* 
+   the following three functions are used to link/unlink parameters 
+   between partitions. This should work in a generic way, however 
+   this is so far mainly used for linking unlinking GTR matrix parameter 
+   estimates across different protein data partitions.
+   Generally this mechanism can also be used for linking/inlinking alpha paremeters 
+   between partitions and the like.
+   However, all alpha parameter estimates for all partitions and GTR estimates for 
+   DNA partitions are unlinked by default. This is actually hard-coded 
+   in here. 
+*/
 
+/* initializwe a parameter linkage list for a certain parameter type (can be whatever).
+   the input is an integer vector that contaions NumberOfModels (numberOfPartitions) elements.
 
+   if we want to have all alpha parameters unlinked and have say 4 partitions the input 
+   vector would look like this: {0, 1, 2, 3}, if we want to link partitions 0 and 3 the vector 
+   should look like this: {0, 1, 2, 0} 
+*/
 
 static linkageList* initLinkageList(int *linkList, tree *tr)
 {
@@ -127,8 +150,14 @@ static linkageList* initLinkageList(int *linkList, tree *tr)
     numberOfModels = 0,
     i,
     pos;
-  linkageList* ll = (linkageList*)malloc(sizeof(linkageList));
-      
+  
+  linkageList 
+    *ll = (linkageList*)malloc(sizeof(linkageList));
+    
+  /* figure out how many distinct parameters we need to estimate 
+     in total, if all parameters are linked the result will be 1 if all 
+     are unlinked the result will be tr->NumberOfModels */
+  
   for(i = 0; i < tr->NumberOfModels; i++)
     {
       if(linkList[i] > numberOfModels)
@@ -137,30 +166,58 @@ static linkageList* initLinkageList(int *linkList, tree *tr)
 
   numberOfModels++;
   
+  /* allocate the linkage list data structure that containes information which parameters of which partition are 
+     linked with each other.
+
+     Note that we need a separate invocation of initLinkageList() and a separate linkage list 
+     for each parameter type */
+
   ll->entries = numberOfModels;
   ll->ld      = (linkageData*)malloc(sizeof(linkageData) * numberOfModels);
 
+  /* noe loop over the number of free parameters and assign the corresponding partitions to each parameter */
 
   for(i = 0; i < numberOfModels; i++)
     {
+      /* 
+	 the valid flag is used for distinguishing between DNA and protein data partitions.
+	 This can be used to enable/disable parameter optimization for the paremeter 
+	 associated to the corresponding partitions. This deature is used in optRatesGeneric 
+	 to first optimize all DNA GTR rate matrices and then all PROT GTR rate matrices */
+
       ll->ld[i].valid = TRUE;
       partitions = 0;
+
+      /* now figure out how many partitions share this joint parameter */
 
       for(k = 0; k < tr->NumberOfModels; k++)	
 	if(linkList[k] == i)
 	  partitions++;	    
 
+      /* assign a list to store the partitions that share the parameter */
+
       ll->ld[i].partitions = partitions;
       ll->ld[i].partitionList = (int*)malloc(sizeof(int) * partitions);
+      
+      /* now store the respective partition indices in this list */
       
       for(k = 0, pos = 0; k < tr->NumberOfModels; k++)	
 	if(linkList[k] == i)
 	  ll->ld[i].partitionList[pos++] = k;
     }
 
+  /* return the linkage list for the parameter */
+
   return ll;
 }
 
+/* dedicated helper function to initialize the linkage list, that is, essentiaylly compute 
+   the integer vector int *linkList used above for linking GTR models.
+   
+   Once again, this is hard-coded in RAxML, because users can not influence the linking.
+
+*/
+   
 
 static linkageList* initLinkageListGTR(tree *tr)
 {
@@ -170,7 +227,17 @@ static linkageList* initLinkageListGTR(tree *tr)
     firstAA = tr->NumberOfModels + 2,
     countGTR = 0,
     countOtherModel = 0;
-  linkageList* ll;
+  
+  linkageList
+    * ll;
+
+  /* here we only want to figure out if either all prot data partitions 
+     are supposed to use a joint GTR prot subst matrix or not 
+
+    We either allow ALL prot partitions to use a shared/joint estimate of the GTR matrix or not,
+    things like having one prot partition evolving under WAG and the others under a joint GTR estimate are 
+    not allowed.
+  */
 
   for(i = 0; i < tr->NumberOfModels; i++)
     {     
@@ -189,6 +256,8 @@ static linkageList* initLinkageListGTR(tree *tr)
   
   assert((countGTR > 0 && countOtherModel == 0) || (countGTR == 0 && countOtherModel > 0) ||  (countGTR == 0 && countOtherModel == 0));
 
+  /* if there is no joint GTR matrix optimization for protein data partitions we can unlink rate matrix calculations for all partitions */
+
   if(countGTR == 0)
     {
       for(i = 0; i < tr->NumberOfModels; i++)
@@ -196,6 +265,9 @@ static linkageList* initLinkageListGTR(tree *tr)
     }
   else
     {
+      /* otherwise we let all partitions, except for the protein partitions use 
+	 unlinked rate matrices while we link the GTR rate matrices of all 
+	 protein data partitions */
       for(i = 0; i < tr->NumberOfModels; i++)
 	{
 	  switch(tr->partitionData[i].dataType)
@@ -219,6 +291,8 @@ static linkageList* initLinkageListGTR(tree *tr)
     }
   
 
+  /* we can now pass an appropriate integer vector to the linkage list initialization function :-) */
+
   ll = initLinkageList(links, tr);
 
   free(links);
@@ -226,7 +300,7 @@ static linkageList* initLinkageListGTR(tree *tr)
   return ll;
 }
 
-
+/* free linkage list data structure */
 
 static void freeLinkageList( linkageList* ll)
 {
@@ -244,7 +318,7 @@ static void freeLinkageList( linkageList* ll)
 #define RATE_F  2
 
 
-
+/* function that evaluates the change to a parameter */
 
 static void evaluateChange(tree *tr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
 { 
@@ -253,22 +327,38 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
   switch(whichFunction)
     {    
     case RATE_F:
+      /* loop over linkage list entries for Q matrix rates */
+
       for(i = 0, pos = 0; i < ll->entries; i++)
 	{
+	  /* if valid, i.e. we want to assess the change for a certain partition data type, e.g., DNA */
 	  if(ll->ld[i].valid)
 	    {
+	      /* if the iterative numerical procedure for the partitions sharing the parameter 
+		 has already converged don't do anything.
+		 This stuff is required for parallel load balanicing as described in:
+		 
+		 A. Stamatakis, M. Ott: "Load Balance in the Phylogenetic Likelihood Kernel". Proceedings of ICPP 2009, Vienna, Austria, September 2009.
+	      */
 	      if(converged[pos])
-		{
+		{		 
 		  for(k = 0; k < ll->ld[i].partitions; k++)
 		    tr->executeModel[ll->ld[i].partitionList[k]] = FALSE;
 		}
 	      else
 		{
+		  /* loop over partitions that share the same parameter */
+
 		  for(k = 0; k < ll->ld[i].partitions; k++)
 		    {
-		      int index = ll->ld[i].partitionList[k];		  	      
+		      int index = ll->ld[i].partitionList[k];		  
+		      
+		      /* update them to new, proposed value for which we want to obtain the likelihood */
+	      
 		      setRateModel(tr, index, value[pos], rateNumber);  
 #ifndef _LOCAL_DISCRETIZATION 
+		      /* in the case of rates, i.e., Q matrix, re-compute the corresponding eigenvector eigenvalue decomposition */
+
 		      initReversibleGTR(tr, index);		 
 #endif
 		    }
@@ -316,10 +406,14 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 #ifdef _FINE_GRAIN_MPI
       masterBarrierMPI(THREAD_OPT_RATE, tr);     
 #else
+      /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, tr->start, TRUE);      
 #endif
 #endif     
       
+      /* update likelihoods and the sum of per-partition likelihoods for those partitions that share the parameter.
+	 that's the likelihood we actually want to optimize here */
+
       for(i = 0, pos = 0; i < ll->entries; i++)	
 	{
 	  if(ll->ld[i].valid)
@@ -346,6 +440,9 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
       assert(pos == numberOfModels);
       break;
     case ALPHA_F:
+
+      /* analoguos to the rate stuff above */
+
       for(i = 0; i < ll->entries; i++)
 	{
 	  if(converged[i])
@@ -361,6 +458,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		  tr->executeModel[index] = TRUE;
 		  tr->partitionData[index].alpha = value[i];
 #ifndef _LOCAL_DISCRETIZATION
+		  /* re-compute the discrete gamma function approximation for the new alpha parameter */
 		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4);
 #endif
 		}
@@ -422,7 +520,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
 }
 
-
+/* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
 
 static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double tol, double *xmin, double *result, int numberOfModels, 
 			 int whichFunction, int rateNumber, tree *tr, linkageList *ll, double lim_inf, double lim_sup)
@@ -640,7 +738,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
   assert(0);
 }
 
-
+/* generic bracketing function required for Brent's algorithm. For details please see the corresponding chapter in the book Numerical Recipees in C */
 
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
 		       double *fc, double lim_inf, double lim_sup, 
@@ -961,7 +1059,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 
 
 
-
+/* function for optimizing alpha parameter */
 
 
 static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
@@ -993,6 +1091,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 #endif   
 
    evaluateGeneric(tr, tr->start, TRUE);
+   
    /* 
      at this point here every worker has the traversal data it needs for the 
      search, so we won't re-distribute it he he :-)
@@ -1000,8 +1099,15 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
   for(i = 0; i < numberOfModels; i++)
     {
-      assert(ll->ld[i].valid);
+      /* make sure that we want to optimize alpha here */
 
+      assert(ll->ld[i].valid);
+      
+      /* get the representative alpha value for all partitions that share it.
+	 In RAxML we have hard-coded all alpha parameters to be estimated separately.
+	 hence linking alpha parameters has not been tested for a long long time, be cautious 
+      */
+      
       startAlpha[i] = tr->partitionData[ll->ld[i].partitionList[0]].alpha;
       _a[i] = startAlpha[i] + 0.1;
       _b[i] = startAlpha[i] - 0.1;      
@@ -1012,7 +1118,10 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
       
       for(k = 0; k < ll->ld[i].partitions; k++)	
 	{
+	  /* sum over all per-partition log likelihood scores that share the same alpha parameter */
 	  startLH[i] += tr->perPartitionLH[ll->ld[i].partitionList[k]];
+	  
+	  /* make sure that all copies of the linked alpha parameter have been updated appropriately */
 	  assert(tr->partitionData[ll->ld[i].partitionList[0]].alpha ==  tr->partitionData[ll->ld[i].partitionList[k]].alpha);
 	}
     }					  
@@ -1023,6 +1132,8 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
   for(i = 0; i < numberOfModels; i++)
     endAlpha[i] = result[i];
   
+  /* if for some reason we couldn't improve the likelihood further, restore the old alpha value for all partitions sharing it */
+
   for(i = 0; i < numberOfModels; i++)
     {
       if(startLH[i] > endAlpha[i])
@@ -1039,6 +1150,8 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 #endif
 	}  
     }
+
+  /* broadcast new alpha value to all parallel threads/processes */
 
 #ifdef _USE_PTHREADS
   if(revertModel > 0)
@@ -1066,7 +1179,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
 }
 
-
+/* optimize rates in the Q matrix */
 
 static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 {
@@ -1103,10 +1216,13 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
   startRates = (double *)malloc(sizeof(double) * numberOfRates * numberOfModels);
 
   evaluateGeneric(tr, tr->start, TRUE);
+  
   /* 
      at this point here every worker has the traversal data it needs for the 
      search 
   */
+
+  /* get the initial rates */
 
   for(i = 0, pos = 0; i < ll->entries; i++)
     {
@@ -1115,11 +1231,15 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 	  endLH[pos] = unlikely;
 	  startLH[pos] = 0.0;
 
+	  /* loop over all partitions that are linked via the corresponding GTR matrx, i.e., that share the same GTR matrix */
+
 	  for(j = 0; j < ll->ld[i].partitions; j++)
 	    {
-	      int index = ll->ld[i].partitionList[j];
+	      int 
+		index = ll->ld[i].partitionList[j];
 	      
 	      startLH[pos] += tr->perPartitionLH[index];
+	      
 	      for(k = 0; k < numberOfRates; k++)
 		startRates[pos * numberOfRates + k] = tr->partitionData[index].substRates[k];      
 	    }
@@ -1129,6 +1249,11 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 
   assert(pos == numberOfModels);
   
+  /* 
+     Now loop over all rates in the matrix, e.g., 5 if it's DNA, and 189 if it's protein data.
+     Note that we do this on a rate by rate basis, i.e., first try to optimize a->c, a->g, etc.
+   */
+
   for(i = 0; i < numberOfRates; i++)
     {     
       for(k = 0, pos = 0; k < ll->entries; k++)
@@ -1164,6 +1289,8 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
       for(k = 0; k < numberOfModels; k++)
 	endLH[k] = result[k];	           
       
+      /* if the proposed new rate does not improve the likelihood undo the change */
+
       for(k = 0, pos = 0; k < ll->entries; k++)
 	{
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
@@ -1216,6 +1343,9 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
   free(startRates);
 }
 
+
+/* figure out if all AA models have been assigned a joint GTR matrix */
+
 static boolean AAisGTR(tree *tr)
 {
   int i, count = 0;
@@ -1236,6 +1366,9 @@ static boolean AAisGTR(tree *tr)
   return TRUE;
 }
 
+
+/* generic substitiution matrix (Q matrix) optimization */
+
 static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 {
   int 
@@ -1249,7 +1382,10 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
   /* assumes homogeneous super-partitions, that either contain DNA or AA partitions !*/
   /* does not check whether AA are all linked */
 
-  /* first do DNA */
+  /* 
+     first optimize all rates in DNA data partition matrices. That's where we use the valid field in the 
+     linkage list data structure. 
+   */
 
   for(i = 0; i < ll->entries; i++)
     {
@@ -1274,17 +1410,22 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 	}      
     }   
 
+  /* if we have dna partitions in our dataset, let's optimize all 5 rates in their substitution matrices */
+
   if(dnaPartitions > 0)
     optRates(tr, modelEpsilon, ll, dnaPartitions, states);
   
 
-  /* then SECONDARY */
+  /* now we do the same thing for secondary structure models  */
 
    for(i = 0; i < ll->entries; i++)
     {
       switch(tr->partitionData[ll->ld[i].partitionList[0]].dataType)
 	{
-	  /* we only have one type of secondary data models in one analysis */
+	  /* 
+	     we only have one type of secondary data models in one analysis, RAxML allows for only one secondary data 
+	     partition !
+	   */
 	case SECONDARY_DATA_6:
 	  states = tr->partitionData[ll->ld[i].partitionList[0]].states;
 	  secondaryModel = SECONDARY_DATA_6;
@@ -1315,7 +1456,8 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 	}      
     }
 
-  
+   /* if there are secondary struct data partitions (and there can only be at most one), let's optimize 
+      their rates, tehre are models with 6, 7 and 16 states */
    
    if(secondaryPartitions > 0)
      {
@@ -1338,6 +1480,10 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
      }
 
   /* then AA for GTR */
+
+   /* now if all AA partitions share a joint GTR subst matrix, let's do a joint estimate 
+      of the 189 rates across all of them. Otherwise we don't need to optimize anything since 
+      we will be using one of the fixed models like WAG, JTT, etc */
 
   if(AAisGTR(tr))
     {
@@ -1367,9 +1513,8 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
       optRates(tr, modelEpsilon, ll, aaPartitions, states);
     }
   
-  /* then multi-state */
+  /* then multi-state data partitions
 
-  /* 
      now here we have to be careful, because every multi-state partition can actually 
      have a distinct number of states, so we will go to every multi-state partition separately,
      parallel efficiency for this will suck, but what the hell .....
@@ -1410,6 +1555,8 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 	}           
     }
 
+  /* done with all partitions, so we can set all entries in the linkage list to valid again :-) */
+
   for(i = 0; i < ll->entries; i++)
     ll->ld[i].valid = TRUE;
 }
@@ -1418,7 +1565,7 @@ static void optRatesGeneric(tree *tr, double modelEpsilon, linkageList *ll)
 
 
 
-/*********************FUNCTIONS FOR APPROXIMATE MODEL OPTIMIZATION ***************************************/
+/*********************FUNCTIONS FOR PSR/CAT model of rate heterogeneity ***************************************/
 
 
 
@@ -2116,12 +2263,14 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 }
   
 
-
+/************************* end of functions for CAT model of rate heterogeneity */
 
 
 
 
 /*****************************************************************************************************/
+
+/* reset all branche lengths in tree to default values */
 
 void resetBranches(tree *tr)
 {
@@ -2146,6 +2295,8 @@ void resetBranches(tree *tr)
     }
 }
 
+/* print the protein GTR substitution matrix to file. This is only printed if we are actually estimating a 
+   GTR model for all protein data partitions in the data */
 
 static void printAAmatrix(tree *tr, double epsilon)
 {
@@ -2217,6 +2368,9 @@ static void printAAmatrix(tree *tr, double epsilon)
     }
 }
 
+/* 
+   automatically compute the best protein substitution model for the dataset at hand.
+ */
 
 static void autoProtein(tree *tr)
 {
@@ -2318,7 +2472,7 @@ static void autoProtein(tree *tr)
     }
 }
 
-
+/* iterative procedure for optimizing all model parameters */
 
 void modOpt(tree *tr, double likelihoodEpsilon)
 { 
@@ -2326,6 +2480,10 @@ void modOpt(tree *tr, double likelihoodEpsilon)
   double 
     currentLikelihood,
     modelEpsilon = 0.0001;
+  
+  /* linkage lists for alpha, p-invar has actually been ommitted in this version of the code 
+     and the GTR subst matrices */
+
   linkageList *alphaList;
   linkageList *invarList;
   linkageList *rateList; 
@@ -2334,11 +2492,22 @@ void modOpt(tree *tr, double likelihoodEpsilon)
       
   modelEpsilon = 0.0001;
     
+  /* set the integer vector for linking parameters to all parameters being unlinked, 
+     i.e. a separate/independent estimate of parameters will be conducted for eahc partition */
+
   for(i = 0; i < tr->NumberOfModels; i++)
     unlinked[i] = i;
+
+  /* alpha parameters and p-invar parameters are unlinked.
+     this is the point where I actually hard-coded this in RAxML */
   
   alphaList = initLinkageList(unlinked, tr);
   invarList = initLinkageList(unlinked, tr);
+
+  /* call the dedicated function for linking the GTR matrix across all AA data partitions 
+     If we have only DNA data all GTR matrix estimates will be unlinked.
+   */
+
   rateList  = initLinkageListGTR(tr);
    
   tr->start = tr->nodep[1];
