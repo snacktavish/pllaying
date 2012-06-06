@@ -437,13 +437,10 @@ static inline void computeVectorGTRCATPROT(double *lVector, int *eVector, double
 	for(l = 0; l < 20; l+=2)
 	  {
 	    __m128d ex3v = _mm_mul_pd(_mm_load_pd(&x3[l]),twoto);
-	    _mm_store_pd(&x3[l],_mm_mul_pd(ex3v, twoto));	
+	    _mm_store_pd(&x3[l], ex3v);	
 	  }
  	
-	/*
-	  for(l = 0; l < 20; l++)
-	  x3[l] *= twotothe256;		   
-	*/
+
 
 	*eVector = *eVector + 1;
       }
@@ -659,7 +656,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
 	for(l = 0; l < 80; l+=2)
 	  {
 	    __m128d ex3v = _mm_mul_pd(_mm_load_pd(&x3[l]),twoto);
-	    _mm_store_pd(&x3[l],_mm_mul_pd(ex3v, twoto));	
+	    _mm_store_pd(&x3[l], ex3v, twoto);	
 	  }
 
 	*eVector = *eVector + 1;
