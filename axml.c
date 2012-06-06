@@ -829,7 +829,7 @@ static void printREADME(void)
   printf("      -s binarySequenceFile\n");
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
-  printf("      -a\n");
+  printf("      [-a]\n");
   printf("      [-B]\n"); 
   printf("      [-c numberOfCategories]\n");
   printf("      [-D]\n");

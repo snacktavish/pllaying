@@ -806,6 +806,7 @@ static void printREADME(void)
   printf("      -n outputFileName\n");
   printf("      -m substitutionModel\n");
   printf("      -t userStartingTree| -R binaryCheckpointFile\n");
+  printf("      [-a]\n");
   printf("      [-B numberOfMLtreesToSave]\n"); 
   printf("      [-c numberOfCategories]\n");
   printf("      [-D]\n");
@@ -822,6 +823,10 @@ static void printREADME(void)
   printf("      [-v]\n"); 
   printf("      [-w outputDirectory] \n"); 
   printf("      [-X]\n");
+  printf("\n");  
+  printf("      -a      use the median for the discrete approximation of the GAMMA model of rate heterogeneity\n");
+  printf("\n");
+  printf("              DEFAULT: OFF\n");
   printf("\n");
   printf("      -B     specify the number of best ML trees to save and print to file\n");
   printf("\n");
@@ -1019,15 +1024,20 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   tr->gapyness               = 0.0; 
   tr->saveBestTrees          = 0;
 
+  tr->useMedian = FALSE;
+
   /********* tr inits end*************/
 
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:B:e:c:f:i:m:r:t:w:n:s:vhMSDQXbp", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:B:e:c:f:i:m:r:t:w:n:s:vhMSDQXbpa", &optind, &optarg))!=-1))
     {
     switch(c)
       {    
+      case 'a':
+	tr->useMedian = TRUE;
+	break;
       case 'B':
 	sscanf(optarg,"%d", &(tr->saveBestTrees));
 	if(tr->saveBestTrees < 0)
@@ -1306,8 +1316,10 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
       char modelType[128];
 
       
-      
-      strcpy(modelType, "GAMMA");   
+      if(tr->useMedian)
+	strcpy(modelType, "GAMMA with Median");
+      else
+	strcpy(modelType, "GAMMA");   
      
       printBoth(infoFile, "\n\nThis is %s version %s released by Alexandros Stamatakis in %s.\n\n",  programName, programVersion, programDate);
      

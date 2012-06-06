@@ -778,7 +778,7 @@ typedef  struct  {
 
   char bits_in_16bits [0x1u << 16];
   
-
+  boolean useMedian;
 } tree;
 
 
@@ -961,7 +961,7 @@ extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
-extern void makeGammaCats (double alpha, double *gammaRates, int K);
+extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
 extern void initModel ( tree *tr, double **empiricalFrequencies);
 extern void doAllInOne ( tree *tr, analdef *adef );
 
