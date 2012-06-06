@@ -1234,11 +1234,17 @@ void newviewIterative (tree *tr, int startIndex)
 							    x1_gap, x2_gap, x3_gap,
 							    x1_gapColumn, x2_gapColumn, x3_gapColumn);
 			  else
+#ifdef __AVX
+			    newviewGTRGAMMAPROT_AVX(tInfo->tipCase,
+						    x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
+						    tipX1, tipX2,
+						    width, left, right, wgt, &scalerIncrement);
+#else
 			    newviewGTRGAMMAPROT(tInfo->tipCase,
 						x1_start, x2_start, x3_start, tr->partitionData[model].EV, tr->partitionData[model].tipVector,
 						tipX1, tipX2,
 						width, left, right, wgt, &scalerIncrement);
-		       
+#endif		       
 		    }		  
 		  break;	
 		default:
