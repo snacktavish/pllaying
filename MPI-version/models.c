@@ -2751,11 +2751,7 @@ static void updateFracChange(tree *tr)
 	     }
 	 }
 
-       /*for(i = 0; i < tr->originalCrunchedLength; i++)
-	{
-	  modelWeights[tr->model[i]]  += (double)tr->aliaswgt[i];
-	  wgtsum                      += (double)tr->aliaswgt[i];
-	  }*/  
+       
 
       
  	        

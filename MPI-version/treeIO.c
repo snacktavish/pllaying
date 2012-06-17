@@ -185,11 +185,13 @@ static double getBranchLength(tree *tr, int perGene, nodeptr p)
   if(tr->numBranches == 1)
     {
       assert(tr->fracchange != -1.0);
+    
       z = p->z[0];
       if (z < zmin) 
 	z = zmin;      	 
       
-      x = -log(z) * tr->fracchange;           
+      x = -log(z) * tr->fracchange;  
+      /* printf("%f %f %f\n", tr->fracchange, x, z);           */
     }
   else
     {

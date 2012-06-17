@@ -1808,6 +1808,9 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
     i,
     model;
 
+  if(tr->rateHetModel != CAT)
+    return;
+
   if(tr->numBranches > 1)
     {            
       for(model = 0; model < tr->NumberOfModels; model++)

@@ -1058,7 +1058,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 	  }
 	break;
       case 'Q':
-	tr->manyPartitions = TRUE;       
+	tr->manyPartitions = TRUE;   	
 	break;
       case 's':		 	
 	strcpy(byteFileName, optarg);	 	
@@ -2278,7 +2278,7 @@ int main (int argc, char *argv[])
 #endif
       
 	/* read checkpoint file */
-	restart(tr);
+	restart(tr);       	
 	
 	/* continue tree search where we left it off */
 	computeBIGRAPID(tr, adef, TRUE); 
@@ -2346,7 +2346,7 @@ int main (int argc, char *argv[])
 	    freeParsimonyDataStructures(tr);
 	  }
 	else
-#endif
+#endif	 
 	  computeBIGRAPID(tr, adef, TRUE); 			     
       }            
       
