@@ -654,7 +654,9 @@ void evaluateIterative(tree *tr)
 	  */
 
 	  if(width == 0)	    
-	    tr->perPartitionLH[model] = 0.0;	   
+	    tr->perPartitionLH[model] = 0.0;
+	  else
+	    assert(tr->td[0].executeModel[model] == FALSE && tr->perPartitionLH[model] < 0.0);
 	}
     }
 }
@@ -672,10 +674,12 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   
   nodeptr 
     q = p->back; 
+  
   int 
     i,
     model;
-    
+
+ 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
 
@@ -730,7 +734,8 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 
   if(0)
     {
-      double *recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
+      double 
+	*recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
       
       MPI_Allreduce(tr->perPartitionLH, recv, tr->NumberOfModels, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
       
@@ -745,7 +750,8 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
     }
   else
     {
-      double *recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
+      double 
+	*recv = (double *)malloc(sizeof(double) * tr->NumberOfModels);
       
       MPI_Reduce(tr->perPartitionLH, recv, tr->NumberOfModels, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
       MPI_Bcast(recv, tr->NumberOfModels, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -755,10 +761,9 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 	  /* TODO ??? */
 	  tr->perPartitionLH[model] = recv[model];
 	  result += recv[model];
-	}
+	}           
       
-      free(recv);
-      
+      free(recv);      
     }
 
 
@@ -766,9 +771,11 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 
   tr->likelihood = result;    
   
-  /*MPI_Barrier(MPI_COMM_WORLD);
-  printf("Process %d likelihood: %f\n", processID, tr->likelihood);
-  MPI_Barrier(MPI_COMM_WORLD);*/
+  /* 
+     MPI_Barrier(MPI_COMM_WORLD);
+     printf("Process %d likelihood: %f\n", processID, tr->likelihood);
+     MPI_Barrier(MPI_COMM_WORLD);
+  */
 
   /* do some bookkeeping to have traversalHasChanged in a consistent state */
 

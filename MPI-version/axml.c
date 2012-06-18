@@ -1543,6 +1543,8 @@ void printLog(tree *tr)
       
       logFile = myfopen(logFileName, "ab");
       
+      /* printf("%f %1.40f\n", t, tr->likelihood); */
+
       fprintf(logFile, "%f %f\n", t, tr->likelihood);
       
       fclose(logFile);
@@ -2036,7 +2038,9 @@ static void initializePartitions(tree *tr, FILE *byteFile)
 		}
 	      globalCounter++;
 	    }
-	}    
+	  assert(localCounter == tr->partitionData[model].width);
+	}   
+      assert(globalCounter == tr->originalCrunchedLength);
     }
    
   y = (unsigned char *)malloc(sizeof(unsigned char) * tr->originalCrunchedLength);
@@ -2077,7 +2081,11 @@ static void initializePartitions(tree *tr, FILE *byteFile)
 		    }
 		  globalCounter++;
 		}
-	    }    
+	      
+	      assert(localCounter == tr->partitionData[model].width);
+	    }
+
+	  assert(globalCounter == tr->originalCrunchedLength);
 	}
     }
 
@@ -2327,12 +2335,8 @@ int main (int argc, char *argv[])
 	evaluateGeneric(tr, tr->start, TRUE);	
 	
 	/* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
-      
-	
-
+      	
 	treeEvaluate(tr, 1); 
-
-	
 
 	/* now start the ML search algorithm */
       

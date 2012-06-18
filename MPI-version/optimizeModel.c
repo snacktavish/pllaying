@@ -1401,9 +1401,9 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 }
 
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 
-void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
+
+static void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
   int 
     model, 
@@ -1413,88 +1413,82 @@ void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, do
     {      
       int 
 	localIndex = 0;
-
-      boolean 
-	execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
-
-      if(execute)
-	for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
-	  {
-	    if(tr->manyPartitions || (i % n == tid))
-	      {
+     
+      for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+	{
+	  if(i % n == tid)
+	    {
 	      
-		double initialRate, initialLikelihood, 
-		  leftLH, rightLH, leftRate, rightRate, v;
-		const double epsilon = 0.00001;
-		int k;	      
-		
-		tr->patrat[i] = tr->patratStored[i];     
-		initialRate = tr->patrat[i];
-		
-		initialLikelihood = evaluatePartialGeneric(tr, localIndex, initialRate, model); /* i is real i ??? */
-		
-		
-		leftLH = rightLH = initialLikelihood;
-		leftRate = rightRate = initialRate;
-		
-		k = 1;
-		
-		while((initialRate - k * lower_spacing > 0.0001) && 
-		      ((v = evaluatePartialGeneric(tr, localIndex, initialRate - k * lower_spacing, model)) 
-		       > leftLH) && 
-		      (fabs(leftLH - v) > epsilon))  
-		  {	  
+	      double initialRate, initialLikelihood, 
+		leftLH, rightLH, leftRate, rightRate, v;
+	      const double epsilon = 0.00001;
+	      int k;	      
+	      
+	      tr->patrat[i] = tr->patratStored[i];     
+	      initialRate = tr->patrat[i];
+	      
+	      initialLikelihood = evaluatePartialGeneric(tr, localIndex, initialRate, model); /* i is real i ??? */	      	      	      	      
+
+	      leftLH = rightLH = initialLikelihood;
+	      leftRate = rightRate = initialRate;
+	      
+	      k = 1;
+	      
+	      while((initialRate - k * lower_spacing > 0.0001) && 
+		    ((v = evaluatePartialGeneric(tr, localIndex, initialRate - k * lower_spacing, model)) 
+		     > leftLH) && 
+		    (fabs(leftLH - v) > epsilon))  
+		{	  
 #ifndef WIN32
-		    if(isnan(v))
-		      assert(0);
+		  if(isnan(v))
+		    assert(0);
 #endif
-		    
-		    leftLH = v;
-		    leftRate = initialRate - k * lower_spacing;
-		    k++;	  
-		  }      
-		
-		k = 1;
-		
-		while(((v = evaluatePartialGeneric(tr, localIndex, initialRate + k * upper_spacing, model)) > rightLH) &&
-		      (fabs(rightLH - v) > epsilon))    	
-		  {
+		  
+		  leftLH = v;
+		  leftRate = initialRate - k * lower_spacing;
+		  k++;	  
+		}      
+	      
+	      k = 1;
+	      
+	      while(((v = evaluatePartialGeneric(tr, localIndex, initialRate + k * upper_spacing, model)) > rightLH) &&
+		    (fabs(rightLH - v) > epsilon))    	
+		{
 #ifndef WIN32
-		    if(isnan(v))
-		      assert(0);
+		  if(isnan(v))
+		    assert(0);
 #endif     
-		    rightLH = v;
-		    rightRate = initialRate + k * upper_spacing;	 
-		    k++;
-		  }           
-		
-		if(rightLH > initialLikelihood || leftLH > initialLikelihood)
-		  {
-		    if(rightLH > leftLH)	    
-		      {	     
-			tr->patrat[i] = rightRate;
-			lhs[i] = rightLH;
-		      }
-		    else
-		      {	      
-			tr->patrat[i] = leftRate;
-			lhs[i] = leftLH;
-		      }
-		  }
-		else
-		  lhs[i] = initialLikelihood;
-		
-		tr->patratStored[i] = tr->patrat[i];
-		localIndex++;
-	      }
-	  }
+		  rightLH = v;
+		  rightRate = initialRate + k * upper_spacing;	 
+		  k++;
+		}           
+	      
+	      if(rightLH > initialLikelihood || leftLH > initialLikelihood)
+		{
+		  if(rightLH > leftLH)	    
+		    {	     
+		      tr->patrat[i] = rightRate;
+		      lhs[i] = rightLH;
+		    }
+		  else
+		    {	      
+		      tr->patrat[i] = leftRate;
+		      lhs[i] = leftLH;
+		    }
+		}
+	      else
+		lhs[i] = initialLikelihood;
+	      
+	      tr->patratStored[i] = tr->patrat[i];
+	      localIndex++;
+	    }
+	}
       assert(localIndex == tr->partitionData[model].width);    
     }
 }
 
 
 
-#else
 
 
 static void optRateCatModel(tree *tr, int model, double lower_spacing, double upper_spacing, double *lhs)
@@ -1571,7 +1565,7 @@ static void optRateCatModel(tree *tr, int model, double lower_spacing, double up
 }
 
 
-#endif
+
 
 
 
@@ -1590,10 +1584,8 @@ static size_t calcSendBufferSize(tree *tr, int tid)
     model;  
 
   for(model = 0; model < tr->NumberOfModels; model++)
-    if(isThisMyPartition(tr, tid, model))
-      {
-	length += ((size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower);       
-      }
+    if(isThisMyPartition(tr, tid, model))      
+      length += ((size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower);            
 
   return length;
 }
@@ -1623,8 +1615,7 @@ static void gatherCatsWorker(tree *tr, int tid)
 	width = (size_t)tr->partitionData[model].upper - (size_t)tr->partitionData[model].lower;
       
       if(isThisMyPartition(tr, tid, model))
-	{	 	  
-	  
+	{	 	  	  
 	  memcpy(&catBufSend[offsets],       &tr->rateCategory[start], sizeof(int) * width);
 	  memcpy(&rateBufSend[offsets],      tr->partitionData[model].perSiteRates, sizeof(double) * tr->maxCategories);
 	  memcpy(&patBufSend[offsets],       &tr->patrat[start],       sizeof(double) * width);
@@ -1802,14 +1793,13 @@ static void gatherCatsMaster(tree *tr, int tid, int n)
   free(lhsBufRecv);
 }
 
-void updatePerSiteRates(tree *tr, boolean scaleRates)
+
+
+static void updatePerSiteRatesManyPartitions(tree *tr, boolean scaleRates)
 {
   int 
     i,
-    model;
-
-  if(tr->rateHetModel != CAT)
-    return;
+    model; 
 
   if(tr->numBranches > 1)
     {            
@@ -1819,7 +1809,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    {
 	      int 	       
 		lower = tr->partitionData[model].lower,
-		upper = tr->partitionData[model].upper;
+		upper = tr->partitionData[model].upper,	      
+		localCount = 0;
 	      
 	      if(scaleRates)
 		{
@@ -1912,20 +1903,15 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		  
 		  tr->wr[i]  = wtemp;
 		  tr->wr2[i] = temp * wtemp;
-		}	            	  
-	  
-
-	      {
-		int 
-		  localCount = 0;
-		
-		for(i = lower, localCount = 0; i < upper; i++, localCount++)
-		  {	    	      
-		    tr->partitionData[model].wr[localCount]  = tr->wr[i];
-		    tr->partitionData[model].wr2[localCount] = tr->wr2[i];
-		    tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
-		  }
-	      }	      
+		}	            	  	  	      
+	
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{	    	      
+		  tr->partitionData[model].wr[localCount]  = tr->wr[i];
+		  tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+		  tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];		
+		}	      
 	    }	 
 	}
     }
@@ -1936,8 +1922,11 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 
       double 
 	scaler = 0.0,       
-	accRat = 0.0; 
-
+	accRat = 0.0,
+	dwgt,
+	a[2],
+	r[2];
+      
       if(scaleRates)
 	{
 	  for(model = 0, accRat = 0.0, accWgt = 0; model < tr->NumberOfModels; model++)
@@ -1965,31 +1954,18 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		    }
 		}
 	    }
-	  
-	  if(tr->manyPartitions)
-	    {
-	      double 
-		dwgt,
-		a[2],
-		r[2];
+	  	  	    	      
+	  a[0] = (double)accRat;
+	  a[1] = (double)accWgt;
 
-	      a[0] = (double)accRat;
-	      a[1] = (double)accWgt;
-
-	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	  MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	  MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 	      
-	      accRat = r[0];
-	      dwgt   = r[1];
-	      
-	      accRat /= dwgt;	     
-	    }
-	  else
-	    {
-	      assert(0);
-	      /* accRat /= ((double)accWgt); */
-	    }
+	  accRat = r[0];
+	  dwgt   = r[1];
 	  
+	  accRat /= dwgt;	     	    
+	 	  
 	  scaler = 1.0 / ((double)accRat);
 
 	  for(model = 0; model < tr->NumberOfModels; model++)
@@ -2025,29 +2001,17 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		}
 	    }           
 	
-	  if(tr->manyPartitions)
-	    {
-	      double 
-		dwgt,
-		a[2],
-		r[2];
-
-	      a[0] = (double)accRat;
-	      a[1] = (double)accWgt;
-
-	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	      
-	      accRat = r[0];
-	      dwgt   = r[1];
-	      
-	      accRat /= dwgt;	     
-	    }
-	  else
-	    {
-	      assert(0);
-	      /* accRat /= ((double)accWgt); */
-	    }	    		  
+	 
+	  a[0] = (double)accRat;
+	  a[1] = (double)accWgt;
+	  
+	  MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	  MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	  
+	  accRat = r[0];
+	  dwgt   = r[1];
+	  
+	  accRat /= dwgt;	     	     		  
 
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
@@ -2079,32 +2043,22 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		}
 	    }
 	  
-	   if(tr->manyPartitions)
-	    {
-	      double 
-		dwgt,
-		a[2],
-		r[2];
+	   
 
-	      a[0] = (double)accRat;
-	      a[1] = (double)accWgt;
-
-	      MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	      MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-	      
-	      accRat = r[0];
-	      dwgt   = r[1];
-	      
-	      accRat /= dwgt;	     
-	    }
-	   else
-	     assert(0);
-
+	  a[0] = (double)accRat;
+	  a[1] = (double)accWgt;
 	  
-
+	  MPI_Reduce(a, r, 2, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	  MPI_Bcast(r, 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+	  
+	  accRat = r[0];
+	  dwgt   = r[1];
+	  
+	  accRat /= dwgt;	     
+	 
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
-         
+      
        for(model = 0; model < tr->NumberOfModels; model++)
 	{
 	  if(isThisMyPartition(tr, processID, model))
@@ -2148,41 +2102,385 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 		}
 	    }
 	}
-
     }  
 
-  /*if(processID == 0)
-    {
-      for(model = 0; model < tr->NumberOfModels; model++) 
-	if(isThisMyPartition(tr, processID, model))
-	{	  
-	  int 	
-	    localCount = 0,
-	    lower = tr->partitionData[model].lower,
-	    upper = tr->partitionData[model].upper;	  
-							
-	  printf("\n\nModel %d\n", model);
-	  for(i = lower; i < upper; i++, localCount++)
-	    printf("%d %d, ", tr->partitionData[model].rateCategory[localCount], tr->rateCategory[i]);
-	  printf("\n");
-	}      
-	}*/
+  if(processID == 0)    
+    gatherCatsMaster(tr, processID, processes);    
+  else    
+    gatherCatsWorker(tr, processID);    
+}
 
-  if(processID == 0)
+static void gatherRatesFewPartitions(tree *tr, int tid)
+{
+  int n = processes;
+
+  if(tid == 0)
     {
-      gatherCatsMaster(tr, processID, processes);
+       int
+          localCounter,
+          model,
+          i,
+          sendBufferSize = (tr->originalCrunchedLength / n) + 1,
+          recvBufferSize = sendBufferSize * n;
+
+        double 	  	
+          *patBufSend = (double *)malloc(sendBufferSize * sizeof(double)),
+          *patStoredBufSend =  (double *)malloc(sendBufferSize * sizeof(double)),
+          *lhsBufSend = (double *)malloc(sendBufferSize * sizeof(double)),
+          *patBufRecv = (double *)malloc(recvBufferSize * sizeof(double)),
+          *patStoredBufRecv =  (double *)malloc(recvBufferSize * sizeof(double)),
+          *lhsBufRecv = (double *)malloc(recvBufferSize * sizeof(double));                
+
+        for(model = 0, localCounter = 0; model < tr->NumberOfModels; model++)
+	  {               	      	     
+	    for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+	      if(i % n == tid)
+		{
+		  patBufSend[localCounter] = tr->patrat[i];
+		  patStoredBufSend[localCounter] = tr->patratStored[i];
+		  lhsBufSend[localCounter] = tr->lhs[i];
+		  localCounter++;
+		}	    
+	  }
+
+        MPI_Gather(patBufSend,       sendBufferSize, MPI_DOUBLE, patBufRecv,       sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Gather(patStoredBufSend, sendBufferSize, MPI_DOUBLE, patStoredBufRecv, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        MPI_Gather(lhsBufSend,       sendBufferSize, MPI_DOUBLE, lhsBufRecv,       sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);	
+
+        for(model = 0; model < tr->NumberOfModels; model++)
+	  {   	      
+	    for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+	      {
+		int 
+		  offset = i % n,
+		  position = i / n;
+		
+		tr->patrat[i]       = patBufRecv[offset * sendBufferSize + position];
+		tr->patratStored[i] = patStoredBufRecv[offset * sendBufferSize + position];
+		tr->lhs[i]                = lhsBufRecv[offset * sendBufferSize + position];		     
+	      }	   	   
+	  }
+
+        free(patBufSend);
+        free(patStoredBufSend);
+        free(lhsBufSend);
+        free(patBufRecv);
+        free(patStoredBufRecv);
+        free(lhsBufRecv);
     }
   else
     {
-      gatherCatsWorker(tr, processID);
+      int 
+	model,
+	i,
+	localCounter,
+	sendBufferSize = (tr->originalCrunchedLength / n) + 1;
+      
+      double 
+	*localDummy = (double*)NULL,	      
+	*patBufSend = (double *)malloc(sendBufferSize * sizeof(double)),
+	*patStoredBufSend =  (double *)malloc(sendBufferSize * sizeof(double)),
+	*lhsBufSend = (double *)malloc(sendBufferSize * sizeof(double));
+      
+      for(model = 0, localCounter = 0; model < tr->NumberOfModels; model++)
+	{               		  		  
+	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
+	    if(i % n == tid)
+	      {
+		patBufSend[localCounter] = tr->patrat[i];
+		patStoredBufSend[localCounter] = tr->patratStored[i];
+		lhsBufSend[localCounter] = tr->lhs[i];
+		localCounter++;
+	      }		  
+	}
+      
+      MPI_Gather(patBufSend,       sendBufferSize, MPI_DOUBLE, localDummy, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      MPI_Gather(patStoredBufSend, sendBufferSize, MPI_DOUBLE, localDummy, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      MPI_Gather(lhsBufSend,       sendBufferSize, MPI_DOUBLE, localDummy, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      
+      free(patBufSend);
+      free(patStoredBufSend);
+      free(lhsBufSend);
     }
 }
 
+static void broadcastRatesFewPartitions(tree *tr, int tid)
+{ 
+  int 
+    model,
+    n = processes;
+  
+  MPI_Bcast(tr->patrat, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Bcast(tr->patratStored, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    { 
+      MPI_Bcast(&(tr->partitionData[model].numberOfCategories), 1, MPI_INT, 0, MPI_COMM_WORLD);
+      MPI_Bcast(tr->partitionData[model].perSiteRates, tr->partitionData[model].numberOfCategories, MPI_DOUBLE, 0, MPI_COMM_WORLD);	   
+    }
+
+
+  MPI_Bcast(tr->rateCategory, tr->originalCrunchedLength, MPI_INT,    0, MPI_COMM_WORLD);
+  MPI_Bcast(tr->wr,                 tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  MPI_Bcast(tr->wr2,                tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      int
+	i,
+	localCounter;
+
+      for(localCounter = 0, i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+	{
+	  if(i % n == tid)
+	    {		 
+	      tr->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i];
+	      tr->partitionData[model].wr[localCounter]             = tr->wr[i];
+	      tr->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 
+
+	      localCounter++;
+	    }
+	}
+    }
+ 
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+static void updatePerSiteRatesFewPartitions(tree *tr, boolean scaleRates)
+{  
+  int 
+    i,
+    model;
+
+  /*gatherRatesFewPartitions(tr, processID);*/
+  
+  if(tr->numBranches > 1)
+    {  
+      for(model = 0; model < tr->NumberOfModels; model++)
+	{
+	  int 	       
+	    lower = tr->partitionData[model].lower,
+	    upper = tr->partitionData[model].upper;
+
+	  if(scaleRates)
+	    {
+	      double 
+		scaler = 0.0,       
+		accRat = 0.0; 
+	      
+	      int 
+		accWgt     = 0;
+	      
+	      for(i = lower; i < upper; i++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		  
+		  accWgt += w;
+		  
+		  accRat += (w * rate);
+		}	   
+	      
+	      accRat /= ((double)accWgt);
+	      
+	      scaler = 1.0 / ((double)accRat);
+	      
+	      for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
+		tr->partitionData[model].perSiteRates[i] *= scaler;	    
+	      
+	      accRat = 0.0;	 
+	      
+	      for(i = lower; i < upper; i++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
+		  
+		  accRat += (w * rate);
+		}	         
+	      
+	      accRat /= ((double)accWgt);	  
+	      
+	      assert(ABS(1.0 - accRat) < 1.0E-5);
+	    }
+	  else
+	    {
+	      double 		   
+		accRat = 0.0; 
+	      
+	      int 
+		accWgt     = 0;
+	      
+	      for(i = lower; i < upper; i++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		  
+		  accWgt += w;
+		  
+		  accRat += (w * rate);
+		}	   
+	      
+	      accRat /= ((double)accWgt);
+	      
+	      assert(ABS(1.0 - accRat) < 1.0E-5);
+	    }	          	  	  
+	}
+    }
+  else
+    {
+      int
+	accWgt = 0;
+      
+      double 
+	scaler = 0.0,       
+	accRat = 0.0; 
+      
+      if(scaleRates)
+	{
+	  for(model = 0, accRat = 0.0, accWgt = 0; model < tr->NumberOfModels; model++)
+	    {
+	      int 
+		localCount = 0,
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		  
+		  accWgt += w;
+		  
+		  accRat += (w * rate);
+		}
+	    }
+	  
+	  accRat /= ((double)accWgt);
+	  
+	  scaler = 1.0 / ((double)accRat);
+	  
+	  for(model = 0; model < tr->NumberOfModels; model++)
+	    {
+	      for(i = 0; i < tr->partitionData[model].numberOfCategories; i++)
+		tr->partitionData[model].perSiteRates[i] *= scaler;
+	    }
+	  
+	  for(model = 0, accRat = 0.0; model < tr->NumberOfModels; model++)
+	    {
+	      int 
+		localCount = 0,
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
+		  
+		  accRat += (w * rate);
+		}
+	    }           
+	  
+	  accRat /= ((double)accWgt);	  
+	  
+	  assert(ABS(1.0 - accRat) < 1.0E-5);
+	}
+      else
+	{
+	  for(model = 0, accRat = 0.0, accWgt = 0; model < tr->NumberOfModels; model++)
+	    {
+	      int 
+		localCount = 0,
+		lower = tr->partitionData[model].lower,
+		upper = tr->partitionData[model].upper;
+	      
+	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+		{
+		  int 
+		    w = tr->aliaswgt[i];
+		  
+		  double
+		    rate = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+		  
+		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+		  
+		  accWgt += w;
+		  
+		  accRat += (w * rate);
+		}
+	    }
+	  
+	  accRat /=  (double)accWgt;
+	  
+	  assert(ABS(1.0 - accRat) < 1.0E-5);
+	}
+    }
+      
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      int 	    
+	lower = tr->partitionData[model].lower,
+	upper = tr->partitionData[model].upper;
+      
+      for(i = lower; i < upper; i++)
+	{
+	  double
+	    w = ((double)tr->aliaswgt[i]);	      
+	  
+	  double
+	    wtemp,
+	    temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+	  
+	  wtemp = temp * w;
+	  
+	  tr->wr[i]  = wtemp;
+	  tr->wr2[i] = temp * wtemp;
+	}
+    }         
+  
+  broadcastRatesFewPartitions(tr, processID);
+}
+
+void updatePerSiteRates(tree *tr, boolean scaleRates)
+{
+  if(tr->rateHetModel != CAT)
+    return;
+
+  if(tr->manyPartitions)
+    updatePerSiteRatesManyPartitions(tr, scaleRates);
+  else
+    updatePerSiteRatesFewPartitions(tr, scaleRates);
+}
+
+
 static void optimizeRateCategories(tree *tr, int _maxCategories)
 {
-  assert(_maxCategories > 0);
-
-  
+  assert(_maxCategories > 0);  
 
   if(_maxCategories > 1)
     {
@@ -2235,8 +2533,8 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  oldCategorizedRates[model] = (double *)malloc(sizeof(double) * tr->maxCategories);
 	  
 	  memcpy(oldCategorizedRates[model], tr->partitionData[model].perSiteRates, tr->maxCategories * sizeof(double));	  	 	  
-	}      
-      	
+	}            	     
+
       if(tr->manyPartitions)
 	{
 	  for(model = 0; model < tr->NumberOfModels; model++)      
@@ -2244,11 +2542,22 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	       optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
 	}
       else
-	assert(0);
-     
+	{
+	  optRateCatPthreads(tr, lower_spacing, upper_spacing, tr->lhs, processes, processID);
+	  gatherRatesFewPartitions(tr, processID);
+	}     
+           
       for(model = 0; model < tr->NumberOfModels; model++)
-	{     
-	  if(isThisMyPartition(tr, processID, model))
+	{    
+	  boolean 
+	    execute;
+	  
+	  if(tr->manyPartitions)
+	    execute = isThisMyPartition(tr, processID, model);
+	  else
+	    execute = (processID == 0);
+ 
+	  if(execute)
 	    {
 	      int 
 		where = 1,
@@ -2306,16 +2615,39 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 		  tr->partitionData[model].numberOfCategories = maxCategories;	
 		  categorizePartition(tr, rc, model, lower, upper);
 		}
-	
+	      
 	      free(rc);
 	    }   
-	}
-      
+	}            
+
       updatePerSiteRates(tr, TRUE);	
      
+      /*
+	if(processID == 0)
+	{	  
+	  double sum = 0.0;
+	  int model;
+	  
+	  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+	    {        
+	      int i;
+	      printf("\nModel %d cats %d\n", model, tr->partitionData[model].numberOfCategories);
+	      for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)	
+		{
+		  printf("%d %f %f %f\n", tr->rateCategory[i], tr->patrat[i], tr->patratStored[i], tr->lhs[i]); 
+		  sum += tr->lhs[i];
+		}	
+	    }	
+	  
+	  printf("likelihood: %f\n", sum);
+	}
+      */
      
       evaluateGeneric(tr, tr->start, TRUE);
-     
+
+      /* printf("%f \n", tr->likelihood); */
+      
+      /*MPI_Finalize();*/
       
       if(tr->likelihood < initialLH)
 	{	 		  
@@ -2545,18 +2877,20 @@ static void autoProtein(tree *tr)
 
 void modOpt(tree *tr, double likelihoodEpsilon)
 { 
-  int i, catOpt = 0; 
+  int 
+    i, 
+    catOpt = 0,
+    *unlinked = (int *)malloc(sizeof(int) * tr->NumberOfModels);
+  
   double 
     currentLikelihood,
     modelEpsilon = 0.0001;
-  linkageList *alphaList;
-  linkageList *invarList;
-  linkageList *rateList; 
   
-  int *unlinked = (int *)malloc(sizeof(int) * tr->NumberOfModels);
+  linkageList 
+    *alphaList,
+    *invarList,
+    *rateList;      
 
-  modelEpsilon = 0.0001;
-    
   for(i = 0; i < tr->NumberOfModels; i++)
     unlinked[i] = i;
   

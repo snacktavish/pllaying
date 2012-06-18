@@ -3842,15 +3842,9 @@ void initModel(tree *tr, double **empiricalFrequencies)
     {
       tr->fracchange = 0;
       for(model = 0; model < tr->NumberOfModels; model++)	
-	tr->fracchange += tr->fracchanges[model];
-      
+	tr->fracchange += tr->fracchanges[model];      
       tr->fracchange /= ((double)tr->NumberOfModels);
     }  
-  
-
-
- 
-
 }
 
 

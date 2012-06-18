@@ -31,8 +31,6 @@
 
 
 
-
-
 int processes;
 double *globalResult;
 

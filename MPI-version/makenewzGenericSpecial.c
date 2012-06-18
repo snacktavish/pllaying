@@ -53,7 +53,6 @@
    of the likelihood in Pthreads and MPI */
 
 
-
 extern int processID;
 extern const unsigned int mask32[32];
 
@@ -704,7 +703,6 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
     buffer_dlnLdlz[NUM_BRANCHES],
     buffer_d2lnLdlz2[NUM_BRANCHES];*/
 
-  
 
   /* loop over partitions */
 
@@ -716,7 +714,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
        /* check if we (the present thread for instance) needs to compute something at 
 	  all for the present partition */
 
-      if(tr->td[0].executeModel[model] && width > 0)
+       if(tr->td[0].executeModel[model] && width > 0)
 	{
 	  int 	    
 	    states = tr->partitionData[model].states;
@@ -724,7 +722,6 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	  double 
 	    *sumBuffer       = (double*)NULL;
 	 
-
 	  volatile double
 	    dlnLdlz   = 0.0,
 	    d2lnLdlz2 = 0.0;
@@ -806,15 +803,25 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 	  _dlnLdlz[branchIndex]   = _dlnLdlz[branchIndex]   + dlnLdlz;
 	  _d2lnLdlz2[branchIndex] = _d2lnLdlz2[branchIndex] + d2lnLdlz2;
 	}
-      else
+       else       
 	{
 	  /* set to 0 to make the reduction operation consistent */
-
+	  
+	  
 	  if(width == 0 && (tr->numBranches > 1))
-	    {
+	    {	     
 	      _dlnLdlz[model]   = 0.0;
 	      _d2lnLdlz2[model] = 0.0;
-	    }			       	    	   
+	    }		 	    
+
+	  if(width > 0 && (tr->numBranches > 1))
+	    {
+	      assert(tr->td[0].executeModel[model] == FALSE);
+	      /*printf("%f %f\n", _dlnLdlz[model], _d2lnLdlz2[model]);*/
+	      /* _dlnLdlz[model]   = 0.0;
+		 _d2lnLdlz2[model] = 0.0;*/
+	    }
+
 	}
     }
 
@@ -874,9 +881,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	  if(outerConverged[i] == FALSE && tr->curvatOK[i] == TRUE)
 	    {
 	      tr->curvatOK[i] = FALSE;
-
 	      zprev[i] = z[i];
-
 	      zstep[i] = (1.0 - zmax) * z[i] + zmin;
 	    }
 	}
@@ -903,11 +908,12 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       if(tr->numBranches > 1)
 	{
+	  assert(tr->numBranches == tr->NumberOfModels);
+	  
 	  for(model = 0; model < tr->NumberOfModels; model++)
 	    {
 	      if(tr->executeModel[model])
 		tr->executeModel[model] = !tr->curvatOK[model];
-
 	    }
 	}
       else
@@ -925,16 +931,16 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
       storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
 
-
-
       /* sequential part, if this is the first newton-raphson implementation,
 	 do the precomputations as well, otherwise just execute the computation
 	 of the derivatives */
+
       if(firstIteration)
 	{
 	  makenewzIterative(tr);
 	  firstIteration = FALSE;
 	}
+      
       execCore(tr, dlnLdlz, d2lnLdlz2);
 
       {
@@ -955,9 +961,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	  {
 	    /* MPI_Allreduce is apparently not deterministic */
 
-	    MPI_Allreduce(send, recv, tr->numBranches * 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	    
-	    /*printf("process %d after MNZ allred\n", processID);*/
+	    MPI_Allreduce(send, recv, tr->numBranches * 2, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);	    	    
 	    
 	    for(model = 0; model < tr->numBranches; model++)
 	      {	     
@@ -971,9 +975,9 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	    MPI_Bcast(recv, tr->numBranches * 2, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 	    for(model = 0; model < tr->numBranches; model++)
-	      {	     
+	      {	     	
 		dlnLdlz[model]  = recv[model * 2 + 0];
-		d2lnLdlz2[model] =  recv[model * 2 + 1];
+		d2lnLdlz2[model] =  recv[model * 2 + 1];	       
 	      }	
 	  }
 
@@ -1048,9 +1052,9 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
      if we don't do a per partition estimate of 
      branches this will only set result[0]
   */
-
-  for(i = 0; i < tr->numBranches; i++)
-    result[i] = z[i];
+  
+  for(i = 0; i < tr->numBranches; i++)    
+    result[i] = z[i]; 
 }
 
 /* function called from RAxML to optimize a given branch with current branch lengths z0 

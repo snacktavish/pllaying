@@ -505,7 +505,8 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
   
   if(Thorough)
     {     
-      localSmooth(tr, p, smoothings);   
+      localSmooth(tr, p, smoothings);  
+      
       for(i = 0; i < numBranches; i++)
 	{
 	  tr->lzq[i] = p->next->z[i];
@@ -655,6 +656,7 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 	  tr->bestOfNode = tr->likelihood;
 	  tr->insertNode = q;
 	  tr->removeNode = p;   
+	  
 	  for(i = 0; i < tr->numBranches; i++)
 	    {
 	      tr->currentZQR[i] = tr->zqr[i];           
@@ -664,8 +666,10 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 	    }
 	}
       
+     
+
       if(tr->likelihood > tr->endLH)
-	{			  
+	{		  
 	  tr->insertNode = q;
 	  tr->removeNode = p;   
 	  for(i = 0; i < tr->numBranches; i++)
@@ -1377,6 +1381,8 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
   printBothOpen("MAXTRAV: %d\n", maxtrav);
 #endif
 
+  assert(Thorough == 0);
+
   while(impr && maxtrav < MaxFast)
     {	
       recallBestTree(bestT, 1, tr);     
@@ -1411,28 +1417,45 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 	maxtrav = tr->mxtips - 3;    
  
       tr->startLH = tr->endLH = tr->likelihood;
-          
-      for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
-	{                	         
-	  tr->bestOfNode = unlikely;
+      
+      /* printBothOpen("TRAV: %d lh %f MNZC %d\n", maxtrav, tr->likelihood, mnzc); */
 
-	  if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
-	    {	     
-	      if(tr->endLH > tr->startLH)                 	
-		{		 	 	      
-		  restoreTreeFast(tr);	        	  	 	  	      
-		  tr->startLH = tr->endLH = tr->likelihood;		 
-		}	         	       	
-	    }
-	}
+      {
+	int changes = 0;
+	
+	for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
+	  {                	         
+	    tr->bestOfNode = unlikely;
+	    
+	    if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
+	      {	     
+		if(tr->endLH > tr->startLH)                 	
+		  {		 	 	      
+		    restoreTreeFast(tr);	        	  	 	  	      
+		    tr->startLH = tr->endLH = tr->likelihood;			  
+		    changes++;
+		  }	         	       	
+	      }
+	  }
+	
+      
+	/*
+	  evaluateGeneric(tr, tr->start, TRUE);	
+	  
+	  printBothOpen("Changes: %d TRAV: %d lh %f MNZC %d\n", changes, maxtrav, tr->likelihood, mnzc);
+	*/      
+      }
       
       treeEvaluate(tr, 0.25);
+
+      /* printBothOpen("TRAV: %d lh %f MNZC %d\n", maxtrav, tr->likelihood, mnzc); */
+
       saveBestTree(bt, tr, TRUE); 
       if(tr->saveBestTrees)
-	saveBestTree(bestML, tr, FALSE);
+	saveBestTree(bestML, tr, FALSE);           
                                          
 #ifdef _DEBUG_CHECKPOINTING
-      printBothOpen("TRAV: %d lh %f\n", maxtrav, tr->likelihood);
+      printBothOpen("TRAV: %d lh %f MNZC %d\n", maxtrav, tr->likelihood, mnzc);
 #endif
 
       if(tr->likelihood > startLH)
