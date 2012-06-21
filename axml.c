@@ -2259,10 +2259,10 @@ static int partCompare(const void *p1, const void *p2)
 	 tr->manyPartitions is set to TRUE if the user has indicated via -Q that there are substantially more partitions 
 	 than threads/cores available. In that case we do not distribute sites from each partition in a cyclic fashion to the cores 
 	 , but distribute entire partitions to cores. 
-	 Achieving a good balance of alignment sites to cores boils down to the mult-processor scheduling problem known from theoretical comp. sci.
-	 which si NP-complete.
+	 Achieving a good balance of alignment sites to cores boils down to the multi-processor scheduling problem known from theoretical comp. sci.
+	 which is NP-complete.
 	 We have implemented very simple "standard" heuristics for solving the multiprocessor scheduling problem that turn out to work very well
-	 and are cheap to compute 
+	 and are cheap to compute. 
 */
 
 static void multiprocessorScheduling(tree *tr, int tid)
@@ -2272,12 +2272,12 @@ static void multiprocessorScheduling(tree *tr, int tid)
     model,
     modelStates[2] = {4, 20},
     numberOfPartitions[2] = {0 , 0},
-    arrayLength = sizeof(modelStates) / sizeof(int);
+      arrayLength = sizeof(modelStates) / sizeof(int);
   
     /* check that we have not addedd any new models for data types with a different number of states
        and forgot to update modelStates */
     
-    tr->partitionAssignment = (int *)malloc((size_t)tr->NumberOfModels * sizeof(int));
+      tr->partitionAssignment = (int *)malloc((size_t)tr->NumberOfModels * sizeof(int));
     
   for(model = 0; model < tr->NumberOfModels; model++)
     {        
@@ -2319,6 +2319,7 @@ static void multiprocessorScheduling(tree *tr, int tid)
 	  partitionType 
 	    *pt = (partitionType *)malloc(sizeof(partitionType) * (size_t)p);
 	  
+	 
 	  
 	  for(i = 0, k = 0; i < tr->NumberOfModels; i++)
 	    {
@@ -2397,6 +2398,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 
       assert(localTree != tr);
 
+      localTree->numberOfThreads         = tr->numberOfThreads;
       localTree->manyPartitions          = tr->manyPartitions;
       localTree->NumberOfModels          = tr->NumberOfModels;           
       localTree->rateHetModel            = tr->rateHetModel;
@@ -2442,7 +2444,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     localTree->partitionData[model].width        = 0;
 
-  if(tr->manyPartitions)
+  if(tr->manyPartitions)    
     multiprocessorScheduling(localTree, tid);
 
   if(tr->manyPartitions)
