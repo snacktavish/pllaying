@@ -965,7 +965,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  for(j = 0; j < (size_t)tr->partitionData[model].gapVectorLength; j++)
 		    {		     
 		      x3_gap[j] = x1_gap[j] & x2_gap[j];
-		      setBits += (size_t)(BIT_COUNT(x3_gap[j], tr->bits_in_16bits));		      
+		      setBits += (size_t)(bitcount_32_bit(x3_gap[j]));		      
 		    }
 		      		  		 
 		  requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		

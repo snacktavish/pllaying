@@ -2213,41 +2213,6 @@ static void startPthreads(tree *tr)
 
 
 
-static int iterated_bitcount(unsigned int n)
-{
-    int 
-      count=0;    
-    
-    while(n)
-      {
-        count += n & 0x1u ;    
-        n >>= 1 ;
-      }
-    
-    return count;
-}
-
-/*static char bits_in_16bits [0x1u << 16];*/
-
-static void compute_bits_in_16bits(char *bits_in_16bits)
-{
-    unsigned int i;    
-    
-    /* size is 65536 */
-
-    for (i = 0; i < (0x1u<<16); i++)
-        bits_in_16bits[i] = iterated_bitcount(i);       
-
-    return ;
-}
-
-unsigned int precomputed16_bitcount (unsigned int n, char *bits_in_16bits)
-{
-  /* works only for 32-bit int*/
-    
-    return bits_in_16bits [n         & 0xffffu]
-        +  bits_in_16bits [(n >> 16) & 0xffffu] ;
-}
 
 
 
@@ -2404,7 +2369,6 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     maxCategories;
 
   localTree->threadID = tid; 
-  compute_bits_in_16bits(localTree->bits_in_16bits);
 
 
 #ifdef _USE_PTHREADS
@@ -2543,6 +2507,8 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       if(width > 0 && localTree->saveMemory)
 	{
 	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
+
+	  assert(4 == sizeof(unsigned int));
 	    
 	  localTree->partitionData[model].gapVector = (unsigned int*)calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
 	    

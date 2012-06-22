@@ -37,29 +37,28 @@ extern "C" {
 #endif
 
 #ifdef __AVX
+
+#include <xmmintrin.h>
+#include <immintrin.h>
+#include <pmmintrin.h>
+
 #define BYTE_ALIGNMENT 32
+
 #else
+
 #ifdef __SIM_SSE3
+
+#include <xmmintrin.h>
+#include <pmmintrin.h>
+
 #define BYTE_ALIGNMENT 16
+
 #else
 #define BYTE_ALIGNMENT 1
 #endif
 #endif
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
-#define BIT_COUNT(x, y) precomputed16_bitcount(x, y)
 
-/* 
-   The critical speed of this function
-   is mostly a machine/architecure issue
-   Nontheless, I decided not to use 
-   __builtin_popcount(x)
-   for better general portability, albeit it's worth testing
-   on x86 64 bit architectures
-*/
-#else
-#define BIT_COUNT(x, y)  precomputed16_bitcount(x, y)
-#endif
 
 #ifdef _USE_PTHREADS
 
@@ -827,10 +826,7 @@ typedef  struct  {
   unsigned int vLength;
 
   hashtable *h;
-
-  char bits_in_16bits [0x1u << 16];
-  
-
+ 
   int optimizeRateCategoryInvocations;
 
   checkPointState ckp;
@@ -1188,8 +1184,8 @@ extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int nu
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
 
 
-
-
+extern inline unsigned int bitcount_32_bit(unsigned int i);
+extern inline unsigned int bitcount_64_bit(unsigned long i);
 
 extern FILE *getNumberOfTrees(tree *tr, char *fileName, analdef *adef);
 
