@@ -145,11 +145,12 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
-	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
+	#for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
+	for VERSION in SSE3_GCC SSE3_PTHREADS_GCC
   	do 
     		for MODEL in PSR GAMMA 
      		do
-       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} ${TEST_AA_PARTITIONED}
+       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} #${TEST_AA_PARTITIONED}
          		do
             			for FLAGS in ${BL_PARTITION} ${BL_PARTITION_GAPPY} 
               			do
@@ -158,7 +159,7 @@ if [ $# -eq 1 ] ; then
                       (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
               			done
          		done
-       			for DATA_SINGLE in ${TEST_DNA_SINGLE} ${TEST_AA_SINGLE}
+       			for DATA_SINGLE in ${TEST_DNA_SINGLE} #${TEST_AA_SINGLE}
          		do
             			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
               			do

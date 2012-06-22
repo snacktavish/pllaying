@@ -1,0 +1,4 @@
+
+I think we need to re-think the naming of the datasets so that they are self-explaining
+
+500w4 - small dataset (DNA 500 taxa, 4 sites), model includes only 2 partitions
