@@ -805,7 +805,174 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 }
 
 
+#ifdef _USE_PTHREADS
 
+/* function that computes per-site log likelihoods in pthreads */
+
+void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
+{
+  size_t 
+    model, 
+    i;
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {      
+      size_t 
+	localIndex = 0;
+      
+      /* decide if this partition is handled by the thread when -Q is ativated 
+	 or when -Q is not activated figure out which sites have been assigned to the 
+	 current thread */
+
+      boolean 
+	execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
+      
+      /* if the entire partition has been assigned to this thread (-Q) or if -Q is not activated 
+	 we need to compute some per-site log likelihoods with thread tid for this partition */
+
+      if(execute)
+	for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+	  {
+	    /* if -Q is active we compute all per-site log likelihoods for the partition,
+	       othwerise we only compute those that have been assigned to thread tid 
+	       using the cyclic distribution scheme */
+
+	    if(tr->manyPartitions || (i % n == tid))
+	      {
+		double 
+		  l;
+			
+		/* now compute the per-site log likelihood at the current site */
+
+		switch(tr->rateHetModel)
+		  {
+		  case CAT:
+		    l = evaluatePartialGeneric (tr, localIndex, tr->partitionData[model].perSiteRates[tr->partitionData[model].rateCategory[localIndex]], model);
+		    break;
+		  case GAMMA:
+		    l = evaluatePartialGeneric (tr, localIndex, 1.0, model);
+		    break;
+		  default:
+		    assert(0);
+		  }
+		
+		/* store it in an array that is local in memory to the current thread,
+		   see function collectDouble() in axml.c for understanding how we then collect these 
+		   values stored in local arrays from the threads */
+
+		lhs[i] = l;
+
+		localIndex++;
+	      }
+	  }
+    }
+}
+#endif
+
+void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
+{
+  double 
+    likelihood,
+    accumulatedPerSiteLikelihood = 0.0;
+
+  size_t
+    localCount,
+    i,
+    globalCounter,
+    model,
+    lower,
+    upper;
+
+  /* compute the likelihood of the tree with the standard function to:
+     1. obtain the current score for error checking
+     2. store a full tree traversal in the traversal descriptor that 
+        will then be used for calculating per-site log likelihoods 
+	for each site individually and independently */
+
+  evaluateGeneric (tr, tr->start, TRUE);
+  
+  likelihood = tr->likelihood;
+
+  /* now compute per-site log likelihoods using the respective functions */
+
+#ifdef _USE_PTHREADS 
+  /* here we need a barrier to invoke a parallel region that calls 
+     function 
+     perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
+     defined above and subsequently collects the per-site log likelihoods 
+     computed by the threads and stored in local per-thread memory 
+     and stores them in buffer tr->lhs.
+     This corresponds to a gather operation in MPI.
+  */
+
+  masterBarrier(THREAD_PER_SITE_LIKELIHOODS, tr);
+  
+  /* when the parallel region has terminated, the per-site log likelihoods 
+     are stored in array tr->lhs of the master thread which we copy to the result buffer
+  */
+
+  memcpy(logLikelihoods, tr->lhs, sizeof(double) * tr->originalCrunchedLength);
+
+  /* now just compute the sum over per-site log likelihoods for error checking */
+  
+  for(i = 0; i < tr->originalCrunchedLength; i++)
+    accumulatedPerSiteLikelihood += logLikelihoods[i];
+#else
+#ifdef _FINE_GRAIN_MPI
+  /* not implemented yet */
+
+  assert(0);
+#else
+  
+  /* sequential case: just loop over all partitions and compute per site log likelihoods */
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      lower = tr->partitionData[model].lower;
+      upper = tr->partitionData[model].upper;
+
+      for(i = lower, localCount = 0; i < upper; i++, localCount++)
+	{
+	  double 
+	    l;
+
+	  /* 
+	     we need to switch of rate heterogeneity implementations here.
+	     when we have PSR we actually need to provide the per-site rate 
+	     to the function evaluatePartialGeneric() that computes the 
+	     per-site log likelihood.
+	     Under GAMMA, the rate will just be ignored, here we just set it to 1.0
+	  */
+
+	  switch(tr->rateHetModel)
+	    {
+	    case CAT:
+	      l = evaluatePartialGeneric (tr, i, tr->partitionData[model].perSiteRates[tr->partitionData[model].rateCategory[localCount]], model);
+	      break;
+	    case GAMMA:
+	      l = evaluatePartialGeneric (tr, i, 1.0, model);
+	      break;
+	      default:
+	      assert(0);
+	    }
+		
+	  /* store value in result array and add the likelihood of this site to the overall likelihood */
+
+	  logLikelihoods[i] = l;
+	  accumulatedPerSiteLikelihood += l;
+	}      
+    }
+#endif
+#endif
+
+  /* printf("%f %f\n", tr->likelihood, accumulatedPerSiteLikelihood); */
+
+  /* error checking. We need a dirt ABS() < epsilon here, because the implementations 
+     (standard versus per-site) are pretty different and hence slight numerical 
+     deviations are expected */
+
+  assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
+}
 
 
 

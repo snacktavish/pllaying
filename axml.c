@@ -1737,6 +1737,7 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
   int 
     model,
     i;
+
   if(tr->manyPartitions)
     for(model = 0; model < tr->NumberOfModels; model++)
       {
@@ -2056,7 +2057,22 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 	    }
 	}
       break;
-   
+    case THREAD_PER_SITE_LIKELIHOODS:
+
+      /* compute per-site log likelihoods for the sites/partitions 
+	 that are handled by this thread */
+
+      perSiteLogLikelihoodsPthreads(localTree, localTree->lhs, n, tid);
+
+      /* do a parallel gather operation, the threads will write their results 
+	 into the global buffer tr->lhs that will then contain all per-site log likelihoods
+	 in the proper order 
+      */
+
+      if(tid > 0)
+	collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
+       
+      break;
       /* check for errors */
     default:
       printf("Job %d\n", currentJob);
@@ -2933,53 +2949,30 @@ int main (int argc, char *argv[])
 
       if(0)
 	{
-	  int
-	    l,
-	    i,
-	    model;
+	  /* allocate data structure for storing per-site log likelihoods 
+	     tr->originalCrunchedLength is the number of site patterns of the alignment
+	   */
 
-	  double 
-	    lh_standard,
-	    lh_perSite = 0.0;
+	  double
+	    *logLikelihoods = (double*)malloc(tr->originalCrunchedLength * sizeof(double));
 
-	  /* call the standard library implementation to obtain the overall log likelihood */
-
-	  evaluateGeneric(tr, tr->start, TRUE);
-
-	  lh_standard = tr->likelihood;
-
-	  /* Now call the per-site log likelihood calculation 
-	     that is normally used for optimizing per-site rates 
-	     under PSR.
-
-	     Here, we just iterate over all alignment sites and re-traverse 
-	     the tree for each site separately (and redundantly) to obtain the per-site 
-	     log likelihood score.
-
-	     Note that, because of the slightly faster numerical scaling procedure we use in the standard likelihood evaluation of  
-	     the tree (invoked above) we are not able to obtain correct per-site log likelihoods by a call to evaluateGeneric(tr, tr->start, TRUE);
+	  /* just call the function, the array logLikelihoods will contain the 
+	     per-site log likelihoods of all sites.
+	     Note that, there are two caveats here:
+	     1. some sites may have a weight > 1 because of site pattern compression.
+	     2. the sites are not in the order of the input alignment because of 
+	        a) site pattern compression 
+		b) site re-ordering 
+                that are already conducted by the parser.
+		This re-ordering and compression can be de-activated in the parser 
+		via the new command line switch I have added.
 	  */
 
+	  perSiteLogLikelihoods(tr, logLikelihoods);
 
-	  
-	  for(model = 0; model < tr->NumberOfModels; model++)
-	    {
-	      int 	       
-		lower = tr->partitionData[model].lower,
-		upper = tr->partitionData[model].upper;
-	      
-	      /* 
-		 call evaluatePartialGeneric, i is the site index (be careful there are differences between 
-		 the sequential and Pthreads-based indexing with i. 1.0 is the evolutionary rate.
-	      */
+	  free(logLikelihoods);
 
-	      for(i = lower, l = 0; i < upper; i++, l++)
-		lh_perSite += evaluatePartialGeneric(tr, i, 1.0, model);
-	    }
-
-	  /* new just print the two likelihoods: */
-
-	  printf("likelihood: %1.40f, per-site likelihood: %1.40f\n", lh_standard, lh_perSite);	 
+	  exit(0);
 	}
 
      

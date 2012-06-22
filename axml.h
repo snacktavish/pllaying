@@ -1203,10 +1203,10 @@ extern void testGapped(tree *tr);
 extern boolean issubset(unsigned int* bipA, unsigned int* bipB, unsigned int vectorLen);
 extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 
-
+extern void perSiteLogLikelihoods(tree *tr, double *logLikelihoods);
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
-
+extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid);
 extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
@@ -1240,6 +1240,7 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_OPT_RATE               9
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
+#define THREAD_PER_SITE_LIKELIHOODS   12
 
 
 
