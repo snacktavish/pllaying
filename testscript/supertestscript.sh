@@ -2,6 +2,8 @@
 # This is the working directory you want to run the test from
 WORKINGDIR=`pwd`
 DATADIR=`pwd`/../testdata
+# Set the number of threads you want to use
+NUMPTHREADS=4
 # NO NEED TO EDIT BEYOND THIS POINT
 AVX_GCC="testscript.AVX.gcc"
 AVX_PTHREADS_GCC="testscript.PTHREADS.AVX.gcc"
@@ -28,7 +30,7 @@ run_AVX_GCC()
 
 run_AVX_PTHREADS_GCC()
 {
-	sh ${WORKINGDIR}/${AVX_PTHREADS_GCC} ${OPTIONS}
+	sh ${WORKINGDIR}/${AVX_PTHREADS_GCC} ${OPTIONS} -T ${NUMPTHREADS}
 	RETVAL=$?
 	if [ $RETVAL -ne 0 ] ; then
         	echo " Error: testscript.PTHREADS.AVX.gcc failed. Check the messages above ...";
@@ -56,7 +58,7 @@ run_SSE3_GCC()
 
 run_SSE3_PTHREADS_GCC()
 {
-	sh ${WORKINGDIR}/${SSE3_PTHREADS_GCC} ${OPTIONS}
+	sh ${WORKINGDIR}/${SSE3_PTHREADS_GCC} ${OPTIONS} -T ${NUMPTHREADS}
 	RETVAL=$?
 	if [ $RETVAL -ne 0 ] ; then
         	echo " Error: testscript.SSE3.PTHREADS.gcc failed. Check the messages above ...";
@@ -89,8 +91,8 @@ if [ $# -eq 0 ] ; then
 	echo "\n"
 	echo " usage: sh supertestscript.sh [ [ 0-3 ] | [raxml options] ]"
 	echo " options: "
-	echo "        [0]  supertiny size test"
-	echo "        [1]  tiny size test"
+	echo "        [0]  tiny size test"
+	echo "        [1]  small size test"
 	echo "        [2]  medium size test"
 	echo "        [3]  huge size test"
 	echo "        [raxml options]  specific test"
@@ -145,8 +147,7 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
-	#for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
-	for VERSION in SSE3_GCC SSE3_PTHREADS_GCC
+	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
   	do 
     		for MODEL in PSR GAMMA 
      		do
