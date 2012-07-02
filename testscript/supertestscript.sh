@@ -94,7 +94,7 @@ if [ $# -eq 0 ] ; then
 	echo "        [0]  tiny size test"
 	echo "        [1]  small size test"
 	echo "        [2]  medium size test"
-	echo "        [3]  huge size test"
+	echo "        [3]  large size test"
 	echo "        [raxml options]  specific test"
 	echo "\n"
 	exit 0
@@ -128,8 +128,8 @@ if [ $# -eq 1 ] ; then
 	if [ $1 -eq 2 ] ; then
 		TEST_DNA_PARTITIONED="${DATADIR}/medium.dna.binary"
 		TEST_DNA_SINGLE="${DATADIR}/medium.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
+	#	TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
+	#	TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
         fi
 	if [ $1 -eq 3 ] ; then
 		TEST_DNA_PARTITIONED="${DATADIR}/large.dna.binary"
