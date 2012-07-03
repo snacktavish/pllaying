@@ -1515,7 +1515,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 	    }
 	}
       
-      treeEvaluate(tr, 0.25);
+      treeEvaluate(tr, 1 ); //smoothFactor was 0.25
       saveBestTree(bt, tr); 
                                          
 #ifdef _DEBUG_CHECKPOINTING
@@ -1806,7 +1806,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
       /* optimize branch lengths */
 
-      treeEvaluate(tr, 1.0);  
+      treeEvaluate(tr, 1 );  
             
       /* save the tree with those branch lengths again */
       
@@ -1844,7 +1844,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	  
 	  /* optimize branch lengths of this tree */
 
-	  treeEvaluate(tr, 0.25);
+	  treeEvaluate(tr, 1); //smoothFactor was 0.25
 
 	  /* calc. the likelihood improvement */
 
@@ -1916,7 +1916,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(estimateModel)
     modOpt(tr, 1.0);
   else
-    treeEvaluate(tr, 1.0);
+    treeEvaluate(tr, 1 );
 
   /* start loop that executes thorough SPR cycles */
 
@@ -2041,7 +2041,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       
       /* optimize branch lengths of best tree */
 
-      treeEvaluate(tr, 1.0);
+      treeEvaluate(tr, 1 );
      
       /* do some bokkeeping and printouts again */
       previousLh = lh = tr->likelihood;	      
@@ -2061,7 +2061,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	{		 
 	  recallBestTree(bt, i, tr);	 	    	    	
 	  
-	  treeEvaluate(tr, 0.25);	    	 
+	  treeEvaluate(tr, 1 ); //smoothFactor was 0.25	    	 
 	    
 	  difference = ((tr->likelihood > previousLh)? 
 			tr->likelihood - previousLh: 
@@ -2117,12 +2117,12 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
 
 
-boolean treeEvaluate (tree *tr, double smoothFactor)       /* Evaluate a user tree */
+boolean treeEvaluate (tree *tr, int smoothFactor)       /* Evaluate a user tree */
 {
   boolean result;
 
  
-  result = smoothTree(tr, (int)((double)smoothings * smoothFactor));
+  result = smoothTree(tr, smoothings * smoothFactor );
   
   assert(result); 
 
