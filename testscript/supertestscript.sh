@@ -128,8 +128,8 @@ if [ $# -eq 1 ] ; then
 	if [ $1 -eq 2 ] ; then
 		TEST_DNA_PARTITIONED="${DATADIR}/medium.dna.binary"
 		TEST_DNA_SINGLE="${DATADIR}/medium.dna.singlegene.binary"
-	#	TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
-	#	TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
+		TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
+		TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
         fi
 	if [ $1 -eq 3 ] ; then
 		TEST_DNA_PARTITIONED="${DATADIR}/large.dna.binary"
