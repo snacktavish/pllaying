@@ -2422,7 +2422,7 @@ static void autoProtein(tree *tr)
 	  
 	  resetBranches(tr);
 	  evaluateGeneric(tr, tr->start, TRUE);  
-	  treeEvaluate(tr, 0.5);     
+	  treeEvaluate(tr, 16);// 0.5 * 32 = 16.0   
 
 	  for(model = 0; model < tr->NumberOfModels; model++)
 	    {
@@ -2463,7 +2463,7 @@ static void autoProtein(tree *tr)
 
       resetBranches(tr);
       evaluateGeneric(tr, tr->start, TRUE); 
-      treeEvaluate(tr, 0.5);
+      treeEvaluate(tr, 16); // 0.5 * 32 = 16
       
       /*printf("Exit: %f\n", tr->likelihood);*/
       
@@ -2522,14 +2522,14 @@ void modOpt(tree *tr, double likelihoodEpsilon)
 
       autoProtein(tr);
 
-      treeEvaluate(tr, 0.0625);      
+      treeEvaluate(tr, 2); // 0.0625 * 32 = 2.0    
       
       switch(tr->rateHetModel)
 	{
 	case GAMMA:      
 	  optAlpha(tr, modelEpsilon, alphaList); 
 	  evaluateGeneric(tr, tr->start, TRUE); 	 	 
-	  treeEvaluate(tr, 0.1);	  	 
+	  treeEvaluate(tr, 3); // 0.1 * 32 = 3.2  	 
 	  break;
 	case CAT:
 	  if(catOpt < 3)

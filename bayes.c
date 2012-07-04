@@ -1160,7 +1160,7 @@ void mcmc(tree *tr, analdef *adef)
   }
 
   t = gettime(); 
-  treeEvaluate(tr, 1);
+  treeEvaluate(tr, 32); // 32 * 1
   blTime += gettime() - t;
   printBothOpen("accepted SPR %d, accepted stNNI %d, accepted BL %d, accepted model %d, accepted gamma %d, num moves tried %d, SPRs with max radius %d\n", 
 		accepted_spr, accepted_nni, accepted_bl, accepted_model, accepted_gamma, num_moves, maxradius);

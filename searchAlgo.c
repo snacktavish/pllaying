@@ -181,32 +181,32 @@ boolean smoothTree (tree *tr, int maxtimes)
 {
   nodeptr  p, q;   
   int i, count = 0;
-   
+
   p = tr->start;
   for(i = 0; i < tr->numBranches; i++)
     tr->partitionConverged[i] = FALSE;
 
   while (--maxtimes >= 0) 
-    {    
-      for(i = 0; i < tr->numBranches; i++)	
-	tr->partitionSmoothed[i] = TRUE;		
+  {    
+    for(i = 0; i < tr->numBranches; i++)	
+      tr->partitionSmoothed[i] = TRUE;		
 
-      if (! smooth(tr, p->back))       return FALSE;
-      if (!isTip(p->number, tr->mxtips)) 
-	{
-	  q = p->next;
-	  while (q != p) 
-	    {
-	      if (! smooth(tr, q->back))   return FALSE;
-	      q = q->next;
-	    }
-	}
-         
-      count++;
-
-      if (allSmoothed(tr)) 
-	break;      
+    if (! smooth(tr, p->back))       return FALSE;
+    if (!isTip(p->number, tr->mxtips)) 
+    {
+      q = p->next;
+      while (q != p) 
+      {
+        if (! smooth(tr, q->back))   return FALSE;
+        q = q->next;
+      }
     }
+
+    count++;
+
+    if (allSmoothed(tr)) 
+      break;      
+  }
 
   for(i = 0; i < tr->numBranches; i++)
     tr->partitionConverged[i] = FALSE;
@@ -1515,7 +1515,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 	    }
 	}
       
-      treeEvaluate(tr, 0.25 ); //smoothFactor was 0.25
+      treeEvaluate(tr, 8 ); // 32 * 0.25 
       saveBestTree(bt, tr); 
                                          
 #ifdef _DEBUG_CHECKPOINTING
@@ -1629,7 +1629,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       if(estimateModel)
 	modOpt(tr, 10.0);
       else
-	treeEvaluate(tr, 2);  
+	treeEvaluate(tr, 64); // 32 * 2
     }
 
   /* print some stuff to the RAxML_log file */
@@ -1671,7 +1671,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       if(estimateModel)
 	modOpt(tr, 5.0);
       else
-	treeEvaluate(tr, 1);   
+	treeEvaluate(tr, 32);   // 32 * 1 
     }
   
   /* save the current tree again, while the topology has not changed, the branch lengths have changed in the meantime, hence
@@ -1806,7 +1806,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
       /* optimize branch lengths */
 
-      treeEvaluate(tr, 1 );  
+      treeEvaluate(tr, 32);  // 32 * 1 = 32 
             
       /* save the tree with those branch lengths again */
       
@@ -1844,7 +1844,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	  
 	  /* optimize branch lengths of this tree */
 
-	  treeEvaluate(tr, 0.25); //smoothFactor was 0.25
+	  treeEvaluate(tr, 8); // 0.25 * 32
 
 	  /* calc. the likelihood improvement */
 
@@ -1916,7 +1916,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(estimateModel)
     modOpt(tr, 1.0);
   else
-    treeEvaluate(tr, 1 );
+    treeEvaluate(tr, 32 ); //32 * 1
 
   /* start loop that executes thorough SPR cycles */
 
@@ -2041,7 +2041,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
       
       /* optimize branch lengths of best tree */
 
-      treeEvaluate(tr, 1 );
+      treeEvaluate(tr, 32 ); // 32 * 1
      
       /* do some bokkeeping and printouts again */
       previousLh = lh = tr->likelihood;	      
@@ -2061,7 +2061,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	{		 
 	  recallBestTree(bt, i, tr);	 	    	    	
 	  
-	  treeEvaluate(tr, 0.25 ); //smoothFactor was 0.25	    	 
+	  treeEvaluate(tr, 8 ); // 0.25	* 32    	 
 	    
 	  difference = ((tr->likelihood > previousLh)? 
 			tr->likelihood - previousLh: 
@@ -2117,18 +2117,15 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
 
 
-boolean treeEvaluate (tree *tr, double smoothFactor)       /* Evaluate a user tree */
+/* The number of maximum smoothing iterations is given explicitely */
+boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   boolean result;
-
- 
-  result = smoothTree(tr, (int)((double)smoothings * smoothFactor) );
-  
+  result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */
   assert(result); 
 
   evaluateGeneric(tr, tr->start, FALSE);   
     
-
   return TRUE;
 }
 

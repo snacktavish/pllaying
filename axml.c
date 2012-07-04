@@ -2957,7 +2957,7 @@ int main (int argc, char *argv[])
       
       /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
       
-      treeEvaluate(tr, 1); 	 	 	 	 	 
+      treeEvaluate(tr, 32); // 32 * 1	 	 	 	 
       
       /* now start the ML search algorithm */
       
