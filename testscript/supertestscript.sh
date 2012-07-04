@@ -5,42 +5,14 @@ DATADIR=`pwd`/../testdata
 # Set the number of threads you want to use
 NUMPTHREADS=4
 # NO NEED TO EDIT BEYOND THIS POINT
-AVX_GCC="testscript.AVX.gcc"
-AVX_PTHREADS_GCC="testscript.PTHREADS.AVX.gcc"
 SSE3_GCC="testscript.SSE3.gcc"
 SSE3_PTHREADS_GCC="testscript.SSE3.PTHREADS.gcc"
+AVX_GCC="testscript.AVX.gcc"
+AVX_PTHREADS_GCC="testscript.PTHREADS.AVX.gcc"
 
 # KEEP A LOG OF STDOUT OF RAxML
 LOGFILE=RAxML_log.txt
 ERRLOGFILE=RAxML_ERR_log.txt
-
-run_AVX_GCC()
-{
-  	sh ${WORKINGDIR}/${AVX_GCC} ${OPTIONS} 
-  	RETVAL=$?
-  	if [ $RETVAL -ne 0 ] ; then
-  		echo " Error: testscript.AVX.gcc failed. Check the messages above ...";
-		echo "\n"
-		echo " Supertestscript did not finish successfully."
-		echo "\n"
-        	exit 1
-  	fi
-  	echo "\n"
-}
-
-run_AVX_PTHREADS_GCC()
-{
-	sh ${WORKINGDIR}/${AVX_PTHREADS_GCC} ${OPTIONS} -T ${NUMPTHREADS}
-	RETVAL=$?
-	if [ $RETVAL -ne 0 ] ; then
-        	echo " Error: testscript.PTHREADS.AVX.gcc failed. Check the messages above ...";
-		echo "\n"
-		echo " Supertestscript did not finish successfully."
-		echo "\n"
-        	exit 1
-	fi
-	echo "\n"
-}
 
 run_SSE3_GCC()
 {
@@ -70,20 +42,49 @@ run_SSE3_PTHREADS_GCC()
 	echo "\n"
 }
 
-if [ ! -f ${WORKINGDIR}/${AVX_GCC} ] ; then
-        echo " Error: file ${AVX_GCC} is missing from ${WOKRINGDIR}, exiting ...";
-        exit 1
-fi
-if [ ! -f ${WORKINGDIR}/${AVX_PTHREADS_GCC} ] ; then
-        echo " Error: file ${AVX_PTHREADS_GCC} is missing from ${WORKINGDIR}, exiting ...";
-        exit 1
-fi
+run_AVX_GCC()
+{
+  	sh ${WORKINGDIR}/${AVX_GCC} ${OPTIONS} 
+  	RETVAL=$?
+  	if [ $RETVAL -ne 0 ] ; then
+  		echo " Error: testscript.AVX.gcc failed. Check the messages above ...";
+		echo "\n"
+		echo " Supertestscript did not finish successfully."
+		echo "\n"
+        	exit 1
+  	fi
+  	echo "\n"
+}
+
+run_AVX_PTHREADS_GCC()
+{
+	sh ${WORKINGDIR}/${AVX_PTHREADS_GCC} ${OPTIONS} -T ${NUMPTHREADS}
+	RETVAL=$?
+	if [ $RETVAL -ne 0 ] ; then
+        	echo " Error: testscript.PTHREADS.AVX.gcc failed. Check the messages above ...";
+		echo "\n"
+		echo " Supertestscript did not finish successfully."
+		echo "\n"
+        	exit 1
+	fi
+	echo "\n"
+}
+
+
 if [ ! -f ${WORKINGDIR}/${SSE3_GCC} ] ; then
         echo " Error: file ${SSE3_GCC} is missing from ${WORKINGDIR}, exiting ...";
         exit 1
 fi
 if [ ! -f ${WORKINGDIR}/${SSE3_PTHREADS_GCC} ] ; then
         echo " Error: file ${SSE3_PTHREADS_GCC} is missing from ${WORKINGDIR}, exiting ...";
+        exit 1
+fi
+if [ ! -f ${WORKINGDIR}/${AVX_GCC} ] ; then
+        echo " Error: file ${AVX_GCC} is missing from ${WOKRINGDIR}, exiting ...";
+        exit 1
+fi
+if [ ! -f ${WORKINGDIR}/${AVX_PTHREADS_GCC} ] ; then
+        echo " Error: file ${AVX_PTHREADS_GCC} is missing from ${WORKINGDIR}, exiting ...";
         exit 1
 fi
 
@@ -147,7 +148,7 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
-	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
+	for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   	do 
     		for MODEL in PSR GAMMA 
      		do
@@ -173,12 +174,12 @@ if [ $# -eq 1 ] ; then
   	done
 else
 	OPTIONS="$@"
-	for VERSION in AVX_GCC AVX_PTHREADS_GCC SSE3_GCC SSE3_PTHREADS_GCC
+	for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   	do 
 		run_${VERSION}
         done
 fi
 
 echo "\n"
-echo " Supertestscript finished successfully."
+echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok."
 echo "\n"

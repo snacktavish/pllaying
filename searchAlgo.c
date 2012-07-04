@@ -1515,7 +1515,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 	    }
 	}
       
-      treeEvaluate(tr, 1 ); //smoothFactor was 0.25
+      treeEvaluate(tr, 0.25 ); //smoothFactor was 0.25
       saveBestTree(bt, tr); 
                                          
 #ifdef _DEBUG_CHECKPOINTING
@@ -1844,7 +1844,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	  
 	  /* optimize branch lengths of this tree */
 
-	  treeEvaluate(tr, 1); //smoothFactor was 0.25
+	  treeEvaluate(tr, 0.25); //smoothFactor was 0.25
 
 	  /* calc. the likelihood improvement */
 
@@ -2061,7 +2061,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	{		 
 	  recallBestTree(bt, i, tr);	 	    	    	
 	  
-	  treeEvaluate(tr, 1 ); //smoothFactor was 0.25	    	 
+	  treeEvaluate(tr, 0.25 ); //smoothFactor was 0.25	    	 
 	    
 	  difference = ((tr->likelihood > previousLh)? 
 			tr->likelihood - previousLh: 
@@ -2117,12 +2117,12 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
 
 
-boolean treeEvaluate (tree *tr, int smoothFactor)       /* Evaluate a user tree */
+boolean treeEvaluate (tree *tr, double smoothFactor)       /* Evaluate a user tree */
 {
   boolean result;
 
  
-  result = smoothTree(tr, smoothings * smoothFactor );
+  result = smoothTree(tr, (int)((double)smoothings * smoothFactor) );
   
   assert(result); 
 

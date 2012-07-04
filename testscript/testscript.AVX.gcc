@@ -105,29 +105,28 @@ echo "\n"
 #Check the likelihoods
 LIKELIHOOD1=`grep -i "Likelihood   :" RAxML_info.${OUTPUTID1}`
 LIKELIHOOD2=`grep -i "Likelihood   :" RAxML_info.${OUTPUTID2}`
+echo "  $LIKELIHOOD1 (stable version)"
+echo "  $LIKELIHOOD2 (developed version)"
 
-if [ "$LIKELIHOOD1"="$LIKELIHOOD2" ] ; then
-	echo "\n The computed likelihoods are identical!"
-else
+if [ $LIKELIHOOD1 != $LIKELIHOOD2 ] ; then
 	echo "\n Error: the computed likelihoods are different!!!"
-	echo "  $LIKELIHOOD1 (stable version)"
-	echo "  $LIKELIHOOD2 (developed version)"
         exit 1
+else
+	echo "\n The computed likelihoods are identical!"
 fi
 
 #Check the trees
 TREE1=`cat ${WORKINGDIR}/RAxML_result.${OUTPUTID1}`
 TREE2=`cat ${WORKINGDIR}/RAxML_result.${OUTPUTID2}`
 
-if [ $TREE1=$TREE2 ] ; then
-	echo "\n The computed trees are identical!"
-else
+if [ $TREE1 != $TREE2 ] ; then
 	echo "\n Error: the computed trees are different!!!!"
 	echo "  diff <tree_stable_version> <tree_developed_version>:"
         diff ${WORKINGDIR}/RAxML_result.${OUTPUTID1} ${WORKINGDIR}/RAxML_result.${OUTPUTID2}
         exit 1
+else
+	echo "\n The computed trees are identical!"
 fi
 
 echo "\n"
-
 exit 0

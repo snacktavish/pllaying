@@ -1064,7 +1064,7 @@ extern boolean testInsertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( tree *tr );
 extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt );
 extern void computeBIGRAPID ( tree *tr, analdef *adef, boolean estimateModel);
-extern boolean treeEvaluate ( tree *tr, int smoothFactor );
+extern boolean treeEvaluate ( tree *tr, double smoothFactor );
 extern boolean treeEvaluatePartition ( tree *tr, double smoothFactor, int model );
 
 extern void meshTreeSearch(tree *tr, analdef *adef, int thorough);
