@@ -503,7 +503,7 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
   
   if(tr->thoroughInsertion)
     {     
-      localSmooth(tr, p, smoothings);   
+      localSmooth(tr, p, MAX_LOCAL_SMOOTHING_ITERATIONS);   
       for(i = 0; i < numBranches; i++)
 	{
 	  tr->lzq[i] = p->next->z[i];
