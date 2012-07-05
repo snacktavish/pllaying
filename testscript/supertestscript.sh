@@ -159,8 +159,8 @@ if [ $# -eq 1 ] ; then
                 			OPTIONS="-m ${MODEL} -s ${DATA_PARTITIONED} ${FLAGS}"
                       echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
                       (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
-              			done
-         		done
+              	       	done
+         	       	done
        			for DATA_SINGLE in ${TEST_DNA_SINGLE} ${TEST_AA_SINGLE}
          		do
             			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
@@ -181,5 +181,5 @@ else
 fi
 
 echo "\n"
-echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok."
+echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok!"
 echo "\n"
