@@ -115,29 +115,38 @@ if [ $# -eq 1 ] ; then
 		exit 1
         fi
 	if [ $1 -eq 0 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/tiny.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/tiny.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/tiny.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/tiny.aa.singlegene.binary"
+		TREE_DNA="-t ${DATADIR}/tiny.startingTree.dna.tree"
+		TEST_DNA_PARTITIONED="${DATADIR}/tiny.dna.binary $TREE_DNA"
+		TEST_DNA_SINGLE="${DATADIR}/tiny.dna.singlegene.binary $TREE_DNA"
+		TREE_AA="-t ${DATADIR}/tiny.startingTree.aa.tree"
+		TEST_AA_PARTITIONED="${DATADIR}/tiny.aa.binary $TREE_AA"
+		TEST_AA_SINGLE="${DATADIR}/tiny.aa.singlegene.binary $TREE_AA"
         fi
 	if [ $1 -eq 1 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/small.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/small.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/small.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/small.aa.singlegene.binary"
+		TREE_DNA="-t ${DATADIR}/small.startingTree.dna.tree"
+		TEST_DNA_PARTITIONED="${DATADIR}/small.dna.binary ${TREE_DNA}"
+		TEST_DNA_SINGLE="${DATADIR}/small.dna.singlegene.binary ${TREE_DNA}"
+		TREE_AA="-t ${DATADIR}/small.startingTree.aa.tree"
+		TEST_AA_PARTITIONED="${DATADIR}/small.aa.binary ${TREE_AA}"
+		TEST_AA_SINGLE="${DATADIR}/small.aa.singlegene.binary ${TREE_AA}"
         fi
 	if [ $1 -eq 2 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/medium.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/medium.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary"
+		TREE_DNA="-t ${DATADIR}/medium.startingTree.dna.tree"
+		TEST_DNA_PARTITIONED="${DATADIR}/medium.dna.binary ${TREE_DNA}"
+		TEST_DNA_SINGLE="${DATADIR}/medium.dna.singlegene.binary ${TREE_DNA}"
+		TREE_AA="-t ${DATADIR}/medium.startingTree.aa.tree"
+		TEST_AA_PARTITIONED="${DATADIR}/medium.aa.binary ${TREE_AA}"
+		TEST_AA_SINGLE="${DATADIR}/medium.aa.singlegene.binary ${TREE_AA}"
         fi
 	if [ $1 -eq 3 ] ; then
-		TEST_DNA_PARTITIONED="${DATADIR}/large.dna.binary"
-		TEST_DNA_SINGLE="${DATADIR}/large.dna.singlegene.binary"
-		TEST_AA_PARTITIONED="${DATADIR}/large.aa.binary"
-		TEST_AA_SINGLE="${DATADIR}/large.aa.singlegene.binary"
+		TREE_DNA="-t ${DATADIR}/large.startingTree.dna.tree"
+		TEST_DNA_PARTITIONED="${DATADIR}/large.dna.binary ${TREE_DNA}"
+		TEST_DNA_SINGLE="${DATADIR}/large.dna.singlegene.binary ${TREE_DNA}"
+		TREE_AA="-t ${DATADIR}/large.startingTree.aa.tree"
+		TEST_AA_PARTITIONED="${DATADIR}/large.aa.binary ${TREE_AA}"
+		TEST_AA_SINGLE="${DATADIR}/large.aa.singlegene.binary ${TREE_AA}"
         fi
+        
 
 	SIMPLE="" 
 	BL_PARTITION="-M"
@@ -147,27 +156,28 @@ if [ $# -eq 1 ] ; then
 
   echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
   echo "Starting superscript `date`, Log" > $LOGFILE 
+       
 
 	for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   	do 
     		for MODEL in PSR GAMMA 
      		do
-       			for DATA_PARTITIONED in ${TEST_DNA_PARTITIONED} ${TEST_AA_PARTITIONED}
+       			for DATA_PARTITIONED in "${TEST_DNA_PARTITIONED}" "${TEST_AA_PARTITIONED}"
          		do
-            			for FLAGS in ${BL_PARTITION} ${BL_PARTITION_GAPPY} 
+            			for FLAGS in "${BL_PARTITION}" "${BL_PARTITION_GAPPY}"
               			do
                 			OPTIONS="-m ${MODEL} -s ${DATA_PARTITIONED} ${FLAGS}"
-                      echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
-                      (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
-              	       	done
+                      			echo "${VERSION} with ${OPTIONS}" | tee -a $ERRLOGFILE $LOGFILE
+                      			(run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
+              	       		done
          	       	done
-       			for DATA_SINGLE in ${TEST_DNA_SINGLE} ${TEST_AA_SINGLE}
+       			for DATA_SINGLE in "${TEST_DNA_SINGLE}" "${TEST_AA_SINGLE}"
          		do
-            			for FLAGS in ${SIMPLE} ${SIMPLE_GAPPY} ${SIMPLE_RF_CONV} 
+            			for FLAGS in "${SIMPLE}" "${SIMPLE_GAPPY}" "${SIMPLE_RF_CONV}" 
               			do
                 			OPTIONS="-m ${MODEL} -s ${DATA_SINGLE} ${FLAGS}"
-                      echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
-                      (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
+                      			echo "${VERSION} with ${OPTIONS}" | tee -a $ERRLOGFILE $LOGFILE
+                      			(run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
               			done
          		done
      		done
