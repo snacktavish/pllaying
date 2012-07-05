@@ -380,7 +380,23 @@ void evaluateIterative(tree *tr)
   int    
     pNumber = tr->td[0].ti[0].pNumber, 
     qNumber = tr->td[0].ti[0].qNumber, 
+    p_slot,
+    q_slot,
     model;
+
+  /* the slots are the entries in xVector where the LH vector is available */
+  if(tr->useRecom)
+  {
+    p_slot = tr->td[0].ti[0].slot_p;
+    q_slot = tr->td[0].ti[0].slot_q;
+  }
+  else
+  {
+    p_slot = pNumber - tr->mxtips - 1;
+    q_slot = qNumber - tr->mxtips - 1;
+  }
+
+
  
   /* before we can compute the likelihood at the virtual root, we need to do a partial or full tree traversal to compute 
      the conditional likelihoods of the vectors as specified in the traversal descriptor. Maintaining this tarversal descriptor consistent 
