@@ -503,7 +503,7 @@ of the current partition.
              note that inner nodes are enumerated/indexed starting at 0 to save allocating some 
              space for additional pointers */
 
-          x2_start = tr->partitionData[model].xVector[pNumber - tr->mxtips -1];		  
+          x2_start = tr->partitionData[model].xVector[p_slot];		  
 
           /* get the corresponding tip vector */
 
@@ -521,7 +521,7 @@ of the current partition.
         {	
           /* p is a tip, same as above */
 
-          x2_start = tr->partitionData[model].xVector[qNumber - tr->mxtips - 1];		  		  
+          x2_start = tr->partitionData[model].xVector[q_slot];		  		  
           tip = tr->partitionData[model].yVector[pNumber];
 
           if(tr->saveMemory)
@@ -537,8 +537,8 @@ of the current partition.
 
         /* neither p nor q are tips, hence we need to get the addresses of two inner vectors */
 
-        x1_start = tr->partitionData[model].xVector[pNumber - tr->mxtips - 1];
-        x2_start = tr->partitionData[model].xVector[qNumber - tr->mxtips - 1];
+        x1_start = tr->partitionData[model].xVector[p_slot];
+        x2_start = tr->partitionData[model].xVector[q_slot];
 
         /* memory saving option */
 
@@ -719,6 +719,33 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   for(i = 0; i < tr->numBranches; i++)    
     tr->td[0].ti[0].qz[i] =  q->z[i];
 
+  /* recom part */
+  if(tr->useRecom)
+  {
+    int
+      slot = -1,
+      count = 0;
+    if(fullTraversal)
+    {
+      determineFullTraversalStlen(p, tr);
+    }
+    else
+    {
+      computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
+      computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
+    }
+    if(!isTip(q->number, tr->mxtips))
+    {
+      getxVector(tr->rvec, q->number, &slot, tr->mxtips);
+      tr->td[0].ti[0].slot_q = slot;
+    }
+    if(!isTip(p->number, tr->mxtips))
+    {
+      getxVector(tr->rvec, p->number, &slot, tr->mxtips);
+      tr->td[0].ti[0].slot_p = slot;
+    }
+  }
+
   /* now compute how many conditionals must be re-computed/re-oriented by newview
      to be able to calculate the likelihood at the root defined by p and q.
      */
@@ -730,19 +757,32 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 
   if(fullTraversal)
   { 
+    /* recom */
+    if(tr->useRecom)
+    {
+      //Annotate all inner nodes with subtree sizes 
+      determineFullTraversalStlen(p, tr);
+      int slot = -1;
+      getxVector(tr->rvec, q->number, &slot, tr->mxtips);
+      tr->td[0].ti[0].slot_q = slot;
+    }
+    /* E recom */
     assert(isTip(p->number, tr->mxtips));
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE);     
+    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE, 
+        tr->rvec, tr->useRecom);     
   }
   else
   {
-    if(!p->x)
-      computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);
+    if(needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
+      computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
+          tr->rvec, tr->useRecom);     
 
     /* recompute/reorient any descriptors at or below q ? 
        computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
 
-    if(!q->x)
-      computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);  
+    if(needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
+      computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
+          tr->rvec, tr->useRecom);     
   }
 
   /* now we copy this partition execute mask into the traversal descriptor which must come from the 
@@ -814,6 +854,12 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
+
+  if(tr->useRecom)
+  {
+    unpinNode(tr->rvec, p->number, tr->mxtips);
+    unpinNode(tr->rvec, q->number, tr->mxtips);
+  }
 
   /* do some bookkeeping to have traversalHasChanged in a consistent state */
 

@@ -1507,15 +1507,18 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 
       if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
       {	     
+        printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
         if(tr->endLH > tr->startLH)                 	
         {		 	 	      
           restoreTreeFast(tr);	        	  	 	  	      
           tr->startLH = tr->endLH = tr->likelihood;		 
+          printBothOpen("Restored tree %f\n", tr->likelihood);
         }	         	       	
       }
     }
 
     treeEvaluate(tr, 8 ); // 32 * 0.25 
+    printBothOpen("LH after treeEval in deterRearr %f\n", tr->likelihood);
     saveBestTree(bt, tr); 
 
 #ifdef _DEBUG_CHECKPOINTING
@@ -1588,6 +1591,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
     *iList = (infoList*)malloc(sizeof(infoList));
 
   /* now here is the RAxML hill climbing search algorithm */
+    printBothOpen("start slow phase\n");
 
 
   /* initialize two lists of size 1 and size 20 that will keep track of the best 
@@ -1623,11 +1627,16 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      the second parameter of treeEvaluate() controls how many times we will iterate over all branches 
      of the tree until we give up, provided that, the br-len opt. has not converged before.
      */
+  printBothOpen("eval\n");
 
   if(!adef->useCheckpoint)
   {
     if(estimateModel)
+    {
+      printBothOpen("estim model\n");
       modOpt(tr, 10.0);
+      printBothOpen("done estim model\n");
+    }
     else
       treeEvaluate(tr, 64); // 32 * 2
   }
@@ -1706,6 +1715,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   while(impr)
   {              
 START_FAST_SPRS:
+    printBothOpen("slow phase\n");
     /* if re-starting from checkpoint set the required variable values to the 
        values that they had when the checkpoint was written */
 
@@ -2125,6 +2135,7 @@ boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a use
   assert(result); 
 
   evaluateGeneric(tr, tr->start, FALSE);   
+  
 
   return TRUE;
 }

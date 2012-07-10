@@ -1054,13 +1054,17 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
   tr->gapyness               = 0.0; 
   tr->useMedian = FALSE;
+  /* recom */
+  tr->useRecom = FALSE;
+  tr->rvec = (recompVectors*)NULL;
+  /* recom */
 
   /********* tr inits end*************/
 
 
 
 
-  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:f:i:m:r:t:w:n:s:g:vhMSDQXbpa", &optind, &optarg))!=-1))
+  while(!bad_opt && ((c = mygetopt(argc,argv,"T:R:e:c:L:f:i:m:r:t:w:n:s:g:vhMSDQXbpa", &optind, &optarg))!=-1))
   {
     switch(c)
     { 
@@ -1078,6 +1082,19 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
           exit(-1);
         }
         break;
+        /* recom L Limit memory usage*/
+      case 'L':
+        sscanf(optarg, "%f", &(tr->vectorRecomFraction));
+        if(tr->vectorRecomFraction < MIN_RECOM_FRACTION || tr->vectorRecomFraction >= MAX_RECOM_FRACTION)
+        {
+          printf("Recomputation fraction passed via -L must be greater or equal to %f\n", MIN_RECOM_FRACTION);
+          printf("and smaller than %f .... exiting \n", MAX_RECOM_FRACTION);
+          exit(-1);
+        }
+        tr->useRecom = TRUE;
+        break;
+
+        /* E recom */
       case 'Q':
 #ifdef _USE_PTHREADS
         tr->manyPartitions = TRUE;
@@ -2419,6 +2436,10 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     }
 
     assert(totalLength == localTree->originalCrunchedLength);
+    /* recomp */
+    localTree->useRecom = tr->useRecom;
+    localTree->vectorRecomFraction = tr->vectorRecomFraction;
+    /* E recomp */
   }
 
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
@@ -2641,6 +2662,12 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
       }     
     }
   }
+  /* recom */
+  if(localTree->useRecom)
+    allocRecompVectorsInfo(localTree);
+  else
+    localTree->rvec = (recompVectors*)NULL;
+  /* E recom */
 }
 
 
@@ -2845,6 +2872,25 @@ int main (int argc, char *argv[])
 
   printBothOpen("Memory Saving Option: %s\n", (tr->saveMemory == TRUE)?"ENABLED":"DISABLED");   	             
 
+  /* Tells us if the vector recomputation memory saving option has been activated in the command line or not.
+   */
+  /* recom */
+  {
+#ifdef _DEBUG_RECOMPUTATION
+    allocTraversalCounter(tr);
+    tr->stlenTime = 0.0;
+    if(tr->useRecom)
+    {
+      tr->rvec->pinTime = 0.0;
+      tr->rvec->recomStraTime = 0.0;
+    }
+#endif
+    printBothOpen("Memory Saving via Additional Vector Recomputations: %s\n", (tr->useRecom == TRUE)?"ENABLED":"DISABLED");
+    if(tr->useRecom)
+      printBothOpen("Using a fraction %f of the total inner vectors that would normally be required\n", tr->vectorRecomFraction);
+  }
+  /* E recom */
+
   /* 
      initialize model parameters like empirical base frequencies, the rates in the Q matrix, the alpha shape parameters,
      the per-site substitution rates to default starting values */
@@ -2945,10 +2991,25 @@ int main (int argc, char *argv[])
     /* For this branch we are only interested in testing with -f b  */
     if(adef->mode == GPU_BENCHMARK)
     {
+      double t, masterTime = gettime();
       ticks t1 = getticks();
+      printBothOpen("Eval once LH \n");
       evaluateGeneric(tr, tr->start, TRUE);	 
+      printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
+      treeEvaluate(tr, 32); // 32 * 1	 	 	 	 
+      printBothOpen("tree evaluated: %f\n", tr->likelihood);
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
+#ifdef _DEBUG_RECOMPUTATION
+      t = gettime() - masterTime;
+      printBothOpen("Traversal freq after search \n");
+      printTraversalInfo(tr);
+      if(tr->useRecom)
+        printBothOpen("Recom stlen %f, cost %f, pin %f, t %f\n", 
+            tr->stlenTime,tr->rvec->recomStraTime, tr->rvec->pinTime, t);
+      else
+        printBothOpen("No Recom stlen %f, t %f\n", tr->stlenTime, t);
+#endif
       return 0;
     }
 
@@ -2958,6 +3019,7 @@ int main (int argc, char *argv[])
     /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
 
     treeEvaluate(tr, 32); // 32 * 1	 	 	 	 
+    printBothOpen("tree evaluated: %f\n", tr->likelihood);
 
     /* now start the ML search algorithm */
 
@@ -2978,6 +3040,20 @@ int main (int argc, char *argv[])
   /* print som more nonsense into the RAxML_info file */
 
   finalizeInfoFile(tr, adef);
+
+  /* TODOFER take this out,  only for stats  */
+#ifdef _DEBUG_RECOMPUTATION
+  {
+      double t = gettime() - masterTime;
+      printBothOpen("Traversal freq after search \n");
+      printTraversalInfo(tr);
+      if(tr->useRecom)
+        printBothOpen("Recom stlen %f, cost %f, pin %f, t %f\n", 
+            tr->stlenTime,tr->rvec->recomStraTime, tr->rvec->pinTime, t);
+      else
+        printBothOpen("No Recom stlen %f, t %f\n", tr->stlenTime, t);
+  }
+#endif
 
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */
 

@@ -83,6 +83,19 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
   pNumber = tr->td[0].ti[0].pNumber;
   qNumber = tr->td[0].ti[0].qNumber;
 
+  /* get the index where the ancestral vector is expected to be found */
+  int p_slot, q_slot;
+  if(tr->useRecom)
+  {
+    p_slot = tr->td[0].ti[0].slot_p; 
+    q_slot = tr->td[0].ti[0].slot_q;
+  }
+  else
+  {
+    p_slot = pNumber - tr->mxtips - 1;
+    q_slot = qNumber - tr->mxtips - 1;
+  }
+   
 
   /* initialize to NULL */
 
@@ -101,7 +114,7 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
       if(isTip(qNumber, tr->mxtips))
       {
         *tipX1 = tr->partitionData[model].yVector[qNumber];
-        *x2_start = tr->partitionData[model].xVector[pNumber - tr->mxtips - 1];
+        *x2_start = tr->partitionData[model].xVector[p_slot];
 
         if(tr->saveMemory)
         {
@@ -112,7 +125,7 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
       else
       {
         *tipX1 = tr->partitionData[model].yVector[pNumber];
-        *x2_start = tr->partitionData[model].xVector[qNumber - tr->mxtips - 1];
+        *x2_start = tr->partitionData[model].xVector[q_slot];
 
         if(tr->saveMemory)
         {
@@ -136,8 +149,8 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
   {
     *tipCase = INNER_INNER;
 
-    *x1_start = tr->partitionData[model].xVector[pNumber - tr->mxtips - 1];
-    *x2_start = tr->partitionData[model].xVector[qNumber - tr->mxtips - 1];
+    *x1_start = tr->partitionData[model].xVector[p_slot];
+    *x2_start = tr->partitionData[model].xVector[q_slot];
 
     if(tr->saveMemory)
     {
@@ -1099,6 +1112,10 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   int i;
   boolean originalExecute[NUM_BRANCHES];
 
+  boolean 
+    p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
+    q_recom = FALSE;
+
   /* the first entry of the traversal descriptor stores the node pair that defines 
      the branch */
 
@@ -1117,6 +1134,26 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
         tr->executeModel[i] = TRUE;
     }
   }
+  if(tr->useRecom)
+  {
+    int
+      slot = -1,
+      count = 0;
+    /* Ensure all correct subtree sizes are available */
+    /* TODOFER where and when do we need these? */
+    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
+    computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
+    if(!isTip(q->number, tr->mxtips))
+    {
+      q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
+      tr->td[0].ti[0].slot_q = slot;
+    }
+    if(!isTip(p->number, tr->mxtips))
+    {
+      p_recom = getxVector(tr->rvec, p->number, &slot, tr->mxtips);
+      tr->td[0].ti[0].slot_p = slot;
+    }
+  }
 
 
   /* compute the traversal descriptor of the likelihood vectors  that need to be re-computed 
@@ -1124,14 +1161,30 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
 
   tr->td[0].count = 1;
 
+  /*
   if(!p->x)
     computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE);
   if(!q->x)
     computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE); 
+  */
+  if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
+    computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
+                         tr->rvec, tr->useRecom);
+  if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
+    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
+                         tr->rvec, tr->useRecom);
 
   /* call the Newton-Raphson procedure */
 
   topLevelMakenewz(tr, z0, maxiter, result);
+  //printBothOpen("z ended as %f\n", result[0]);
+
+  /* unpin */
+  if(tr->useRecom)
+  {
+    unpinNode(tr->rvec, p->number, tr->mxtips);
+    unpinNode(tr->rvec, q->number, tr->mxtips);
+  }
 
   /* fix eceuteModel this seems to be a bit redundant with topLevelMakenewz */ 
 

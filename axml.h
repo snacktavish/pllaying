@@ -363,6 +363,8 @@ extern double exp_approx (double x);
 #define MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
 #define MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
 
+typedef  int boolean;
+
 typedef struct
 {
   int numVectors;      /* #inner vectors in RAM*/
@@ -380,7 +382,6 @@ typedef struct
 /* E recomp */
 
 
-typedef  int boolean;
 
 
 typedef struct {
@@ -694,10 +695,32 @@ typedef struct {
 
 
 
+/* recomp */
+#ifdef _DEBUG_RECOMPUTATION
+typedef struct {
+  unsigned long int numTraversals;
+  unsigned long int tt;
+  unsigned long int ti;
+  unsigned long int ii;
+  unsigned int *travlenFreq;
+} traversalCounter;
+#endif
+/* E recomp */
+
 
 typedef  struct  {
 
   int *ti;
+
+  /* recomp */
+  recompVectors *rvec;            /* this data structure tracks which vectors store which nodes */
+  float vectorRecomFraction;      /* TODOFER re-adapt */
+  boolean useRecom;               /* ON if we apply recomputation of ancestral vectors*/
+#ifdef _DEBUG_RECOMPUTATION 
+  traversalCounter *travCounter;
+  double stlenTime;
+#endif
+  /* E recomp */
 
   boolean useGappedImplementation;
   boolean saveMemory;
