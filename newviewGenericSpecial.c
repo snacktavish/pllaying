@@ -943,6 +943,8 @@ void newviewIterative (tree *tr, int startIndex)
 
   int p_slot, q_slot, r_slot;
 
+  p_slot = q_slot = r_slot = -1;
+
 #ifdef _DEBUG_RECOMPUTATION
   /* recom */
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
@@ -1124,6 +1126,7 @@ void newviewIterative (tree *tr, int startIndex)
           case TIP_INNER:		 
             tipX1    =  tr->partitionData[model].yVector[tInfo->qNumber];
             x2_start = tr->partitionData[model].xVector[r_slot];		 
+            assert(r_slot != p_slot);
 
             if(tr->saveMemory)
             {	
@@ -1136,6 +1139,9 @@ void newviewIterative (tree *tr, int startIndex)
           case INNER_INNER:		 		 
             x1_start       = tr->partitionData[model].xVector[q_slot];
             x2_start       = tr->partitionData[model].xVector[r_slot];		 
+            assert(r_slot != p_slot);
+            assert(q_slot != p_slot);
+            assert(q_slot != r_slot);
 
             if(tr->saveMemory)
             {

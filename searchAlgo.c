@@ -645,9 +645,11 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
     if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;         
 
     evaluateGeneric(tr, p->next->next, FALSE);       
+    printBothOpen("%d->%d ",p->number, q->number);
 
     if(tr->likelihood > tr->bestOfNode)
     {
+      printBothOpen("(%f) ", tr->likelihood);
       tr->bestOfNode = tr->likelihood;
       tr->insertNode = q;
       tr->removeNode = p;   
@@ -731,6 +733,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
   if (!isTip(p->number, tr->mxtips) && doP) 
   {     
+    printBothOpen("p");
     p1 = p->next->back;
     p2 = p->next->next->back;
 
@@ -769,6 +772,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
   if (!isTip(q->number, tr->mxtips) && maxtrav > 0 && doQ) 
   {
+    printBothOpen("q");
     q1 = q->next->back;
     q2 = q->next->next->back;
 
@@ -1505,6 +1509,9 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
     {                	         
       tr->bestOfNode = unlikely;
 
+      if (tr->nodep[i]->number == 32)
+        printTree(tr, TRUE);
+      printBothOpen("start rearr Node %d ,maxtrav %d q %d", tr->nodep[i]->number, tr->nodep[i]->back->number,maxtrav);
       if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
       {	     
         printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
@@ -1513,6 +1520,8 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
           restoreTreeFast(tr);	        	  	 	  	      
           tr->startLH = tr->endLH = tr->likelihood;		 
           printBothOpen("Restored tree %f\n", tr->likelihood);
+          if (tr->nodep[i]->number == 32)
+            printTree(tr, TRUE);
         }	         	       	
       }
     }

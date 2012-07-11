@@ -535,6 +535,7 @@ of the current partition.
       else
       {  
 
+        assert(p_slot != q_slot);
         /* neither p nor q are tips, hence we need to get the addresses of two inner vectors */
 
         x1_start = tr->partitionData[model].xVector[p_slot];
@@ -707,6 +708,11 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
     i,
     model;
 
+  boolean
+        p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
+        q_recom = FALSE;
+
+
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
 
@@ -736,15 +742,20 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
     }
     if(!isTip(q->number, tr->mxtips))
     {
-      getxVector(tr->rvec, q->number, &slot, tr->mxtips);
+      q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_q = slot;
     }
     if(!isTip(p->number, tr->mxtips))
     {
-      getxVector(tr->rvec, p->number, &slot, tr->mxtips);
+      p_recom = getxVector(tr->rvec, p->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_p = slot;
     }
   }
+  if(!isTip(p->number, tr->mxtips) &&  !isTip(q->number, tr->mxtips))
+    assert(tr->td[0].ti[0].slot_q != tr->td[0].ti[0].slot_p);
+
+  if(q_recom || p_recom)
+    printBothOpen("WAR!\n");
 
   /* now compute how many conditionals must be re-computed/re-oriented by newview
      to be able to calculate the likelihood at the root defined by p and q.
@@ -761,10 +772,12 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
     if(tr->useRecom)
     {
       //Annotate all inner nodes with subtree sizes 
+      /*
       determineFullTraversalStlen(p, tr);
       int slot = -1;
       getxVector(tr->rvec, q->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_q = slot;
+      */
     }
     /* E recom */
     assert(isTip(p->number, tr->mxtips));
@@ -773,14 +786,14 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   }
   else
   {
-    if(needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
+    if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
       computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
           tr->rvec, tr->useRecom);     
 
     /* recompute/reorient any descriptors at or below q ? 
        computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
 
-    if(needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
+    if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
       computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
           tr->rvec, tr->useRecom);     
   }
