@@ -18,10 +18,12 @@
 /*
  * Functions that require asm for efficiency, or to work at all...
  */
-
+#if 1
 #ifndef LL_ASM_H
 #define LL_ASM_H
+
 #include "compiler.h"
+#include <stdint.h>
 #ifdef GCC_ASM
 #include <stdint.h>
 #define atomic_or(P, V) __sync_or_and_fetch((P), (V))
@@ -31,6 +33,8 @@
 #define atomic_cmpxchg_bool(P, O, N) __sync_bool_compare_and_swap((P), (O), (N))
 #define atomic_access(V) (*(volatile typeof(V) *)&(V))
 
+
+#if 0
 static inline int bts(volatile void *mem, size_t offset)
 {
 	asm goto (
@@ -60,7 +64,7 @@ static inline int btr(volatile void *mem, size_t offset)
 	ncarry:
 	return 0;
 }
-
+#endif
 static inline int ffsu(unsigned x)
 {
 	int result;
@@ -263,7 +267,7 @@ static inline size_t fflq(unsigned long long x)
 #ifdef __x86_64__
 static inline void *xchg_ptr(void *ptr, void *x)
 {
-	return (void *) _InterlockedExchange64(ptr, (__int64) x);
+	return (void *) _InterlockedExchange64(ptr, (int64_t) x);
 }
 #else
 static inline void *xchg_ptr(void *ptr, void *x)
@@ -276,3 +280,41 @@ static inline void *xchg_ptr(void *ptr, void *x)
 #endif /* GCC_ASM */
 
 #endif /* LL_ASM_H */
+
+#endif
+#if 0
+static inline int ffsu(unsigned x)
+{
+        unsigned long result = __builtin_ffs(x);
+
+
+        return result - 1;
+}
+
+static inline int flsu(unsigned x)
+{
+        unsigned long result;
+        __assume(x);
+        _BitScanReverse(&result, x);
+
+        return result;
+}
+
+static inline size_t ffsq(unsigned long long x)
+{
+        unsigned long result;
+        __assume(x);
+        _BitScanForward64(&result, x);
+
+        return result;
+}
+
+static inline size_t fflq(unsigned long long x)
+{
+        unsigned long result;
+        __assume(x);
+        _BitScanReverse64(&result, x);
+
+        return result;
+}
+#endif
