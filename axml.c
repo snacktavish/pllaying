@@ -1723,11 +1723,14 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
       localTree->td[0].functionType        = tr->td[0].functionType;
       localTree->td[0].traversalHasChanged = tr->td[0].traversalHasChanged;
      
-      memcpy(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
-      memcpy(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
+      /* memcpy -> memmove (see ticket #43). This function is sometimes called with localTree == tr,
+       * in which case some memcpy implementations can corrupt the buffers.
+       */
+      memmove(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
+      memmove(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
       
       if(localTree->td[0].traversalHasChanged)
-	memcpy(localTree->td[0].ti, tr->td[0].ti, localTree->td[0].count * sizeof(traversalInfo));
+	memmove(localTree->td[0].ti, tr->td[0].ti, localTree->td[0].count * sizeof(traversalInfo));
     }
 }
 
