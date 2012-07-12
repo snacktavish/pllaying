@@ -750,9 +750,9 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
       p_recom = getxVector(tr->rvec, p->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_p = slot;
     }
+    if(!isTip(p->number, tr->mxtips) &&  !isTip(q->number, tr->mxtips))
+      assert(tr->td[0].ti[0].slot_q != tr->td[0].ti[0].slot_p);
   }
-  if(!isTip(p->number, tr->mxtips) &&  !isTip(q->number, tr->mxtips))
-    assert(tr->td[0].ti[0].slot_q != tr->td[0].ti[0].slot_p);
 
   if(q_recom || p_recom)
     printBothOpen("WAR!\n");
