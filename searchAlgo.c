@@ -645,11 +645,12 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
     if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;         
 
     evaluateGeneric(tr, p->next->next, FALSE);       
+   //evaluateGeneric(tr, tr->start, TRUE);      /* TODOFERNOW why should this fail ?*/ 
 
     if(tr->likelihood > tr->bestOfNode)
     {
-      //printBothOpen("%d->%d ",p->number, q->number);
-      //printBothOpen("(%f) ", tr->likelihood);
+      printBothOpen("%d->%d ",p->number, q->number);
+      printBothOpen("(%f) ", tr->likelihood);
       tr->bestOfNode = tr->likelihood;
       tr->insertNode = q;
       tr->removeNode = p;   
@@ -1507,15 +1508,15 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
     {                	         
       tr->bestOfNode = unlikely;
 
-      //printBothOpen("start rearr Node %d ,q %d , max %d", tr->nodep[i]->number, tr->nodep[i]->back->number,maxtrav);
+      printBothOpen("start rearr Node %d ,q %d , max %d", tr->nodep[i]->number, tr->nodep[i]->back->number,maxtrav);
       if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
       {	     
-       // printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
+        printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
         if(tr->endLH > tr->startLH)                 	
         {		 	 	      
           restoreTreeFast(tr);	        	  	 	  	      
           tr->startLH = tr->endLH = tr->likelihood;		 
-          //printBothOpen("Restored tree %f\n", tr->likelihood);
+          printBothOpen("Restored tree %f\n", tr->likelihood);
         }	         	       	
       }
     }

@@ -754,8 +754,10 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
       assert(tr->td[0].ti[0].slot_q != tr->td[0].ti[0].slot_p);
   }
 
+  /*
   if(q_recom || p_recom)
     printBothOpen("WAR!\n");
+    */
 
   /* now compute how many conditionals must be re-computed/re-oriented by newview
      to be able to calculate the likelihood at the root defined by p and q.
@@ -786,14 +788,16 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   }
   else
   {
-    if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
+    //if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
+    if(needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
       computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
           tr->rvec, tr->useRecom);     
 
     /* recompute/reorient any descriptors at or below q ? 
        computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
 
-    if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
+    //if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
+    if(needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
       computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
           tr->rvec, tr->useRecom);     
   }

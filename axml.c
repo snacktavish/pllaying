@@ -2673,6 +2673,34 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
   /* E recom */
 }
 
+/* TODODER TEMP TEST CODE */
+static nodeptr pickRandomSubtree(tree *tr)
+{
+  nodeptr p;
+  do
+  {
+    int exitDirection = rand() % 3; 
+    p = tr->nodep[(rand() % (tr->mxtips - 2)) + 1 + tr->mxtips];
+    switch(exitDirection)
+    {
+      case 0:
+        break;
+      case 1:
+        p = p->next;
+        break;
+      case 2:
+        p = p->next->next;
+        break;
+      default:
+        assert(0);
+    }
+  }
+  while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
+  assert(!isTip(p->number, tr->mxtips));
+  return p;
+}
+
+/* END TODOFER */
 
 
 int main (int argc, char *argv[])
@@ -3004,6 +3032,53 @@ int main (int argc, char *argv[])
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
 #ifdef _DEBUG_RECOMPUTATION
+      /* simple SPR ? */
+      {
+        int i;
+        for(i=0; i<10; i++)
+        {
+          nodeptr p = pickRandomSubtree(tr);
+          printBothOpen("Random node %d\n", p->number);
+          rearrangeBIG(tr, p, 1, 15); 
+          printBothOpen("Done rearrangements \n");
+          evaluateGeneric(tr, tr->start, TRUE);	 
+          printBothOpen("lh: after %d rearrangements: %f \n",i, tr->likelihood);
+          modOpt(tr, 15.0);
+          if(i>7)
+          printBothOpen("lh: after %d mod opt: %f \n",i, tr->likelihood);
+        }
+      }
+      /* like in determineRearr */
+      {
+         nodeRectifier(tr);
+
+        int i;
+        tr->startLH = tr->endLH = tr->likelihood;
+        for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
+        {                	         
+          tr->bestOfNode = unlikely;
+          printBothOpen("start rearr Node %d\n", tr->nodep[i]->number);
+          if(rearrangeBIG(tr, tr->nodep[i], 1, 10))
+          {	     
+            printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
+            if(tr->endLH > tr->startLH)                 	
+            {		 	 	      
+              restoreTreeFast(tr);	        	  	 	  	      
+              tr->startLH = tr->endLH = tr->likelihood;		 
+              printBothOpen("Restored tree %f\n", tr->likelihood);
+            }	         	       	
+          }
+        }
+        treeEvaluate(tr, 8 ); // 32 * 0.25 
+        printBothOpen("LH after treeEval in deterRearr %f\n", tr->likelihood);
+        evaluateGeneric(tr, tr->start, TRUE);	 
+        printBothOpen("LH after Generuc %f\n", tr->likelihood);
+      }
+
+      //hookup(, instate->nnb, zqr, tr->numBranches); 
+      //p->next->next->back = p->next->back = (node *) NULL;
+      
+      /* end  */
       t = gettime() - masterTime;
       printBothOpen("Traversal freq after search \n");
       printTraversalInfo(tr);
