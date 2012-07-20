@@ -1,0 +1,57 @@
+
+
+TIP_INNER for p 21 q 1 r 22
+{
+  INNER_INNER for p 22 q 23 r 28 
+  p 22, q 23 does not require recomp now! // but should not be unpinnable either!!/ fixed with protectNode !!
+  {
+    INNER_INNER for p 28 q 29 r 36 
+    {
+      TIP_INNER for p 36 q 13 r 37
+      {
+        TIP_TIP for p 37 q 11 r 12
+        {
+          n 37 , current slots: 28 ( ) 30 (x) 31 ( ) 23 ( ) 21 (x) 29 ( ) 22 ( ) 32 ( )
+          pos 1, TIP_TIP slots p 7 
+        }
+        n 37 , current slots: 28 ( ) 30 (x) 31 ( ) 23 ( ) 21 (x) 29 ( ) 22 ( ) 37 (x)
+        n 36 , current slots: 28 ( ) 30 (x) 31 ( ) 23 ( ) 21 (x) 29 ( ) 22 ( ) 37 (x)
+        23 just unpinned, slot 3 free
+        pos 2, TIP_INNER slots p 3 r 7
+      }
+      INNER_INNER for p 29 q 30 r 31 
+      {
+        TIP_TIP for p 30 q 9 r 8
+        {
+          n 30 , current slots: 28 ( ) 30 (x) 31 ( ) 36 (x) 21 (x) 29 ( ) 22 ( ) 37 ( )
+          pos 3, TIP_TIP slots p 1 
+        }
+      n 30 , current slots: 28 ( ) 30 (x) 31 ( ) 36 (x) 21 (x) 29 ( ) 22 ( ) 37 ( )
+      n 31 , current slots: 28 ( ) 30 (x) 31 ( ) 36 (x) 21 (x) 29 ( ) 22 ( ) 37 ( )
+      n 29 , current slots: 28 ( ) 30 (x) 31 (x) 36 (x) 21 (x) 29 ( ) 22 ( ) 37 ( )
+      pos 4, INNER_INNER slots p 5 q 1 r 2
+      }
+    n 29 , current slots: 28 ( ) 30 ( ) 31 ( ) 36 (x) 21 (x) 29 (x) 22 ( ) 37 ( )
+    n 36 , current slots: 28 ( ) 30 ( ) 31 ( ) 36 (x) 21 (x) 29 (x) 22 ( ) 37 ( )
+    n 28 , current slots: 28 ( ) 30 ( ) 31 ( ) 36 (x) 21 (x) 29 (x) 22 ( ) 37 ( )
+    pos 5, INNER_INNER slots p 0 q 5 r 3
+    }
+  n 23 , current slots: 28 (x) 30 ( ) 31 ( ) 36 ( ) 21 (x) 29 ( ) 22 ( ) 37 ( )
+  n 28 , current slots: 28 (x) 23 (x) 31 ( ) 36 ( ) 21 (x) 29 ( ) 22 ( ) 37 ( )
+  n 22 , current slots: 28 (x) 23 (x) 31 ( ) 36 ( ) 21 (x) 29 ( ) 22 ( ) 37 ( )
+  pos 6, INNER_INNER slots p 6 q 1 r 0
+  }
+n 22 , current slots: 28 ( ) 23 ( ) 31 ( ) 36 ( ) 21 (x) 29 ( ) 22 (x) 37 ( )
+n 21 , current slots: 28 ( ) 23 ( ) 31 ( ) 36 ( ) 21 (x) 29 ( ) 22 (x) 37 ( )
+pos 7, TIP_INNER slots p 4 r 6
+}
+
+Travesal contents
+Pos: 1 p 37, q 11, r 12, Slots p 7, q -1, r -1
+Pos: 2 p 36, q 13, r 37, Slots p 3, q -1, r 7
+Pos: 3 p 30, q 9, r 8, Slots p 1, q -1, r -1
+Pos: 4 p 29, q 30, r 31, Slots p 5, q 1, r 2
+Pos: 5 p 28, q 29, r 36, Slots p 0, q 5, r 3
+Pos: 6 p 22, q 23, r 28, Slots p 6, q 1, r 0
+Pos: 7 p 21, q 1, r 22, Slots p 4, q -1, r 6
+

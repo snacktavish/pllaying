@@ -10,7 +10,20 @@
 
 #include "axml.h"
 
+void protectNode(recompVectors *rvec, int nodenum, int mxtips)
+{
+  /* If a node is available we dont need to recompute it, but we neet to maker sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be false at this point, it will automatically be set to true, after the *counter post-order instructions have been executed */
+  /* This might be a but in RAxML-light, Omitting this code will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! */
+  /* QUESTION This function had been implemented and was then dropped at some point?!? */
 
+  int slot;
+  slot = rvec->iNode[nodenum - mxtips - 1];
+  assert(slot != NODE_UNPINNED);
+  assert(rvec->iVector[slot] == nodenum);
+
+  if(rvec->unpinnable[slot])
+    rvec->unpinnable[slot] = FALSE;
+}
 
 static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
 {
@@ -141,7 +154,11 @@ void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
   v->iVector[slot] = SLOT_UNUSED;
 
   if(nodenum != SLOT_UNUSED)  
+  {
     v->iNode[nodenum - mxtips - 1] = NODE_UNPINNED; 
+    if(nodenum == 23 && v->verbose)
+      printBothOpen("23 just unpinned, slot %d free\n", slot);
+  }
 }
 
 static int findUnpinnableSlot(recompVectors *v, int mxtips)
@@ -240,8 +257,17 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
 
 
 
+#ifdef _DEBUG_RECOMPUTATION
+static void printSlots(recompVectors *rvec, int nodenum)
+{
+  int i;
+  printBothOpen("n %d , current slots:", nodenum);
+  for(i=0;i<rvec->numVectors;i++)
+    printBothOpen(" %d (%s)", rvec->iVector[i], (rvec->unpinnable[i] ? " ": "x"));
+  printBothOpen("\n");
+}
 
-
+#endif
 
 
 boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
@@ -249,6 +275,8 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 #ifdef _DEBUG_RECOMPUTATION
   double 
     tstart = gettime();
+  if(rvec->verbose)
+    printSlots(rvec, nodenum);
 #endif
 
   boolean 
@@ -495,6 +523,7 @@ void countTraversal(tree *tr)
         tc->ti++; 
         /* printBothOpen("M"); */
         break;		  
+
       case INNER_INNER: 
         tc->ii++; 
         /* printBothOpen("I"); */
@@ -534,6 +563,23 @@ void printTraversalInfo(tree *tr)
 
 /*end code to track traversal descriptor stats */
 /* E recomp */
+void printVector(double *vector, int len, char *name)
+{ 
+  int i;
+  printBothOpen("LHVECTOR %s :", name);
+  for(i=0; i < len; i++)
+  {
+    printBothOpen("%.2f ", vector[i]);
+    if(i>10)
+    {
+      printBothOpen("...");
+      break; 
+    }
+  } 
+  printBothOpen("\n");
+} 
+
+
 #endif
 
 

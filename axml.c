@@ -2706,6 +2706,7 @@ static nodeptr pickRandomSubtree(tree *tr)
 int main (int argc, char *argv[])
 { 
   tree  *tr = (tree*)malloc(sizeof(tree));
+  tr->verbose = FALSE;
 
   analdef *adef = (analdef*)malloc(sizeof(analdef));
 
@@ -2913,6 +2914,7 @@ int main (int argc, char *argv[])
     if(tr->useRecom)
     {
       tr->rvec->pinTime = 0.0;
+      tr->rvec->verbose = FALSE;
       tr->rvec->recomStraTime = 0.0;
     }
 #endif
@@ -2927,6 +2929,8 @@ int main (int argc, char *argv[])
      the per-site substitution rates to default starting values */
 
   initModel(tr, empiricalFrequencies);                      
+  printBothOpen("Model initialized\n");
+  
 
 
 
@@ -2978,6 +2982,7 @@ int main (int argc, char *argv[])
         assert(0);
     }
 
+  printBothOpen("Starting tree available\n");
     /* 
        here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
        This should basically be the first call to the library that actually computes something :-)
@@ -2987,6 +2992,8 @@ int main (int argc, char *argv[])
     /* please do not remove this code from here ! */
 
     evaluateGeneric(tr, tr->start, TRUE);
+  printBothOpen("Starting tree evaluated\n");
+
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
 
@@ -3049,6 +3056,7 @@ int main (int argc, char *argv[])
         }
       }
       /* like in determineRearr */
+      /*
       {
          nodeRectifier(tr);
 
@@ -3077,6 +3085,7 @@ int main (int argc, char *argv[])
 
       //hookup(, instate->nnb, zqr, tr->numBranches); 
       //p->next->next->back = p->next->back = (node *) NULL;
+      */
       
       /* end  */
       t = gettime() - masterTime;

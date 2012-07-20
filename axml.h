@@ -377,6 +377,7 @@ typedef struct
 #ifdef _DEBUG_RECOMPUTATION
   double pinTime;
   double recomStraTime;
+  boolean verbose;
 #endif
 } recompVectors;
 /* E recomp */
@@ -882,6 +883,8 @@ typedef  struct  {
   checkPointState ckp;
   boolean thoroughInsertion;
   boolean useMedian;
+
+  boolean verbose;
 } tree;
 
 

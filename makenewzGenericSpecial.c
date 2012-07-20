@@ -636,7 +636,11 @@ void makenewzIterative(tree *tr)
 
   /* call newvieIterative to get the likelihood arrays to the left and right of the branch */
 
+  if(tr->verbose)
+  printBothOpen("start newviewIter makenewz\n");
   newviewIterative(tr, 1);
+  if(tr->verbose)
+  printBothOpen("done newviewIter makenewz\n");
 
 
   /* 
@@ -1147,11 +1151,13 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_q = slot;
+      //printBothOpen("q slot given:%d\n", slot);
     }
     if(!isTip(p->number, tr->mxtips))
     {
       p_recom = getxVector(tr->rvec, p->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_p = slot;
+      //printBothOpen("p slot given:%d\n", slot);
     }
   }
 
@@ -1167,17 +1173,44 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   if(!q->x)
     computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE); 
   */
+  if(tr->verbose)
+    printBothOpen("Building desc. from  p %d, count %d \n", p->number, tr->td[0].count);
+
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
     computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
                          tr->rvec, tr->useRecom);
+
+  /* show traversal contents*/
+  if(tr->verbose)
+  {
+    traversalInfo *ti   = tr->td[0].ti;
+    printBothOpen("Travesal contents\n");
+    int j;
+    for(j=1; j<tr->td[0].count; j++)
+    {
+      traversalInfo *tInfo = &ti[j];
+      printBothOpen("Pos: %d p %d, q %d, r %d", j, tInfo->pNumber, tInfo->qNumber, tInfo->rNumber);
+      if(tr->useRecom)
+        printBothOpen(", Slots p %d, q %d, r %d\n", tInfo->slot_p, tInfo->slot_q, tInfo->slot_r);
+      else
+        printBothOpen("\n");
+    }
+    printBothOpen("\n");
+  }
+  if(tr->verbose)
+    printBothOpen("Building desc. from  q %d, count %d \n", q->number, tr->td[0].count);
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
     computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
                          tr->rvec, tr->useRecom);
+  if(tr->verbose)
+    printBothOpen("Finished desc. from  q %d, count %d \n", q->number, tr->td[0].count);
+
 
   /* call the Newton-Raphson procedure */
 
   topLevelMakenewz(tr, z0, maxiter, result);
-  //printBothOpen("z ended as %f\n", result[0]);
+  if(tr->verbose)
+    printBothOpen("z of p %d q %d ended as %f\n", p->number, q->number, result[0]);
 
   /* unpin */
   if(tr->useRecom)

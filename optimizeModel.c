@@ -2508,14 +2508,13 @@ void modOpt(tree *tr, double likelihoodEpsilon)
      If we have only DNA data all GTR matrix estimates will be unlinked.
      */
 
-  printBothOpen("init Linkage list GTR\n");
   rateList  = initLinkageListGTR(tr);
 
   tr->start = tr->nodep[1];
 
   do
   {           
-    printBothOpen("cur LH: %f\n", tr->likelihood);
+    //printBothOpen("cur LH: %f\n", tr->likelihood);
     currentLikelihood = tr->likelihood;     
 
     optRatesGeneric(tr, modelEpsilon, rateList);

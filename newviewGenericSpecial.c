@@ -685,6 +685,9 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
       ti[*counter].qNumber = q->number;
       ti[*counter].rNumber = r->number;
 
+      if(useRecom && rvec->verbose)
+        printBothOpen("TIP_TIP for p %d q %d r %d\n", p->number, q->number, r->number);
+
       /* copy branches to traversal descriptor */
 
       for(i = 0; i < numBranches; i++)
@@ -698,6 +701,10 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
       {
         getxVector(rvec, p->number, &slot, maxTips);
         ti[*counter].slot_p = slot;
+        ti[*counter].slot_q = -1;
+        ti[*counter].slot_r = -1;
+          if(rvec->verbose)
+            printBothOpen("pos %d, TIP_TIP slots p %d \n", *counter, ti[*counter].slot_p);
       }
 
       /* increment length counter */
@@ -719,12 +726,21 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
           q = tmp;
         }
 
+        if(useRecom && rvec->verbose)
+          printBothOpen("TIP_INNER for p %d q %d r %d\n", p->number, q->number, r->number);
+
         /* if the orientation of the liklihood vector at r is not correct we need to re-compute it 
            and descend into its subtree to figure out if there are more vrctors in there to re-compute and 
            re-orient */
 
         if(needsRecomp(useRecom, rvec, r, maxTips) || !partialTraversal) 
           computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+        else
+          {
+            if(useRecom)
+              /* the node is available,  now make sure it will not be unpinned until it is read */
+              protectNode(rvec, r->number, maxTips);
+          }
         /* Now that r is oriented, we can safely set the orientation of p */
         if(! p->x)
           getxnode(p);	 
@@ -754,48 +770,68 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
           getxVector(rvec, p->number, &slot, maxTips);
           ti[*counter].slot_p = slot;
 
+          ti[*counter].slot_q = -1;
+
           unpin2 = r->number; /* when TIP_INNER finishes, the INNER input vector r can be unpinned*/
+          if(rvec->verbose)
+            printBothOpen("pos %d, TIP_INNER slots p %d r %d\n", 
+                *counter, ti[*counter].slot_p, ti[*counter].slot_r);
         }
 
         *counter = *counter + 1;
       }
       else
       {
+        if(useRecom && rvec->verbose)
+          printBothOpen("INNER_INNER for p %d q %d r %d \n", p->number, q->number, r->number);
         /* same as above, only now q and r are inner nodes. Hence if they are not 
            oriented correctly they will need to be recomputed and we need to descend into the 
            respective subtrees to check if everything is consistent in there, potentially expanding 
            the traversal descriptor */
         if(( useRecom && (!partialTraversal) ) || 
-           ( useRecom && needsRecomp(useRecom, rvec, q, maxTips) && needsRecomp(useRecom, rvec, r, maxTips) ))
+            ( useRecom && needsRecomp(useRecom, rvec, q, maxTips) && needsRecomp(useRecom, rvec, r, maxTips) ))
         {
-           /* INNER_INNER and recomputation implies that the order we descend q and r matters, 
-            * if we are in a partial traversal, this is only relevant if both require recomputation
-            * see TODOFER add ref. */
+          /* INNER_INNER and recomputation implies that the order we descend q and r matters, 
+           * if we are in a partial traversal, this is only relevant if both require recomputation
+           * see TODOFER add ref. */
 
-           int q_stlen = rvec->stlen[q->number - maxTips - 1],
-               r_stlen = rvec->stlen[q->number - maxTips - 1];
-           assert(q_stlen >= 2 && q_stlen <= maxTips - 1);
-           assert(r_stlen >= 2 && r_stlen <= maxTips - 1);
+          int q_stlen = rvec->stlen[q->number - maxTips - 1],
+              r_stlen = rvec->stlen[q->number - maxTips - 1];
+          assert(q_stlen >= 2 && q_stlen <= maxTips - 1);
+          assert(r_stlen >= 2 && r_stlen <= maxTips - 1);
 
-           if(q_stlen > r_stlen)
-           {
-             computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
-             computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
-           }
-           else
-           {
-             computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
-             computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
-           }
+          if(q_stlen > r_stlen)
+          {
+            computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+            computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+          }
+          else
+          {
+            computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+            computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+          }
         }
         else
         {
           /* Now the order does not matter */
           /* If we are in a recomputation and partial, only either q or r will be descended */
+
           if(!partialTraversal || needsRecomp(useRecom, rvec, q, maxTips))
             computeTraversalInfo(q, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+          else
+          {
+            if(useRecom)
+              /* the node is available,  now make sure it will not be unpinned until it is read */
+              protectNode(rvec, q->number, maxTips);
+          }
+
           if(!partialTraversal || needsRecomp(useRecom, rvec, r, maxTips))
             computeTraversalInfo(r, ti, counter, maxTips, numBranches, partialTraversal, rvec, useRecom);
+          else
+          {
+            if(useRecom)
+              protectNode(rvec, r->number, maxTips);
+          }
         }
 
 
@@ -813,15 +849,16 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 
         if(useRecom)
         {
+          int needs_recomp;
           /* We check that the strategy cannot re-use slots */
-          getxVector(rvec, q->number, &slot, maxTips);
+          needs_recomp = getxVector(rvec, q->number, &slot, maxTips);
           ti[*counter].slot_q = slot;
 
-          getxVector(rvec, r->number, &slot, maxTips);
+          needs_recomp = getxVector(rvec, r->number, &slot, maxTips);
           ti[*counter].slot_r = slot;
           assert(slot != ti[*counter].slot_q);
 
-          getxVector(rvec, p->number, &slot, maxTips);
+          needs_recomp = getxVector(rvec, p->number, &slot, maxTips);
           ti[*counter].slot_p = slot;
           assert(slot != ti[*counter].slot_q);
           assert(slot != ti[*counter].slot_r);
@@ -829,6 +866,9 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
           /* And at these point both input INNER can be marked as unpinned */
           unpin2 = r->number;
           unpin1 = q->number;
+          if(rvec->verbose)
+            printBothOpen("pos %d, INNER_INNER slots p %d q %d r %d\n", 
+                *counter, ti[*counter].slot_p, ti[*counter].slot_q, ti[*counter].slot_r);
         }
 
         for(i = 0; i < numBranches; i++)
@@ -959,6 +999,7 @@ void newviewIterative (tree *tr, int startIndex)
 
   for(i = startIndex; i < tr->td[0].count; i++)
   {
+
     traversalInfo *tInfo = &ti[i];
     /* Note that the slots refer to different things if recomputation is applied */
     if(tr->useRecom)
@@ -974,6 +1015,12 @@ void newviewIterative (tree *tr, int startIndex)
       p_slot = tInfo->pNumber - tr->mxtips - 1;
       q_slot = tInfo->qNumber - tr->mxtips - 1;
       r_slot = tInfo->rNumber - tr->mxtips - 1;
+    }
+    if(tr->verbose)
+    {
+      printBothOpen(" p %d, q %d, r %d\n", tInfo->pNumber, tInfo->qNumber, tInfo->rNumber);
+      if(tr->useRecom)
+        printBothOpen("slots p %d, q %d, r %d\n", tInfo->slot_p, tInfo->slot_q, tInfo->slot_r);
     }
 
     /* now loop over all partitions for nodes p, q, and r of the current traversal vector entry */
@@ -1127,6 +1174,9 @@ void newviewIterative (tree *tr, int startIndex)
             tipX1    =  tr->partitionData[model].yVector[tInfo->qNumber];
             x2_start = tr->partitionData[model].xVector[r_slot];		 
             assert(r_slot != p_slot);
+            if (tr->verbose)
+              printVector(x2_start, 11, "newviewIter input x2 r");
+
 
             if(tr->saveMemory)
             {	
@@ -1139,6 +1189,11 @@ void newviewIterative (tree *tr, int startIndex)
           case INNER_INNER:		 		 
             x1_start       = tr->partitionData[model].xVector[q_slot];
             x2_start       = tr->partitionData[model].xVector[r_slot];		 
+            if (tr->verbose)
+            {
+              printVector(x1_start, 11, "newviewIter input x1 q");
+              printVector(x2_start, 11, "newviewIter input x2 r");
+            }
             assert(r_slot != p_slot);
             assert(q_slot != p_slot);
             assert(q_slot != r_slot);
@@ -1375,6 +1430,18 @@ void newviewIterative (tree *tr, int startIndex)
         /* check that we are not getting an integer overflow ! */
 
         assert(tr->partitionData[model].globalScaler[tInfo->pNumber] < INT_MAX);
+        /* show the output vector */
+        if (tr->verbose)
+        {
+          printBothOpen("newviewIter Computed %d, from r %d, q %d\n", tInfo->pNumber, tInfo->rNumber, tInfo->qNumber);
+          if(tInfo->tipCase == INNER_INNER)
+            printVector(x1_start, 11, "x1");
+          if(tInfo->tipCase == TIP_INNER || tInfo->tipCase == INNER_INNER)
+            printVector(x2_start, 11, "x2");
+          printVector(x3_start, 11, "x3");
+          if(tr->useRecom)
+            printBothOpen("slots p %d,  r %d, q %d\n", p_slot, r_slot, q_slot);
+        }
       }	
     }
   }
