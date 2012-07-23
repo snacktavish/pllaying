@@ -5,7 +5,7 @@ DATADIR=`pwd`/../testdata
 # Set the number of threads you want to use
 NUMPTHREADS=4
 # NO NEED TO EDIT BEYOND THIS POINT
-SSE3_GCC="testscript.SSE3.gcc"
+SSE3_GCC="testscript_recom.SSE3.gcc"
 SSE3_PTHREADS_GCC="testscript.SSE3.PTHREADS.gcc"
 
 # KEEP A LOG OF STDOUT OF RAxML
@@ -17,7 +17,7 @@ run_SSE3_GCC()
   sh ${WORKINGDIR}/${SSE3_GCC} ${OPTIONS}
   RETVAL=$?
   if [ $RETVAL -ne 0 ] ; then
-    echo " Error: testscript.SSE3.gcc failed. Check the messages above ...";
+    echo " Error: ${SSE3_GCC} failed. Check the messages above ...";
     echo "\n"
     echo " Supertestscript did not finish successfully."
     echo "\n"
@@ -31,7 +31,7 @@ run_SSE3_PTHREADS_GCC()
   sh ${WORKINGDIR}/${SSE3_PTHREADS_GCC} ${OPTIONS} -T ${NUMPTHREADS}
   RETVAL=$?
   if [ $RETVAL -ne 0 ] ; then
-    echo " Error: testscript.SSE3.PTHREADS.gcc failed. Check the messages above ...";
+    echo " Error: ${SSE3_PTHREADS_GCC} failed. Check the messages above ...";
     echo "\n"
     echo " Supertestscript did not finish successfully."
     echo "\n"
@@ -52,11 +52,9 @@ fi
 
 if [ $# -eq 0 ] ; then
   echo "\n"
-  echo " usage: sh supertestscript.sh [ [ 0-3 ] | [raxml options] ]"
+  echo " usage: sh recomtest.sh [ [ 1-3 ] | [raxml options] ]"
   echo " options: "
-  echo "        [0]  tiny size test"
   echo "        [1]  small size test"
-  echo "        [2]  medium size test"
   echo "        [3]  large size test"
   echo "        [raxml options]  specific test"
   echo "\n"
@@ -68,25 +66,19 @@ if [ $# -eq 1 ] ; then
     echo "\n"
     echo " usage: sh supertestscript.sh [ [ 0-3 ] | [raxml options] ]"
     echo " options: "
-    echo "        [0]  tiny size test"
     echo "        [1]  small size test"
-    echo "        [2]  medium size test"
     echo "        [3]  large size test"
     echo "        [raxml options]  specific test"
     echo "\n"
     exit 1
   fi
-  if [ $1 -eq 0 ] ; then
-    DESC="tiny"
-  fi
   if [ $1 -eq 1 ] ; then
     DESC="small"
-  fi
-  if [ $1 -eq 2 ] ; then
-    DESC="medium"
+    GAPPY_DATASET=50
   fi
   if [ $1 -eq 3 ] ; then
     DESC="large"
+    GAPPY_DATASET=1288
   fi
 
   #SIMPLE=""                # this will be ignored in the loop
@@ -98,19 +90,18 @@ if [ $# -eq 1 ] ; then
   echo "Starting recom custom test `date`, Errors" > $ERRLOGFILE 
   echo "Starting recom custom test `date`, Log" > $LOGFILE 
 
-  for VERSION in SSE3_GCC SSE3_PTHREADS_GCC 
+  for VERSION in SSE3_GCC #SSE3_PTHREADS_GCC 
   do 
     echo $VERSION
-    for MODEL in PSR GAMMA 
+    for MODEL in PSR #GAMMA 
     do
       echo $MODEL
-      for PARTITION_LABEL in singlegene.binary binary 
+      for ALPHABET in dna #aa 
       do
-        for ALPHABET in dna aa 
+        TREE="${DATADIR}/${DESC}.startingTree.${ALPHABET}.tree"
+        for PARTITION_LABEL in singlegene.binary #binary 
         do
-          echo $ALPHABET
           echo "   "
-          TREE="${DATADIR}/${DESC}.startingTree.${ALPHABET}.tree"
           ALIGNMENT="${DATADIR}/${DESC}.${ALPHABET}.${PARTITION_LABEL}"
           BASE_OPTIONS="-m ${MODEL} -s ${ALIGNMENT} -t ${TREE}"
           echo ${BASE_OPTIONS} 
@@ -126,7 +117,20 @@ if [ $# -eq 1 ] ; then
           (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
 
         done
+        # Now partitioned with branch lengths
+        ALIGNMENT="${DATADIR}/${DESC}.${ALPHABET}.binary"
+        OPTIONS="-m ${MODEL} -s ${ALIGNMENT} -t ${TREE} -M"
+        echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
+        (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
+
       done
+      # Now check the special datasets (gappy stuff)
+      ALIGNMENT=${DATADIR}/gappy/${GAPPY_DATASET}_gappy.binary # this is a single gene
+      TREE=${DATADIR}/gappy/RAxML_parsimonyTree.${GAPPY_DATASET}
+      OPTIONS="-m ${MODEL} -s ${ALIGNMENT} -t ${TREE} -S"
+      echo "$VERSION with $OPTIONS" | tee -a $ERRLOGFILE $LOGFILE
+      (run_${VERSION} 2>> $ERRLOGFILE) >> $LOGFILE
+
     done
   done
 else
