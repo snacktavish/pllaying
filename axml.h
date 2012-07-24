@@ -360,8 +360,11 @@ extern double exp_approx (double x);
 #define SLOT_UNUSED            -2  /* value to mark an available vector */
 #define NODE_UNPINNED          -3  /* marks an inner node as not available in RAM */
 #define INNER_NODE_INIT_STLEN  -1  /* initialization */
+
 #define MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
 #define MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
+#define MEM_APROX_OVERHEAD     1.3 /* TODOFER can we measure this empirically? */
+
 
 typedef  int boolean;
 
@@ -715,7 +718,8 @@ typedef  struct  {
 
   /* recomp */
   recompVectors *rvec;            /* this data structure tracks which vectors store which nodes */
-  float vectorRecomFraction;      /* TODOFER re-adapt */
+  float maxMegabytesMemory;         /* User says how many MB in main memory should be used */
+  float vectorRecomFraction;      /* vectorRecomFraction ~= 0.8 * maxMegabytesMemory  */
   boolean useRecom;               /* ON if we apply recomputation of ancestral vectors*/
 #ifdef _DEBUG_RECOMPUTATION 
   traversalCounter *travCounter;

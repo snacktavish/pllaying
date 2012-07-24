@@ -837,6 +837,7 @@ static void printREADME(void)
   printf("      [-f d|o]\n");    
   printf("      [-h] \n");
   printf("      [-i initialRearrangementSetting] \n");
+  printf("      [-L maxMemUsageMB] \n");
   printf("      [-M]\n");
   printf("      [-P proteinModel]\n");
   printf("      [-q multipleModelFileName] \n");
@@ -891,6 +892,8 @@ static void printREADME(void)
   printf("\n");  
   printf("      -i      Initial rearrangement setting for the subsequent application of topological \n");
   printf("              changes phase\n");
+  printf("\n");
+  printf("      -L      Apply inner vector recomputation. Total memory usage remains under the given size in MB \n");
   printf("\n");
   printf("      -m      Model of  Nucleotide or Amino Acid Substitution: \n");
   printf("\n"); 
@@ -1084,14 +1087,13 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
         break;
         /* recom L Limit memory usage*/
       case 'L':
-        sscanf(optarg, "%f", &(tr->vectorRecomFraction));
-        if(tr->vectorRecomFraction < MIN_RECOM_FRACTION || tr->vectorRecomFraction >= MAX_RECOM_FRACTION)
+        sscanf(optarg, "%f", &(tr->maxMegabytesMemory));
+        if(tr->maxMegabytesMemory <= 0)
         {
-          printf("Recomputation fraction passed via -L must be greater or equal to %f\n", MIN_RECOM_FRACTION);
-          printf("and smaller than %f .... exiting \n", MAX_RECOM_FRACTION);
+          printf("Maximum memory to be used in MB passed via -L must be greater than zero zero.\n");
           exit(-1);
         }
-        tr->useRecom = TRUE;
+        tr->useRecom = TRUE; /* we can decide this after parsing the alignment */
         break;
 
         /* E recom */
@@ -2847,7 +2849,7 @@ int main (int argc, char *argv[])
       myBinFread(&(p->autoProtModels),     sizeof(int), 1, byteFile);
       myBinFread(&(p->protFreqs),          sizeof(int), 1, byteFile);
       myBinFread(&(p->nonGTR),             sizeof(boolean), 1, byteFile);
-      myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile);	 
+      myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile); 
 
       /* later on if adding secondary structure data
 
@@ -2868,6 +2870,38 @@ int main (int argc, char *argv[])
     fclose(byteFile);
   }
 
+
+  /* Now we are able to compute the memory requirements and decide on using recom or not */
+  if(tr->useRecom)
+  {
+    // TODOFER consider here as well tr->saveMemory? 
+    size_t requiredLength, approxTotalMegabytesRequired;
+    size_t rateHet = discreteRateCategories(tr->rateHetModel);
+    int model;
+    requiredLength = 0;
+    for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      size_t width  = (size_t)tr->partitionData[model].width;
+      size_t states = (size_t)tr->partitionData[model].states;
+      requiredLength += virtual_width(width) * rateHet * states * sizeof(double);
+    }
+    requiredLength *= tr->mxtips - 2;
+    printBothOpen("Estimated required memory in MB: %f\n", requiredLength / 1E6);
+    printBothOpen("User maximu use of memory in MB: %f\n", tr->maxMegabytesMemory);
+    approxTotalMegabytesRequired = MEM_APROX_OVERHEAD * (requiredLength / 1E6);  
+    if (approxTotalMegabytesRequired < tr->maxMegabytesMemory)
+    {
+      tr->useRecom = FALSE; 
+      printBothOpen("Deactivated recomputation of inner vectors\n");
+    }
+    else
+    {
+      tr->vectorRecomFraction = tr->maxMegabytesMemory  / approxTotalMegabytesRequired;
+      printBothOpen("Set recomputation of inner vectors to fraction %f\n", tr->vectorRecomFraction);
+      assert(tr->vectorRecomFraction > MIN_RECOM_FRACTION);
+      assert(tr->vectorRecomFraction < MAX_RECOM_FRACTION);
+    }
+  }
 
 
 #ifdef _USE_PTHREADS

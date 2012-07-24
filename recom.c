@@ -62,6 +62,7 @@ void allocRecompVectorsInfo(tree *tr)
   assert(tr->vectorRecomFraction > MIN_RECOM_FRACTION);
   assert(tr->vectorRecomFraction < MAX_RECOM_FRACTION);
 
+  /* TODOFER compute this otherwise */
   num_vectors = (int) (1 + tr->vectorRecomFraction * (float)num_inner_nodes); 
 
   /*printBothOpen("num_vecs %d , min %d\n", num_vectors, (int)(log((double)tr->mxtips)) + 2);*/
