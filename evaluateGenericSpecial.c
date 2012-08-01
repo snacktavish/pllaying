@@ -114,7 +114,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
   free(lza);
 }
 
-
+#ifndef _OPTIMIZED_FUNCTIONS
 /* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
 
 static double evaluateGAMMA_FLEX(int *wptr,
@@ -208,7 +208,6 @@ static double evaluateGAMMA_FLEX(int *wptr,
   return sum;
 } 
 
-
 /* a generic and slow implementation of the CAT model of rate heterogeneity */
 
 static double evaluateCAT_FLEX (int *cptr, int *wptr,
@@ -288,6 +287,7 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
              
   return  sum;         
 } 
+#endif
 
 /* below are the function headers for unreadeble highly optimized versions of the above functions 
    for DNA and protein data that also use SSE3 intrinsics and implement some memory saving tricks.
