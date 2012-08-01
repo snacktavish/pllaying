@@ -150,7 +150,7 @@ boolean smooth (tree *tr, nodeptr p)
       q = q->next;
     }	
 
-    if(tr->numBranches > 1)		  
+    if(tr->numBranches > 1 && !tr->useRecom)		  
       newviewGeneric(tr, p, TRUE);	
     else
       newviewGeneric(tr, p, FALSE);     
