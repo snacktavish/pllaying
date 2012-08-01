@@ -2875,9 +2875,10 @@ int main (int argc, char *argv[])
   if(tr->useRecom)
   {
     // TODOFER consider here as well tr->saveMemory? 
-    size_t requiredLength, approxTotalMegabytesRequired;
+    size_t requiredLength;
     size_t rateHet = discreteRateCategories(tr->rateHetModel);
     int model;
+    float approxTotalMegabytesRequired;
     requiredLength = 0;
     for(model = 0; model < tr->NumberOfModels; model++)
     {
@@ -2886,9 +2887,10 @@ int main (int argc, char *argv[])
       requiredLength += virtual_width(width) * rateHet * states * sizeof(double);
     }
     requiredLength *= tr->mxtips - 2;
-    printBothOpen("Estimated required memory in MB: %f\n", requiredLength / 1E6);
-    printBothOpen("User maximu use of memory in MB: %f\n", tr->maxMegabytesMemory);
     approxTotalMegabytesRequired = MEM_APROX_OVERHEAD * (requiredLength / 1E6);  
+    printBothOpen("Required memory for inner nodes in MB: %f\n", (float)requiredLength / 1E6);
+    printBothOpen("Estimated total required memory in MB: %f\n", approxTotalMegabytesRequired);
+    printBothOpen("User      maximum use of memory in MB: %f\n", tr->maxMegabytesMemory);
     if (approxTotalMegabytesRequired < tr->maxMegabytesMemory)
     {
       tr->useRecom = FALSE; 
