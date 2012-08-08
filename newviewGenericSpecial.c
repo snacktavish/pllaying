@@ -27,6 +27,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -84,10 +86,10 @@ static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
   /* assign some space for pre-computing and later re-using functions */
 
   double 
-    *lz1 = (double*)malloc(sizeof(double) * states),
-    *lz2 = (double*)malloc(sizeof(double) * states),
-    *d1 = (double*)malloc(sizeof(double) * states),
-    *d2 = (double*)malloc(sizeof(double) * states);
+    *lz1 = (double*)rax_malloc(sizeof(double) * states),
+    *lz2 = (double*)rax_malloc(sizeof(double) * states),
+    *d1 = (double*)rax_malloc(sizeof(double) * states),
+    *d2 = (double*)rax_malloc(sizeof(double) * states);
 
   /* multiply branch lengths with eigenvalues */
 
@@ -158,10 +160,10 @@ static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
   
   /* free the temporary buffers */
 
-  free(lz1);
-  free(lz2);
-  free(d1);
-  free(d2);
+  rax_free(lz1);
+  rax_free(lz2);
+  rax_free(d1);
+  rax_free(d2);
 }
 
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
@@ -427,8 +429,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	/* allocate pre-compute memory space */
 
 	double 
-	  *umpX1 = (double*)malloc(sizeof(double) * precomputeLength),
-	  *umpX2 = (double*)malloc(sizeof(double) * precomputeLength);
+	  *umpX1 = (double*)rax_malloc(sizeof(double) * precomputeLength),
+	  *umpX2 = (double*)rax_malloc(sizeof(double) * precomputeLength);
 
 	/* multiply all possible tip state vectors with the respective P-matrices 
 	 */
@@ -483,8 +485,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	
 	/* free precomputed vectors */
 
-	free(umpX1);
-	free(umpX2);
+	rax_free(umpX1);
+	rax_free(umpX2);
       }
       break;
     case TIP_INNER:
@@ -493,8 +495,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	   only for one tip vector */
 
 	double 
-	  *umpX1 = (double*)malloc(sizeof(double) * precomputeLength),
-	  *ump_x2 = (double*)malloc(sizeof(double) * states);
+	  *umpX1 = (double*)rax_malloc(sizeof(double) * precomputeLength),
+	  *ump_x2 = (double*)rax_malloc(sizeof(double) * states);
 
 	/* precompute P and left tip vector product */
 
@@ -575,8 +577,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	      }
 	  }
 
-	free(umpX1);
-	free(ump_x2);
+	rax_free(umpX1);
+	rax_free(ump_x2);
       }
       break;
     case INNER_INNER:
@@ -988,12 +990,12 @@ void newviewIterative (tree *tr, int startIndex)
 		  /* if there is a vector of incorrect length assigned here i.e., x3 != NULL we must free 
 		     it first */
 		  if(x3_start)
-		    free(x3_start);
+		    rax_free(x3_start);
 		 
 		  /* allocate memory: note that here we use a byte-boundary aligned malloc, because we need the vectors
 		     to be aligned at 16 BYTE (SSE3) or 32 BYTE (AVX) boundaries! */
 
-		  x3_start = (double*)malloc_aligned(requiredLength);		 
+		  x3_start = (double*)rax_malloc_aligned(requiredLength);		 
 		  
 		  /* update the data structures for consistent bookkeeping */
 		  tr->partitionData[model].xVector[tInfo->pNumber - tr->mxtips - 1] = x3_start;		  

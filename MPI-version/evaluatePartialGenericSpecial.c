@@ -169,9 +169,9 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
       *eVector = *eVector + 1;
     }	              
 
-  free(d1);
-  free(d2);
-  free(x1px2);
+  rax_free(d1);
+  rax_free(d2);
+  rax_free(x1px2);
        
   return;
 }
@@ -238,8 +238,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
 
   term = term * w;
 
-  free(lVector);  
-  free(d);
+  rax_free(lVector);  
+  rax_free(d);
 
   return  term;
 }

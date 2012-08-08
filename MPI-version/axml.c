@@ -107,7 +107,7 @@ static void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
 }
 
 
-void *malloc_aligned(size_t size) 
+void *rax_malloc_aligned(size_t size) 
 {
   void 
     *ptr = (void *)NULL;
@@ -133,7 +133,7 @@ void *malloc_aligned(size_t size)
 
 
 #else
-  res = posix_memalign( &ptr, BYTE_ALIGNMENT, size );
+  res = rax_posix_memalign( &ptr, BYTE_ALIGNMENT, size );
 
   if(res != 0) 
     assert(0);
@@ -1866,8 +1866,8 @@ static void multiprocessorScheduling(tree *tr, int tid)
 	  
 	  assert(sum == checkSum);
 	  
-	  free(assignments);
-	  free(pt);
+	  rax_free(assignments);
+	  rax_free(pt);
 	}
     }
 
@@ -2089,7 +2089,7 @@ static void initializePartitions(tree *tr, FILE *byteFile)
 	}
     }
 
-  free(y);
+  rax_free(y);
     
   /* initialize gap bit vectors at tips when memory saving option is enabled */
   
@@ -2218,9 +2218,9 @@ static void initializeTree(tree *tr, analdef *adef)
   initModel(tr, empiricalFrequencies); 
  
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    free(empiricalFrequencies[model]);
+    rax_free(empiricalFrequencies[model]);
 
-  free(empiricalFrequencies);
+  rax_free(empiricalFrequencies);
 }
 
 

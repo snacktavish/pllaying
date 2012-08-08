@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <sys/times.h>
 #include <sys/types.h>
@@ -76,7 +78,7 @@ stringHashtable *initStringHashTable(hashNumberType n)
 					      268435456, 536870912, 1073741824, 2147483648U};
   */
   
-  stringHashtable *h = (stringHashtable*)malloc(sizeof(stringHashtable));
+  stringHashtable *h = (stringHashtable*)rax_malloc(sizeof(stringHashtable));
   
   hashNumberType
     tableSize,
@@ -95,7 +97,7 @@ stringHashtable *initStringHashTable(hashNumberType n)
 
   tableSize = initTable[i];  
 
-  h->table = (stringEntry**)calloc((size_t)tableSize, sizeof(stringEntry*));
+  h->table = (stringEntry**)rax_calloc((size_t)tableSize, sizeof(stringEntry*));
   h->tableSize = tableSize;    
 
   return h;
@@ -125,12 +127,12 @@ void addword(char *s, stringHashtable *h, int nodeNumber)
 	return;	  	
     }
 
-  p = (stringEntry *)malloc(sizeof(stringEntry));
+  p = (stringEntry *)rax_malloc(sizeof(stringEntry));
 
   assert(p);
   
   p->nodeNumber = nodeNumber;
-  p->word = (char *)malloc(((size_t)strlen(s) + 1) * sizeof(char));
+  p->word = (char *)rax_malloc(((size_t)strlen(s) + 1) * sizeof(char));
 
   strcpy(p->word, s);
   

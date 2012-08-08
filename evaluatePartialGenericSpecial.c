@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32 
 #include <unistd.h>
 #endif
@@ -98,9 +100,9 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
   /* allocate some space we need */
  
   double  
-    *d1 =    (double *)malloc(sizeof(double) * states), 
-    *d2 =    (double *)malloc(sizeof(double) * states),  
-    *x1px2 = (double *)malloc(sizeof(double) * states), 
+    *d1 =    (double *)rax_malloc(sizeof(double) * states), 
+    *d2 =    (double *)rax_malloc(sizeof(double) * states),  
+    *x1px2 = (double *)rax_malloc(sizeof(double) * states), 
     ump_x1, 
     ump_x2,    
     lz1, 
@@ -214,9 +216,9 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
       *eVector = *eVector + 1;
     }	              
 
-  free(d1);
-  free(d2);
-  free(x1px2);
+  rax_free(d1);
+  rax_free(d2);
+  rax_free(x1px2);
        
   return;
 }
@@ -247,8 +249,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
        Essentially  only (states * (mxtips - 2)) space would be required, but I was to lazy 
        to think if it has to be -1 or -2 here */
        
-    *lVector = (double *)malloc_aligned(sizeof(double) * states * mxtips),
-    *d = (double *)malloc_aligned(sizeof(double) * states),
+    *lVector = (double *)rax_malloc_aligned(sizeof(double) * states * mxtips),
+    *d = (double *)rax_malloc_aligned(sizeof(double) * states),
     lz, 
     term, 
     *x1, 
@@ -331,8 +333,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
 
   /* free the memory space used for likelihood computations on this site */
 
-  free(lVector);  
-  free(d);
+  rax_free(lVector);  
+  rax_free(d);
 
   return  term;
 }
@@ -769,7 +771,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
   double   *x1, *x2; 
   int scale = 0, k, l, j;
   double 
-    *lVector = (double *)malloc_aligned(sizeof(double) * 80 * mxtips),
+    *lVector = (double *)rax_malloc_aligned(sizeof(double) * 80 * mxtips),
     myEI[400]  __attribute__ ((aligned (BYTE_ALIGNMENT)));
 
   traversalInfo 
@@ -829,7 +831,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
 
   term = term * w;
 
-  free(lVector);
+ rax_free(lVector);
   
  
   return  term;
@@ -846,7 +848,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
   double   *x1, *x2; 
   int scale = 0, k, l, j;
   double 
-    *lVector = (double *)malloc_aligned(sizeof(double) * 16 * mxtips),
+    *lVector = (double *)rax_malloc_aligned(sizeof(double) * 16 * mxtips),
     myEI[16]  __attribute__ ((aligned (BYTE_ALIGNMENT)));
 
   traversalInfo 
@@ -902,7 +904,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 
   term = term * w;
 
-  free(lVector);
+ rax_free(lVector);
   
   
   return  term;
@@ -1006,7 +1008,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
   double  d[3];
   double   *x1, *x2; 
   int scale = 0, k;
-  double *lVector = (double *)malloc_aligned(sizeof(double) * 4 * mxtips);    
+  double *lVector = (double *)rax_malloc_aligned(sizeof(double) * 4 * mxtips);    
 
   traversalInfo *trav = &ti[0];
  
@@ -1050,7 +1052,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 
   term = term * w;
 
-  free(lVector);  
+ rax_free(lVector);  
 
   return  term;
 }
@@ -1156,7 +1158,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
   double  d[20];
   double   *x1, *x2; 
   int scale = 0, k;
-  double *lVector = (double *)malloc_aligned(sizeof(double) * 20 * mxtips);    
+  double *lVector = (double *)rax_malloc_aligned(sizeof(double) * 20 * mxtips);    
 
   traversalInfo *trav = &ti[0];
  
@@ -1201,7 +1203,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
 
   term = term * w;
 
-  free(lVector);  
+ rax_free(lVector);  
 
   return  term;
 }

@@ -67,22 +67,22 @@ __declspec(nothrow) void *operator new[](size_t size, const std::nothrow_t&)
 
 __declspec(nothrow) void operator delete(void* p)
 {
-	free(p);
+	rax_free(p);
 }
 
 __declspec(nothrow) void operator delete[](void* p)
 {
-	free(p);
+	rax_free(p);
 }
 
 __declspec(nothrow) void operator delete(void* p, const std::nothrow_t&)
 {
-	free(p);
+	rax_free(p);
 }
 
 __declspec(nothrow) void operator delete[](void* p, const std::nothrow_t&)
 {
-	free(p);
+	rax_free(p);
 }
 
 #ifdef USE_DLL
@@ -126,7 +126,7 @@ int handle_oom(int size)
 void lldebug_hook(void)
 {
 	void *a = valloc(0);
-	free(a);
+	rax_free(a);
 }
 
 void llmutex_lock(SRWLOCK *l)

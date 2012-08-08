@@ -221,7 +221,7 @@ static linkageList* initLinkageListGTR(tree *tr)
 
   ll = initLinkageList(links, tr);
 
-  free(links);
+  rax_free(links);
   
   return ll;
 }
@@ -233,10 +233,10 @@ static void freeLinkageList( linkageList* ll)
   int i;    
 
   for(i = 0; i < ll->entries; i++)    
-    free(ll->ld[i].partitionList);         
+    rax_free(ll->ld[i].partitionList);         
 
-  free(ll->ld);
-  free(ll);   
+  rax_free(ll->ld);
+  rax_free(ll);   
 }
 
 #define ALPHA_F 0
@@ -423,26 +423,26 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
       if(allConverged)
 	{
-	  free(converged);
-	  free(a);
-	  free(b);
-	  free(d);
-	  free(etemp);
-	  free(fu);
-	  free(fv);
-	  free(fw);
-	  free(fx);
-	  free(p);
-	  free(q);
-	  free(r);
-	  free(tol1);
-	  free(tol2);
-	  free(u);
-	  free(v);
-	  free(w);
-	  free(x);
-	  free(xm);
-	  free(e);
+	  rax_free(converged);
+	  rax_free(a);
+	  rax_free(b);
+	  rax_free(d);
+	  rax_free(etemp);
+	  rax_free(fu);
+	  rax_free(fv);
+	  rax_free(fw);
+	  rax_free(fx);
+	  rax_free(p);
+	  rax_free(q);
+	  rax_free(r);
+	  rax_free(tol1);
+	  rax_free(tol2);
+	  rax_free(u);
+	  rax_free(v);
+	  rax_free(w);
+	  rax_free(x);
+	  rax_free(xm);
+	  rax_free(e);
 	  return;
 	}     
 
@@ -550,26 +550,26 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 	}
     }
 
-  free(converged);
-  free(a);
-  free(b);
-  free(d);
-  free(etemp);
-  free(fu);
-  free(fv);
-  free(fw);
-  free(fx);
-  free(p);
-  free(q);
-  free(r);
-  free(tol1);
-  free(tol2);
-  free(u);
-  free(v);
-  free(w);
-  free(x);
-  free(xm);
-  free(e);
+  rax_free(converged);
+  rax_free(a);
+  rax_free(b);
+  rax_free(d);
+  rax_free(etemp);
+  rax_free(fu);
+  rax_free(fv);
+  rax_free(fw);
+  rax_free(fx);
+  rax_free(p);
+  rax_free(q);
+  rax_free(r);
+  rax_free(tol1);
+  rax_free(tol2);
+  rax_free(u);
+  rax_free(v);
+  rax_free(w);
+  rax_free(x);
+  rax_free(xm);
+  rax_free(e);
 
   printf("\n. Too many iterations in BRENT !");
   assert(0);
@@ -686,16 +686,16 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 		 cx[i] = lim_inf;
 	     }
 
-	   free(converged);
-	   free(ulim);
-	   free(u);
-	   free(r);
-	   free(q);
-	   free(fu);
-	   free(dum); 
-	   free(temp);
-	   free(state);   
-	   free(endState);
+	   rax_free(converged);
+	   rax_free(ulim);
+	   rax_free(u);
+	   rax_free(r);
+	   rax_free(q);
+	   rax_free(fu);
+	   rax_free(dum); 
+	   rax_free(temp);
+	   rax_free(state);   
+	   rax_free(endState);
 	   return 0;
 	   
 	 }
@@ -873,16 +873,16 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
    
 
    assert(0);
-   free(converged);
-   free(ulim);
-   free(u);
-   free(r);
-   free(q);
-   free(fu);
-   free(dum); 
-   free(temp);
-   free(state);   
-   free(endState);
+   rax_free(converged);
+   rax_free(ulim);
+   rax_free(u);
+   rax_free(r);
+   rax_free(q);
+   rax_free(fu);
+   rax_free(dum); 
+   rax_free(temp);
+   rax_free(state);   
+   rax_free(endState);
 
   
 
@@ -973,18 +973,18 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
 
   
-  free(startLH);
-  free(startAlpha);
-  free(endAlpha);
-  free(result);
-  free(_a);
-  free(_b);
-  free(_c);
-  free(_fa);
-  free(_fb);
-  free(_fc);
-  free(_param);
-  free(_x);  
+  rax_free(startLH);
+  rax_free(startAlpha);
+  rax_free(endAlpha);
+  rax_free(result);
+  rax_free(_a);
+  rax_free(_b);
+  rax_free(_c);
+  rax_free(_fa);
+  rax_free(_fb);
+  rax_free(_fc);
+  rax_free(_param);
+  rax_free(_x);  
 
 }
 
@@ -1110,18 +1110,18 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
     }
 
  
-  free(startLH);
-  free(endLH);
-  free(result);
-  free(_a);
-  free(_b);
-  free(_c);
-  free(_fa);
-  free(_fb);
-  free(_fc);
-  free(_param);
-  free(_x);  
-  free(startRates);
+  rax_free(startLH);
+  rax_free(endLH);
+  rax_free(result);
+  rax_free(_a);
+  rax_free(_b);
+  rax_free(_c);
+  rax_free(_fa);
+  rax_free(_fb);
+  rax_free(_fc);
+  rax_free(_param);
+  rax_free(_x);  
+  rax_free(startRates);
 }
 
 static boolean AAisGTR(tree *tr)
@@ -1632,11 +1632,11 @@ static void gatherCatsWorker(tree *tr, int tid)
   MPI_Gatherv(patStoredBufSend, sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   MPI_Gatherv(lhsBufSend,       sendBufferSize, MPI_DOUBLE, (double*)NULL, (int*)NULL, (int*)NULL, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   
-  free(catBufSend);
-  free(rateBufSend);
-  free(patBufSend);
-  free(patStoredBufSend);
-  free(lhsBufSend);
+  rax_free(catBufSend);
+  rax_free(rateBufSend);
+  rax_free(patBufSend);
+  rax_free(patStoredBufSend);
+  rax_free(lhsBufSend);
 }
 
 
@@ -1752,7 +1752,7 @@ static void gatherCatsMaster(tree *tr, int tid, int n)
 
 	
 
-	free(numCAT);
+	rax_free(numCAT);
       }
 
     }
@@ -1776,21 +1776,21 @@ static void gatherCatsMaster(tree *tr, int tid, int n)
     }
   */
   
-  free(modelOffsets);
-  free(countArray);
-  free(offsetArray);
+  rax_free(modelOffsets);
+  rax_free(countArray);
+  rax_free(offsetArray);
  
-  free(catBufSend);
-  free(rateBufSend);
-  free(patBufSend);
-  free(patStoredBufSend);
-  free(lhsBufSend);
+  rax_free(catBufSend);
+  rax_free(rateBufSend);
+  rax_free(patBufSend);
+  rax_free(patStoredBufSend);
+  rax_free(lhsBufSend);
 
-  free(catBufRecv);
-  free(rateBufRecv);
-  free(patBufRecv);
-  free(patStoredBufRecv);
-  free(lhsBufRecv);
+  rax_free(catBufRecv);
+  rax_free(rateBufRecv);
+  rax_free(patBufRecv);
+  rax_free(patStoredBufRecv);
+  rax_free(lhsBufRecv);
 }
 
 
@@ -2161,12 +2161,12 @@ static void gatherRatesFewPartitions(tree *tr, int tid)
 	      }	   	   
 	  }
 
-        free(patBufSend);
-        free(patStoredBufSend);
-        free(lhsBufSend);
-        free(patBufRecv);
-        free(patStoredBufRecv);
-        free(lhsBufRecv);
+        rax_free(patBufSend);
+        rax_free(patStoredBufSend);
+        rax_free(lhsBufSend);
+        rax_free(patBufRecv);
+        rax_free(patStoredBufRecv);
+        rax_free(lhsBufRecv);
     }
   else
     {
@@ -2198,9 +2198,9 @@ static void gatherRatesFewPartitions(tree *tr, int tid)
       MPI_Gather(patStoredBufSend, sendBufferSize, MPI_DOUBLE, localDummy, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
       MPI_Gather(lhsBufSend,       sendBufferSize, MPI_DOUBLE, localDummy, sendBufferSize, MPI_DOUBLE, 0, MPI_COMM_WORLD);
       
-      free(patBufSend);
-      free(patStoredBufSend);
-      free(lhsBufSend);
+      rax_free(patBufSend);
+      rax_free(patStoredBufSend);
+      rax_free(lhsBufSend);
     }
 }
 
@@ -2616,7 +2616,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 		  categorizePartition(tr, rc, model, lower, upper);
 		}
 	      
-	      free(rc);
+	      rax_free(rc);
 	    }   
 	}            
 
@@ -2670,13 +2670,13 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	}
           
       for(model = 0; model < tr->NumberOfModels; model++)
-	free(oldCategorizedRates[model]);
+	rax_free(oldCategorizedRates[model]);
                    
-      free(oldCategorizedRates);
-      free(oldCategory);
-      free(ratStored);       
+      rax_free(oldCategorizedRates);
+      rax_free(oldCategory);
+      rax_free(ratStored);       
       /*      free(lhs); */
-      free(oldNumbers);
+      rax_free(oldNumbers);
     }
 }
   
@@ -2868,8 +2868,8 @@ static void autoProtein(tree *tr)
       
       /*printf("Exit: %f\n", tr->likelihood);*/
       
-      free(bestIndex);
-      free(bestScores);
+      rax_free(bestIndex);
+      rax_free(bestScores);
     }
 }
 
@@ -2951,7 +2951,7 @@ void modOpt(tree *tr, double likelihoodEpsilon)
     }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
   
-  free(unlinked);
+  rax_free(unlinked);
   freeLinkageList(alphaList);
   freeLinkageList(rateList);
   freeLinkageList(invarList);  

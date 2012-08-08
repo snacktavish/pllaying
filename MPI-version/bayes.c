@@ -121,9 +121,9 @@ static state *state_init(tree *tr, analdef * adef, int maxradius, double bl_w, d
 static void state_free(state *s)
 {
   assert(s != NULL);
-  free(s->list);
-  free(s->curSubsRates);
-  free(s);
+  rax_free(s->list);
+  rax_free(s->curSubsRates);
+  rax_free(s);
 }
 
 static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean printBranchLengths)
