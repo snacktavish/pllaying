@@ -230,6 +230,9 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
 }
 
 
+
+#ifndef _OPTIMIZED_FUNCTIONS
+
 /* same thing for GAMMA models. The only noteworthy thing here is that we have an additional inner loop over the 
    number of discrete gamma rates. The data access pattern is also different since for tip vector accesses through our 
    lookup table, we do not distnguish between rates 
@@ -319,7 +322,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
       assert(0);
     }
 }
-
+#endif
 
 /* optimized functions for branch length optimization */
 
