@@ -14,6 +14,9 @@
 #include <pmmintrin.h>
 #include <immintrin.h>
 
+
+
+
 #ifdef _FMA
 #include <x86intrin.h>
 #define FMAMACC(a,b,c) _mm256_macc_pd(b,c,a)

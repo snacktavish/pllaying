@@ -10,13 +10,13 @@ LIBRARIES = -lm -pthread
 
 RM = rm -f
 
-objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o lockless_allocator/ll_alloc.o
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o lockless_allocator/ll_alloc.o mem_alloc.o
 
 all : raxmlLight-PTHREADS
 
 
 
-GLOBAL_DEPS = axml.h globalVariables.h
+GLOBAL_DEPS = axml.h globalVariables.h mem_alloc.h
 
 raxmlLight-PTHREADS : $(objs)
 	$(CC) -o raxmlLight-PTHREADS $(objs) $(LIBRARIES) 

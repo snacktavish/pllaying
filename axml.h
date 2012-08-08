@@ -72,7 +72,7 @@ extern "C" {
 
 #endif
 
-
+#include "mem_alloc.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /* maximum iterations of smoothings per insert in the */
@@ -1118,7 +1118,7 @@ extern void   newviewIterative(tree *tr, int startIndex);
 
 extern void evaluateIterative(tree *);
 
-extern void *malloc_aligned( size_t size);
+//extern void *malloc_aligned( size_t size);
 
 extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
 extern void storeValuesInTraversalDescriptor(tree *tr, double *value);

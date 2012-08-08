@@ -45,7 +45,28 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <stdio.h>
-#include <malloc.h>
+// #include <malloc.h>
+#define USE_PREFIX 1
+
+#ifdef USE_DLL
+#define PREFIX(X)   llalloc##X
+#else
+#ifdef USE_PREFIX
+#define PREFIX(X)   llalloc##X
+#else
+#define PREFIX(X)   X
+#endif
+#endif
+
+
+void *PREFIX(memalign)(size_t align, size_t size);
+void *PREFIX(malloc)(size_t size);
+void *PREFIX(realloc)(void *p, size_t size);
+int PREFIX(posix_memalign)(void **p, size_t align, size_t size);
+void *PREFIX(calloc)(size_t n, size_t size);
+void PREFIX(free)(void *p);
+
+static size_t malloc_usable_size(void *p);
 
 /* Debugging */
 //#define DEBUG_ALLOC
@@ -404,18 +425,29 @@ typedef void * mutex_t;
 #define set_enomem() _set_errno(ENOMEM)
 
 /* Other functions that need prototypes */
-#if defined USE_DLL || defined USE_PREFIX
-void llallocfree(void *p);
-void *llallocmalloc(size_t size);
-void *llalloccalloc(size_t size, size_t n);
-void *llallocrealloc(void *p, size_t size);
-size_t llalloc_msize(void *p);
-void *llalloc_expand(void *p, size_t size);
+//#if defined( USE_DLL ) || defined( USE_PREFIX )
+// #ifdef USE_PREFIX
+// void PREFIX(free)(void *p);
+// void *PREFIX(malloc)(size_t size);
+// void *PREFIX(calloc)(size_t size, size_t n);
+// void *PREFIX(realloc)(void *p, size_t size);
+// size_t PREFIX(_msize)(void *p);
+// void *PREFIX(_expand)(void *p, size_t size);
+// 
+// /* Hack - indirect calls to crt functions */
+// int (* __callnewh)(size_t);
+// int (* __newmode)(void);
+// #endif /* USE_DLL */
 
-/* Hack - indirect calls to crt functions */
-int (* __callnewh)(size_t);
-int (* __newmode)(void);
-#endif /* USE_DLL */
+
+void PREFIX(free)(void *p);
+void *PREFIX(malloc)(size_t size);
+void *PREFIX(calloc)(size_t size, size_t n);
+void *PREFIX(realloc)(void *p, size_t size);
+size_t PREFIX(_msize)(void *p);
+void *PREFIX(_expand)(void *p, size_t size);
+
+
 
 void cfree(void *p);
 void *memalign(size_t align, size_t size);
@@ -520,7 +552,7 @@ static int mutex_trylock(mutex_t *m)
 #define MUTEX_INITIALIZER {0}
 
 
-static void malloc_stats_aux(int show_nodes);
+// static void malloc_stats_aux(int show_nodes);
 
 static gcc_used char dummy1[64];
 static pthread_once_t init_once = PTHREAD_ONCE_INIT;
@@ -4613,12 +4645,12 @@ void PREFIX(free)(void *p)
 		big_free_aux(page_start(b));
 	}
 }
-
+#if 0
 void cfree(void *p)
 {
 	PREFIX(free)(p);
 }
-
+#endif
 static noinline void *malloc_aux(size_t size)
 {
 	DECL_PROF_FUNC;
@@ -5083,7 +5115,7 @@ static noinline void *memalign_aux(size_t align, size_t size)
 	/* Cannot allocate anything! */
 	if (!tl) return NULL;
 
-	return memalign(align, size);
+	return PREFIX(memalign)(align, size);
 }
 
 #ifdef WINDOWS
@@ -5190,7 +5222,7 @@ nomem:
 }
 #endif
 
-void *memalign(size_t align, size_t size)
+void *PREFIX(memalign)(size_t align, size_t size)
 {
 	DECL_PROF_FUNC;
 
@@ -5313,7 +5345,7 @@ nomem:
 	return NULL;
 }
 
-int posix_memalign(void **p, size_t align, size_t size)
+int PREFIX(posix_memalign)(void **p, size_t align, size_t size)
 {
 	/* Make sure power of two and greater than sizeof(void *) */
 #ifdef __x86_64__	
@@ -5330,24 +5362,25 @@ int posix_memalign(void **p, size_t align, size_t size)
 	}
 #endif
 
-	*p = memalign(align, size);
+	*p = PREFIX(memalign)(align, size);
 
 	if (!*p) return ENOMEM;
 
 	return 0;
 }
-
+#if 0
 void *valloc(size_t size)
 {
-	return memalign(PAGESIZE, size);
+	return PREFIX(memalign)(PAGESIZE, size);
 }
 
 void *pvalloc(size_t size)
 {
-	return memalign(PAGESIZE, page_align(size));
+	return PREFIX(memalign)(PAGESIZE, page_align(size));
 }
-
-#ifdef WINDOWS
+#endif
+//#ifdef WINDOWS
+#if 1
 static
 #endif
 size_t malloc_usable_size(void *p)
@@ -5393,6 +5426,8 @@ __attribute__((dllimport)) size_t _msize(void *p)
 }
 #endif
 
+
+#if 0
 struct mallinfo mallinfo(void)
 {
 	atls *tl = get_tls();
@@ -5513,6 +5548,8 @@ int malloc_trim(size_t pad)
 	return 1;
 }
 
+
+
 int mallopt(int param, int val)
 {
 	/* Ignore parameters */
@@ -5522,6 +5559,8 @@ int mallopt(int param, int val)
 	/* Just return success - we don't have any parameters to modify */
 	return 1;
 }
+
+#endif
 
 #ifdef DEBUG_LEAK
 static int btree_print(atls *tl, btree *b)
@@ -5550,7 +5589,8 @@ static int btree_print(atls *tl, btree *b)
 }
 #endif
 
-#ifndef WINDOWS
+#if 0
+// #ifndef WINDOWS
 
 static void mem_slab(void)
 {
@@ -5921,6 +5961,7 @@ static void **ialloc(atls *tl, size_t n, size_t *sizes, void **chunks, int clear
 	return out;
 }
 
+#if 0
 static noinline void **ialloc_aux(size_t n, size_t *sizes, void **chunks, int clear)
 {
 	atls *tl = init_tls();
@@ -5946,8 +5987,9 @@ void **independent_comalloc(size_t n, size_t *sizes, void **chunks)
 
 	return ialloc(tl, n, sizes, chunks, 0);
 }
-
-#ifndef WINDOWS
+#endif
+//#ifndef WINDOWS
+#if 0
 void *malloc_get_state(void)
 {
 	abort();

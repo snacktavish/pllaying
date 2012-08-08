@@ -111,40 +111,6 @@ static void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
 }
 
 
-void *malloc_aligned(size_t size) 
-{
-  void 
-    *ptr = (void *)NULL;
- 
-  int 
-    res;
-  
-
-#if defined (__APPLE__)
-  /* 
-     presumably malloc on MACs always returns 
-     a 16-byte aligned pointer
-  */
-
-  ptr = malloc(size);
-  
-  if(ptr == (void*)NULL) 
-   assert(0);
-  
-#ifdef __AVX
-  assert(0);
-#endif
-
-
-#else
-  res = posix_memalign( &ptr, BYTE_ALIGNMENT, size );
-
-  if(res != 0) 
-    assert(0);
-#endif 
-   
-  return ptr;
-}
 
 
 
