@@ -62,7 +62,6 @@ void allocRecompVectorsInfo(tree *tr)
   assert(tr->vectorRecomFraction > MIN_RECOM_FRACTION);
   assert(tr->vectorRecomFraction < MAX_RECOM_FRACTION);
 
-  /* TODOFER compute this otherwise */
   num_vectors = (int) (1 + tr->vectorRecomFraction * (float)num_inner_nodes); 
 
   /*printBothOpen("num_vecs %d , min %d\n", num_vectors, (int)(log((double)tr->mxtips)) + 2);*/
@@ -225,7 +224,6 @@ static int pinNode(recompVectors *rvec, int nodenum, int mxtips)
 
   pinAtomicNode(rvec, nodenum, slot, mxtips);
 
-  /* TODOFER do we neec maxVectorsUsed for anything ?!*/
   if(slot > rvec->maxVectorsUsed)
     rvec->maxVectorsUsed = slot;
 
@@ -245,8 +243,7 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
 
     assert(nodenum > mxtips);
     slot = v->iNode[nodenum-mxtips-1];
-    /* assert(slot >= 0 && slot < v->numVectors); */
-    /* TODOFER: does this make sense? since commmented the assertion and this works: */
+    assert(slot >= 0 && slot < v->numVectors); 
 
     if(slot >= 0 && slot < v->numVectors)
       v->unpinnable[slot] = TRUE;

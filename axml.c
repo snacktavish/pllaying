@@ -1093,7 +1093,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
           printf("Maximum memory to be used in MB passed via -L must be greater than zero zero.\n");
           exit(-1);
         }
-        tr->useRecom = TRUE; /* we can decide this after parsing the alignment */
+        tr->useRecom = TRUE; /* This might be disabled after parsing the alignment if the user limit is low */
         break;
 
         /* E recom */
@@ -2675,7 +2675,8 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
   /* E recom */
 }
 
-/* TODODER TEMP TEST CODE */
+#ifdef _DEBUG_RECOMPUTATION
+/* TEST CODE, this is used to do a random SPR */
 static nodeptr pickRandomSubtree(tree *tr)
 {
   nodeptr p;
@@ -2701,8 +2702,8 @@ static nodeptr pickRandomSubtree(tree *tr)
   assert(!isTip(p->number, tr->mxtips));
   return p;
 }
-
-/* END TODOFER */
+/* END TEST CODE */
+#endif
 
 
 int main (int argc, char *argv[])
@@ -2874,7 +2875,6 @@ int main (int argc, char *argv[])
   /* Now we are able to compute the memory requirements and decide on using recom or not */
   if(tr->useRecom)
   {
-    // TODOFER consider here as well tr->saveMemory? 
     size_t requiredLength;
     size_t rateHet = discreteRateCategories(tr->rateHetModel);
     int model;
@@ -3075,7 +3075,7 @@ int main (int argc, char *argv[])
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
 #ifdef _DEBUG_RECOMPUTATION
-      /* simple SPR ? */
+      /* do some simple SPR */
       {
         int i;
         for(i=0; i<10; i++)
@@ -3091,39 +3091,6 @@ int main (int argc, char *argv[])
           printBothOpen("lh: after %d mod opt: %f \n",i, tr->likelihood);
         }
       }
-      /* like in determineRearr */
-      /*
-      {
-         nodeRectifier(tr);
-
-        int i;
-        tr->startLH = tr->endLH = tr->likelihood;
-        for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
-        {                	         
-          tr->bestOfNode = unlikely;
-          printBothOpen("start rearr Node %d\n", tr->nodep[i]->number);
-          if(rearrangeBIG(tr, tr->nodep[i], 1, 10))
-          {	     
-            printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
-            if(tr->endLH > tr->startLH)                 	
-            {		 	 	      
-              restoreTreeFast(tr);	        	  	 	  	      
-              tr->startLH = tr->endLH = tr->likelihood;		 
-              printBothOpen("Restored tree %f\n", tr->likelihood);
-            }	         	       	
-          }
-        }
-        treeEvaluate(tr, 8 ); // 32 * 0.25 
-        printBothOpen("LH after treeEval in deterRearr %f\n", tr->likelihood);
-        evaluateGeneric(tr, tr->start, TRUE);	 
-        printBothOpen("LH after Generuc %f\n", tr->likelihood);
-      }
-
-      //hookup(, instate->nnb, zqr, tr->numBranches); 
-      //p->next->next->back = p->next->back = (node *) NULL;
-      */
-      
-      /* end  */
       t = gettime() - masterTime;
       printBothOpen("Traversal freq after search \n");
       printTraversalInfo(tr);
@@ -3164,7 +3131,6 @@ int main (int argc, char *argv[])
 
   finalizeInfoFile(tr, adef);
 
-  /* TODOFER take this out,  only for stats  */
 #ifdef _DEBUG_RECOMPUTATION
   {
       double t = gettime() - masterTime;
