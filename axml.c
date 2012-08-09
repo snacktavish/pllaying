@@ -1817,15 +1817,16 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 {
   int 
     model;
-#ifdef _LOCAL_DISCRETIZATION  
+#ifdef _LOCAL_DISCRETIZATION        
   for(model = 0; model < localTree->NumberOfModels; model++)
-  {
-    const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-
-    memcpy(localTree->partitionData[model].substRates,        tr->partitionData[model].substRates, pl->substRatesLength * sizeof(double));
-
-    initReversibleGTR(localTree, model);     
-  }
+    {
+      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
+      
+      if(tid > 0)
+	memcpy(localTree->partitionData[model].substRates,        tr->partitionData[model].substRates, pl->substRatesLength * sizeof(double));
+      
+      initReversibleGTR(localTree, model);     
+    }    
 #else
   if(tid > 0)
   {	 
@@ -1990,7 +1991,8 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
         {
           const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
 
-          memcpy(localTree->partitionData[model].frequencies,        tr->partitionData[model].frequencies,        pl->frequenciesLength * sizeof(double));
+	  if(tid > 0)
+	    memcpy(localTree->partitionData[model].frequencies,        tr->partitionData[model].frequencies,        pl->frequenciesLength * sizeof(double));
         }
 #endif
       /* need to be very careful here ! THREAD_COPY_INIT_MODEL is also used when the program is restarted 
@@ -2411,6 +2413,9 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     localTree->originalCrunchedLength  = tr->originalCrunchedLength;    
     localTree->mxtips                  = tr->mxtips;     
     localTree->numBranches             = tr->numBranches;
+#ifdef _LOCAL_DISCRETIZATION
+    localTree->aliaswgt                = tr->aliaswgt;
+#endif    
     localTree->lhs                     = (double*)malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
     localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);     
     localTree->fracchanges             = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
