@@ -147,11 +147,12 @@ if [ $# -eq 1 ] ; then
 		TEST_AA_SINGLE="${DATADIR}/large.aa.singlegene.binary ${TREE_AA}"
         fi
         
+ # TODO NOTE: We still need to pass the TREE_* somewehre to the scripts
 
-	SIMPLE="" 
+	SIMPLE=""  # NOTE: this will be ignored in the loop, we will not run the simple case!
 	BL_PARTITION="-M"
 	SIMPLE_GAPPY="-S"
-	BL_PARTITION_GAPPY="-M -S"
+	BL_PARTITION_GAPPY="-M -S" # NOTE: this will be taken as 2 arguments
 	SIMPLE_RF_CONV="-D"
 
   echo "Starting superscript `date`, Errors" > $ERRLOGFILE 

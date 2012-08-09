@@ -316,7 +316,11 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 
 
 
-
+void printTree(tree *tr, boolean BL)
+{
+  Tree2String(tr->tree_string, tr, tr->start->back, BL, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  printBothOpen("Tree: %s\n",tr->tree_string);
+}
 
     
 

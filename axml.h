@@ -356,9 +356,35 @@ extern double exp_approx (double x);
 #define GAMMA       1
 #define GAMMA_I     2
 
+/* recomp */
+#define SLOT_UNUSED            -2  /* value to mark an available vector */
+#define NODE_UNPINNED          -3  /* marks an inner node as not available in RAM */
+#define INNER_NODE_INIT_STLEN  -1  /* initialization */
+
+#define MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
+#define MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
+#define MEM_APROX_OVERHEAD     1.3 /* TODOFER can we measure this empirically? */
 
 
 typedef  int boolean;
+
+typedef struct
+{
+  int numVectors;      /* #inner vectors in RAM*/
+  int *iVector;        /* size: numVectors, stores node id || SLOT_UNUSED  */
+  int *iNode;          /* size: inner nodes, stores slot id || NODE_UNPINNED */
+  int *stlen;          /* #tips behind the current orientation of the indexed inner node (subtree size/cost) */ 
+  int *unpinnable;     /* size:numVectors , TRUE if we dont need the vector */
+  int maxVectorsUsed;  
+  boolean allSlotsBusy; /*on if all slots contain an ancesctral node (the usual case after first full traversal) */ 
+#ifdef _DEBUG_RECOMPUTATION
+  double pinTime;
+  double recomStraTime;
+#endif
+} recompVectors;
+/* E recomp */
+
+
 
 
 typedef struct {
@@ -445,6 +471,11 @@ typedef struct
   int rNumber;
   double qz[NUM_BRANCHES];
   double rz[NUM_BRANCHES];
+  /* recom */
+  int slot_p;
+  int slot_q;
+  int slot_r;
+  /* E recom */
 } traversalInfo;
 
 typedef struct
@@ -667,10 +698,33 @@ typedef struct {
 
 
 
+/* recomp */
+#ifdef _DEBUG_RECOMPUTATION
+typedef struct {
+  unsigned long int numTraversals;
+  unsigned long int tt;
+  unsigned long int ti;
+  unsigned long int ii;
+  unsigned int *travlenFreq;
+} traversalCounter;
+#endif
+/* E recomp */
+
 
 typedef  struct  {
 
   int *ti;
+
+  /* recomp */
+  recompVectors *rvec;            /* this data structure tracks which vectors store which nodes */
+  float maxMegabytesMemory;         /* User says how many MB in main memory should be used */
+  float vectorRecomFraction;      /* vectorRecomFraction ~= 0.8 * maxMegabytesMemory  */
+  boolean useRecom;               /* ON if we apply recomputation of ancestral vectors*/
+#ifdef _DEBUG_RECOMPUTATION 
+  traversalCounter *travCounter;
+  double stlenTime;
+#endif
+  /* E recomp */
 
   boolean useGappedImplementation;
   boolean saveMemory;
@@ -832,6 +886,7 @@ typedef  struct  {
   checkPointState ckp;
   boolean thoroughInsertion;
   boolean useMedian;
+
 } tree;
 
 
@@ -1110,11 +1165,26 @@ extern double evaluateGenericVector (tree *tr, nodeptr p);
 extern void categorizeGeneric (tree *tr, nodeptr p);
 extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0, int maxiter, int model);
 extern boolean isTip(int number, int maxTips);
+/*
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
+*/
+/* recom functions */
+extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
+extern void allocRecompVectorsInfo(tree *tr);
+extern void allocTraversalCounter(tree *tr);
+extern boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips);
+extern boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtips);
+extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
+extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
+
+extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
+extern void determineFullTraversalStlen(nodeptr p, tree *tr);
+extern void printTraversalInfo(tree *tr);
+extern void countTraversal(tree *tr);
 
 
 
-extern void   newviewIterative(tree *tr, int startIndex);
+extern void newviewIterative(tree *tr, int startIndex);
 
 extern void evaluateIterative(tree *);
 
@@ -1124,12 +1194,8 @@ extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
 extern void storeValuesInTraversalDescriptor(tree *tr, double *value);
 
 
-
-
 extern void makenewzIterative(tree *);
 extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
-
-
 
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/
@@ -1329,5 +1395,5 @@ static int virtual_width( int n ) {
 
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif

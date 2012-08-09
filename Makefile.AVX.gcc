@@ -10,7 +10,7 @@ LIBRARIES = -lm -mavx
 
 RM = rm -f
 
-objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o 
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o recom.o
 
 all : raxmlLight-AVX
 
@@ -40,6 +40,7 @@ newviewGenericSpecial.o : newviewGenericSpecial.c $(GLOBAL_DEPS)
 makenewzGenericSpecial.o : makenewzGenericSpecial.c $(GLOBAL_DEPS)
 restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
 randomTree.o : randomTree.c $(GLOBAL_DEPS)
+recom.o : recom.c  $(GLOBAL_DEPS)
 
 
 clean : 

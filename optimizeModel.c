@@ -2480,18 +2480,18 @@ void modOpt(tree *tr, double likelihoodEpsilon)
   double 
     currentLikelihood,
     modelEpsilon = 0.0001;
-  
+
   /* linkage lists for alpha, p-invar has actually been ommitted in this version of the code 
      and the GTR subst matrices */
 
   linkageList *alphaList;
   linkageList *invarList;
   linkageList *rateList; 
-  
+
   int *unlinked = (int *)malloc(sizeof(int) * tr->NumberOfModels);
-      
+
   modelEpsilon = 0.0001;
-    
+
   /* set the integer vector for linking parameters to all parameters being unlinked, 
      i.e. a separate/independent estimate of parameters will be conducted for eahc partition */
 
@@ -2500,54 +2500,55 @@ void modOpt(tree *tr, double likelihoodEpsilon)
 
   /* alpha parameters and p-invar parameters are unlinked.
      this is the point where I actually hard-coded this in RAxML */
-  
+
   alphaList = initLinkageList(unlinked, tr);
   invarList = initLinkageList(unlinked, tr);
 
   /* call the dedicated function for linking the GTR matrix across all AA data partitions 
      If we have only DNA data all GTR matrix estimates will be unlinked.
-   */
+     */
 
   rateList  = initLinkageListGTR(tr);
-   
+
   tr->start = tr->nodep[1];
-                 
+
   do
-    {           
-      currentLikelihood = tr->likelihood;     
-     
-      optRatesGeneric(tr, modelEpsilon, rateList);
-           
-      evaluateGeneric(tr, tr->start, TRUE);                                       
+  {           
+    //printBothOpen("cur LH: %f\n", tr->likelihood);
+    currentLikelihood = tr->likelihood;     
 
-      autoProtein(tr);
+    optRatesGeneric(tr, modelEpsilon, rateList);
 
-      treeEvaluate(tr, 2); // 0.0625 * 32 = 2.0    
-      
-      switch(tr->rateHetModel)
-	{
-	case GAMMA:      
-	  optAlpha(tr, modelEpsilon, alphaList); 
-	  evaluateGeneric(tr, tr->start, TRUE); 	 	 
-	  treeEvaluate(tr, 3); // 0.1 * 32 = 3.2  	 
-	  break;
-	case CAT:
-	  if(catOpt < 3)
-	    {	      	     	     
-	      optimizeRateCategories(tr, tr->categories);	      	     	      	      
-	      catOpt++;
-	    }
-	  break;	  
-	default:
-	  assert(0);
-	}                   
-      
-       
+    evaluateGeneric(tr, tr->start, TRUE);                                       
 
-      printAAmatrix(tr, fabs(currentLikelihood - tr->likelihood));    
-    }
+    autoProtein(tr);
+
+    treeEvaluate(tr, 2); // 0.0625 * 32 = 2.0    
+
+    switch(tr->rateHetModel)
+    {
+      case GAMMA:      
+        optAlpha(tr, modelEpsilon, alphaList); 
+        evaluateGeneric(tr, tr->start, TRUE); 	 	 
+        treeEvaluate(tr, 3); // 0.1 * 32 = 3.2  	 
+        break;
+      case CAT:
+        if(catOpt < 3)
+        {	      	     	     
+          optimizeRateCategories(tr, tr->categories);	      	     	      	      
+          catOpt++;
+        }
+        break;	  
+      default:
+        assert(0);
+    }                   
+
+
+
+    printAAmatrix(tr, fabs(currentLikelihood - tr->likelihood));    
+  }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
-  
+
   free(unlinked);
   freeLinkageList(alphaList);
   freeLinkageList(rateList);
