@@ -1168,11 +1168,23 @@ extern boolean isTip(int number, int maxTips);
 /*
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
 */
+/* recom functions */
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
+extern void allocRecompVectorsInfo(tree *tr);
+extern void allocTraversalCounter(tree *tr);
+extern boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips);
+extern boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtips);
+extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
+extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
+
+extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
+extern void determineFullTraversalStlen(nodeptr p, tree *tr);
+extern void printTraversalInfo(tree *tr);
+extern void countTraversal(tree *tr);
 
 
 
-extern void   newviewIterative(tree *tr, int startIndex);
+extern void newviewIterative(tree *tr, int startIndex);
 
 extern void evaluateIterative(tree *);
 
@@ -1182,12 +1194,8 @@ extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
 extern void storeValuesInTraversalDescriptor(tree *tr, double *value);
 
 
-
-
 extern void makenewzIterative(tree *);
 extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
-
-
 
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/
@@ -1387,5 +1395,5 @@ static int virtual_width( int n ) {
 
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif

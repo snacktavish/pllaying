@@ -66,7 +66,7 @@ void allocRecompVectorsInfo(tree *tr)
 
   /*printBothOpen("num_vecs %d , min %d\n", num_vectors, (int)(log((double)tr->mxtips)) + 2);*/
 
-  assert(num_vectors > (int)(log((double)tr->mxtips)) + 2);
+  assert(num_vectors > (int)(log((double)tr->mxtips) + 2));
   assert(num_vectors < tr->mxtips);
 
 
@@ -146,7 +146,7 @@ static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
   return cheapest_slot;
 }
 
-void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
+static void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
 {
   int 
     nodenum = v->iVector[slot];
@@ -197,7 +197,7 @@ static int findFreeSlot(recompVectors *v, int mxtips)
 }
 
 
-void pinAtomicNode(recompVectors *v, int nodenum, int slot, int mxtips)
+static void pinAtomicNode(recompVectors *v, int nodenum, int slot, int mxtips)
 {
   v->iVector[slot] = nodenum;
   v->iNode[nodenum - mxtips - 1] = slot;
@@ -246,11 +246,7 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
   }
 }
 
-
-
-
-
-
+/*
 #ifdef _DEBUG_RECOMPUTATION
 static void printSlots(recompVectors *rvec, int nodenum)
 {
@@ -260,8 +256,8 @@ static void printSlots(recompVectors *rvec, int nodenum)
     printBothOpen(" %d (%s)", rvec->iVector[i], (rvec->unpinnable[i] ? " ": "x"));
   printBothOpen("\n");
 }
-
 #endif
+*/
 
 
 boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
@@ -488,8 +484,7 @@ void countTraversal(tree *tr)
 {
   traversalInfo 
     *ti   = tr->td[0].ti;
-  int i, j;
-  nodeptr p, q;
+  int i;
   traversalCounter *tc = tr->travCounter; 
   tc->numTraversals += 1;
 
@@ -555,6 +550,8 @@ void printTraversalInfo(tree *tr)
 
 /*end code to track traversal descriptor stats */
 /* E recomp */
+
+/*
 void printVector(double *vector, int len, char *name)
 { 
   int i;
@@ -570,7 +567,7 @@ void printVector(double *vector, int len, char *name)
   } 
   printBothOpen("\n");
 } 
-
+*/
 
 #endif
 

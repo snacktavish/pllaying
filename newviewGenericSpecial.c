@@ -838,16 +838,15 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 
         if(useRecom)
         {
-          int needs_recomp;
           /* We check that the strategy cannot re-use slots */
-          needs_recomp = getxVector(rvec, q->number, &slot, maxTips);
+          getxVector(rvec, q->number, &slot, maxTips);
           ti[*counter].slot_q = slot;
 
-          needs_recomp = getxVector(rvec, r->number, &slot, maxTips);
+          getxVector(rvec, r->number, &slot, maxTips);
           ti[*counter].slot_r = slot;
           assert(slot != ti[*counter].slot_q);
 
-          needs_recomp = getxVector(rvec, p->number, &slot, maxTips);
+          getxVector(rvec, p->number, &slot, maxTips);
           ti[*counter].slot_p = slot;
           assert(slot != ti[*counter].slot_q);
           assert(slot != ti[*counter].slot_r);

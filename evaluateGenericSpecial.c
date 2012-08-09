@@ -766,18 +766,6 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 
   if(fullTraversal)
   { 
-    /* recom */
-    if(tr->useRecom)
-    {
-      //Annotate all inner nodes with subtree sizes 
-      /*
-      determineFullTraversalStlen(p, tr);
-      int slot = -1;
-      getxVector(tr->rvec, q->number, &slot, tr->mxtips);
-      tr->td[0].ti[0].slot_q = slot;
-      */
-    }
-    /* E recom */
     assert(isTip(p->number, tr->mxtips));
     computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE, 
         tr->rvec, tr->useRecom);     

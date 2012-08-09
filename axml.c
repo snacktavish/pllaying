@@ -3068,7 +3068,7 @@ int main (int argc, char *argv[])
       printBothOpen("Eval once LH \n");
       evaluateGeneric(tr, tr->start, TRUE);	 
       printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
-      treeEvaluate(tr, 32); // 32 * 1	 	 	 	 
+      treeEvaluate(tr, 32); 
       printBothOpen("tree evaluated: %f\n", tr->likelihood);
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
@@ -3106,7 +3106,7 @@ int main (int argc, char *argv[])
 
     /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
 
-    treeEvaluate(tr, 32); // 32 * 1	 	 	 	 
+    treeEvaluate(tr, 32);
     printBothOpen("tree evaluated: %f\n", tr->likelihood);
 
     /* now start the ML search algorithm */
