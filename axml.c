@@ -2709,7 +2709,6 @@ static nodeptr pickRandomSubtree(tree *tr)
 int main (int argc, char *argv[])
 { 
   tree  *tr = (tree*)malloc(sizeof(tree));
-  tr->verbose = FALSE;
 
   analdef *adef = (analdef*)malloc(sizeof(analdef));
 
@@ -2950,7 +2949,6 @@ int main (int argc, char *argv[])
     if(tr->useRecom)
     {
       tr->rvec->pinTime = 0.0;
-      tr->rvec->verbose = FALSE;
       tr->rvec->recomStraTime = 0.0;
     }
 #endif

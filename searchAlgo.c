@@ -648,10 +648,6 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 
     if(tr->likelihood > tr->bestOfNode)
     {
-      /*
-      printBothOpen("%d->%d ",p->number, q->number);
-      printBothOpen("(%f) ", tr->likelihood);
-      */
       tr->bestOfNode = tr->likelihood;
       tr->insertNode = q;
       tr->removeNode = p;   
@@ -731,8 +727,6 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
   if (maxtrav < 1 || mintrav > maxtrav)  return 0;
   q = p->back;
 
-  if(tr->verbose)
-    printBothOpen("Reararngeing at p %d - q %d\n", p->number, q->number);
 
 
 
@@ -754,43 +748,29 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
       if (!isTip(p1->number, tr->mxtips)) 
       {
-        if(tr->verbose)
-          printBothOpen("Descend p into %d\n", p1->next->back->number);
         addTraverseBIG(tr, p, p1->next->back,
             mintrav, maxtrav);         
 
-        if(tr->verbose)
-          printBothOpen("Descend p into %d\n", p1->next->next->back->number);
         addTraverseBIG(tr, p, p1->next->next->back,
             mintrav, maxtrav);          
       }
 
       if (!isTip(p2->number, tr->mxtips)) 
       {
-        if(tr->verbose)
-          printBothOpen("Descend p into %d\n", p2->next->back->number);
         addTraverseBIG(tr, p, p2->next->back,
             mintrav, maxtrav);
-        if(tr->verbose)
-          printBothOpen("Descend p into %d\n", p2->next->next->back->number);
         addTraverseBIG(tr, p, p2->next->next->back,
             mintrav, maxtrav);          
       }
 
       hookup(p->next,       p1, p1z, tr->numBranches); 
       hookup(p->next->next, p2, p2z, tr->numBranches);	   	    	    
-      if(tr->verbose)
-        printBothOpen("reorient after hookup p\n");
       newviewGeneric(tr, p, FALSE);	   	    
-      if(tr->verbose)
-        printBothOpen("done p\n");
     }
   }  
 
   if (!isTip(q->number, tr->mxtips) && maxtrav > 0 && doQ) 
   {
-      if(tr->verbose)
-        printBothOpen("descend q\n");
     q1 = q->next->back;
     q2 = q->next->next->back;
 
@@ -815,34 +795,22 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
         q2z[i] = q2->z[i];
       }
 
-        if(tr->verbose)
-          printBothOpen("start removal %d, q1 %d, q2 %d \n", q->number, q1->number, q2->number);
       if (! removeNodeBIG(tr, q, tr->numBranches)) return badRear;
-        if(tr->verbose)
-          printBothOpen("Removed %d, q1 %d, q2 %d \n", q->number, q1->number, q2->number);
 
       mintrav2 = mintrav > 2 ? mintrav : 2;
 
       if (/*! q1->tip*/ !isTip(q1->number, tr->mxtips)) 
       {
-        if(tr->verbose)
-          printBothOpen("Descend q %d into q1 %d\n", q->number, q1->next->back->number);
         addTraverseBIG(tr, q, q1->next->back,
             mintrav2 , maxtrav);
-        if(tr->verbose)
-          printBothOpen("Descend q %d into q1 %d\n", q->number, q1->next->next->back->number);
         addTraverseBIG(tr, q, q1->next->next->back,
             mintrav2 , maxtrav);         
       }
 
       if (/*! q2->tip*/ ! isTip(q2->number, tr->mxtips)) 
       {
-        if(tr->verbose)
-          printBothOpen("Descend q %d into q2 %d\n", q->number, q2->next->back->number);
         addTraverseBIG(tr, q, q2->next->back,
             mintrav2 , maxtrav);
-        if(tr->verbose)
-          printBothOpen("Descend q %d into q2 %d\n", q->number, q2->next->next->back->number);
         addTraverseBIG(tr, q, q2->next->next->back,
             mintrav2 , maxtrav);          
       }	   
@@ -850,11 +818,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
       hookup(q->next,       q1, q1z, tr->numBranches); 
       hookup(q->next->next, q2, q2z, tr->numBranches);
 
-      if(tr->verbose)
-        printBothOpen("reorient after hookup q\n");
       newviewGeneric(tr, q, FALSE); 	   
-      if(tr->verbose)
-        printBothOpen("done reorient after hookup q\n\n");
     }
   } 
 
@@ -1539,46 +1503,21 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 
     tr->startLH = tr->endLH = tr->likelihood;
 
-    //tr->verbose = TRUE;
     for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
     {                	         
       tr->bestOfNode = unlikely;
 
-      /*
-      printBothOpen("start rearr Node %d ,q %d , max %d", tr->nodep[i]->number, tr->nodep[i]->back->number,maxtrav);
-      if(tr->nodep[i]->number == 9)
-      {
-        tr->verbose = TRUE;
-#ifdef _DEBUG_RECOMPUTATION
-        if(tr->useRecom)
-          tr->rvec->verbose = TRUE;
-#endif
-      }
-      */
       if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
       {	     
-        /*
-        printBothOpen("Node %d End %f\n", tr->nodep[i]->number, tr->endLH);
-        if(tr->nodep[i]->number == 10)
-        {
-          tr->verbose = FALSE;
-#ifdef _DEBUG_RECOMPUTATION
-        if(tr->useRecom)
-          tr->rvec->verbose = FALSE;
-#endif
-        }
-        */
         if(tr->endLH > tr->startLH)                 	
         {		 	 	      
           restoreTreeFast(tr);	        	  	 	  	      
           tr->startLH = tr->endLH = tr->likelihood;		 
-          //printBothOpen("Restored tree %f\n", tr->likelihood);
         }	         	       	
       }
     }
 
     treeEvaluate(tr, 8 ); // 32 * 0.25 
-    //printBothOpen("LH after treeEval in deterRearr %f\n", tr->likelihood);
     saveBestTree(bt, tr); 
 
 #ifdef _DEBUG_CHECKPOINTING
@@ -1686,16 +1625,11 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
      the second parameter of treeEvaluate() controls how many times we will iterate over all branches 
      of the tree until we give up, provided that, the br-len opt. has not converged before.
      */
-  printBothOpen("eval\n");
 
   if(!adef->useCheckpoint)
   {
     if(estimateModel)
-    {
-      //printBothOpen("estim model\n");
       modOpt(tr, 10.0);
-      //printBothOpen("done estim model\n");
-    }
     else
       treeEvaluate(tr, 64); // 32 * 2
   }

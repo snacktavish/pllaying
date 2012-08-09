@@ -154,11 +154,7 @@ void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
   v->iVector[slot] = SLOT_UNUSED;
 
   if(nodenum != SLOT_UNUSED)  
-  {
     v->iNode[nodenum - mxtips - 1] = NODE_UNPINNED; 
-    if(nodenum == 23 && v->verbose)
-      printBothOpen("23 just unpinned, slot %d free\n", slot);
-  }
 }
 
 static int findUnpinnableSlot(recompVectors *v, int mxtips)
@@ -273,8 +269,6 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 #ifdef _DEBUG_RECOMPUTATION
   double 
     tstart = gettime();
-  if(rvec->verbose)
-    printSlots(rvec, nodenum);
 #endif
 
   boolean 

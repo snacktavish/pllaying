@@ -406,11 +406,7 @@ void evaluateIterative(tree *tr)
 
   /* iterate over all valid entries in the traversal descriptor */
 
-  if(tr->verbose)
-    printBothOpen("Eval Iter Trav: ");
   newviewIterative(tr, 1);  
-  if(tr->verbose)
-    printBothOpen(" p:%d, q:%d\n\n", pNumber, qNumber);
 
   /* after the above call we are sure that we have properly and consistently computed the 
      conditionals to the right and left of the virtual root and we can now invoke the 
@@ -544,11 +540,6 @@ of the current partition.
 
         x1_start = tr->partitionData[model].xVector[p_slot];
         x2_start = tr->partitionData[model].xVector[q_slot];
-        if(tr->verbose)
-        {
-          printVector(x1_start, 11, "pvec");
-          printVector(x2_start, 11, "qvec");
-        }
 
         /* memory saving option */
 
@@ -721,8 +712,6 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
         p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
         q_recom = FALSE;
 
-  if(tr->verbose)
-    printBothOpen("\n\nStart evalGeneric from p %d\n********\n", p->number);
 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
@@ -755,29 +744,11 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_q = slot;
-      if(tr->verbose)
-        if(q_recom)
-          printBothOpen("WAR: q %d must be recomputed and stored in slot %d\n", q->number, slot);
-        else
-        {
-          printBothOpen("Node: %d\n", q->number);
-          printVector(tr->partitionData[0].xVector[slot],11,"avail qvec");
-        }
     }
     if(!isTip(p->number, tr->mxtips))
     {
       p_recom = getxVector(tr->rvec, p->number, &slot, tr->mxtips);
       tr->td[0].ti[0].slot_p = slot;
-      if(tr->verbose)
-      {
-        if(p_recom)
-          printBothOpen("WAR: p %d must be recomputed and stored in slot %d\n", p->number, slot);
-        else
-        {
-          printBothOpen("Node: %d\n", p->number);
-          printVector(tr->partitionData[0].xVector[slot],11,"avail pvec");
-        }
-      }
     }
     if(!isTip(p->number, tr->mxtips) &&  !isTip(q->number, tr->mxtips))
       assert(tr->td[0].ti[0].slot_q != tr->td[0].ti[0].slot_p);
@@ -886,8 +857,6 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      without having to tell the threads/processes that they need to compute this function now */
 
 
-  if (tr->verbose)
-    printBothOpen("\nevalIter for node p %d, q %d:\n", p->number, q->number);
   evaluateIterative(tr);  
 
 #endif   
