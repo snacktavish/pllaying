@@ -117,6 +117,7 @@ inline unsigned int bitcount_64_bit(unsigned long i)
 
 /* bit count for 128 bit SSE3 and 256 bit AVX registers */
 
+#if (defined(__SIM_SSE3) || defined(__AVX))
 static inline unsigned int vectorPopcount(INT_TYPE v)
 {
   unsigned long
@@ -133,7 +134,7 @@ static inline unsigned int vectorPopcount(INT_TYPE v)
  	     
   return ((unsigned int)sum);
 }
-
+#endif
 
 
 
