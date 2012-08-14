@@ -2132,3 +2132,26 @@ boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a use
   return TRUE;
 }
 
+/* Perform an NNI move. swap can be either 1 or 2 */
+void NNI(tree * tr, nodeptr p, int swap)
+{
+  nodeptr       q, tmp;
+
+  q = p->back;
+  assert(!isTip(q->number, tr->mxtips));
+  assert(!isTip(p->number, tr->mxtips));
+
+
+  if(swap == 1)
+   {
+     tmp = p->next->back;
+     hookup(p->next, q->next->back, q->next->z, tr->numBranches);
+     hookup(q->next, tmp,           p->next->z, tr->numBranches);
+   }
+  else
+   {
+      tmp = p->next->next->back;
+      hookup(p->next->next, q->next->back, q->next->z,       tr->numBranches);
+      hookup(q->next,       tmp,           p->next->next->z, tr->numBranches);
+   }
+}
