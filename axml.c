@@ -493,7 +493,8 @@ static unsigned int KISS32(void)
   return (x+y+w);
 }
 
-static boolean setupTree (tree *tr)
+/* removed the static keyword for using this function in the examples */
+boolean setupTree (tree *tr)
 {
   nodeptr  p0, p, q;
   int
