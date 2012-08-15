@@ -157,4 +157,5 @@ volatile char            *barrierBuffer;
 #ifdef _FINE_GRAIN_MPI
 int processes;
 double *globalResult;
+int processID; 
 #endif

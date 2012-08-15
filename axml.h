@@ -442,6 +442,31 @@ struct stringEnt
   struct stringEnt *next;
 };
 
+#ifdef _FINE_GRAIN_MPI
+/* DUMMY  */
+
+typedef struct {
+  double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));             
+  double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                
+  double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double substRates[190];        
+  double frequencies[20] ;      
+  double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double fracchange[1];
+  double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+} siteAAModels;
+
+typedef  struct {
+  int             *alias;       /* site representing a pattern */
+  int             *aliaswgt;    /* weight by pattern */
+  int             *rateCategory;
+  int              endsite;     /* # of sequence patterns */
+  double          *patrat;      /* rates per pattern */
+  double          *patratStored; 
+} cruncheddata;
+#endif
+
 typedef struct stringEnt stringEntry;
  
 typedef struct
@@ -616,6 +641,14 @@ typedef struct {
 
   size_t parsimonyLength;
   parsimonyNumber *parsVect; 
+
+#ifdef _FINE_GRAIN_MPI
+  /* DUMMY */
+  double *perSiteLL ; 
+  size_t initialGapVectorSize;
+  int mxtips; 
+  void *perSiteAAModel; 
+#endif
 
 } pInfo;
 
@@ -872,8 +905,27 @@ typedef  struct  {
   double lzi[NUM_BRANCHES];
 
  
- 
+#ifdef _FINE_GRAIN_MPI
+  /* inserting that stuff in order to make it compile again: PURELY
+     dummy */
+  void *rdta; 
+  double *sumBuffer; 
+  double *perSiteLLPtr; 
+  int    *wgtPtr;
+  int    *rateCategoryPtr;
+  int discreteRateCategories;
+  size_t innerNodes;
+  int              multiBranch;
+  cruncheddata    *cdta;
+  siteAAModels siteProtModel[2 * (NUM_PROT_MODELS - 2)];
+  void *estimatePerSiteAA; 
+  int useGammaMedian; 
+  int multiGene; 
+  void *storedPerPartitionLH; 
 
+  /* END DUMMY  */
+  
+#endif
 
   unsigned int **bitVectors;
 
@@ -920,6 +972,9 @@ typedef  struct
   topolRELL **t;
 }
   topolRELL_LIST;
+
+
+
 
 
 /**************************************************************/
@@ -981,6 +1036,11 @@ typedef  struct {
 #ifdef _BAYESIAN 
   boolean       bayesian;
   int           num_generations;
+#endif
+
+#ifdef _FINE_GRAIN_MPI
+  /* only DUMMY  */
+  int readBinaryFile; 
 #endif
 } analdef;
 
@@ -1186,7 +1246,7 @@ extern void countTraversal(tree *tr);
 
 extern void newviewIterative(tree *tr, int startIndex);
 
-extern void evaluateIterative(tree *);
+extern void evaluateIterative(tree *tr);
 
 extern void *malloc_aligned( size_t size);
 
@@ -1346,7 +1406,15 @@ void allocNodex(tree *tr, int tid, int n);
 
 
 
-
+typedef struct 
+{
+  int jobType;
+  int length;
+  int executeModel[NUM_BRANCHES];
+  double coreLZ[NUM_BRANCHES];
+  double lower_spacing;
+  double upper_spacing;
+} jobDescr;
     
 
 
@@ -1356,6 +1424,7 @@ extern void startFineGrainMpi(tree *tr, analdef *adef);
 
 MPI_Datatype traversalDescriptor;
 MPI_Datatype jobDescriptor;
+
 
 
 #endif

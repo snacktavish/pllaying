@@ -51,6 +51,7 @@
 
 #ifdef  _FINE_GRAIN_MPI
 #include <mpi.h>
+extern int processID; 
 #endif
 
 
