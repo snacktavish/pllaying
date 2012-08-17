@@ -526,6 +526,192 @@ typedef struct
   linkageList;
 
 
+
+  /* the data structure below is fundamental for representing trees 
+     in the library!
+
+     Inner nodes are represented by three instances of the nodeptr data structure that is linked 
+     via a cyclic list using the next pointer.
+
+     So for building an inner node of the tree we need to allocate three nodeptr 
+     data structures and link them together, e.g.:
+
+     assuming that we have allocated space for an inner node 
+     for nodeptr pointers p1, p2, p3, 
+
+     we would then link them like this:
+
+     p1->next = p2;
+     p2->next = p3;
+     p3->next = p1;
+
+     also note that the node number that identifies the inner node 
+     needs to be set to the same value.
+
+     for n taxa, tip nodes are enumarated/indexed from 1....n,
+     and inner node inbdices start at n+1. Assuming that we have 10 taxa 
+     and this is our first inner node, we'd initialize the number as follows:
+
+     p1->number = 11;
+     p2->number = 11;
+     p3->number = 11;
+
+     Note that the node number is important for indexing tip sequence data as well as inner likelihood vectors 
+     and that it is this number (the index) that actually gets stored in the traversal descriptor.
+
+     Tip nodes are non-cyclic nodes that simply consist of one instance/allocation of nodeptr.
+
+     if we have allocated a tip data structure nodeptr t1, 
+     we would initialize it as follows:
+
+     t1->number = 1;
+
+     t1->next = NULL;
+
+     now let's assume that we want to build a four taxon tree with tips t1, t2, t3, t4 
+     and inner nodes (p1,p2,p3) and (q1,q2,q3).
+
+     we first build the tips:
+
+     t1->number = 1;
+     t1->next = NULL;
+     
+     t2->number = 2;
+     t2->next = NULL;
+
+     t3->number = 3;
+     t3->next = NULL;
+
+     t4->number = 4;
+     t4->next = NULL;
+     
+     now the first inner node
+
+     p1->next = p2;
+     p2->next = p3;
+     p3->next = p1;    
+
+     p1->number = 5;
+     p2->number = 5;
+     p3->number = 5;
+
+     and the second inner node.
+
+     q1->next = q2;
+     q2->next = q3;
+     q3->next = q1;    
+
+     q1->number = 6;
+     q2->number = 6;
+     q3->number = 6;
+     
+     now we need to link the nodes together such that they form a tree, let's assume we want ((t1,t2), (t3, t4));
+
+     we will have to link the nodes via the so-called back pointer,
+     i.e.:
+
+     let's connect node p with t1 and t2
+
+     t1->back = p1;
+     t2->back = p2;
+
+     and vice versa:
+
+     p1->back = t1;
+     p2->back = t2;
+
+     let's connect node p with node q:
+
+     p3->back = q3;
+
+     and vice versa:
+
+     q3->back = p3;
+
+     and now let's connect node q with tips t3 and t4:
+
+     q1->back = t3;
+     q2->back = t4;
+
+     and vice versa:
+
+     t3->back = q1;
+     t4->back = q2;
+
+     What remains to be done is to set up the branch lengths.
+     Using the data structure below, we always have to store the 
+     branch length twice for each "topological branch" unfortunately.
+
+     Assuming that we are only estimating a single branch across all partitions 
+     we'd just set the first index of the branch length array z[NUM_BRANCHES].
+
+     e.g., 
+
+     t3->z[0] = q1->z[0] = 0.9;
+
+     the above operation for connecting nodes is implemented in functions hookup() which will set 
+     the back pointers of two nodes that are to be connected as well as the branch lengths.
+
+     The branchInfo data field is a pointer to a data-structure that stores meta-data and requires 
+     the tree not to change while it is being used.
+     
+     Also, this pointer needs to be set by doing a full tree traversal on the tree.
+
+     Note that q1->bInf == t3->bInf in the above example.
+
+     The hash number is used for mapping bipartitions to a hash table as described in the following paper:
+
+     A. Aberer, N. Pattengale, A. Stamatakis: "Parallelized phylogenetic post-analysis on multi-core architectures". Journal of Computational Science 1, 107-114, 2010.
+     
+     The support data field stores the support value for the branch associated with each nodeptr structure.
+     Note that support always refers to branches. 
+
+     Thus for consistency, q3->support must be equal to p3->support;
+
+     Finally, the three char fields x, xPars and xBips are very very important!
+
+     They are used to denote the presence/absence or if you want, direction of the 
+     parsimony, bipartition, or likelihood vector at a node with respect to the virtual root.
+
+     Essentially, they are just used as single presence/absence bits and ONLY for inner nodes!
+
+     When setting up new inner nodes, one of the three pointers in the cyclic list must 
+     have x = 1 and the other two x = 0;
+
+     in the above example we could set:
+
+     p1->x = 0;
+     p2->x = 0;
+     p3->x = 1;
+
+     q1->x = 0;
+     q2->x = 0;
+     q3->x = 1;
+
+     This would mean that the virtual root is located at the inner branch of the four taxon tree ((t1,t2),(t3,t4));
+
+     When we re-root the tree at some other branch we need to update the location of the x pointer that is set to 1.
+
+     This means if we root the tree at the branch leading to t1 we would set 
+
+     p1->x = 1;
+     p2->x = 0;
+     p3->x = 0;
+
+     the values for q remaon unchanged since q3 is still pointing toward the root.
+
+     When we re-locate the root to branch p1 <-> t1 the fact that we have to "rotate" the x value that is set to 1
+     to another node of the cyclic list representing the abstract topological node p, also tells us that we 
+     need to re-compute the conditional likelihood array for p. 
+
+     Note that, only one likelihood or parsimony array is stored per inner node and the location of x essentially tells us which subtree 
+     it summarizes, if p1->x == 1, it summarizes subtree (t2, (t3, t4)), if p3->x = 1 the likelihood vector associated with 
+     node p summarizes subtree (t1, t2).
+
+  */
+    
+
+
 typedef  struct noderec
 {
  
