@@ -774,6 +774,7 @@ typedef struct {
   int    *frequencyGrouping;
     
   double *sumBuffer; 
+  double *ancestralBuffer;
   double *gammaRates;
   double *EIGN;
   double *EV;
@@ -943,6 +944,8 @@ typedef  struct  {
   
   double lower_spacing;
   double upper_spacing; 
+
+  double *ancestralVector;
 #endif
   
 
@@ -1133,6 +1136,17 @@ typedef  struct {
     int              tplNum;      /* position in sorted list of trees */
 
     } topol;
+
+/* small helper data structure for printing out/downstream use of marginal ancestral probability vectors */
+/* it is allocated as an array that has the same length as the input alignment and can be used to 
+   index the ancestral states for each position/site/pattern */
+
+typedef struct {
+  double *probs; /* marginal ancestral states */
+  char c; /* most likely stated, i.e. max(probs[i]) above */
+  int states; /* number of states for this position */
+} ancestralState;
+
 
 typedef struct {
     double           best;        /* highest score saved */
@@ -1342,6 +1356,11 @@ extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef)
 extern double evaluatePartialGeneric (tree *, int i, double ki, int _model);
 extern void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
 extern void newviewGeneric (tree *tr, nodeptr p, boolean masked);
+
+extern void newviewGenericAncestral(tree *tr, nodeptr p);
+extern void newviewAncestralIterative(tree *tr);
+extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr);
+
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
 extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
 extern void makenewzGenericDistance(tree *tr, int maxiter, double *z0, double *result, int taxon1, int taxon2);
@@ -1368,7 +1387,7 @@ extern void determineFullTraversalStlen(nodeptr p, tree *tr);
 extern void printTraversalInfo(tree *tr);
 extern void countTraversal(tree *tr);
 
-
+extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 
 extern void newviewIterative(tree *tr, int startIndex);
 
@@ -1489,7 +1508,8 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
-
+#define THREAD_NEWVIEW_ANCESTRAL 13
+#define THREAD_GATHER_ANCESTRAL 14
 
 
 

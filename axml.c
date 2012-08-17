@@ -1734,9 +1734,9 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
   /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
 
   if(0)
-  {
-    localTree->td[0] = tr->td[0];
-  }
+    {
+      localTree->td[0] = tr->td[0];
+    }
   else
     {
       localTree->td[0].count               = tr->td[0].count;
@@ -1746,6 +1746,7 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
       /* memcpy -> memmove (see ticket #43). This function is sometimes called with localTree == tr,
        * in which case some memcpy implementations can corrupt the buffers.
        */
+      
       memmove(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
       memmove(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
       
@@ -2099,7 +2100,64 @@ static void execFunction(tree *tr, tree *localTree, int tid, int n)
 
       break;
       /* check for errors */
-    default:
+
+  case THREAD_NEWVIEW_ANCESTRAL:
+    /* This one here is easy, since we just need to invoke the function for calculating ancestral states here */
+    newviewAncestralIterative(localTree);
+    break;
+  case THREAD_GATHER_ANCESTRAL:
+      {
+	/* gather the ancestral states from the threads */
+
+	double
+	  *contigousVector = tr->ancestralVector;
+	
+	double 
+	  *stridedVector = localTree->partitionData[model].ancestralBuffer;
+	
+	size_t	 
+	  globalColumnCount = 0,
+	  globalCount       = 0;	
+	
+	for(model = 0; model < localTree->NumberOfModels; model++)
+	  {
+	    size_t
+	      blockRequirements = (size_t)(localTree->partitionData[model].states);
+	    
+	    if(localTree->manyPartitions)
+	      {	   
+		size_t 
+		  width = (localTree->partitionData[model].upper - localTree->partitionData[model].lower) * blockRequirements;
+		
+		if(isThisMyPartition(localTree, tid, model))		 
+		  memcpy(&contigousVector[globalCount], stridedVector, sizeof(double) * width);			 
+
+		globalCount += width;
+	      }
+	    else
+	      {				
+		size_t	     	     	   
+		  localCount = 0;	   
+					    	   	    		
+		for(globalColumnCount = localTree->partitionData[model].lower; globalColumnCount < localTree->partitionData[model].upper; globalColumnCount++)
+		  {	
+		    
+		    if(globalColumnCount % n == tid)
+		      {			
+			memcpy(&contigousVector[globalCount], &stridedVector[localCount], sizeof(double) * blockRequirements);		
+			
+			localCount += blockRequirements;
+		      }	
+		    
+		    globalCount += blockRequirements;
+		  }	    
+		
+		assert(localCount == (localTree->partitionData[model].width * (int)blockRequirements));
+	      }
+	  }	
+      }
+    break;
+  default:
       printf("Job %d\n", currentJob);
       assert(0);
   }
@@ -2390,6 +2448,13 @@ static void multiprocessorScheduling(tree *tr, int tid)
 static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 { 
   size_t
+    /* in ancestralVectorWidth we store the total length in bytes (!) of 
+       one conditional likelihood array !
+       we need to know this length such that in the pthreads version the master thread can actually 
+       gather the scattered ancestral probabilities from the threads such that they can be printed to screen!
+    */
+       
+    ancestralVectorWidth = 0,
     model,
     maxCategories;
 
@@ -2469,8 +2534,6 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 #else
   assert(tr == localTree);
 
-
-
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
 #endif	   
@@ -2526,10 +2589,20 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     localTree->partitionData[model].xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));  
 
     localTree->partitionData[model].sumBuffer = (double *)malloc_aligned(width *
-        (size_t)(localTree->partitionData[model].states) *
-        discreteRateCategories(localTree->rateHetModel) *
-        sizeof(double));
+									 (size_t)(localTree->partitionData[model].states) *
+									 discreteRateCategories(localTree->rateHetModel) *
+									 sizeof(double));
 
+    /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
+
+    localTree->partitionData[model].ancestralBuffer = (double *)malloc_aligned(width *
+									       (size_t)(localTree->partitionData[model].states) *									       
+									       sizeof(double));
+    
+    /* count and accumulate how many bytes we will need for storing a full ancestral vector. for this we addf over the per-partition space requirements in bytes */
+
+    ancestralVectorWidth += ((size_t)(tr->partitionData[model].upper - tr->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
+			     
     localTree->partitionData[model].wgt = (int *)malloc_aligned(width * sizeof(int));	  
 
     /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
@@ -2558,7 +2631,11 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     }              
   }
 
-
+#ifdef _USE_PTHREADS
+  /* we only need to allocate this buffer for gathering the data at the master thread */
+      if(tid == 0)
+	tr->ancestralVector = (double *)malloc(ancestralVectorWidth);
+#endif
 
 
 
@@ -2710,6 +2787,39 @@ static nodeptr pickRandomSubtree(tree *tr)
 }
 /* END TEST CODE */
 #endif
+
+/* small example program that executes ancestral state computations 
+   on the entire subtree rooted at p.
+
+   Note that this is a post-order traversal.
+*/
+
+  
+static void computeAllAncestralVectors(nodeptr p, tree *tr)
+{
+  /* if this is not a tip, for which evidently it does not make sense 
+     to compute the ancestral sequence because we have the real one ....
+  */
+
+  if(!isTip(p->number, tr->mxtips))
+    {
+      /* descend recursively to compute the ancestral states in the left and right subtrees */
+
+      computeAllAncestralVectors(p->next->back, tr);
+      computeAllAncestralVectors(p->next->next->back, tr);
+      
+      /* then compute the ancestral state at node p */
+
+      newviewGenericAncestral(tr, p);
+
+      /* and print it to terminal, the two booleans that are set to true here 
+	 tell the function to print the marginal probabilities as well as 
+	 a discrete inner sequence, that is, ACGT etc., always selecting and printing 
+	 the state that has the highest probability */
+
+      printAncestralState(p, TRUE, TRUE, tr);
+    }
+}
 
 
 int main (int argc, char *argv[])
@@ -3038,32 +3148,46 @@ int main (int argc, char *argv[])
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
 
     if(0)
-    {
-      /* allocate data structure for storing per-site log likelihoods 
-         tr->originalCrunchedLength is the number of site patterns of the alignment
-         */
+      {
+	/* allocate data structure for storing per-site log likelihoods 
+	   tr->originalCrunchedLength is the number of site patterns of the alignment
+	*/
+	
+	double
+	  *logLikelihoods = (double*)malloc(tr->originalCrunchedLength * sizeof(double));
+	
+	/* just call the function, the array logLikelihoods will contain the 
+	   per-site log likelihoods of all sites.
+	   Note that, there are two caveats here:
+	   1. some sites may have a weight > 1 because of site pattern compression.
+	   2. the sites are not in the order of the input alignment because of 
+	   a) site pattern compression 
+	   b) site re-ordering 
+	   that are already conducted by the parser.
+	   This re-ordering and compression can be de-activated in the parser 
+	   via the new command line switch I have added.
+	*/
+	
+	perSiteLogLikelihoods(tr, logLikelihoods);
+	
+	free(logLikelihoods);
+	
+	exit(0);
+      }
 
-      double
-        *logLikelihoods = (double*)malloc(tr->originalCrunchedLength * sizeof(double));
+    /***** test code for ancestral state comps */
 
-      /* just call the function, the array logLikelihoods will contain the 
-         per-site log likelihoods of all sites.
-         Note that, there are two caveats here:
-         1. some sites may have a weight > 1 because of site pattern compression.
-         2. the sites are not in the order of the input alignment because of 
-         a) site pattern compression 
-         b) site re-ordering 
-         that are already conducted by the parser.
-         This re-ordering and compression can be de-activated in the parser 
-         via the new command line switch I have added.
-         */
+    if(1)
+      {
+	/* compute all ancestral probability vectors for the inner node 
+	   that is connected to the first taxon in the input alignment,
+	   i.e., tr->nodep[1]->back
+	*/
 
-      perSiteLogLikelihoods(tr, logLikelihoods);
+	computeAllAncestralVectors(tr->nodep[1]->back, tr);
+	exit(0);
+      }
 
-      free(logLikelihoods);
-
-      exit(0);
-    }
 
 
     /* For this branch we are only interested in testing with -f b  */
