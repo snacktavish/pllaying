@@ -913,7 +913,7 @@ typedef  struct  {
 #endif
   /* E recomp */
 
-  boolean useGappedImplementation;
+ 
   boolean saveMemory;
   int              startingTree;
   long             randomNumberSeed;

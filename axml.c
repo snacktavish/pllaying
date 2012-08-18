@@ -1043,7 +1043,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
   tr->rateHetModel = GAMMA;
 
   tr->multiStateModel  = GTR_MULTI_STATE;
-  tr->useGappedImplementation = FALSE;
   tr->saveMemory = FALSE;
 
   tr->manyPartitions = FALSE;
@@ -2474,7 +2473,6 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     localTree->rateHetModel            = tr->rateHetModel;
     localTree->useMedian               = tr->useMedian;
     localTree->saveMemory              = tr->saveMemory;
-    localTree->useGappedImplementation = tr->useGappedImplementation;           
     localTree->maxCategories           = tr->maxCategories;      
     localTree->originalCrunchedLength  = tr->originalCrunchedLength;    
     localTree->mxtips                  = tr->mxtips;     
