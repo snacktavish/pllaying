@@ -66,7 +66,7 @@ void allocRecompVectorsInfo(tree *tr)
 
   /*printBothOpen("num_vecs %d , min %d\n", num_vectors, (int)(log((double)tr->mxtips)) + 2);*/
 
-  assert(num_vectors > (int)(log((double)tr->mxtips) + 2));
+  assert(num_vectors > 3 + ((int)(log((double)tr->mxtips)/log(2.0))));
   assert(num_vectors < tr->mxtips);
 
 
