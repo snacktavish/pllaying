@@ -1097,7 +1097,7 @@ void newviewIterative (tree *tr, int startIndex)
           for(j = 0; j < (size_t)tr->partitionData[model].gapVectorLength; j++)
           {		     
             x3_gap[j] = x1_gap[j] & x2_gap[j];
-            setBits += (size_t)(bitcount_32_bit(x3_gap[j]));		      
+            setBits += (size_t)(bitcount_32_bit(x3_gap[j])); 
           }
 
           requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		
@@ -1491,7 +1491,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 
     /* same as above but for MPI */
 
-    masterBarrierMPI(THREAD_NEWVIEW, tr);
+    masterBarrier(THREAD_NEWVIEW, tr);
 #else
     /* in the sequential case we now simply call newviewIterative() */
 

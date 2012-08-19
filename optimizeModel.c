@@ -293,7 +293,7 @@ static linkageList* initLinkageListGTR(tree *tr)
 
   /* we can now pass an appropriate integer vector to the linkage list initialization function :-) */
 
-  ll = initLinkageList(links, tr);
+  ll = initLinkageList(links, tr); 
 
   free(links);
   
@@ -404,7 +404,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
       }
 #else
 #ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_RATE, tr);     
+      masterBarrier(THREAD_OPT_RATE, tr);     
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, tr->start, TRUE);      
@@ -493,7 +493,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
       }
 #else
 #ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_ALPHA, tr);     
+      masterBarrier(THREAD_OPT_ALPHA, tr);     
 #else
       evaluateGeneric(tr, tr->start, TRUE);
 #endif
@@ -1160,7 +1160,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
 #ifdef _FINE_GRAIN_MPI
   if(revertModel > 0)
-    masterBarrierMPI(THREAD_COPY_ALPHA, tr);
+    masterBarrier(THREAD_COPY_ALPHA, tr);
 #endif
 
   
@@ -1322,7 +1322,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 #endif
 #ifdef _FINE_GRAIN_MPI
       if(revertModel > 0)
-	masterBarrierMPI(THREAD_COPY_RATES, tr);
+	masterBarrier(THREAD_COPY_RATES, tr);
 #endif
       
       assert(pos == numberOfModels);
@@ -2082,7 +2082,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
     }
   
 #ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_RATE_CATS, tr);
+  masterBarrier(THREAD_COPY_RATE_CATS, tr);
 #endif  
    
 #ifdef _USE_PTHREADS
@@ -2158,7 +2158,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
       /*      tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      masterBarrierMPI(THREAD_RATE_CATS, tr);
+      masterBarrier(THREAD_RATE_CATS, tr);
 #else
       for(model = 0; model < tr->NumberOfModels; model++)      
 	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
@@ -2417,7 +2417,7 @@ static void autoProtein(tree *tr)
 	  masterBarrier(THREAD_COPY_RATES, tr);	   
 #endif
 #ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
+	  masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 	  
 	  resetBranches(tr);
@@ -2458,7 +2458,7 @@ static void autoProtein(tree *tr)
 	  masterBarrier(THREAD_COPY_RATES, tr);	   
 #endif
 #ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
+	  masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 
       resetBranches(tr);

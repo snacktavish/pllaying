@@ -994,11 +994,11 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     if(firstIteration)
     {
-      masterBarrierMPI(THREAD_MAKENEWZ_FIRST, tr);
+      masterBarrier(THREAD_MAKENEWZ_FIRST, tr);
       firstIteration = FALSE;
     }
     else
-      masterBarrierMPI(THREAD_MAKENEWZ, tr);
+      masterBarrier(THREAD_MAKENEWZ, tr);
 
     if(tr->numBranches == 1)
     {

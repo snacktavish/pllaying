@@ -838,7 +838,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* MPI parallel region, in terms of logic or programming paradigm this is also 
      just like a fork join */
 
-  masterBarrierMPI(THREAD_EVALUATE, tr);  		  
+  masterBarrier(THREAD_EVALUATE, tr); 
 
 #else
   /* and here is just the sequential case, we directly call evaluateIterative() above 

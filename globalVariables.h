@@ -158,4 +158,8 @@ volatile char            *barrierBuffer;
 int processes;
 double *globalResult;
 int processID; 
+
+/* needed?  */
+volatile double          *reductionBuffer;
+volatile double          *reductionBufferTwo;
 #endif

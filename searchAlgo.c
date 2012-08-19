@@ -1401,7 +1401,7 @@ static void readCheckpoint(tree *tr)
   }
 
 #ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);
+  masterBarrier(THREAD_COPY_INIT_MODEL, tr);
 #endif
 
 #ifdef _USE_PTHREADS

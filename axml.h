@@ -58,21 +58,7 @@ extern "C" {
 #endif
 #endif
 
-
-
-#ifdef _USE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#include <mpi.h>
-
-#endif
-
-
+/* #include "genericParallelization.h" */
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /* maximum iterations of smoothings per insert in the */
@@ -445,26 +431,26 @@ struct stringEnt
 #ifdef _FINE_GRAIN_MPI
 /* DUMMY  */
 
-typedef struct {
-  double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));             
-  double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                
-  double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double substRates[190];        
-  double frequencies[20] ;      
-  double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double fracchange[1];
-  double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-} siteAAModels;
+/* typedef struct { */
+/*   double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));              */
+/*   double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                 */
+/*   double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
+/*   double substRates[190];         */
+/*   double frequencies[20] ;       */
+/*   double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
+/*   double fracchange[1]; */
+/*   double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
+/*   double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
+/* } siteAAModels; */
 
-typedef  struct {
-  int             *alias;       /* site representing a pattern */
-  int             *aliaswgt;    /* weight by pattern */
-  int             *rateCategory;
-  int              endsite;     /* # of sequence patterns */
-  double          *patrat;      /* rates per pattern */
-  double          *patratStored; 
-} cruncheddata;
+/* typedef  struct { */
+/*   int             *alias;       /\* site representing a pattern *\/ */
+/*   int             *aliaswgt;    /\* weight by pattern *\/ */
+/*   int             *rateCategory; */
+/*   int              endsite;     /\* # of sequence patterns *\/ */
+/*   double          *patrat;      /\* rates per pattern *\/ */
+/*   double          *patratStored;  */
+/* } cruncheddata; */
 #endif
 
 typedef struct stringEnt stringEntry;
@@ -641,14 +627,6 @@ typedef struct {
 
   size_t parsimonyLength;
   parsimonyNumber *parsVect; 
-
-#ifdef _FINE_GRAIN_MPI
-  /* DUMMY */
-  double *perSiteLL ; 
-  size_t initialGapVectorSize;
-  int mxtips; 
-  void *perSiteAAModel; 
-#endif
 
 } pInfo;
 
@@ -908,20 +886,20 @@ typedef  struct  {
 #ifdef _FINE_GRAIN_MPI
   /* inserting that stuff in order to make it compile again: PURELY
      dummy */
-  void *rdta; 
-  double *sumBuffer; 
-  double *perSiteLLPtr; 
-  int    *wgtPtr;
-  int    *rateCategoryPtr;
-  int discreteRateCategories;
-  size_t innerNodes;
-  int              multiBranch;
-  cruncheddata    *cdta;
-  siteAAModels siteProtModel[2 * (NUM_PROT_MODELS - 2)];
-  void *estimatePerSiteAA; 
-  int useGammaMedian; 
-  int multiGene; 
-  void *storedPerPartitionLH; 
+  /* void *rdta;  */
+  /* double *sumBuffer;  */
+  /* double *perSiteLLPtr;  */
+  /* int    *wgtPtr; */
+  /* int    *rateCategoryPtr; */
+  /* int discreteRateCategories; */
+  /* size_t innerNodes; */
+  /* int              multiBranch; */
+  /* cruncheddata    *cdta; */
+  /* siteAAModels siteProtModel[2 * (NUM_PROT_MODELS - 2)]; */
+  /* void *estimatePerSiteAA;  */
+  /* int useGammaMedian;  */
+  /* int multiGene;  */
+  /* void *storedPerPartitionLH;  */
 
   /* END DUMMY  */
   
@@ -1040,7 +1018,7 @@ typedef  struct {
 
 #ifdef _FINE_GRAIN_MPI
   /* only DUMMY  */
-  int readBinaryFile; 
+  /* int readBinaryFile;  */
 #endif
 } analdef;
 
@@ -1310,8 +1288,8 @@ extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int nu
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
 
 
-extern inline unsigned int bitcount_32_bit(unsigned int i);
-extern inline unsigned int bitcount_64_bit(unsigned long i);
+extern  unsigned int bitcount_32_bit(unsigned int i); 
+/* extern inline unsigned int bitcount_64_bit(unsigned long i); */
 
 extern FILE *getNumberOfTrees(tree *tr, char *fileName, analdef *adef);
 
@@ -1344,7 +1322,7 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #endif
 
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 
 
 
@@ -1363,16 +1341,8 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
+#define THERAD_WORKER_WAIT            13
 
-
-
-
-typedef struct
-{
-  tree *tr;
-  int threadNumber;
-}
-  threadData;
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
@@ -1383,30 +1353,23 @@ extern void masterBarrier(int jobType, tree *tr);
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+typedef struct
+{
+  tree *tr;
+  int threadNumber;
+}
+  threadData;
 extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
 #endif
 
 #ifdef _FINE_GRAIN_MPI
 
-#define THREAD_COPY_RATE_CATS  0
-#define THREAD_COPY_INIT_MODEL 1
-#define THREAD_NEWVIEW         2
-#define THREAD_EVALUATE        3
-#define THREAD_MAKENEWZ_FIRST  4
-#define THREAD_MAKENEWZ        5
-#define THREAD_OPT_RATE        6
-#define THREAD_COPY_RATES      7
-#define THREAD_RATE_CATS       8
-#define THREAD_NEWVIEW_MASKED  9
-#define THREAD_OPT_ALPHA       10
-#define THREAD_COPY_ALPHA      11
-#define THREAD_OPTIMIZE_PER_SITE_AA 12
-#define EXIT_GRACEFULLY        13
+#define EXIT_GRACEFULLY        11
 
 
-
-typedef struct 
+/* :TODO: replace with MPI_Datatype later */
+typedef struct
 {
   int jobType;
   int length;
@@ -1415,15 +1378,13 @@ typedef struct
   double lower_spacing;
   double upper_spacing;
 } jobDescr;
-    
 
+/* extern void masterBarrierMPI(int jobType, tree *tr); */
+/* extern void fineGrainWorker(tree *tr); */
+/* extern void startFineGrainMpi(tree *tr, analdef *adef); */
 
-extern void masterBarrierMPI(int jobType, tree *tr);
-extern void fineGrainWorker(tree *tr);
-extern void startFineGrainMpi(tree *tr, analdef *adef);
-
-MPI_Datatype traversalDescriptor;
-MPI_Datatype jobDescriptor;
+/* MPI_Datatype traversalDescriptor; */
+/* MPI_Datatype jobDescriptor; */
 
 
 
@@ -1466,3 +1427,9 @@ static int virtual_width( int n ) {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+
+void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
+void multiprocessorScheduling(tree *tr, int tid); 
+void computeFraction(tree *localTree, int tid, int n); 
+void computeFractionMany(tree *localTree, int tid); 
