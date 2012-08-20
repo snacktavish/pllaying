@@ -1,0 +1,5 @@
+Some examples for using the library
+
+Tree/
+  read.c   --   Reading and printing a randomly generated tree
+  nni.c    --   Performing an NNI move in a randomly generated tree

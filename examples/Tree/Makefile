@@ -1,0 +1,30 @@
+CC           = gcc
+CPP          = g++ 
+BUILD_DIR    = ./
+SRC_DIR      = ../../
+LIB_CFILES   = axml.c bipartitionList.c evaluateGenericSpecial.c evaluatePartialGenericSpecial.c makenewzGenericSpecial.c models.c optimizeModel.c restartHashTable.c searchAlgo.c topologies.c trash.c treeIO.c newviewGenericSpecial.c fastDNAparsimony.c randomTree.c recom.c
+LIB_SRC      = $(patsubst %.c, $(SRC_DIR)%.c, $(LIB_CFILES))
+LIB_OBJ      = $(patsubst %.c, %.o, $(LIB_CFILES)) sim_reorder.o
+CFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D__TOM_EXAMPLES
+
+all: read nni
+
+nni: $(LIB_OBJ) nni.c
+	@echo "===> COMPILE $@"
+	$(CPP) -I$(SRC_DIR) $+ -o $@ -lm
+
+read: $(LIB_OBJ) read.c
+	@echo "===> COMPILE $@"
+	$(CPP) -I$(SRC_DIR) $+ -o $@ -lm
+
+sim_reorder.o: ../../sim_reorder.cpp
+	$(CPP) -c ../../sim_reorder.cpp -o sim_reorder.o
+
+%.o: $(SRC_DIR)%.c
+	$(CC) $(CFLAGS) -c $+ -o $@
+
+
+clean:
+	-rm nni read *.o
+
+.PHONY: all clean

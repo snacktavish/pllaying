@@ -356,9 +356,35 @@ extern double exp_approx (double x);
 #define GAMMA       1
 #define GAMMA_I     2
 
+/* recomp */
+#define SLOT_UNUSED            -2  /* value to mark an available vector */
+#define NODE_UNPINNED          -3  /* marks an inner node as not available in RAM */
+#define INNER_NODE_INIT_STLEN  -1  /* initialization */
+
+#define MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
+#define MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
+#define MEM_APROX_OVERHEAD     1.3 /* TODOFER can we measure this empirically? */
 
 
 typedef  int boolean;
+
+typedef struct
+{
+  int numVectors;      /* #inner vectors in RAM*/
+  int *iVector;        /* size: numVectors, stores node id || SLOT_UNUSED  */
+  int *iNode;          /* size: inner nodes, stores slot id || NODE_UNPINNED */
+  int *stlen;          /* #tips behind the current orientation of the indexed inner node (subtree size/cost) */ 
+  int *unpinnable;     /* size:numVectors , TRUE if we dont need the vector */
+  int maxVectorsUsed;  
+  boolean allSlotsBusy; /*on if all slots contain an ancesctral node (the usual case after first full traversal) */ 
+#ifdef _DEBUG_RECOMPUTATION
+  double pinTime;
+  double recomStraTime;
+#endif
+} recompVectors;
+/* E recomp */
+
+
 
 
 typedef struct {
@@ -445,6 +471,11 @@ typedef struct
   int rNumber;
   double qz[NUM_BRANCHES];
   double rz[NUM_BRANCHES];
+  /* recom */
+  int slot_p;
+  int slot_q;
+  int slot_r;
+  /* E recom */
 } traversalInfo;
 
 typedef struct
@@ -493,6 +524,192 @@ typedef struct
   linkageData* ld;
 }
   linkageList;
+
+
+
+  /* the data structure below is fundamental for representing trees 
+     in the library!
+
+     Inner nodes are represented by three instances of the nodeptr data structure that is linked 
+     via a cyclic list using the next pointer.
+
+     So for building an inner node of the tree we need to allocate three nodeptr 
+     data structures and link them together, e.g.:
+
+     assuming that we have allocated space for an inner node 
+     for nodeptr pointers p1, p2, p3, 
+
+     we would then link them like this:
+
+     p1->next = p2;
+     p2->next = p3;
+     p3->next = p1;
+
+     also note that the node number that identifies the inner node 
+     needs to be set to the same value.
+
+     for n taxa, tip nodes are enumarated/indexed from 1....n,
+     and inner node inbdices start at n+1. Assuming that we have 10 taxa 
+     and this is our first inner node, we'd initialize the number as follows:
+
+     p1->number = 11;
+     p2->number = 11;
+     p3->number = 11;
+
+     Note that the node number is important for indexing tip sequence data as well as inner likelihood vectors 
+     and that it is this number (the index) that actually gets stored in the traversal descriptor.
+
+     Tip nodes are non-cyclic nodes that simply consist of one instance/allocation of nodeptr.
+
+     if we have allocated a tip data structure nodeptr t1, 
+     we would initialize it as follows:
+
+     t1->number = 1;
+
+     t1->next = NULL;
+
+     now let's assume that we want to build a four taxon tree with tips t1, t2, t3, t4 
+     and inner nodes (p1,p2,p3) and (q1,q2,q3).
+
+     we first build the tips:
+
+     t1->number = 1;
+     t1->next = NULL;
+     
+     t2->number = 2;
+     t2->next = NULL;
+
+     t3->number = 3;
+     t3->next = NULL;
+
+     t4->number = 4;
+     t4->next = NULL;
+     
+     now the first inner node
+
+     p1->next = p2;
+     p2->next = p3;
+     p3->next = p1;    
+
+     p1->number = 5;
+     p2->number = 5;
+     p3->number = 5;
+
+     and the second inner node.
+
+     q1->next = q2;
+     q2->next = q3;
+     q3->next = q1;    
+
+     q1->number = 6;
+     q2->number = 6;
+     q3->number = 6;
+     
+     now we need to link the nodes together such that they form a tree, let's assume we want ((t1,t2), (t3, t4));
+
+     we will have to link the nodes via the so-called back pointer,
+     i.e.:
+
+     let's connect node p with t1 and t2
+
+     t1->back = p1;
+     t2->back = p2;
+
+     and vice versa:
+
+     p1->back = t1;
+     p2->back = t2;
+
+     let's connect node p with node q:
+
+     p3->back = q3;
+
+     and vice versa:
+
+     q3->back = p3;
+
+     and now let's connect node q with tips t3 and t4:
+
+     q1->back = t3;
+     q2->back = t4;
+
+     and vice versa:
+
+     t3->back = q1;
+     t4->back = q2;
+
+     What remains to be done is to set up the branch lengths.
+     Using the data structure below, we always have to store the 
+     branch length twice for each "topological branch" unfortunately.
+
+     Assuming that we are only estimating a single branch across all partitions 
+     we'd just set the first index of the branch length array z[NUM_BRANCHES].
+
+     e.g., 
+
+     t3->z[0] = q1->z[0] = 0.9;
+
+     the above operation for connecting nodes is implemented in functions hookup() which will set 
+     the back pointers of two nodes that are to be connected as well as the branch lengths.
+
+     The branchInfo data field is a pointer to a data-structure that stores meta-data and requires 
+     the tree not to change while it is being used.
+     
+     Also, this pointer needs to be set by doing a full tree traversal on the tree.
+
+     Note that q1->bInf == t3->bInf in the above example.
+
+     The hash number is used for mapping bipartitions to a hash table as described in the following paper:
+
+     A. Aberer, N. Pattengale, A. Stamatakis: "Parallelized phylogenetic post-analysis on multi-core architectures". Journal of Computational Science 1, 107-114, 2010.
+     
+     The support data field stores the support value for the branch associated with each nodeptr structure.
+     Note that support always refers to branches. 
+
+     Thus for consistency, q3->support must be equal to p3->support;
+
+     Finally, the three char fields x, xPars and xBips are very very important!
+
+     They are used to denote the presence/absence or if you want, direction of the 
+     parsimony, bipartition, or likelihood vector at a node with respect to the virtual root.
+
+     Essentially, they are just used as single presence/absence bits and ONLY for inner nodes!
+
+     When setting up new inner nodes, one of the three pointers in the cyclic list must 
+     have x = 1 and the other two x = 0;
+
+     in the above example we could set:
+
+     p1->x = 0;
+     p2->x = 0;
+     p3->x = 1;
+
+     q1->x = 0;
+     q2->x = 0;
+     q3->x = 1;
+
+     This would mean that the virtual root is located at the inner branch of the four taxon tree ((t1,t2),(t3,t4));
+
+     When we re-root the tree at some other branch we need to update the location of the x pointer that is set to 1.
+
+     This means if we root the tree at the branch leading to t1 we would set 
+
+     p1->x = 1;
+     p2->x = 0;
+     p3->x = 0;
+
+     the values for q remaon unchanged since q3 is still pointing toward the root.
+
+     When we re-locate the root to branch p1 <-> t1 the fact that we have to "rotate" the x value that is set to 1
+     to another node of the cyclic list representing the abstract topological node p, also tells us that we 
+     need to re-compute the conditional likelihood array for p. 
+
+     Note that, only one likelihood or parsimony array is stored per inner node and the location of x essentially tells us which subtree 
+     it summarizes, if p1->x == 1, it summarizes subtree (t2, (t3, t4)), if p3->x = 1 the likelihood vector associated with 
+     node p summarizes subtree (t1, t2).
+
+  */
+    
 
 
 typedef  struct noderec
@@ -557,6 +774,7 @@ typedef struct {
   int    *frequencyGrouping;
     
   double *sumBuffer; 
+  double *ancestralBuffer;
   double *gammaRates;
   double *EIGN;
   double *EV;
@@ -667,12 +885,35 @@ typedef struct {
 
 
 
+/* recomp */
+#ifdef _DEBUG_RECOMPUTATION
+typedef struct {
+  unsigned long int numTraversals;
+  unsigned long int tt;
+  unsigned long int ti;
+  unsigned long int ii;
+  unsigned int *travlenFreq;
+} traversalCounter;
+#endif
+/* E recomp */
+
 
 typedef  struct  {
 
   int *ti;
 
-  boolean useGappedImplementation;
+  /* recomp */
+  recompVectors *rvec;            /* this data structure tracks which vectors store which nodes */
+  float maxMegabytesMemory;         /* User says how many MB in main memory should be used */
+  float vectorRecomFraction;      /* vectorRecomFraction ~= 0.8 * maxMegabytesMemory  */
+  boolean useRecom;               /* ON if we apply recomputation of ancestral vectors*/
+#ifdef _DEBUG_RECOMPUTATION 
+  traversalCounter *travCounter;
+  double stlenTime;
+#endif
+  /* E recomp */
+
+ 
   boolean saveMemory;
   int              startingTree;
   long             randomNumberSeed;
@@ -703,6 +944,8 @@ typedef  struct  {
   
   double lower_spacing;
   double upper_spacing; 
+
+  double *ancestralVector;
 #endif
   
 
@@ -832,6 +1075,7 @@ typedef  struct  {
   checkPointState ckp;
   boolean thoroughInsertion;
   boolean useMedian;
+
 } tree;
 
 
@@ -892,6 +1136,17 @@ typedef  struct {
     int              tplNum;      /* position in sorted list of trees */
 
     } topol;
+
+/* small helper data structure for printing out/downstream use of marginal ancestral probability vectors */
+/* it is allocated as an array that has the same length as the input alignment and can be used to 
+   index the ancestral states for each position/site/pattern */
+
+typedef struct {
+  double *probs; /* marginal ancestral states */
+  char c; /* most likely stated, i.e. max(probs[i]) above */
+  int states; /* number of states for this position */
+} ancestralState;
+
 
 typedef struct {
     double           best;        /* highest score saved */
@@ -1101,6 +1356,11 @@ extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef)
 extern double evaluatePartialGeneric (tree *, int i, double ki, int _model);
 extern void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
 extern void newviewGeneric (tree *tr, nodeptr p, boolean masked);
+
+extern void newviewGenericAncestral(tree *tr, nodeptr p);
+extern void newviewAncestralIterative(tree *tr);
+extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr);
+
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
 extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
 extern void makenewzGenericDistance(tree *tr, int maxiter, double *z0, double *result, int taxon1, int taxon2);
@@ -1110,11 +1370,26 @@ extern double evaluateGenericVector (tree *tr, nodeptr p);
 extern void categorizeGeneric (tree *tr, nodeptr p);
 extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0, int maxiter, int model);
 extern boolean isTip(int number, int maxTips);
+/*
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
+*/
+/* recom functions */
+extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
+extern void allocRecompVectorsInfo(tree *tr);
+extern void allocTraversalCounter(tree *tr);
+extern boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips);
+extern boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtips);
+extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
+extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
 
+extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
+extern void determineFullTraversalStlen(nodeptr p, tree *tr);
+extern void printTraversalInfo(tree *tr);
+extern void countTraversal(tree *tr);
 
+extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 
-extern void   newviewIterative(tree *tr, int startIndex);
+extern void newviewIterative(tree *tr, int startIndex);
 
 extern void evaluateIterative(tree *);
 
@@ -1124,12 +1399,8 @@ extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
 extern void storeValuesInTraversalDescriptor(tree *tr, double *value);
 
 
-
-
 extern void makenewzIterative(tree *);
 extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
-
-
 
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/
@@ -1237,7 +1508,8 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
-
+#define THREAD_NEWVIEW_ANCESTRAL 13
+#define THREAD_GATHER_ANCESTRAL 14
 
 
 
@@ -1329,5 +1601,5 @@ static int virtual_width( int n ) {
 
 
 #ifdef __cplusplus
-} // extern "C"
+} /* extern "C" */
 #endif
