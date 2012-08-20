@@ -109,7 +109,7 @@ static void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
   
   bytes_read = fread(ptr, size, nmemb, byteFile);
 
-  assert(bytes_read == nmemb);
+  assert(bytes_read == nmemb);  
 }
 
 
