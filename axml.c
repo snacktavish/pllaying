@@ -2448,11 +2448,11 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 #ifdef _LOCAL_DISCRETIZATION
     localTree->aliaswgt                = tr->aliaswgt;
 #endif    
-    localTree->lhs                     = (double*)malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
-    localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);     
-    localTree->fracchanges             = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
-    localTree->partitionContributions  = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
-    localTree->partitionData           = (pInfo*)malloc(sizeof(pInfo)     * (size_t)localTree->NumberOfModels);
+    localTree->lhs                     = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
+    localTree->perPartitionLH          = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);     
+    localTree->fracchanges             = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
+    localTree->partitionContributions  = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
+    localTree->partitionData           = (pInfo*)rax_malloc(sizeof(pInfo)     * (size_t)localTree->NumberOfModels);
 
     localTree->td[0].count = 0;
       localTree->td[0].ti              = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)localTree->mxtips);
@@ -2561,7 +2561,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 
     /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
-    localTree->partitionData[model].ancestralBuffer = (double *)malloc_aligned(width *
+    localTree->partitionData[model].ancestralBuffer = (double *)rax_malloc_aligned(width *
 									       (size_t)(localTree->partitionData[model].states) *									       
 									       sizeof(double));
     
@@ -2570,9 +2570,9 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     ancestralVectorWidth += ((size_t)(tr->partitionData[model].upper - tr->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
 			     
 
-      /* rateCategory must be assigned usingrax_calloc) at start up there is only one rate category 0 for all sites */
+      /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
 
-    localTree->partitionData[model].rateCategory = (int *)calloc(width, sizeof(int));
+    localTree->partitionData[model].rateCategory = (int *)rax_calloc(width, sizeof(int));
 
     if(width > 0 && localTree->saveMemory)
     {
@@ -2580,9 +2580,9 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 
       assert(4 == sizeof(unsigned int));
 
-      localTree->partitionData[model].gapVector = (unsigned int*)calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
+      localTree->partitionData[model].gapVector = (unsigned int*)rax_calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
 
-      localTree->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *								      
+      localTree->partitionData[model].gapColumn = (double *)rax_malloc_aligned(((size_t)localTree->mxtips) *								      
           ((size_t)(localTree->partitionData[model].states)) *
           discreteRateCategories(localTree->rateHetModel) * sizeof(double));
     }
@@ -2599,7 +2599,7 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 #ifdef _USE_PTHREADS
   /* we only need to allocate this buffer for gathering the data at the master thread */
       if(tid == 0)
-	tr->ancestralVector = (double *)malloc(ancestralVectorWidth);
+	tr->ancestralVector = (double *)rax_malloc(ancestralVectorWidth);
 #endif
 
 
@@ -2904,7 +2904,7 @@ int main (int argc, char *argv[])
     {
       int len;
       myBinFread(&len, sizeof(int), 1, byteFile);
-      tr->nameList[i] = (char*)malloc(sizeof(char) * (size_t)len);
+      tr->nameList[i] = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
       /*printf("%s \n", tr->nameList[i]);*/
     }  
@@ -2939,10 +2939,10 @@ int main (int argc, char *argv[])
          */
 
       myBinFread(&len, sizeof(int), 1, byteFile);
-	p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
+      p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-	empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
       myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);	   
     }
 
@@ -3135,7 +3135,7 @@ int main (int argc, char *argv[])
 	
 	perSiteLogLikelihoods(tr, logLikelihoods);
 	
-	  rax_free(logLikelihoods);
+        rax_free(logLikelihoods);
 	
 	exit(0);
       }

@@ -1525,7 +1525,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, int *cptr)
 { 
   double 
-    *term = (double*)malloc(sizeof(double) * numStates);
+    *term = (double*)rax_malloc(sizeof(double) * numStates);
 
   int 
     i;
@@ -1561,7 +1561,7 @@ static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable
 	ancestral[l] = term[l] / sum;	
     }
    
-  free(term);
+  rax_free(term);
 }
 
 
@@ -1578,7 +1578,7 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
     statesSquare = numStates * numStates;
 
   double    
-    *term = (double*)malloc(sizeof(double) * numStates);	      	      
+    *term = (double*)rax_malloc(sizeof(double) * numStates);	      	      
   
   for(i = 0; i < n; i++)
     {
@@ -1617,7 +1617,7 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
 	ancestral[l] = term[l] / sum;       
     }
    
-  free(term);
+  rax_free(term);
 }
 
 /* compute dedicated zero branch length P matrix */
@@ -1729,7 +1729,7 @@ void newviewAncestralIterative(tree *tr)
 	     the eignevalues. This will allow us to obtain real probabilites from the internal RAxML 
 	     representation */
 
-	  diagptable = (double*)malloc_aligned(categories * states * states * sizeof(double));
+	  diagptable = (double*)rax_malloc_aligned(categories * states * states * sizeof(double));
 	  
 	  requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
 	  
@@ -1751,7 +1751,7 @@ void newviewAncestralIterative(tree *tr)
 	  else
 	    ancestralGamma(x3_start, tr->partitionData[model].ancestralBuffer, diagptable, width, states, categories * states);
 	  
-	  free(diagptable);	  	  	  
+	  rax_free(diagptable);	  	  	  
 	}	
     }
 }
@@ -1869,7 +1869,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
   /* allocate an array of structs for storing ancestral prob vector info/data */
 
   ancestralState 
-    *a = (ancestralState *)malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
+    *a = (ancestralState *)rax_malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
 
   /* loop over partitions */
 
@@ -1914,7 +1914,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
 
 	  /* alloc space for storing marginal ancestral probabilities */
 
-	  a[globalIndex].probs = (double *)malloc(sizeof(double) * states);
+	  a[globalIndex].probs = (double *)rax_malloc(sizeof(double) * states);
 	  
 	  /* loop over states to store probabilities and find the maximum */
 
@@ -1984,9 +1984,9 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
   /* free the ancestral state data structure */
           
   for(j = 0; j < tr->originalCrunchedLength; j++)
-    free(a[j].probs);  
+    rax_free(a[j].probs);  
 
-  free(a);
+  rax_free(a);
 }
 
 /* optimized function implementations */

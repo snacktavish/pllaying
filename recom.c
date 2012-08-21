@@ -52,7 +52,7 @@ boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtip
 void allocRecompVectorsInfo(tree *tr)
 {
   recompVectors 
-    *v = (recompVectors *) malloc(sizeof(recompVectors));
+    *v = (recompVectors *) rax_malloc(sizeof(recompVectors));
 
   int 
     num_inner_nodes = tr->mxtips - 2,
@@ -74,8 +74,8 @@ void allocRecompVectorsInfo(tree *tr)
 
   /* init vectors tracking */
 
-  v->iVector         = (int *) malloc((size_t)num_vectors * sizeof(int));
-  v->unpinnable      = (boolean *) malloc((size_t)num_vectors * sizeof(boolean));
+  v->iVector         = (int *) rax_malloc((size_t)num_vectors * sizeof(int));
+  v->unpinnable      = (boolean *) rax_malloc((size_t)num_vectors * sizeof(boolean));
 
   for(i = 0; i < num_vectors; i++)
   {
@@ -83,8 +83,8 @@ void allocRecompVectorsInfo(tree *tr)
     v->unpinnable[i]      = FALSE;
   }
 
-  v->iNode      = (int *) malloc((size_t)num_inner_nodes * sizeof(int));
-  v->stlen      = (int *) malloc((size_t)num_inner_nodes * sizeof(int));
+  v->iNode      = (int *) rax_malloc((size_t)num_inner_nodes * sizeof(int));
+  v->stlen      = (int *) rax_malloc((size_t)num_inner_nodes * sizeof(int));
 
   for(i = 0; i < num_inner_nodes; i++)
   {
@@ -463,9 +463,9 @@ void allocTraversalCounter(tree *tr)
   int 
     k;
 
-  tc = (traversalCounter *)malloc(sizeof(traversalCounter));
+  tc = (traversalCounter *)rax_malloc(sizeof(traversalCounter));
 
-  tc->travlenFreq = (unsigned int *)malloc(tr->mxtips * sizeof(int));
+  tc->travlenFreq = (unsigned int *)rax_malloc(tr->mxtips * sizeof(int));
 
   for(k = 0; k < tr->mxtips; k++)
     tc->travlenFreq[k] = 0;

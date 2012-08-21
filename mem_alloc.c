@@ -1,6 +1,13 @@
 #include "mem_alloc.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <malloc.h>
+
+#ifdef RAXML_USE_LLALLOC
+
+// the llalloc library implementation in lockless_alloc/ll_alloc.c exports the alloction functions prefixed
+// with 'llalloc'. The following are the forward declarations of the llalloc* functions 
 
 #define PREFIX(X)   llalloc##X
 
@@ -12,7 +19,7 @@ void *PREFIX(calloc)(size_t n, size_t size);
 void PREFIX(free)(void *p);
 
 
-// forward to the actual malloc implementation
+// wrappers that forward the rax_* functions to the corresponding llalloc* functions
 
 
 void *rax_memalign(size_t align, size_t size) {
@@ -45,48 +52,42 @@ void *rax_malloc_aligned(size_t size)
   
 }
 
-#if 0 // this is impossible as the libc uses it internally
-// make everyone suffer for using the standard allocator
-void *memalign(size_t align, size_t size) {
-//   fprintf( stderr, "using forbidden memalign\n" );
-  abort();
-  return 0;
+#else // RAXML_USE_LLALLOC
+// if llalloc should not be used, forward the rax_* functions to the corresponding standard function
+
+void *rax_memalign(size_t align, size_t size) {
+#if defined (__APPLE__)
+    return malloc(size); // apple has no memalign, but seem to return 16byte (32byte?) aligned blocks by default
+#else
+    return memalign(align, size);
+#endif
+    
 }
 
-void *malloc( size_t size ) {
-//   fprintf( stderr, "using forbidden malloc\n" );
-  abort();
-  return 0;
+void *rax_malloc( size_t size ) {
+  return malloc(size);
 }
-void *realloc( void *p, size_t size ) {
-//   fprintf( stderr, "using forbidden realloc\n" );
-  abort();
-  return 0;
+void *rax_realloc( void *p, size_t size ) {
+  return realloc(p, size);
 }
 
 
-void free(void *p) {
-//   fprintf( stderr, "using forbidden free\n" );
-  abort();
-  
+void rax_free(void *p) {
+  free(p);
 }
 
-int posix_memalign(void **p, size_t align, size_t size) {
-//   fprintf( stderr, "using forbidden posix_memalign\n" );
-  abort();
-  return 0;
+int rax_posix_memalign(void **p, size_t align, size_t size) {
+  return posix_memalign(p, align, size);
 }
-void *calloc(size_t n, size_t size) {
-//   fprintf( stderr, "using forbidden calloc\n" );
-  abort();
-  return 0;
+void *rax_calloc(size_t n, size_t size) {
+  return calloc(n,size);
 }
 
-void *malloc_aligned(size_t size) 
+void *rax_malloc_aligned(size_t size) 
 {
-//   fprintf( stderr, "using forbidden malloc_align\n" );
-  abort();
-  return 0;
+  const size_t BYTE_ALIGNMENT = 32;
+  return rax_memalign(BYTE_ALIGNMENT, size);
   
 }
+
 #endif

@@ -2,7 +2,7 @@
 #define __mem_alloc_h
 #include <stddef.h>
 
-# define __malloc_and_calloc_defined
+// # define __malloc_and_calloc_defined
 void *rax_memalign(size_t align, size_t size);
 void *rax_malloc(size_t size);
 void *rax_realloc(void *p, size_t size);
