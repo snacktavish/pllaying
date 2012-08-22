@@ -5,7 +5,7 @@
 /**********/
 /* CONFIG */
 /**********/
-#define DEBUG_PARALLEL
+/* #define DEBUG_PARALLEL */
 #define GENERIC_PARALLELIZATION
 
 #define NOT ! 

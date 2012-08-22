@@ -50,8 +50,6 @@
 #include "cycle.h"
 
 
-#include "genericParallelization.h"
-
 
 
 
@@ -2303,7 +2301,7 @@ int main (int argc, char *argv[])
         printBothOpen("No Recom stlen %f, t %f\n", tr->stlenTime, t);
 #endif
       return 0;
-    }
+   } 
 
 
 

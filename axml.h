@@ -58,7 +58,7 @@ extern "C" {
 #endif
 #endif
 
-/* #include "genericParallelization.h" */
+#include "genericParallelization.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /* maximum iterations of smoothings per insert in the */

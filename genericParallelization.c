@@ -62,6 +62,10 @@ void startPthreads(tree *tr)
   threads    = (pthread_t *)malloc((size_t)tr->numberOfThreads * sizeof(pthread_t));
   tData      = (threadData *)malloc((size_t)tr->numberOfThreads * sizeof(threadData));
 
+#ifdef DEBUG_PARALLEL
+  printf("initializing buffer reduction buffer with %d elements\n", (size_t)tr->numberOfThreads * (size_t)tr->NumberOfModels); 
+#endif
+
   reductionBuffer          = (volatile double *)malloc(sizeof(volatile double) *  (size_t)tr->numberOfThreads * (size_t)tr->NumberOfModels);
   reductionBufferTwo       = (volatile double *)malloc(sizeof(volatile double) *  (size_t)tr->numberOfThreads * (size_t)tr->NumberOfModels);  
   barrierBuffer            = (volatile char *)  malloc(sizeof(volatile char)   *  (size_t)tr->numberOfThreads);
@@ -244,7 +248,9 @@ int* popIntFromBuf(int *buf, int *result)
 
 inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
 {
+#ifdef DEBUG_PARALLEL
   printf("entering job broadcast\n"); 
+#endif
   /* the one below is a hack we are re-assigning the local pointer to the global one
      the memcpy version below is just for testing and preparing the
      fine-grained MPI BlueGene version */
@@ -319,7 +325,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
     { 
     case THREAD_NEWVIEW:      
 #ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_NEWVIEW", tid);
+      printf("process %d: working on THREAD_NEWVIEW\n", tid);
 #endif
       /* just a newview on the fraction of sites that have been assigned to this thread */
 
@@ -330,7 +336,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       printf("process %d: working on  THREAD_EVALUATE\n", tid);
 #endif
 
-      reduceEvaluateIterative(localTree, tid);            	        
+      reduceEvaluateIterative(localTree, tid); 
       break;	
     case THREAD_MAKENEWZ_FIRST:
 #ifdef DEBUG_PARALLEL
@@ -353,7 +359,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
           d2lnLdlz2[NUM_BRANCHES];	
 
 #ifdef DEBUG_PARALLEL
-	printf("process %d: working on THREAD_MAKENEWZ");
+	printf("process %d: working on THREAD_MAKENEWZ\n");
 #endif
 
         if(localTree->td[0].functionType == THREAD_MAKENEWZ_FIRST)
@@ -381,7 +387,9 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       /* broadcast data and initialize and allocate arrays in partitions */
 
       initializePartitions(tr, localTree, tid, n);
+#ifdef DEBUG_PARALLEL
       printf("master completed THREAD_INIT_PARTITION\n"); 
+#endif
       break;          
     case THREAD_COPY_ALPHA: 
     case THREAD_OPT_ALPHA:
@@ -598,7 +606,10 @@ void *likelihoodThread(void *tData)
   printf("\nThis is RAxML Worker Process Number: %d\n", tid);
 
   while(1)
-    execFunction(tr,localTree, tid,n); 
+    {
+      execFunction(tr,localTree, tid,n); 
+      MPI_Barrier(MPI_COMM_WORLD); 
+    }
 
 #endif
   return (void*)NULL;
@@ -607,6 +618,11 @@ void *likelihoodThread(void *tData)
 
 void masterBarrier(int jobType, tree *tr)
 {
+#ifdef DEBUG_PARALLEL
+  printf("MASTER enters masterBarrier, jobType=%d\n", jobType); 
+#endif
+
+
 #ifdef _USE_PTHREADS
   const int 
     n = tr->numberOfThreads;
@@ -635,6 +651,7 @@ void masterBarrier(int jobType, tree *tr)
   /* does this make sense? */
   tr->td[0].functionType = jobType; 
   execFunction(tr,tr,0,processes);
+  MPI_Barrier(MPI_COMM_WORLD);
 #endif
 }
 
