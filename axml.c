@@ -2568,9 +2568,11 @@ static void initializePartitions(tree *tr, tree *localTree, int tid, int n)
     /* count and accumulate how many bytes we will need for storing a full ancestral vector. for this we addf over the per-partition space requirements in bytes */
 
     ancestralVectorWidth += ((size_t)(tr->partitionData[model].upper - tr->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
-			     
+    
 
-      /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
+    localTree->partitionData[model].wgt = (int *)rax_malloc_aligned(width * sizeof(int));
+    
+    /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
 
     localTree->partitionData[model].rateCategory = (int *)rax_calloc(width, sizeof(int));
 
@@ -2787,8 +2789,10 @@ static void computeAllAncestralVectors(nodeptr p, tree *tr)
 }
 
 
+
 int main (int argc, char *argv[])
 { 
+    
   tree  *tr = (tree*)rax_malloc(sizeof(tree));
 
   analdef *adef = (analdef*)rax_malloc(sizeof(analdef));
@@ -2826,6 +2830,7 @@ int main (int argc, char *argv[])
   tr->threadID = 0;
 #endif
 
+  
 
   /* get the start time */
 
