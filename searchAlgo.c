@@ -2120,7 +2120,8 @@ cleanup:
 
 
 /* The number of maximum smoothing iterations is given explicitely */
-boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
+boolean 
+treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   boolean result;
   result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */

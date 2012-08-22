@@ -2295,7 +2295,7 @@ int main (int argc, char *argv[])
 
     /***** test code for ancestral state comps */
 
-    if(1)
+    if(0)
       {
 	/* compute all ancestral probability vectors for the inner node 
 	   that is connected to the first taxon in the input alignment,
@@ -2356,7 +2356,8 @@ int main (int argc, char *argv[])
 
     treeEvaluate(tr, 32);
     printBothOpen("tree evaluated: %f\n", tr->likelihood);
-
+    assert(tr->likelihood > -10000); 
+    
     /* now start the ML search algorithm */
 
 #ifdef _BAYESIAN 

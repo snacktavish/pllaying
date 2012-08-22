@@ -1927,7 +1927,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }	            	  
 	  
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if NOT IS_PARALLEL
 	  {
 	    int 
 	      localCount = 0;
@@ -2063,8 +2063,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }
 	}         
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-      for(model = 0; model < tr->NumberOfModels; model++)
+#if NOT IS_PARALLEL
+      for(model = 0; model < tr->NumberOfModels; model++)	
 	{   	  	  	 
 	  int 
 	    localCount,
@@ -2081,11 +2081,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 #endif
     }
   
-#ifdef _FINE_GRAIN_MPI
-  masterBarrier(THREAD_COPY_RATE_CATS, tr);
-#endif  
-   
-#ifdef _USE_PTHREADS
+#if IS_PARALLEL
   masterBarrier(THREAD_COPY_RATE_CATS, tr);
 #endif               
 }

@@ -5,15 +5,14 @@
 /**********/
 /* CONFIG */
 /**********/
-/* #define DEBUG_PARALLEL */
+#define DEBUG_PARALLEL
 #define GENERIC_PARALLELIZATION
 
 #define NOT ! 
-
 #define IS_PARALLEL (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI)) 
-
-
 void *likelihoodThread(void *tData); 
+
+
 
 /******************/
 /* MPI SPECIFIC   */

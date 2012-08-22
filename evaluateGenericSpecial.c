@@ -665,7 +665,9 @@ of the current partition.
          There's a copy of this book in my office 
          */
 
-
+#ifdef DEBUG_PARALLEL
+      printf("partition likelihood %f\n", partitionLikelihood);  
+#endif
 
       partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
 
@@ -794,7 +796,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      traversal descriptor list of nodes needs to be broadcast once again */
 
   tr->td[0].traversalHasChanged = TRUE;
-#ifdef _USE_PTHREADS 
+#if IS_PARALLEL
 
   /* now here we enter the fork-join region for Pthreads */
 
@@ -820,34 +822,32 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      needs to store the partial log like of each partition and we then need to collect 
      and add everything */
 
-
+#ifdef _USE_PTHREADS
   for(model = 0; model < tr->NumberOfModels; model++)
   { 
     volatile double 
       partitionResult = 0.0;  
 
     for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-      partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
+      {
+#ifdef DEBUG_PARALLEL
+	printf("reduction: adding %f to %f\n" , reductionBuffer[i * tr->NumberOfModels + model], partitionResult);
+#endif
+	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
+      }
 
     tr->perPartitionLH[model] = partitionResult;
   }
-
-#else
-#ifdef _FINE_GRAIN_MPI
-
-  /* MPI parallel region, in terms of logic or programming paradigm this is also 
-     just like a fork join */
-
-  masterBarrier(THREAD_EVALUATE, tr); 
+#else 
+  /* mpi has to do different stuff  */
+  assert(0); 
+#endif
 
 #else
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-
   evaluateIterative(tr);  
-
-#endif   
 #endif
 
   for(model = 0; model < tr->NumberOfModels; model++)
