@@ -65,6 +65,10 @@ const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
 
 #endif
 
+extern const char binaryStateNames[2];   
+extern const char dnaStateNames[4];
+extern const char protStateNames[20];
+extern const char genericStateNames[32];
 
 extern const unsigned int mask32[32];
 
@@ -72,7 +76,7 @@ extern const unsigned int mask32[32];
 /* generic function for computing the P matrices, for computing the conditional likelihood at a node p, given child nodes q and r 
    we compute P(z1) and P(z2) here */
 
-static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states)
+void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states)
 {
   int 
     i, 
@@ -1151,7 +1155,7 @@ void newviewIterative (tree *tr, int startIndex)
             break;
           case TIP_INNER:		 
             tipX1    =  tr->partitionData[model].yVector[tInfo->qNumber];
-            x2_start = tr->partitionData[model].xVector[r_slot];		 
+            x2_start = tr->partitionData[model].xVector[r_slot];		 	    
             assert(r_slot != p_slot);
 
 
@@ -1514,6 +1518,474 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   tr->td[0].traversalHasChanged = FALSE;
 }
 
+/* function to compute the marginal ancestral probability vector at a node p for CAT/PSR model */
+
+static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, int *cptr)
+{ 
+  double 
+    *term = (double*)malloc(sizeof(double) * numStates);
+
+  int 
+    i;
+
+  const int
+    statesSquare = numStates * numStates;
+  
+  for(i = 0; i < n; i++)
+    {
+      double 
+	sum = 0.0,
+	*v = &x3[numStates * i],
+	*ancestral = &ancestralBuffer[numStates * i],
+	*d = &diagptable[cptr[i] * statesSquare];            
+
+      int 
+	l,
+	j;
+
+      for(l = 0; l < numStates; l++)
+	{
+	  double 
+	    ump_x1 = 0.0;
+      
+	  for(j = 0; j < numStates; j++)	
+	    ump_x1 += v[j] * d[l * numStates + j];
+
+	  sum += ump_x1;
+	  term[l] = ump_x1;      
+	}
+		
+      for(l = 0; l < numStates; l++)          
+	ancestral[l] = term[l] / sum;	
+    }
+   
+  free(term);
+}
+
+
+/* compute marginal ancestral states for GAMMA models,
+   for the euqation to obtain marginal ancestral states 
+   see Ziheng Yang's book */
+
+static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, const int gammaStates)
+{
+  int 
+    i;
+
+  const int
+    statesSquare = numStates * numStates;
+
+  double    
+    *term = (double*)malloc(sizeof(double) * numStates);	      	      
+  
+  for(i = 0; i < n; i++)
+    {
+      double 
+	sum = 0.0,
+	*_v = &x3[gammaStates * i],
+	*ancestral = &ancestralBuffer[numStates * i];  
+      
+      int
+	k,
+	j,
+	l;
+      
+      for(l = 0; l < numStates; l++)
+	term[l] = 0.0;
+
+      for(k = 0; k < 4; k++)
+	{
+	  double 
+	    *v =  &(_v[numStates * k]);
+
+	  for(l = 0; l < numStates; l++)
+	    {
+	      double
+		al = 0.0;
+	      
+	      for(j = 0; j < numStates; j++)	    
+		al += v[j] * diagptable[k * statesSquare + l * numStates + j];
+	  
+	      term[l] += al;
+	      sum += al;
+	    }
+	}
+  
+      for(l = 0; l < numStates; l++)        
+	ancestral[l] = term[l] / sum;       
+    }
+   
+  free(term);
+}
+
+/* compute dedicated zero branch length P matrix */
+
+static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, const int numStates)
+{
+  int 
+    i,
+    j,
+    k;
+  
+  const int   
+    statesSquare = numStates * numStates;
+
+  double 
+    z1 = 0.0,
+    lz1[64],
+    d1[64];
+
+  assert(numStates <= 64);
+     
+  for(i = 0; i < numStates; i++)    
+    lz1[i] = EIGN[i] * z1;
+     
+
+  for(i = 0; i < numberOfCategories; i++)
+    {
+      d1[0] = 1.0;
+
+      for(j = 1; j < numStates; j++)	
+	d1[j] = EXP(rptr[i] * lz1[j]);
+	 
+      for(j = 0; j < numStates; j++)
+	{
+	  left[statesSquare * i  + numStates * j] = 1.0;	 
+
+	  for(k = 1; k < numStates; k++)	    
+	    left[statesSquare * i + numStates * j + k]  = d1[k] * EI[numStates * j + k];	     
+	}
+    }  
+}
+
+/* a ver simple iterative function, we only access the conditional likelihood vector at node p */
+
+void newviewAncestralIterative(tree *tr)
+{
+  traversalInfo 
+    *ti    = tr->td[0].ti,
+    *tInfo = &ti[0];
+
+  int    
+    model,
+    p_slot = -1;
+
+  /* make sure that the traversal descriptor has length 1 */
+
+  assert(tr->td[0].count == 1);
+  assert(!tr->saveMemory);
+
+  /* get the index to the conditional likelihood vector depending on whether recomputation is used or not */
+
+  if(tr->useRecom)    
+    p_slot = tInfo->slot_p;         
+  else    
+    p_slot = tInfo->pNumber - tr->mxtips - 1;         
+
+  /* now loop over all partitions for nodes p of the current traversal vector entry */
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      /* number of sites in this partition */
+      size_t		
+        width  = (size_t)tr->partitionData[model].width;
+
+      /* this conditional statement is exactly identical to what we do in evaluateIterative */
+
+      if(tr->td[0].executeModel[model] && width > 0)
+	{	      
+	  double	 
+	    *x3_start = tr->partitionData[model].xVector[p_slot],
+	    *left     = (double*)NULL,
+	    *right    = (double*)NULL,		       
+	    *rateCategories = (double*)NULL,
+	    *diagptable = (double*)NULL;
+
+	  int
+	    categories;
+	
+	  size_t         	  
+	    states = (size_t)tr->partitionData[model].states,	                    
+	    availableLength = tr->partitionData[model].xSpaceVector[p_slot],
+	    requiredLength = 0,
+	    rateHet = discreteRateCategories(tr->rateHetModel);   
+
+        /* figure out what kind of rate heterogeneity approach we are using */
+
+	  if(tr->rateHetModel == CAT)
+	    {		 
+	      rateCategories = tr->partitionData[model].perSiteRates;
+	      categories = tr->partitionData[model].numberOfCategories;
+	    }
+	  else
+	    {		  		 
+	      rateCategories = tr->partitionData[model].gammaRates;
+	      categories = 4;
+	    }
+	  
+	  /* allocate some space for a special P matrix with a branch length of 0 into which we mingle 
+	     the eignevalues. This will allow us to obtain real probabilites from the internal RAxML 
+	     representation */
+
+	  diagptable = (double*)malloc_aligned(categories * states * states * sizeof(double));
+	  
+	  requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
+	  
+	  /* make sure that this vector had already been allocated. This must be true since we first invoked a standard newview() on this */
+
+	  assert(requiredLength == availableLength);                        	  	 
+
+	  /* now compute the special P matrix */
+
+	  calc_diagp_Ancestral(rateCategories, tr->partitionData[model].EI,  tr->partitionData[model].EIGN, categories, diagptable, states);
+	  
+	  /* switch over the rate heterogeneity model 
+	     and call generic functions that compute the marginal ancestral states and 
+	     store them in tr->partitionData[model].ancestralBuffer
+	  */
+
+	  if(tr->rateHetModel == CAT)	    
+	    ancestralCat(x3_start, tr->partitionData[model].ancestralBuffer, diagptable, width, states, tr->partitionData[model].rateCategory);
+	  else
+	    ancestralGamma(x3_start, tr->partitionData[model].ancestralBuffer, diagptable, width, states, categories * states);
+	  
+	  free(diagptable);	  	  	  
+	}	
+    }
+}
+
+/* this is very similar to newviewGeneric, except that it also computes the marginal ancestral probabilities 
+   at node p. To simplify the code I am re-using newview() here to first get the likelihood vector p->x at p
+   and then I deploy newviewAncestralIterative(tr); that should always only have a traversal descriptor of lenth 1,
+   to do some mathematical transformations that are required to obtain the marginal ancestral probabilities from 
+   the conditional likelihood array at p.
+
+   Note that the marginal ancestral probability vector summarizes the subtree rooted at p! */
+
+void newviewGenericAncestral(tree *tr, nodeptr p)
+{
+  /* error check, we don't need to compute anything for tips */
+  
+  if(isTip(p->number, tr->mxtips))
+    {
+      printf("You are trying to compute the ancestral states on a tip node of the tree\n");
+      assert(0);
+    }
+
+  /* doesn't work yet in conjunction with SEVs, can be implemented though at some point 
+     if urgently required */
+
+  if(tr->saveMemory)
+    {
+      printf("ancestral state implementation will not work with memory saving (SEVs) enabled!\n");
+      printf("returning without computing anything ... \n");
+      return;
+    }
+
+  /* first call newviewGeneric() with mask set to FALSE such that the likelihood vector is there ! */
+
+  newviewGeneric(tr, p, FALSE);
+
+  /* now let's compute the ancestral states using this vector ! */
+  
+  /* to make things easy and reduce code size, let's re-compute a standard traversal descriptor for node p,
+     hence we need to set the count to 0 */
+
+  tr->td[0].count = 0;
+
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+
+  tr->td[0].traversalHasChanged = TRUE;
+
+  /* here we actually assert, that the traversal descriptor only contains one node triplet p, p->next->back, p->next->next->back
+     this must be true because we have alread invoked the standard newviewGeneric() on p.
+  */ 
+
+  assert(tr->td[0].count == 1);  
+  
+#ifdef _USE_PTHREADS  
+  /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
+
+  masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr);
+#else
+  /* now call the dedicated function that does the mathematical transformation of the 
+     conditional likelihood vector at p to obtain the marginal ancestral states */
+
+  newviewAncestralIterative(tr);
+#endif
+
+  tr->td[0].traversalHasChanged = FALSE;
+
+#ifdef _USE_PTHREADS
+  /* invoke another parallel region to gather the marginal ancestral probabilities 
+     from the threads/MPI processes */
+
+  masterBarrier(THREAD_GATHER_ANCESTRAL, tr);
+#endif
+
+  
+}
+
+/* returns the character representation of an enumerated DNA or AA state */
+
+static char getStateCharacter(int dataType, int state)
+{
+  char 
+    result;  
+
+  switch(dataType)
+    {    
+    case DNA_DATA:
+       result = dnaStateNames[state];
+      break;
+    case AA_DATA:
+      result =  protStateNames[state];
+      break;    
+    default:
+      assert(0);
+    }
+
+  return  result;
+}
+
+/* printing function, here you can see how one can store the ancestral probabilities in a dedicated 
+   data structure */
+
+void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr)
+{
+#ifdef _USE_PTHREADS
+  size_t 
+    accumulatedOffset = 0;
+#endif
+
+  int
+    j,
+    k,
+    model,
+    globalIndex = 0;
+  
+  /* allocate an array of structs for storing ancestral prob vector info/data */
+
+  ancestralState 
+    *a = (ancestralState *)malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
+
+  /* loop over partitions */
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      int	     
+	i,
+	width = tr->partitionData[model].upper - tr->partitionData[model].lower,	
+	states = tr->partitionData[model].states;
+      
+      /* set pointer to ancestral probability vector */
+
+#ifdef _USE_PTHREADS
+      double
+	*ancestral = &tr->ancestralVector[accumulatedOffset];
+#else
+      double 
+	*ancestral = tr->partitionData[model].ancestralBuffer;
+#endif        
+      
+      /* loop over the sites of the partition */
+
+      for(i = 0; i < width; i++, globalIndex++)
+	{
+	  double
+	    equal = 1.0 / (double)states,
+	    max = -1.0;
+	    
+	  boolean
+	    approximatelyEqual = TRUE;
+
+	  int
+	    max_l = -1,
+	    l;
+	  
+	  char 
+	    c;
+
+	  /* stiore number of states for this site */
+
+	  a[globalIndex].states = states;
+
+	  /* alloc space for storing marginal ancestral probabilities */
+
+	  a[globalIndex].probs = (double *)malloc(sizeof(double) * states);
+	  
+	  /* loop over states to store probabilities and find the maximum */
+
+	  for(l = 0; l < states; l++)
+	    {
+	      double 
+		value = ancestral[states * i + l];
+
+	      if(value > max)
+		{
+		  max = value;
+		  max_l = l;
+		}
+	      
+	      /* this is used for discretizing the ancestral state sequence, if all marginal ancestral 
+		 probabilities are approximately equal we output a ? */
+
+	      approximatelyEqual = approximatelyEqual && (ABS(equal - value) < 0.000001);
+	      
+	      a[globalIndex].probs[l] = value;	      	      
+	    }
+
+	  
+	  /* figure out the discrete ancestral nucleotide */
+
+	  if(approximatelyEqual)
+	    c = '?';	  
+	  else
+	    c = getStateCharacter(tr->partitionData[model].dataType, max_l);
+	  
+	  a[globalIndex].c = c;	  
+	}
+
+#ifdef _USE_PTHREADS
+      accumulatedOffset += width * states;
+#endif            
+    }
+
+  /* print marginal ancestral probs to terminal */
+
+  if(printProbs)
+    {
+      printf("%d\n", p->number);
+      
+      for(k = 0; k < tr->originalCrunchedLength; k++)
+	{
+	  for(j = 0; j < a[k].states; j++)
+	    printf("%f ", a[k].probs[j]);
+	  printf("\n");      
+	}
+      
+      printf("\n");
+    }
+ 
+  /* print discrete state ancestrakl sequence to terminal */
+
+  if(printStates)
+    {
+      printf("%d ", p->number);
+
+      for(k = 0; k < tr->originalCrunchedLength; k++)          
+	printf("%c", a[k].c);   
+  
+      printf("\n");
+    }
+  
+  /* free the ancestral state data structure */
+          
+  for(j = 0; j < tr->originalCrunchedLength; j++)
+    free(a[j].probs);  
+
+  free(a);
+}
 
 /* optimized function implementations */
 #if 1
