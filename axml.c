@@ -3175,7 +3175,7 @@ int main (int argc, char *argv[])
 
     /***** test code for ancestral state comps */
 
-    if(1)
+    if(0)
       {
 	/* compute all ancestral probability vectors for the inner node 
 	   that is connected to the first taxon in the input alignment,
