@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -428,30 +429,6 @@ struct stringEnt
   struct stringEnt *next;
 };
 
-#ifdef _FINE_GRAIN_MPI
-/* DUMMY  */
-
-/* typedef struct { */
-/*   double EIGN[19] __attribute__ ((aligned (BYTE_ALIGNMENT)));              */
-/*   double EV[400] __attribute__ ((aligned (BYTE_ALIGNMENT)));                 */
-/*   double EI[380] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
-/*   double substRates[190];         */
-/*   double frequencies[20] ;       */
-/*   double tipVector[460] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
-/*   double fracchange[1]; */
-/*   double left[1600] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
-/*   double right[1600] __attribute__ ((aligned (BYTE_ALIGNMENT))); */
-/* } siteAAModels; */
-
-/* typedef  struct { */
-/*   int             *alias;       /\* site representing a pattern *\/ */
-/*   int             *aliaswgt;    /\* weight by pattern *\/ */
-/*   int             *rateCategory; */
-/*   int              endsite;     /\* # of sequence patterns *\/ */
-/*   double          *patrat;      /\* rates per pattern *\/ */
-/*   double          *patratStored;  */
-/* } cruncheddata; */
-#endif
 
 typedef struct stringEnt stringEntry;
  
@@ -1071,28 +1048,6 @@ typedef  struct  {
   double lzr[NUM_BRANCHES];
   double lzi[NUM_BRANCHES];
 
- 
-#ifdef _FINE_GRAIN_MPI
-  /* inserting that stuff in order to make it compile again: PURELY
-     dummy */
-  /* void *rdta;  */
-  /* double *sumBuffer;  */
-  /* double *perSiteLLPtr;  */
-  /* int    *wgtPtr; */
-  /* int    *rateCategoryPtr; */
-  /* int discreteRateCategories; */
-  /* size_t innerNodes; */
-  /* int              multiBranch; */
-  /* cruncheddata    *cdta; */
-  /* siteAAModels siteProtModel[2 * (NUM_PROT_MODELS - 2)]; */
-  /* void *estimatePerSiteAA;  */
-  /* int useGammaMedian;  */
-  /* int multiGene;  */
-  /* void *storedPerPartitionLH;  */
-
-  /* END DUMMY  */
-  
-#endif
 
   unsigned int **bitVectors;
 
@@ -1216,10 +1171,6 @@ typedef  struct {
   int           num_generations;
 #endif
 
-#ifdef _FINE_GRAIN_MPI
-  /* only DUMMY  */
-  /* int readBinaryFile;  */
-#endif
 } analdef;
 
 

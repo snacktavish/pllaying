@@ -152,11 +152,16 @@ const partitionLengths pLengths[MAX_MODEL] = {
   {4096, 4096, 64, 4096, 4096, 2016, 64, 4160, 64, 2016, FALSE, 64, (char*)NULL, 64, TRUE, (unsigned int*)NULL}
 };
 
+
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+volatile double          *reductionBuffer;
+volatile double          *reductionBufferTwo;
+#endif
+
+
 #ifdef _USE_PTHREADS
 volatile int             jobCycle = 0;
 volatile int             threadJob = 0;
-volatile double          *reductionBuffer;
-volatile double          *reductionBufferTwo;
 volatile char            *barrierBuffer;
 #endif
 
@@ -164,8 +169,4 @@ volatile char            *barrierBuffer;
 int processes;
 double *globalResult;
 int processID; 
-
-/* needed?  */
-volatile double          *reductionBuffer;
-volatile double          *reductionBufferTwo;
 #endif

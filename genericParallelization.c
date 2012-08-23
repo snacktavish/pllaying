@@ -4,7 +4,11 @@
 #include "axml.h"
 #include "genericParallelization.h"
 
-#include <pthread.h>
+
+/* 
+   GENERAL :TODO:
+   unified system for tid/processId , numberOfThreads / processes
+*/
 
 extern unsigned int* mask32; 
 extern volatile int jobCycle; 
@@ -95,25 +99,6 @@ void startPthreads(tree *tr)
 /* MPI-SPECIFIC */
 /****************/
 #ifdef _FINE_GRAIN_MPI
-/* #define TRAVERSAL_LENGTH 5 */
-/* #define fixedSize     sizeof(jobDescr) */
-/* #define traversalSize sizeof(traversalInfo) */
-/* #define messageSize   (fixedSize + TRAVERSAL_LENGTH * traversalSize) */
-/* char broadcastBuffer[messageSize]; */
-
-/* static void sendMergedMessage(jobDescr *job, tree *tr) */
-/* {   */
-/*   memcpy(broadcastBuffer, job, fixedSize); */
-/*   memcpy(&broadcastBuffer[fixedSize], &(tr->td[0].ti[0]), traversalSize * MIN(job->length, TRAVERSAL_LENGTH)); */
-/*   MPI_Bcast(broadcastBuffer, messageSize, MPI_BYTE, 0, MPI_COMM_WORLD);  */
-/* } */
-
-/* static void receiveMergedMessage(jobDescr *job, tree *tr) */
-/* {     */
-/*   MPI_Bcast(broadcastBuffer, messageSize, MPI_BYTE, 0, MPI_COMM_WORLD); */
-/*   memcpy(job, broadcastBuffer, fixedSize); */
-/*   memcpy(&(tr->td[0].ti[0]), &broadcastBuffer[fixedSize], traversalSize * MIN(job->length, TRAVERSAL_LENGTH));        */
-/* } */
 #endif
 
 
@@ -238,40 +223,25 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
 }
 
 
-/* MPI-specific  */
-#ifdef _FINE_GRAIN_MPI
-int* addIntToBuf(int* buf, int *toAdd)
-{
-  *buf  = *toAdd; 
-  return buf; 
-}
-
-int* popIntFromBuf(int *buf, int *result)
-{
-  *result = *buf; 
-  return buf; 
-}
-#endif
-
+  /* the one below is a hack we are re-assigning the local pointer to the global one
+     the memcpy version below is just for testing and preparing the
+     fine-grained MPI BlueGene version */
+  /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
 inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
 {
 #ifdef DEBUG_PARALLEL
   printf("entering job broadcast\n"); 
 #endif
-  /* the one below is a hack we are re-assigning the local pointer to the global one
-     the memcpy version below is just for testing and preparing the
-     fine-grained MPI BlueGene version */
 
-  /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
+  ASSIGN_INT(localTree->td[0].functionType,           tr->td[0].functionType);
+  ASSIGN_INT( localTree->td[0].count, tr->td[0].count) ;
+  ASSIGN_INT(localTree->td[0].traversalHasChanged, tr->td[0].traversalHasChanged);
 
 #ifdef _USE_PTHREADS
-  localTree->td[0].count               = tr->td[0].count;
-  localTree->td[0].functionType        = tr->td[0].functionType;
-  localTree->td[0].traversalHasChanged = tr->td[0].traversalHasChanged;
-  
   /* memcpy -> memmove (see ticket #43). This function is sometimes called with localTree == tr,
    * in which case some memcpy implementations can corrupt the buffers.
-   */
+   */ 
+
   memmove(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
   memmove(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
   
@@ -279,19 +249,74 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
     memmove(localTree->td[0].ti, tr->td[0].ti, localTree->td[0].count * sizeof(traversalInfo));
 
 #else  /* MPI */
+  localTree = tr; 
 
-  /* naive implementation first */
-  MPI_Bcast(&(tr->td[0].count), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&(tr->td[0].functionType), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&(tr->td[0].traversalHasChanged), 1, MPI_INT, 0, MPI_COMM_WORLD);
-  
-  MPI_Bcast(tr->td[0].executeModel, tr->NumberOfModels, MPI_INT, 0,MPI_COMM_WORLD); 
-  MPI_Bcast(tr->td[0].parameterValues, tr->NumberOfModels, MPI_DOUBLE, 0,MPI_COMM_WORLD);   
-  if(tr->td[0].traversalHasChanged)
-    /* TODO */
-    assert(0); 
-  /* MPI_Bcast(tr->td[0].ti, );  */
+  if(localTree->td[0].functionType != THREAD_INIT_PARTITION)				/* :KLUDGE: is not initialized in this case   */
+    {
+      MPI_Bcast(localTree->td[0].executeModel, localTree->NumberOfModels, MPI_INT, 0,MPI_COMM_WORLD); 
+      MPI_Bcast(localTree->td[0].parameterValues, localTree->NumberOfModels, MPI_DOUBLE, 0,MPI_COMM_WORLD); 
+      if(localTree->td[0].traversalHasChanged)
+	{
+	  /* define the datatype and broadcast */
+	  MPI_Datatype trav_MPI; 
+	  defineTraversalInfoMPI(&trav_MPI); 
+	  MPI_Bcast(localTree->td[0].ti, localTree->td[0].count, trav_MPI, 0, MPI_COMM_WORLD ); 
+	}
+    }
 #endif
+}
+
+
+
+
+void printParallelDebugInfo(int type, int tid )
+{
+  switch(type)  
+    {
+    case THREAD_MAKENEWZ: 
+      printf("[%d] working on  THREAD_MAKENEWZ\n ", tid); 
+      break; 
+    case THREAD_MAKENEWZ_FIRST: 
+      printf("[%d] working on  THREAD_MAKENEWZ_FIRST\n ", tid); 
+      break; 
+    case THREAD_RATE_CATS: 
+      printf("[%d] working on  THREAD_RATE_CATS\n ", tid); 
+      break; 
+    case THREAD_COPY_RATE_CATS: 
+      printf("[%d] working on  THREAD_COPY_RATE_CATS\n ", tid); 
+      break; 
+    case THREAD_COPY_INIT_MODEL: 
+      printf("[%d] working on  THREAD_COPY_INIT_MODEL\n ", tid); 
+      break; 
+    case THREAD_INIT_PARTITION: 
+      printf("[%d] working on  THREAD_INIT_PARTITION\n ", tid); 
+      break; 
+    case THREAD_OPT_ALPHA: 
+      printf("[%d] working on  THREAD_OPT_ALPHA\n ", tid); 
+      break; 
+    case THREAD_OPT_RATE: 
+      printf("[%d] working on  THREAD_OPT_RATE\n ", tid); 
+      break; 
+    case THREAD_COPY_ALPHA: 
+      printf("[%d] working on  THREAD_COPY_ALPHA\n ", tid); 
+      break; 
+    case THREAD_COPY_RATES: 
+      printf("[%d] working on  THREAD_COPY_RATES\n ", tid); 
+      break; 
+    case THREAD_PER_SITE_LIKELIHOODS: 
+      printf("[%d] working on  THREAD_PER_SITE_LIKELIHOODS\n ", tid); 
+      break; 
+    case THREAD_NEWVIEW_ANCESTRAL: 
+      printf("[%d] working on  THREAD_NEWVIEW_ANCESTRAL\n ", tid); 
+      break; 
+    case THREAD_GATHER_ANCESTRAL: 
+      printf("[%d] working on  THREAD_GATHER_ANCESTRAL\n ", tid); 
+      break; 
+    case THREAD_WORKER_WAIT: 
+      printf("[%d] working on  THREAD_WORKER_WAIT\n ", tid); 
+      break; 
+    default: assert(0); 
+    }  
 }
 
 
@@ -317,43 +342,34 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 
   /* here the master sends and all threads/processes receive the traversal descriptor */
   broadcastTraversalInfo(localTree, tr);
-
+  
 #ifdef _USE_PTHREADS
   /* make sure that nothing is going wrong */
   assert(currentJob == localTree->td[0].functionType);
 #else   
+  localTree = tr; 
   int currentJob = localTree->td[0].functionType; 
 #endif
 #ifdef DEBUG_PARALLEL
-  printf("process %d: current job is %d\n", tid, currentJob); 
+  /* printf("process %d: current job is %d\n", tid, currentJob);  */
+  printParallelDebugInfo(currentJob, tid);
 #endif  
 
-  switch(localTree->td[0].functionType)
+  switch(currentJob)
     { 
     case THREAD_NEWVIEW:      
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_NEWVIEW\n", tid);
-#endif
       /* just a newview on the fraction of sites that have been assigned to this thread */
 
       newviewIterative(localTree, 0);
       break;     
     case THREAD_EVALUATE: 
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_EVALUATE\n", tid);
-#endif
-
       reduceEvaluateIterative(localTree, tid); 
       break;	
     case THREAD_MAKENEWZ_FIRST:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_MAKENEWZ_FIRST\n", tid);
-#endif
-
 
       /* this is the first call from within makenewz that requires getting the likelihood vectors to the left and 
          right of the branch via newview and doing som eprecomputations.
-
+	 
          For details see comments in makenewzGenericSpecial.c 
          */
     case  THREAD_MAKENEWZ:
@@ -364,10 +380,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
         volatile double
           dlnLdlz[NUM_BRANCHES],
           d2lnLdlz2[NUM_BRANCHES];	
-
-#ifdef DEBUG_PARALLEL
-	printf("process %d: working on THREAD_MAKENEWZ\n");
-#endif
 
         if(localTree->td[0].functionType == THREAD_MAKENEWZ_FIRST)
           makenewzIterative(localTree);	
@@ -387,23 +399,14 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       break;
 
     case THREAD_INIT_PARTITION:       
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_INIT_PARTITION\n", tid);
-#endif
 
       /* broadcast data and initialize and allocate arrays in partitions */
 
       initializePartitions(tr, localTree, tid, n);
-#ifdef DEBUG_PARALLEL
-      printf("process %d: THREAD_INIT_PARTITION\n", tid); 
-#endif
+
       break;          
     case THREAD_COPY_ALPHA: 
     case THREAD_OPT_ALPHA:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_OPT_ALPHA\n", tid);
-#endif
-
       /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
          this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
 
@@ -418,9 +421,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       break;           
     case THREAD_OPT_RATE:
     case THREAD_COPY_RATES:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_COPY_RATES\n", tid);
-#endif
       /* if we are optimizing the rates in the transition matrix Q this induces recomputing the eigenvector eigenvalue 
          decomposition and the tipVector as well because of the special numerics in RAxML, the matrix of eigenvectors 
          is "rotated" into the tip lookup table.
@@ -439,9 +439,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 
       break;                       
     case THREAD_COPY_INIT_MODEL:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_COPY_INIT_MODEL\n", tid);
-#endif
       /* need to copy base freqs before local per-thread/per-process Q matrix exponentiation */
 #ifdef _LOCAL_DISCRETIZATION   
       if(tid > 0)
@@ -480,9 +477,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 
       break;    
     case THREAD_RATE_CATS:            
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on  THREAD_RATE_CATS\n", tid);
-#endif
       /* this is for optimizing per-site rate categories under PSR, let's worry about this later */
 
       if(tid > 0)
@@ -501,15 +495,12 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       }
       break;
     case THREAD_COPY_RATE_CATS:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_COPY_RATE_CATS\n", tid);
-#endif
       /* this is invoked when we have changed the per-site rate category assignment
          In essence it distributes the new per site rates to all threads 
       */
 
       if(tid > 0)
-      {	  
+      {
         memcpy(localTree->patrat,       tr->patrat,         localTree->originalCrunchedLength * sizeof(double));
         memcpy(localTree->patratStored, tr->patratStored,   localTree->originalCrunchedLength * sizeof(double));
         broadcastPerSiteRates(tr, localTree);
@@ -546,10 +537,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       }
       break;
     case THREAD_PER_SITE_LIKELIHOODS:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_PER_SITE_LIKELIHOODS\n", tid);
-#endif
-
 #ifdef _USE_PTHREADS		/* added by andre */
       /* compute per-site log likelihoods for the sites/partitions 
          that are handled by this thread */
@@ -567,22 +554,15 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       break;
       /* check for errors */
     case THREAD_NEWVIEW_ANCESTRAL:       
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_NEWVIEW_ANCESTRAL\n", tid);
-#endif
       assert(0); 
       break; 
     case THREAD_GATHER_ANCESTRAL:
-#ifdef DEBUG_PARALLEL
-      printf("process %d: working on THREAD_GATHER_ANCESTRAL\n", tid);
-#endif
       assert(0); 
       break; 
     default:
       printf("Job %d\n", currentJob);
       assert(0);
   }
-
 }
 
 
@@ -590,10 +570,11 @@ void *likelihoodThread(void *tData)
 {
   threadData *td = (threadData*)tData;
   tree
-    *tr = td->tr,
-    *localTree = (tree *)malloc(sizeof(tree));
+    *tr = td->tr;
 
 #ifdef _USE_PTHREADS
+  tree *localTree = calloc(1,sizeof(tree )); 
+  
   int
     myCycle = 0;
 
@@ -620,17 +601,17 @@ void *likelihoodThread(void *tData)
 #else 
   const int
     n = processes, 
-    tid = ((threadData*)tData)->threadNumber; 
-  
+    tid = ((threadData*)tData)->threadNumber;
+
   printf("\nThis is RAxML Worker Process Number: %d\n", tid);
 
   while(1)
     {
-      execFunction(tr,localTree, tid,n); 
-      MPI_Barrier(MPI_COMM_WORLD); 
+      execFunction(tr,tr, tid,n); 
     }
 
 #endif
+
   return (void*)NULL;
 }
 
@@ -667,10 +648,9 @@ void masterBarrier(int jobType, tree *tr)
   for(i = 1; i < n; i++)
     barrierBuffer[i] = 0;
 #else 
-  /* does this make sense? */
   tr->td[0].functionType = jobType; 
   execFunction(tr,tr,0,processes);
-  MPI_Barrier(MPI_COMM_WORLD);
+
 #endif
 }
 
@@ -892,7 +872,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
 #if IS_PARALLEL
 
-  ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions); 
+  ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
 
 #ifdef _USE_PTHREADS

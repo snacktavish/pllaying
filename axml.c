@@ -2379,6 +2379,7 @@ int main (int argc, char *argv[])
   finalizeInfoFile(tr, adef);
 
 #ifdef _FINE_GRAIN_MPI
+  /* :TODO: maybe make this generic as well */
   masterBarrier(EXIT_GRACEFULLY,tr); 
   MPI_Finalize();
 #endif
@@ -2394,8 +2395,7 @@ int main (int argc, char *argv[])
       else
         printBothOpen("No Recom stlen %f, t %f\n", tr->stlenTime, t);
   }
-#endif
-  
+#endif 
 
 
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */

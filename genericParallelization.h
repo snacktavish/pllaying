@@ -19,12 +19,13 @@ void *likelihoodThread(void *tData);
 /******************/
 #ifdef _FINE_GRAIN_MPI
 #include <mpi.h>
+#include "mpiHelpers.h"
 #define MASTER_P (processID == 0)
 #define POP_OR_PUT(buf, elem)  (MASTER_P ? (addIntToBuf((buf++), (elem)) , printf("SEND %d\n", *elem ) ) : ( popIntFromBuf((buf++), (elem)), printf("RECV %d\n", *elem))) 
 
-#define ASSIGN_INT(x,y) (MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD)); 
+#define ASSIGN_INT(x,y) (MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD),printf("SEND/RECV %d\n", y)); 
 #define ASSIGN_BUF(x,y) ((POP_OR_PUT(bufPtr, &y)),assertCtr++)
-#define ASSIGN_DBL(x,y) (MPI_Bcast(&y,1,MPI_DOUBLE, 0, MPI_COMM_WORLD)); 
+#define ASSIGN_DBL(x,y) (MPI_Bcast(&y,1,MPI_DOUBLE, 0, MPI_COMM_WORLD), printf("SEND/RECV %d\n", y)); 
 
 extern int processes; 
 extern int processID; 
