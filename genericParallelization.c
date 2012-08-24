@@ -11,6 +11,14 @@
    unified system for tid/processId , numberOfThreads / processes
 */
 
+
+
+/* 
+   GENERAL INSECURITIES: 
+   * when to communicate rateCategories, wr, w2r 
+
+ */
+
 extern unsigned int* mask32; 
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
@@ -279,27 +287,12 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
      master takes care of the reduction; 
   */
 
-  printf("number of models is %d\n", localTree->NumberOfModels); 
-
   double buf[localTree->NumberOfModels]; 
   for(model = 0; model < localTree->NumberOfModels; ++model)
-    {
-      buf[model] = localTree->perPartitionLH[model];   
-      printf("%f\n", buf[model]); 
-    }
-  
-  printf("still alive\n"); 
+    buf[model] = localTree->perPartitionLH[model];        
 
-  ASSIGN_GATHER(globalResult, buf, localTree->NumberOfModels, DOUBLE, tid);   
 
-  if(MASTER_P)
-    {
-      int i ; 
-      puts("\n"); 
-      for(i = 0; i < localTree->numberOfThreads * localTree->NumberOfModels; ++i)
-	printf("%f", globalResult[i]); 
-      puts("\n"); 
-    }
+  ASSIGN_GATHER(globalResult, buf, localTree->NumberOfModels, DOUBLE, tid); 
 
 }
 
@@ -452,21 +445,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
     case THREAD_EVALUATE: 
       {
 	reduceEvaluateIterative(localTree, tid); 
-     
-	if(MASTER_P)
-	  {
-	    for(model = 0; model < tr->NumberOfModels; model++)
-	      { 
-		volatile double 
-		  partitionResult = 0.0;  
-
-		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += globalResult[i * tr->NumberOfModels + model]; 
-
-		tr->perPartitionLH[model] = partitionResult;
-	      }
-	  }
-
+	
 	/* TODO: do the workers need to know the result? i assume not  */
 	/* TODO: can this scheme be part of reduceEvaluateIterative in general? we'll see   */
       }
@@ -663,7 +642,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
      SEND_BUF(buf, localTree->NumberOfModels, MPI_INT); 
 
 
-
      dblBufSize += 2 * localTree->originalCrunchedLength; 
      double
        bufDbl[dblBufSize], 
@@ -704,7 +682,8 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 	       {
 		 if(i % n == tid)
 		   {		 
-		     localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i];
+		     localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i]; 
+		     printf("[%d] assigning rate category %d\n", tr->threadID, tr->rateCategory[i]) ; 
 		     localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
 		     localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 
 
@@ -798,6 +777,42 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 }
 
 
+
+
+
+/* 
+   This is master specific code called once the barrier is
+   passed. Stuff such as reduction operations.  If we execute this
+   here, we can keep the code mostly free from parallel -specific
+   code.
+ */
+void masterPostBarrier(int jobType, tree *tr)
+{
+  int 
+    i, 
+    model; 
+
+  assert(tr->threadID == 0); 
+  
+  switch(jobType)
+    {
+    case THREAD_EVALUATE: 
+      {      
+	for(model = 0; model < tr->NumberOfModels; model++)
+	  { 
+	    volatile double 
+	      partitionResult = 0.0;  
+	    
+	    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
+	      partitionResult += globalResult[i * tr->NumberOfModels + model]; 
+	    
+	    tr->perPartitionLH[model] = partitionResult;
+	  }
+      }
+    }  
+}
+
+
  void masterBarrier(int jobType, tree *tr)
  {
 #ifdef DEBUG_PARALLEL
@@ -832,10 +847,11 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 #else 
   tr->td[0].functionType = jobType; 
   execFunction(tr,tr,0,processes);
-
 #endif
-}
 
+  /* code executed by the master, once the barrier is crossed */
+  masterPostBarrier(jobType, tr);
+}
 
 
 #if IS_PARALLEL
@@ -1208,9 +1224,9 @@ void initializePartitionData(tree *localTree)
   /* aberer: added this, we need it for mpi    */
   if(NOT MASTER_P)
     {
-      localTree->rateCategory    = (int *)    malloc((size_t)localTree->originalCrunchedLength * sizeof(int));	    
-      localTree->wr              = (double *) malloc((size_t)localTree->originalCrunchedLength * sizeof(double)); 
-      localTree->wr2             = (double *) malloc((size_t)localTree->originalCrunchedLength * sizeof(double));   
+      localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
+      localTree->wr              = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double)); 
+      localTree->wr2             = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double));   
     }
   /* end aberer */
 
