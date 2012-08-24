@@ -8,9 +8,12 @@ extern double *globalResult;
 /**********/
 /* CONFIG */
 /**********/
+
+#define _PORTABLE_PTHREADS
+
 #define DEBUG_PARALLEL
 /* #define DEBUG_MPI_EACH_SEND */
-#define GENERIC_PARALLELIZATION
+
 
 
 #define NOT ! 

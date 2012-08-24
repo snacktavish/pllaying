@@ -663,9 +663,6 @@ of the current partition.
          There's a copy of this book in my office 
          */
 
-#ifdef DEBUG_PARALLEL
-      printf("partition likelihood %f\n", partitionLikelihood);  
-#endif
 
       partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
 

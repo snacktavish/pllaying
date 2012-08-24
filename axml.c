@@ -53,11 +53,6 @@
 
 
 
-#ifdef _USE_PTHREADS
-#include <pthread.h>
-
-#endif
-
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
 #include <xmmintrin.h>
 /*
@@ -75,11 +70,7 @@
 
 #ifdef _USE_PTHREADS
 void startPthreads(tree *tr); 
-void masterBarrier(int jobType, tree *tr); 
 #endif
-
-
-#define _PORTABLE_PTHREADS
 
 
 /***************** UTILITY FUNCTIONS **************************/
@@ -845,7 +836,7 @@ static void printREADME(void)
   printf("      [-M]\n");
   printf("      [-P proteinModel]\n");
   printf("      [-q multipleModelFileName] \n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+#if IS_PARALLEL
   printf("      [-Q]\n");
 #endif
   printf("      [-S]\n");
@@ -941,7 +932,7 @@ static void printREADME(void)
   printf("              partitions for multiple models of substitution. For the syntax of this file\n");
   printf("              please consult the manual.\n");  
   printf("\n");
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+#if IS_PARALLEL
   printf("      -Q      Enable alternative data/load distribution algorithm for datasets with many partitions\n");
   printf("              In particular under PSR this can lead to parallel performance improvements of over 50 per cent\n");
 #endif
@@ -1101,7 +1092,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
         /* E recom */
       case 'Q':
-#ifdef _USE_PTHREADS
+#if IS_PARALLEL
         tr->manyPartitions = TRUE;
 #else
         printf("The \"-Q\" option does not have an effect in the sequential version\n");
@@ -1655,211 +1646,6 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 
 
 /************************************************************************************/
-
-
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-
-
-
-
-boolean isThisMyPartition(tree *localTree, int tid, int model)
-{ 
-  if(localTree->partitionAssignment[model] == tid)
-    return TRUE;
-  else
-    return FALSE;
-}
-
-void computeFractionMany(tree *localTree, int tid)
-{
-  int
-    sites = 0;
-
-  int   
-    model;
-
-  for(model = 0; model < localTree->NumberOfModels; model++)
-  {
-    if(isThisMyPartition(localTree, tid, model))
-    {	 
-      localTree->partitionData[model].width = localTree->partitionData[model].upper - localTree->partitionData[model].lower;
-      sites += localTree->partitionData[model].width;
-    }
-    else       	  
-      localTree->partitionData[model].width = 0;       
-  }
-
-
-}
-
-
-
-void computeFraction(tree *localTree, int tid, int n)
-{
-  int
-    i,
-    model;
-
-  for(model = 0; model < localTree->NumberOfModels; model++)
-  {
-    int width = 0;
-
-    for(i = localTree->partitionData[model].lower; i < localTree->partitionData[model].upper; i++)
-      if(i % n == tid)
-        width++;
-
-    localTree->partitionData[model].width = width;
-  }
-}
-
-#endif
-
-
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))    
-
-static int partCompare(const void *p1, const void *p2)
-{
-  partitionType 
-    *rc1 = (partitionType *)p1,
-    *rc2 = (partitionType *)p2;
-
-  int 
-    i = rc1->partitionLength,
-      j = rc2->partitionLength;
-
-  if (i > j)
-    return (-1);
-  if (i < j)
-    return (1);
-  return (0);
-}
-
-
-/* 
-   tr->manyPartitions is set to TRUE if the user has indicated via -Q that there are substantially more partitions 
-   than threads/cores available. In that case we do not distribute sites from each partition in a cyclic fashion to the cores 
-   , but distribute entire partitions to cores. 
-   Achieving a good balance of alignment sites to cores boils down to the multi-processor scheduling problem known from theoretical comp. sci.
-   which is NP-complete.
-   We have implemented very simple "standard" heuristics for solving the multiprocessor scheduling problem that turn out to work very well
-   and are cheap to compute. 
-   */
-
-void multiprocessorScheduling(tree *tr, int tid)
-{
-  int 
-    s,
-    model,
-    modelStates[2] = {4, 20},
-    numberOfPartitions[2] = {0 , 0},
-    arrayLength = sizeof(modelStates) / sizeof(int);
-
-  /* check that we have not addedd any new models for data types with a different number of states
-     and forgot to update modelStates */
-
-  tr->partitionAssignment = (int *)malloc((size_t)tr->NumberOfModels * sizeof(int));
-
-  for(model = 0; model < tr->NumberOfModels; model++)
-  {        
-    boolean 
-      exists = FALSE;
-
-    for(s = 0; s < arrayLength; s++)
-    {
-      exists = exists || (tr->partitionData[model].states == modelStates[s]);
-      if(tr->partitionData[model].states == modelStates[s])
-        numberOfPartitions[s] += 1;
-    }
-
-    assert(exists);
-  }
-
-  if(tid == 0)
-    printBothOpen("\nMulti-processor partition data distribution enabled (\"-Q\" option)\n");
-
-  for(s = 0; s < arrayLength; s++)
-  {
-    if(numberOfPartitions[s] > 0)
-    {
-      size_t   
-        checkSum = 0,
-                 sum = 0;
-
-      int    
-        i,
-        k,
-#ifndef _FINE_GRAIN_MPI
-        n = tr->numberOfThreads,
-#else
-        n = processes,
-#endif
-        p = numberOfPartitions[s],    
-        *assignments = (int *)calloc((size_t)n, sizeof(int));  
-
-      partitionType 
-        *pt = (partitionType *)malloc(sizeof(partitionType) * (size_t)p);
-
-
-
-      for(i = 0, k = 0; i < tr->NumberOfModels; i++)
-      {
-        if(tr->partitionData[i].states == modelStates[s])
-        {
-          pt[k].partitionNumber = i;
-          pt[k].partitionLength = tr->partitionData[i].upper - tr->partitionData[i].lower;
-          sum += (size_t)pt[k].partitionLength;
-          k++;
-        }
-      }
-
-      assert(k == p);
-
-      qsort(pt, p, sizeof(partitionType), partCompare);    
-
-      for(i = 0; i < p; i++)
-      {
-        int 
-          k, 
-          min = INT_MAX,
-          minIndex = -1;
-
-        for(k = 0; k < n; k++)	
-          if(assignments[k] < min)
-          {
-            min = assignments[k];
-            minIndex = k;
-          }
-
-        assert(minIndex >= 0);
-
-        assignments[minIndex] +=  pt[i].partitionLength;
-        assert(pt[i].partitionNumber >= 0 && pt[i].partitionNumber < tr->NumberOfModels);
-        tr->partitionAssignment[pt[i].partitionNumber] = minIndex;
-      }
-
-      if(tid == 0)
-      {
-        for(i = 0; i < n; i++)	       
-          printBothOpen("Process %d has %d sites for %d state model \n", i, assignments[i], modelStates[s]);		  		
-
-        printBothOpen("\n");
-      }
-
-      for(i = 0; i < n; i++)
-        checkSum += (size_t)assignments[i];
-
-      assert(sum == checkSum);
-
-      free(assignments);
-      free(pt);
-    }
-  }
-
-
-
-}
-
-#endif
 
 
 #ifdef _DEBUG_RECOMPUTATION

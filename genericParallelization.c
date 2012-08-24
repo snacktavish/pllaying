@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "genericParallelization.h"
+#include <stdint.h>
+#include <limits.h>
 
+#include "genericParallelization.h"
 #include "axml.h"
 
 
@@ -106,6 +108,202 @@ void startPthreads(tree *tr)
 #ifdef _FINE_GRAIN_MPI
 #endif
 
+
+
+
+/* TODO: move to separate file?  */
+
+boolean isThisMyPartition(tree *localTree, int tid, int model)
+{ 
+  if(localTree->partitionAssignment[model] == tid)
+    return TRUE;
+  else
+    return FALSE;
+}
+
+void computeFractionMany(tree *localTree, int tid)
+{
+  int
+    sites = 0;
+
+  int   
+    model;
+
+  for(model = 0; model < localTree->NumberOfModels; model++)
+  {
+    if(isThisMyPartition(localTree, tid, model))
+    {	 
+      localTree->partitionData[model].width = localTree->partitionData[model].upper - localTree->partitionData[model].lower;
+      sites += localTree->partitionData[model].width;
+    }
+    else       	  
+      localTree->partitionData[model].width = 0;       
+  }
+
+
+}
+
+
+
+void computeFraction(tree *localTree, int tid, int n)
+{
+  int
+    i,
+    model;
+
+  for(model = 0; model < localTree->NumberOfModels; model++)
+  {
+    int width = 0;
+
+    for(i = localTree->partitionData[model].lower; i < localTree->partitionData[model].upper; i++)
+      if(i % n == tid)
+        width++;
+
+    localTree->partitionData[model].width = width;
+  }
+}
+
+
+
+
+static int partCompare(const void *p1, const void *p2)
+{
+  partitionType 
+    *rc1 = (partitionType *)p1,
+    *rc2 = (partitionType *)p2;
+
+  int 
+    i = rc1->partitionLength,
+      j = rc2->partitionLength;
+
+  if (i > j)
+    return (-1);
+  if (i < j)
+    return (1);
+  return (0);
+}
+
+
+/* 
+   tr->manyPartitions is set to TRUE if the user has indicated via -Q that there are substantially more partitions 
+   than threads/cores available. In that case we do not distribute sites from each partition in a cyclic fashion to the cores 
+   , but distribute entire partitions to cores. 
+   Achieving a good balance of alignment sites to cores boils down to the multi-processor scheduling problem known from theoretical comp. sci.
+   which is NP-complete.
+   We have implemented very simple "standard" heuristics for solving the multiprocessor scheduling problem that turn out to work very well
+   and are cheap to compute. 
+   */
+
+void multiprocessorScheduling(tree *tr, int tid)
+{
+  int 
+    s,
+    model,
+    modelStates[2] = {4, 20},
+    numberOfPartitions[2] = {0 , 0},
+    arrayLength = sizeof(modelStates) / sizeof(int);
+
+  /* check that we have not addedd any new models for data types with a different number of states
+     and forgot to update modelStates */
+
+  tr->partitionAssignment = (int *)malloc((size_t)tr->NumberOfModels * sizeof(int));
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+  {        
+    boolean 
+      exists = FALSE;
+
+    for(s = 0; s < arrayLength; s++)
+    {
+      exists = exists || (tr->partitionData[model].states == modelStates[s]);
+      if(tr->partitionData[model].states == modelStates[s])
+        numberOfPartitions[s] += 1;
+    }
+
+    assert(exists);
+  }
+
+  if(tid == 0)
+    printBothOpen("\nMulti-processor partition data distribution enabled (\"-Q\" option)\n");
+
+  for(s = 0; s < arrayLength; s++)
+  {
+    if(numberOfPartitions[s] > 0)
+    {
+      size_t   
+        checkSum = 0,
+                 sum = 0;
+
+      int    
+        i,
+        k,
+#ifndef _FINE_GRAIN_MPI
+        n = tr->numberOfThreads,
+#else
+        n = processes,
+#endif
+        p = numberOfPartitions[s],    
+        *assignments = (int *)calloc((size_t)n, sizeof(int));  
+
+      partitionType 
+        *pt = (partitionType *)malloc(sizeof(partitionType) * (size_t)p);
+
+
+
+      for(i = 0, k = 0; i < tr->NumberOfModels; i++)
+      {
+        if(tr->partitionData[i].states == modelStates[s])
+        {
+          pt[k].partitionNumber = i;
+          pt[k].partitionLength = tr->partitionData[i].upper - tr->partitionData[i].lower;
+          sum += (size_t)pt[k].partitionLength;
+          k++;
+        }
+      }
+
+      assert(k == p);
+
+      qsort(pt, p, sizeof(partitionType), partCompare);    
+
+      for(i = 0; i < p; i++)
+      {
+        int 
+          k, 
+          min = INT_MAX,
+          minIndex = -1;
+
+        for(k = 0; k < n; k++)	
+          if(assignments[k] < min)
+          {
+            min = assignments[k];
+            minIndex = k;
+          }
+
+        assert(minIndex >= 0);
+
+        assignments[minIndex] +=  pt[i].partitionLength;
+        assert(pt[i].partitionNumber >= 0 && pt[i].partitionNumber < tr->NumberOfModels);
+        tr->partitionAssignment[pt[i].partitionNumber] = minIndex;
+      }
+
+      if(tid == 0)
+      {
+        for(i = 0; i < n; i++)	       
+          printBothOpen("Process %d has %d sites for %d state model \n", i, assignments[i], modelStates[s]);		  		
+
+        printBothOpen("\n");
+      }
+
+      for(i = 0; i < n; i++)
+        checkSum += (size_t)assignments[i];
+
+      assert(sum == checkSum);
+
+      free(assignments);
+      free(pt);
+    }
+  }
+}
 
 
 
@@ -242,15 +440,6 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 }
 
 
-static void broadcastPerSiteRates(tree *tr, tree *localTree)
-{
-  int
-    i = 0,
-    model = 0;  
-
-}
-
-
 
 static void broadCastAlpha(tree *localTree, tree *tr, int tid)
 {
@@ -337,7 +526,7 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
       for(i = 0; i < pl->tipVectorLength; ++i)
 	ASSIGN_BUF_DBL(localTree->partitionData[model].tipVector[i],   tr->partitionData[model].tipVector[i]);
     }
-  SEND_BUF(bufDbl, bufSize, MPI_DOUBLE);     
+  SEND_BUF(bufDbl, bufSize, MPI_DOUBLE); 
 #endif
 }
 
@@ -345,8 +534,6 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 static void reduceEvaluateIterative(tree *localTree, int tid)
 {
   int model;
-
-  printf("starting to evaluate\n"); 
 
   evaluateIterative(localTree);
 
@@ -368,9 +555,7 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
   for(model = 0; model < localTree->NumberOfModels; ++model)
     buf[model] = localTree->perPartitionLH[model];        
 
-
   ASSIGN_GATHER(globalResult, buf, localTree->NumberOfModels, DOUBLE, tid); 
-
 }
 
 
@@ -380,9 +565,6 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
 /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
 inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
 {
-#ifdef DEBUG_PARALLEL
-  printf("entering job broadcast\n"); 
-#endif
 
   ASSIGN_INT(localTree->td[0].functionType,           tr->td[0].functionType);
   ASSIGN_INT( localTree->td[0].count,                 tr->td[0].count) ;
@@ -521,16 +703,14 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       break;     
     case THREAD_EVALUATE: 
       {
-	reduceEvaluateIterative(localTree, tid); 
-	
+	reduceEvaluateIterative(localTree, tid); 	
 	/* TODO: do the workers need to know the result? i assume not  */
-	/* TODO: can this scheme be part of reduceEvaluateIterative in general? we'll see   */
       }
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
       /* this is the first call from within makenewz that requires getting the likelihood vectors to the left and 
-         right of the branch via newview and doing som eprecomputations.
+         right of the branch via newview and doing some precomputations.
 	 
          For details see comments in makenewzGenericSpecial.c 
       */
@@ -729,8 +909,20 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	SEND_BUF(bufDbl, dblBufSize, MPI_DOUBLE); 
 
+
+
+
+	/* lets test, if it is a good idea to send around the basic categories  */
+#ifdef _FINE_GRAIN_MPI
+	/* TODO: this is inefficient, need to clarify how much this is necessary   */
+	MPI_Bcast(tr->rateCategory, tr->originalCrunchedLength, MPI_INT, 0, MPI_COMM_WORLD); 
+	MPI_Bcast(tr->wr2, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+	MPI_Bcast(tr->wr, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+#endif
+
+
 	/* 
-	   now re-assign value  
+	   now re-assign values 
 	*/
 	for(model = 0; model < localTree->NumberOfModels; model++)
 	  {
@@ -741,7 +933,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 		    {	     
 		      localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i];
 		      localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
-		      localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 		 	     
+		      localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i]; 
 		    } 
 	      }
 	    else	  
@@ -874,18 +1066,46 @@ void masterPostBarrier(int jobType, tree *tr)
 	      partitionResult += globalResult[i * tr->NumberOfModels + model]; 
 	    
 	    tr->perPartitionLH[model] = partitionResult;
+#ifdef DEBUG_PARALLEL
+	    printf("[%d] result for partition %d => %f\n", model, partitionResult); 
+#endif
 	  }
       }
+    case THREAD_OPT_RATE: 
+      {
+	volatile double result;	
+
+	if(tr->NumberOfModels == 1)
+	  {
+	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
+	      result += globalResult[i]; 		
+
+	    tr->perPartitionLH[0] = result;
+	  }
+	else
+	  {
+	    int j;
+	    volatile double partitionResult;
+	
+	    result = 0.0;
+
+	    for(j = 0; j < tr->NumberOfModels; j++)
+	      {
+		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
+		    partitionResult += globalResult[i * tr->NumberOfModels + j]; 
+
+		result +=  partitionResult;
+		tr->perPartitionLH[j] = partitionResult;
+	      }
+	  }	
+	break; 
+      } 
     }  
 }
 
 
  void masterBarrier(int jobType, tree *tr)
  {
-#ifdef DEBUG_PARALLEL
-  printf("MASTER enters masterBarrier, jobType=%d\n", jobType); 
-#endif
-
 
 #ifdef _USE_PTHREADS
   const int 
@@ -1334,8 +1554,7 @@ void initializePartitionData(tree *localTree)
 
       localTree->partitionData[model].nonGTR = FALSE;            
 
-      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);
-      printf("process %d: init with %d\n", localTree->threadID, localTree->mxtips+1);
+      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);      
       localTree->partitionData[model].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
 
 
