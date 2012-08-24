@@ -476,9 +476,15 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 	/* as for evaluate above, the final sum over the derivatives will be computed by the 
 	   master thread in its sequential part of the code */
 
-	memcpy(globalResult + tid * localTree->numBranches * 2   , dlnLdlz, sizeof(double) * localTree->numBranches);
-	memcpy(globalResult + tid * localTree->numBranches * 2 + localTree->numBranches , d2lnLdlz2, sizeof(double) * localTree->numBranches);
+	/* MPI: implemented as a gather again, pthreads: just buffer copying */	
+	double buf[ 2 * localTree->numBranches]; 
+	memcpy( buf, dlnLdlz, localTree->numBranches * sizeof(double) ); 
+	memcpy(buf + localTree->numBranches, d2lnLdlz2, localTree->numBranches * sizeof(double)); 
+	
+	ASSIGN_GATHER(globalResult, buf,  2 * localTree->numBranches, DOUBLE, tid); 
+
       }
+
       break;
 
     case THREAD_INIT_PARTITION:       
@@ -507,6 +513,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       break;           
     case THREAD_OPT_RATE:
     case THREAD_COPY_RATES:
+
 #ifdef _FINE_GRAIN_MPI
       assert(0); 
 #endif
@@ -679,7 +686,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 		    if(i % n == tid)
 		      {		 
 			localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i]; 
-			printf("[%d] assigning rate category %d\n", tr->threadID, tr->rateCategory[i]) ; 
 			localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
 			localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 
 
