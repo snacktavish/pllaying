@@ -20,6 +20,20 @@ int* popIntFromBuf(int *buf, int *result)
   return buf; 
 }
 
+
+/* :TODO: if we really want to overdo it, this could be templated => or use defines instead  */ 
+double* addDblToBuf(double* buf, double *toAdd)
+{
+  *buf  = *toAdd; 
+  return buf; 
+}
+
+double* popDblFromBuf(double *buf, double *result)
+{
+  *result = *buf; 
+  return buf; 
+}
+
 #define ELEMS_IN_TRAV_INFO  9
 void defineTraversalInfoMPI(MPI_Datatype *result)
 {

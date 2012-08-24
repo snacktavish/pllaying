@@ -2021,6 +2021,7 @@ int main (int argc, char *argv[])
     myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
 
     tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));	  
+
     tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
     tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
     tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
@@ -2141,6 +2142,7 @@ int main (int argc, char *argv[])
   /* 
      this main function is the master thread, so if we want to run RAxML with n threads,
      we use startPthreads to start the n-1 worker threads */
+  
 #ifdef _USE_PTHREADS
   startPthreads(tr);
 #endif

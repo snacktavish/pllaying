@@ -52,14 +52,11 @@
 /* pointers to reduction buffers for storing and gathering the first and second derivative 
    of the likelihood in Pthreads and MPI */
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-extern volatile double *reductionBufferTwo;
-#endif
-
-#ifdef _FINE_GRAIN_MPI
+#if IS_PARALLEL
+void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) ; 
 extern double *globalResult;
 #endif
+
 
 
 extern const unsigned int mask32[32];
@@ -947,91 +944,33 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
 
-#ifdef _USE_PTHREADS
+#ifdef IS_PARALLEL
 
     /* if this is the first iteration of NR we will need to first do this one-time call 
        of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
        subsequent calls to masterBarrier(THREAD_MAKENEWZ, tr); will not require this
        */
+
     if(firstIteration)
-    {
-      tr->td[0].traversalHasChanged = TRUE;	 
-      masterBarrier(THREAD_MAKENEWZ_FIRST, tr);
-      firstIteration = FALSE;
-      tr->td[0].traversalHasChanged = FALSE;
-    }
-    else
-    {	 
-      masterBarrier(THREAD_MAKENEWZ, tr);
-    }
-
-    /* here again we collect the first and secdon derivatives from the various threads 
-       and sum them up. It's similar to what we do in evaluateGeneric() 
-       with the only difference that we have to collect two values (firsrt and second derivative) 
-       instead of onyly one (the log likelihood */
-
-    {
-      int 
-        b;
-
-      for(b = 0; b < tr->numBranches; b++)
       {
-        dlnLdlz[b] = 0.0;
-        d2lnLdlz2[b] = 0.0;
-        for(i = 0; i < tr->numberOfThreads; i++)
-        {
-          dlnLdlz[b]   += reductionBuffer[i * tr->numBranches + b];
-          d2lnLdlz2[b] += reductionBufferTwo[i * tr->numBranches + b];
-        }
+	tr->td[0].traversalHasChanged = TRUE; 
+	masterBarrier(THREAD_MAKENEWZ_FIRST, tr); 
+	firstIteration = FALSE; 
+	tr->td[0].traversalHasChanged = FALSE; 
       }
-    }
-#else
-#ifdef _FINE_GRAIN_MPI
-
-    /* same as for pthreads, but the reduction is implemented in a slightly different
-       way using the MPI_Reduce() command that can compute reductions on more than one element 
-       */
-
-    if(firstIteration)
-    {
-      masterBarrier(THREAD_MAKENEWZ_FIRST, tr);
-      firstIteration = FALSE;
-    }
-    else
-      masterBarrier(THREAD_MAKENEWZ, tr);
-
-    if(tr->numBranches == 1)
-    {
-      int 
-        model;	  	  
-
-      dlnLdlz[0]   = globalResult[0];
-      d2lnLdlz2[0] = globalResult[1];	  	  	 
-    }
-    else
-    {
-      int
-        model;
-
-      for(model = 0; model < tr->NumberOfModels; model++)
-      {	     	     
-        dlnLdlz[model]   = globalResult[model * 2 + 0];
-        d2lnLdlz2[model] = globalResult[model * 2 + 1];	    
-      }
-    }
-
-#else
-
+    else 
+      masterBarrier(THREAD_MAKENEWZ, tr); 
+    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2); 
+#else 
     /* sequential part, if this is the first newton-raphson implementation,
        do the precomputations as well, otherwise just execute the computation
        of the derivatives */
     if(firstIteration)
-    {
-      makenewzIterative(tr);
-      firstIteration = FALSE;
-    }
+      {
+	makenewzIterative(tr);
+	firstIteration = FALSE;
+      }
     execCore(tr, dlnLdlz, d2lnLdlz2);
-#endif
 #endif
 
     /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 

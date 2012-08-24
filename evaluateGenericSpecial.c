@@ -59,12 +59,10 @@
    Note the volatile modifier here, that guarantees that the compiler will not do weird optimizations 
    rearraengements of the code accessing those variables, because it does not know that several concurrent threads 
    will access those variables simulatenously 
+
+   UPDATE: reductionBuffer is now merged with globalResult
    */
 
-
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-#endif
 
 /* a pre-computed 32-bit integer mask */
 
@@ -821,27 +819,6 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* This reduction for the partitioned case is more complicated because each thread 
      needs to store the partial log like of each partition and we then need to collect 
      and add everything */
-
-#ifdef _USE_PTHREADS
-  for(model = 0; model < tr->NumberOfModels; model++)
-  { 
-    volatile double 
-      partitionResult = 0.0;  
-
-    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-      {
-#ifdef DEBUG_PARALLEL
-	printf("reduction: adding %f to %f\n" , reductionBuffer[i * tr->NumberOfModels + model], partitionResult);
-#endif
-	partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
-      }
-
-    tr->perPartitionLH[model] = partitionResult;
-  }
-#else 
-  /* mpi has to do different stuff  */
-  assert(0); 
-#endif
 
 #else
   /* and here is just the sequential case, we directly call evaluateIterative() above 

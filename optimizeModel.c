@@ -59,9 +59,7 @@ extern char lengthFileNameModel[1024];
 extern char *protModels[20];
 
 
-#ifdef _USE_PTHREADS
-extern volatile double          *reductionBuffer;
-#endif
+
 
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
 
@@ -383,7 +381,8 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	if(tr->NumberOfModels == 1)
 	  {
 	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
+	      result += globalResult[i]; 		/* :TODO: to be tested */
+
 	    tr->perPartitionLH[0] = result;
 	  }
 	else
@@ -396,7 +395,8 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	    for(j = 0; j < tr->NumberOfModels; j++)
 	      {
 		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
+		    partitionResult += globalResult[i * tr->NumberOfModels + j]; 
+
 		result +=  partitionResult;
 		tr->perPartitionLH[j] = partitionResult;
 	      }
@@ -471,8 +471,9 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	masterBarrier(THREAD_OPT_ALPHA, tr);
 	if(tr->NumberOfModels == 1)
 	  {
-	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
+	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++) 
+	      result += globalResult[i] ; /* TODO untested !  */
+
 	    tr->perPartitionLH[0] = result;
 	  }
 	else
@@ -485,7 +486,8 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 	    for(j = 0; j < tr->NumberOfModels; j++)
 	      {
 		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
+		  partitionResult += globalResult[i * tr->NumberOfModels + j]; /* TODO untested?  */
+		
 		result +=  partitionResult;
 		tr->perPartitionLH[j] = partitionResult;
 	      }
@@ -1612,7 +1614,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 	    if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
 	      {
 		found = 1;
-		tr->rateCategory[i] = k;				
+		tr->rateCategory[i] = k; 
 		break;
 	      }
 	  }
@@ -2144,22 +2146,18 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  memcpy(oldCategorizedRates[model], tr->partitionData[model].perSiteRates, tr->maxCategories * sizeof(double));	  	 	  
 	}      
       
-#ifdef _USE_PTHREADS
+#if IS_PARALLEL
       /*tr->lhs = lhs;*/
+      printf("\n\n\n\n\nis okay\n\n\n\n"); 
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
       masterBarrier(THREAD_RATE_CATS, tr);
-#else
-#ifdef _FINE_GRAIN_MPI
-      /*      tr->lhs = lhs;*/
-      tr->lower_spacing = lower_spacing;
-      tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr);
-#else
+      /* assert(0);  */
+      /* TODO for mpi, we need to redistribute the rates   */
+#else      
       for(model = 0; model < tr->NumberOfModels; model++)      
 	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
 #endif     
-#endif
 
       for(model = 0; model < tr->NumberOfModels; model++)
 	{     
