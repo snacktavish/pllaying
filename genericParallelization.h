@@ -10,8 +10,7 @@ extern double *globalResult;
 /**********/
 
 #define _PORTABLE_PTHREADS
-
-#define DEBUG_PARALLEL
+/* #define DEBUG_PARALLEL */
 /* #define DEBUG_MPI_EACH_SEND */
 
 

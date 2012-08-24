@@ -102,17 +102,7 @@ void startPthreads(tree *tr)
 
 
 
-/****************/
-/* MPI-SPECIFIC */
-/****************/
-#ifdef _FINE_GRAIN_MPI
-#endif
-
-
-
-
 /* TODO: move to separate file?  */
-
 boolean isThisMyPartition(tree *localTree, int tid, int model)
 { 
   if(localTree->partitionAssignment[model] == tid)
@@ -651,8 +641,8 @@ void printParallelDebugInfo(int type, int tid )
     case THREAD_GATHER_ANCESTRAL: 
       printf("[%d] working on  THREAD_GATHER_ANCESTRAL\n ", tid); 
       break; 
-    case THREAD_WORKER_WAIT: 
-      printf("[%d] working on  THREAD_WORKER_WAIT\n ", tid); 
+    case THREAD_EXIT_GRACEFULLY: 
+      printf("[%d] working on  THREAD_EXIT_GRACEFULLY\n ", tid); 
       break; 
     default: assert(0); 
     }  
@@ -667,7 +657,7 @@ void printParallelDebugInfo(int type, int tid )
    a distributed memory paradigm 
 */
 
-void execFunction(tree *tr, tree *localTree, int tid, int n)
+boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 {
   int
     i,
@@ -979,10 +969,18 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
     case THREAD_GATHER_ANCESTRAL:
       assert(0); 
       break; 
+    case THREAD_EXIT_GRACEFULLY: 
+#ifdef _FINE_GRAIN_MPI
+      MPI_Finalize(); 
+#endif
+      return FALSE; 
+      break; 
     default:
       printf("Job %d\n", currentJob);
       assert(0);
     }
+
+  return TRUE; 
 }
 
 
@@ -1025,11 +1023,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
 
   printf("\nThis is RAxML Worker Process Number: %d\n", tid);
 
-  while(1)
-    {
-  execFunction(tr,tr, tid,n); 
-}
-
+  while(execFunction(tr,tr, tid,n)); 
 #endif
 
   return (void*)NULL;
@@ -1100,12 +1094,12 @@ void masterPostBarrier(int jobType, tree *tr)
 	  }	
 	break; 
       } 
-    }  
+    } 
 }
 
 
- void masterBarrier(int jobType, tree *tr)
- {
+void masterBarrier(int jobType, tree *tr)
+{
 
 #ifdef _USE_PTHREADS
   const int 
@@ -1124,9 +1118,9 @@ void masterPostBarrier(int jobType, tree *tr)
 
   do
     {
-  for(i = 1, sum = 1; i < n; i++)
-    sum += barrierBuffer[i];
-}
+      for(i = 1, sum = 1; i < n; i++)
+	sum += barrierBuffer[i];
+    }
   while(sum < n);  
 
   for(i = 1; i < n; i++)

@@ -6,8 +6,8 @@ CC = $(QUIET) $(CCACHE) mpicc
 CXX = $(QUIET) $(CCACHE) mpic++ 
 
 SSE_FLAGS = -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS  -msse3
-#  -O2 -fomit-frame-pointer -funroll-loops
-CFLAGS = -D_FINE_GRAIN_MPI $(SSE_FLAGS) -D_GNU_SOURCE -g -std=c11   #-D_USE_MPI2 
+# OPTIMIZE :=  -O2 -fomit-frame-pointer -funroll-loops
+CFLAGS = -D_FINE_GRAIN_MPI $(SSE_FLAGS) -D_GNU_SOURCE -g -std=c11 $(OPTIMIZE)   
 LIBRARIES = -lm
 RM = $(QUIET)rm -f
 

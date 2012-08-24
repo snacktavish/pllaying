@@ -363,7 +363,7 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
     
   /* SOS ATTENTION: note the different indexing used for the parallel and sequential versions ! */
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if IS_PARALLEL
   int index = i; 
 #else
   int index = i - tr->partitionData[_model].lower;

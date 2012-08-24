@@ -1497,9 +1497,9 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
-#define THREAD_NEWVIEW_ANCESTRAL 13
-#define THREAD_GATHER_ANCESTRAL 14
-#define THREAD_WORKER_WAIT            15
+#define THREAD_NEWVIEW_ANCESTRAL      13
+#define THREAD_GATHER_ANCESTRAL       14
+#define THREAD_EXIT_GRACEFULLY        15
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
@@ -1510,6 +1510,11 @@ extern void masterBarrier(int jobType, tree *tr);
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
+void multiprocessorScheduling(tree *tr, int tid); 
+void computeFraction(tree *localTree, int tid, int n); 
+void computeFractionMany(tree *localTree, int tid); 
+
 typedef struct
 {
   tree *tr;
@@ -1518,33 +1523,6 @@ typedef struct
   threadData;
 extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#define EXIT_GRACEFULLY        11
-
-
-/* :TODO: replace with MPI_Datatype later */
-typedef struct
-{
-  int jobType;
-  int length;
-  int executeModel[NUM_BRANCHES];
-  double coreLZ[NUM_BRANCHES];
-  double lower_spacing;
-  double upper_spacing;
-} jobDescr;
-
-/* extern void masterBarrierMPI(int jobType, tree *tr); */
-/* extern void fineGrainWorker(tree *tr); */
-/* extern void startFineGrainMpi(tree *tr, analdef *adef); */
-
-/* MPI_Datatype traversalDescriptor; */
-/* MPI_Datatype jobDescriptor; */
-
-
-
 #endif
 
 
@@ -1586,7 +1564,4 @@ static int virtual_width( int n ) {
 #endif
 
 
-void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
-void multiprocessorScheduling(tree *tr, int tid); 
-void computeFraction(tree *localTree, int tid, int n); 
-void computeFractionMany(tree *localTree, int tid); 
+

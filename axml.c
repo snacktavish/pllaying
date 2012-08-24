@@ -1758,6 +1758,7 @@ int main (int argc, char *argv[])
   masterTime = gettime();         
 
 #ifdef _FINE_GRAIN_MPI
+  /* this is the trap for the mpi worker processes   */
   if(NOT MASTER_P) 
     {
       threadData tData; 
@@ -1765,6 +1766,7 @@ int main (int argc, char *argv[])
       tData.threadNumber = processID; 
       
       likelihoodThread(&tData);
+      return 0; 
     }
 #endif
 
@@ -2166,12 +2168,6 @@ int main (int argc, char *argv[])
 
   finalizeInfoFile(tr, adef);
 
-#ifdef _FINE_GRAIN_MPI
-  /* :TODO: maybe make this generic as well */
-  masterBarrier(EXIT_GRACEFULLY,tr); 
-  MPI_Finalize();
-#endif
-
 #ifdef _DEBUG_RECOMPUTATION
   {
       double t = gettime() - masterTime;
@@ -2184,6 +2180,11 @@ int main (int argc, char *argv[])
         printBothOpen("No Recom stlen %f, t %f\n", tr->stlenTime, t);
   }
 #endif 
+
+#ifdef IS_PARALLEL
+  /* workers escape from their while loop (should be joined in pthread case )  */
+  masterBarrier(THREAD_EXIT_GRACEFULLY,tr); 
+#endif
 
 
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */
