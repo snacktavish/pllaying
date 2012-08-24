@@ -139,29 +139,106 @@ void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 )
 
 
 
-
-static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
+/* 
+   reads from buffer or writes rates (doubles) into buffer 
+   returns number  of elems written / read 
+   estimate simply return the number of rates 
+*/
+static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid, boolean read, boolean estimate)
 {
   int 
     model,
     i;
+  double 
+    *initPtr = buf; 
 
-  if(tr->manyPartitions)
-    for(model = 0; model < tr->NumberOfModels; model++)
-      {
-	if(isThisMyPartition(tr, tid, model))	
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      if(tr->manyPartitions)
+	{
+	  if(isThisMyPartition(tr, tid, model))	
+	    for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
+	      {
+		if(NOT estimate)
+		  {
+		    if(read)
+		      *buf = srcTar[i]; 
+		    else 
+		      srcTar[i] = *buf; 
+		  }
+		buf++;
+	      }	  
+	}
+      
+      else
+	{
+	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)	    
+	    if(i % n == tid)
+	      {
+		if(NOT estimate)
+		  {
+		    if(read)
+		      *buf = srcTar[i];
+		    else 
+		      srcTar[i] = *buf; 
+		  }
+		buf++; 
+	      }
+	}
+    }
+  
+  return buf - initPtr; 
+}
+
+
+void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n, int tid)
+{  
+  double 
+    buf[tr->originalCrunchedLength]; 
+  
+  for(int i = 0; i < n; ++i )
+    {      
+#ifdef _USE_PTHREADS
+      if(i != tid) 		/* for pthreads, only operate on private rates */
+	continue;
+#endif
+
+      /* extract rates into buffer (for relevant thread) or just get the number of rates for this thread */
+      int numberOfRates = doublesToBuffer(buf, local,tr, n , i, TRUE, i != tid); 
+      
+      /* each thread broadcasts its rates (threads: no effect) */
+      BCAST_BUF(buf, numberOfRates, MPI_DOUBLE, i); 
+
+      /* now each process received the rates and writes it back into its structure */
+      int assertNum = doublesToBuffer(buf, global, tr, n, i, FALSE, FALSE); 
+      assert(assertNum == numberOfRates); 
+    }  
+}
+
+
+
+static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
+{
+  int
+    model,
+    i;
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {
+      if(tr->manyPartitions)
+	{
+	  if(isThisMyPartition(tr, tid, model))
+	    for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
+	      dst[i] = src[i];
+	}
+      
+      else
+	{
 	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
-	    dst[i] = src[i];       
-      }
-  else
-    for(model = 0; model < tr->NumberOfModels; model++)
-      {
-	for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
-	  {
 	    if(i % n == tid)
 	      dst[i] = src[i];
-	  }
-      }
+	}
+    }
 }
 
 
@@ -458,10 +535,7 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
          For details see comments in makenewzGenericSpecial.c 
       */
     case  THREAD_MAKENEWZ:
-      {
-	int 
-	  b;
-	
+      {	
 	/* :TODO: important: can we do that?  */
 	/* volatile */
 	double
@@ -514,9 +588,6 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
     case THREAD_OPT_RATE:
     case THREAD_COPY_RATES:
 
-#ifdef _FINE_GRAIN_MPI
-      assert(0); 
-#endif
       /* if we are optimizing the rates in the transition matrix Q this induces recomputing the eigenvector eigenvalue 
 	 decomposition and the tipVector as well because of the special numerics in RAxML, the matrix of eigenvectors 
 	 is "rotated" into the tip lookup table.
@@ -592,25 +663,19 @@ void execFunction(tree *tr, tree *localTree, int tid, int n)
       } 
       break;    
     case THREAD_RATE_CATS: 
-#ifdef _FINE_GRAIN_MPI
-      assert(0); 
-#endif
-      /* this is for optimizing per-site rate categories under PSR, let's worry about this later */
+      {
+	/* this is for optimizing per-site rate categories under PSR, let's worry about this later */
 
-      if(tid > 0)
-	{
-	  localTree->lower_spacing = tr->lower_spacing;
-	  localTree->upper_spacing = tr->upper_spacing;
-	}
+	ASSIGN_DBL( localTree->lower_spacing,  tr->lower_spacing);
+	ASSIGN_DBL( localTree->upper_spacing,  tr->upper_spacing);
 
-      optRateCatPthreads(localTree, localTree->lower_spacing, localTree->upper_spacing, localTree->lhs, n, tid);
+	optRateCatPthreads(localTree, localTree->lower_spacing, localTree->upper_spacing, localTree->lhs, n, tid);
 
-      if(tid > 0)
-	{
-	  collectDouble(tr->patrat,       localTree->patrat,         localTree, n, tid);
-	  collectDouble(tr->patratStored, localTree->patratStored,   localTree, n, tid);
-	  collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
-	}
+	gatherAndRedistributeDoubles(localTree->patrat, tr->patrat, localTree, n, tid); 
+	gatherAndRedistributeDoubles(localTree->patratStored, tr->patratStored, localTree, n, tid); 
+	gatherAndRedistributeDoubles(localTree->lhs, tr->lhs, localTree, n, tid); 
+
+      }
       break;
     case THREAD_COPY_RATE_CATS:
       {
@@ -832,7 +897,7 @@ void masterPostBarrier(int jobType, tree *tr)
   threadJob = (jobType << 16) + jobCycle;
 
   execFunction(tr, tr, 0, n);
-
+  
   int 
     i, 
     sum;

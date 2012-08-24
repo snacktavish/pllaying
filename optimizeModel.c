@@ -1642,7 +1642,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 }
 
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if IS_PARALLEL
 
 void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
@@ -2148,12 +2148,9 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
       
 #if IS_PARALLEL
       /*tr->lhs = lhs;*/
-      printf("\n\n\n\n\nis okay\n\n\n\n"); 
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr);
-      /* assert(0);  */
-      /* TODO for mpi, we need to redistribute the rates   */
+      masterBarrier(THREAD_RATE_CATS, tr);      
 #else      
       for(model = 0; model < tr->NumberOfModels; model++)      
 	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
