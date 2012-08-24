@@ -69,7 +69,7 @@ int* popIntFromBuf(int *buf, int *result);
 #define ASSIGN_BUF(x,y) (x = y)
 #define ASSIGN_BUF_DBL(x,y) (x = y)
 #define ASSIGN_DBL(x,y) (x = y)
-#define ASSIGN_DBLS(tar,src,length) memcpy(tar, src, length * sizeof(double)) /*  :TODO: must be memset or memmove */
+#define ASSIGN_DBLS(tar,src,length) memmove(tar, src, length * sizeof(double))
 #define DOUBLE double 	/* just rededining that to make the source code less confusing */
 #define ASSIGN_GATHER(tar,src,length,type,tid) (memcpy((tar) + (tid) * (length) ,src, length * sizeof(type)))
 #define SEND_BUF(buf, bufSize, type) 

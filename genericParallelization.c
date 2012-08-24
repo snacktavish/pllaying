@@ -693,8 +693,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       break;     
     case THREAD_EVALUATE: 
       {
-	reduceEvaluateIterative(localTree, tid); 	
-	/* TODO: do the workers need to know the result? i assume not  */
+	reduceEvaluateIterative(localTree, tid); 
       }
       break;	
     case THREAD_MAKENEWZ_FIRST:
@@ -706,8 +705,6 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       */
     case  THREAD_MAKENEWZ:
       {	
-	/* :TODO: important: can we do that?  */
-	/* volatile */
 	double
 	  dlnLdlz[NUM_BRANCHES],
 	  d2lnLdlz2[NUM_BRANCHES]; 
@@ -1142,9 +1139,11 @@ void masterBarrier(int jobType, tree *tr)
  {
   size_t
     model; 
+  int
+    totalLength = 0; 
 
 #ifdef _USE_PTHREADS
-  int totalLength = 0; 
+
   localTree->threadID = *tid; 
   printf("my id is %d\n", *tid); 
   assert(localTree != tr);
@@ -1206,9 +1205,7 @@ void masterBarrier(int jobType, tree *tr)
   ASSIGN_BUF(      localTree->partitionData[model].upper ,                 tr->partitionData[model].upper); 
 
   localTree->perPartitionLH[model]                      = 0.0;
-#ifdef _USE_PTHREADS
   totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
-#endif
     }
 
 #ifdef _FINE_GRAIN_MPI
@@ -1217,11 +1214,7 @@ void masterBarrier(int jobType, tree *tr)
     MPI_Bcast(buf, bufSize, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
 
-
-#ifdef _USE_PTHREADS
-  /* :TODO: this does not hold for MPI, does it?   */
   assert(totalLength == localTree->originalCrunchedLength);
-#endif
 
   ASSIGN_DBL(localTree->vectorRecomFraction, tr->vectorRecomFraction); 
 }
@@ -1365,7 +1358,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   else
     computeFraction(localTree, tid, n);
 
-#else  /* :TODO: SEQUENTIAL -- legacy  */
+#else  /* sequential */
   assert(tr == localTree);
 
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
@@ -1375,7 +1368,6 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   initializePartitionData(localTree); 
 
 #if NOT IS_PARALLEL
-  /* :TODO: */
   /* figure in tip sequence data per-site pattern weights */ 
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {
