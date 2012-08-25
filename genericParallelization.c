@@ -511,10 +511,11 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid
 
 void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n, int tid)
 {  
+  int i; 
   double 
     buf[tr->originalCrunchedLength]; 
   
-  for(int i = 0; i < n; ++i )
+  for(i = 0; i < n; ++i )
     {      
 #ifdef _USE_PTHREADS
       if(i != tid) 		/* for pthreads, only operate on private rates */
@@ -1090,6 +1091,9 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       break;
     case THREAD_PER_SITE_LIKELIHOODS:      
       {
+	int 
+	  i; 
+
 	/* compute per-site log likelihoods for the sites/partitions 
 	   that are handled by this thread */
 	perSiteLogLikelihoodsPthreads(localTree, localTree->lhs, n, tid);
@@ -1101,7 +1105,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
 
-	for(int i = 0; i < tr->originalCrunchedLength; ++i)
+	for(i = 0; i < tr->originalCrunchedLength; ++i)
 	  printf("%f,", tr->lhs[i]); 
 	printf("\n"); 
 	

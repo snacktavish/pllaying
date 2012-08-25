@@ -10,7 +10,7 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o parsePartitions.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o mesh.o bipartitionList.o fineGrainMpi.o restartHashTable.o
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o  treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o  bipartitionList.o fineGrainMpi.o restartHashTable.o genericParallelization.o
 
 all : raxmlLight-MPI
 
