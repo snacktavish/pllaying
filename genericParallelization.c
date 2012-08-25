@@ -171,10 +171,8 @@ void startPthreads(tree *tr)
 
 /* function that computes per-site log likelihoods in pthreads */
 
-void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs)
+void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
 {
-  int n = tr->numberOfThreads, 
-    tid = tr->threadID; 
   size_t 
     model, 
     i;
@@ -1100,7 +1098,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       {
 	/* compute per-site log likelihoods for the sites/partitions 
 	   that are handled by this thread */
-	perSiteLogLikelihoodsPthreads(localTree, localTree->lhs);
+	perSiteLogLikelihoodsPthreads(localTree, localTree->lhs, n, tid);
 
 	/* do a parallel gather operation, the threads will write their results 
 	   into the global buffer tr->lhs that will then contain all per-site log likelihoods

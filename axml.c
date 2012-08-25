@@ -2055,7 +2055,7 @@ int main (int argc, char *argv[])
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
 
-    if(1)
+    if(0)
       {
 	/* allocate data structure for storing per-site log likelihoods 
 	   tr->originalCrunchedLength is the number of site patterns of the alignment
