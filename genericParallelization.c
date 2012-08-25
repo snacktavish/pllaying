@@ -33,8 +33,83 @@ extern volatile char *barrierBuffer;
 void pinToCore(int tid);
 /* End  */
 
-
 static void initializePartitionsOLD(tree *tr, tree *localTree, int tid, int n); 
+
+
+/*****************/
+/* MPI specific  */
+/*****************/
+#ifdef _FINE_GRAIN_MPI
+
+int* addIntToBuf(int* buf, int *toAdd)
+{
+  *buf  = *toAdd; 
+  return buf; 
+}
+
+int* popIntFromBuf(int *buf, int *result)
+{
+  *result = *buf; 
+  return buf; 
+}
+
+
+/* :TODO: if we really want to overdo it, this could be templated => or use defines instead  */ 
+double* addDblToBuf(double* buf, double *toAdd)
+{
+  *buf  = *toAdd; 
+  return buf; 
+}
+
+double* popDblFromBuf(double *buf, double *result)
+{
+  *result = *buf; 
+  return buf; 
+}
+
+
+
+
+/* 
+   This seems to be a very safe method to define your own mpi
+   datatypes (often there are problems with padding). But it is not
+   entirely for the weak of heart...
+*/
+
+#define ELEMS_IN_TRAV_INFO  9
+void defineTraversalInfoMPI(MPI_Datatype *result)
+{
+/* :TODO: I guess, we have to free the mpi datatype later */
+/* :TODO: in the best case, add all defined datatypes to an array in tree */
+
+  int i ; 
+  MPI_Aint base; 
+  int blocklen[ELEMS_IN_TRAV_INFO+1] = {1, 1, 1, 1, NUM_BRANCHES, NUM_BRANCHES, 1,1,1,1}; 
+  MPI_Aint disp[ELEMS_IN_TRAV_INFO+1];
+  MPI_Datatype type[ELEMS_IN_TRAV_INFO+1] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT, MPI_UB}; 
+  traversalInfo desc[2]; 
+
+  MPI_Address( desc, disp);
+  MPI_Address( &(desc[0].pNumber), disp + 1 );
+  MPI_Address( &(desc[0].qNumber), disp + 2 );  
+  MPI_Address( &(desc[0].rNumber), disp + 3); 
+  MPI_Address( desc[0].qz, disp + 4 );
+  MPI_Address( desc[0].rz, disp + 5 );
+  MPI_Address( &(desc[0].slot_p), disp + 6);
+  MPI_Address( &(desc[0].slot_q), disp + 7);
+  MPI_Address( &(desc[0].slot_r), disp + 8);
+  MPI_Address( desc + 1, disp + 9);
+
+  base = disp[0]; 
+  for(i = 0; i < ELEMS_IN_TRAV_INFO+1; ++i)
+    disp[i] -= base;
+
+  MPI_Type_struct( ELEMS_IN_TRAV_INFO+1 , blocklen, disp, type, result);
+  MPI_Type_commit(result);
+}
+
+#endif
+
 
 /********************/
 /* PTHREAD-SPECIFIC */
@@ -99,6 +174,69 @@ void startPthreads(tree *tr)
     }
 }
 #endif
+
+
+
+/* function that computes per-site log likelihoods in pthreads */
+
+void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
+{
+  size_t 
+    model, 
+    i;
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+  {      
+    size_t 
+      localIndex = 0;
+
+    /* decide if this partition is handled by the thread when -Q is ativated 
+       or when -Q is not activated figure out which sites have been assigned to the 
+       current thread */
+
+    boolean 
+      execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
+
+    /* if the entire partition has been assigned to this thread (-Q) or if -Q is not activated 
+       we need to compute some per-site log likelihoods with thread tid for this partition */
+
+    if(execute)
+      for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
+      {
+        /* if -Q is active we compute all per-site log likelihoods for the partition,
+           othwerise we only compute those that have been assigned to thread tid 
+           using the cyclic distribution scheme */
+
+        if(tr->manyPartitions || (i % n == tid))
+        {
+          double 
+            l;
+
+          /* now compute the per-site log likelihood at the current site */
+
+          switch(tr->rateHetModel)
+          {
+            case CAT:
+              l = evaluatePartialGeneric (tr, localIndex, tr->partitionData[model].perSiteRates[tr->partitionData[model].rateCategory[localIndex]], model);
+              break;
+            case GAMMA:
+              l = evaluatePartialGeneric (tr, localIndex, 1.0, model);
+              break;
+            default:
+              assert(0);
+          }
+
+          /* store it in an array that is local in memory to the current thread,
+             see function collectDouble() in axml.c for understanding how we then collect these 
+             values stored in local arrays from the threads */
+
+          lhs[i] = l;
+
+          localIndex++;
+        }
+      }
+  }
+}
 
 
 
@@ -330,9 +468,9 @@ void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 )
 /* 
    reads from buffer or writes rates (doubles) into buffer 
    returns number  of elems written / read 
-   estimate simply return the number of rates 
+   countOnly: simply return the number of elements 
 */
-static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid, boolean read, boolean estimate)
+static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid, boolean read, boolean countOnly)
 {
   int 
     model,
@@ -347,7 +485,7 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid
 	  if(isThisMyPartition(tr, tid, model))	
 	    for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
 	      {
-		if(NOT estimate)
+		if(NOT countOnly)
 		  {
 		    if(read)
 		      *buf = srcTar[i]; 
@@ -363,7 +501,7 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid
 	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)	    
 	    if(i % n == tid)
 	      {
-		if(NOT estimate)
+		if(NOT countOnly)
 		  {
 		    if(read)
 		      *buf = srcTar[i];
@@ -394,7 +532,7 @@ void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n
       /* extract rates into buffer (for relevant thread) or just get the number of rates for this thread */
       int numberOfRates = doublesToBuffer(buf, local,tr, n , i, TRUE, i != tid); 
       
-      /* each thread broadcasts its rates (threads: no effect) */
+      /* each mpi worker broadcasts its rates (pthreads: no effect) */
       BCAST_BUF(buf, numberOfRates, MPI_DOUBLE, i); 
 
       /* now each process received the rates and writes it back into its structure */
@@ -405,30 +543,55 @@ void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n
 
 
 
+
 static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 {
+  double 
+    resultBuf[tr->originalCrunchedLength],
+    buf[tr->originalCrunchedLength]; 
   int
-    model,
-    i;
+    assertNum, 
+    displacements[tr->numberOfThreads]; 
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+
+  /* gather own values into buffer  */
+  int numberCollected = doublesToBuffer(buf, src, tr,n,tid,TRUE, FALSE);   
+
+#ifdef _FINE_GRAIN_MPI 
+  /* this communicates all the values to the master */
+  
+  int numberPerWorker[tr->numberOfThreads];   
+  if(MASTER_P)			/* master counts number to receive, receives and writes back */
     {
-      if(tr->manyPartitions)
+      for(int i = 0; i < n; ++i)
 	{
-	  if(isThisMyPartition(tr, tid, model))
-	    for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
-	      dst[i] = src[i];
+	  numberPerWorker[i] = doublesToBuffer(buf,src,tr,n,i,FALSE, TRUE); 
+	  displacements[i] = i == 0 ? 0 : displacements[i-1] + numberPerWorker[i-1]; 
+	  printf("numPerW = %d\tdispl=%d\n", numberPerWorker[i], displacements[i]); 
 	}
       
-      else
-	{
-	  for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
-	    if(i % n == tid)
-	      dst[i] = src[i];
-	}
-    }
-}
+      MPI_Gatherv(buf, numberCollected, MPI_DOUBLE,
+		  resultBuf, numberPerWorker, displacements,  MPI_DOUBLE,
+		  0, MPI_COMM_WORLD); 
 
+      double *bufPtr = resultBuf; 
+      for(int i = 0 ; i < n; ++i)
+	{
+	  int numberWritten = doublesToBuffer(bufPtr, dst,tr,n,i, FALSE, FALSE); 
+	  bufPtr += numberWritten; 
+	  assertNum += numberWritten; 
+	}    
+      
+      assert(assertNum == tr->originalCrunchedLength);
+    }
+  else 				/* workers only send their buffer   */
+    MPI_Gatherv(buf, numberCollected, MPI_DOUBLE, resultBuf, numberPerWorker, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD);   
+#else 
+  /* pthread only writes to global space  */  
+  assertNum = doublesToBuffer(resultBuf, dst,tr,n,tid, FALSE, FALSE);     
+  assert(assertNum == numberCollected); 
+#endif
+}
 
 
 static void broadCastAlpha(tree *localTree, tree *tr, int tid)
@@ -773,7 +936,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	*/
 
 #ifdef _LOCAL_DISCRETIZATION   
-	assert(0); 			/* andre: did not implement this part, since it is not sure, if it persists   */
+	assert(0); /* andre: did not implement this part, since it is not sure, if it persists   */
 
 	if(tid > 0)
 	  for(model = 0; model < localTree->NumberOfModels; model++)	    	     
@@ -934,23 +1097,17 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	  }
       }
       break;
-    case THREAD_PER_SITE_LIKELIHOODS:
-#ifdef _FINE_GRAIN_MPI
-      assert(0); 
-#endif
-#ifdef _USE_PTHREADS		/* added by andre */
+    case THREAD_PER_SITE_LIKELIHOODS:      
       /* compute per-site log likelihoods for the sites/partitions 
 	 that are handled by this thread */
       perSiteLogLikelihoodsPthreads(localTree, localTree->lhs, n, tid);
-#endif
 
       /* do a parallel gather operation, the threads will write their results 
 	 into the global buffer tr->lhs that will then contain all per-site log likelihoods
 	 in the proper order 
       */
 
-      if(tid > 0)
-	collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
+      collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
 
       break;
       /* check for errors */
@@ -1100,7 +1257,18 @@ void masterPostBarrier(int jobType, tree *tr)
 	      }
 	  }	
 	break; 
-      } 
+      }
+    case THREAD_PER_SITE_LIKELIHOODS:
+      {
+	/* now just compute the sum over per-site log likelihoods for error checking */      
+	double accumulatedPerSiteLikelihood = 0.; 
+	for(i = 0; i < tr->originalCrunchedLength; i++)
+	  accumulatedPerSiteLikelihood += tr->lhs[i];
+
+	printf("RESULT: %f\t%f", tr->likelihood, accumulatedPerSiteLikelihood); 
+	assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
+      }
+      break;
     } 
 }
 
@@ -1142,7 +1310,7 @@ void masterBarrier(int jobType, tree *tr)
 }
 
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
  /* encapsulated this, s.t. it becomes more clear, that the pthread-master must not execute this */
  static void assignAndInitPart1(tree *localTree, tree *tr, int *tid)
@@ -1343,7 +1511,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   size_t
     model;
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
@@ -1377,7 +1545,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
   initializePartitionData(localTree); 
 
-#if NOT IS_PARALLEL
+#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* figure in tip sequence data per-site pattern weights */ 
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {

@@ -836,7 +836,7 @@ static void printREADME(void)
   printf("      [-M]\n");
   printf("      [-P proteinModel]\n");
   printf("      [-q multipleModelFileName] \n");
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   printf("      [-Q]\n");
 #endif
   printf("      [-S]\n");
@@ -932,7 +932,7 @@ static void printREADME(void)
   printf("              partitions for multiple models of substitution. For the syntax of this file\n");
   printf("              please consult the manual.\n");  
   printf("\n");
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   printf("      -Q      Enable alternative data/load distribution algorithm for datasets with many partitions\n");
   printf("              In particular under PSR this can lead to parallel performance improvements of over 50 per cent\n");
 #endif
@@ -1092,7 +1092,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
 
         /* E recom */
       case 'Q':
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
         tr->manyPartitions = TRUE;
 #else
         printf("The \"-Q\" option does not have an effect in the sequential version\n");
@@ -1926,7 +1926,7 @@ int main (int argc, char *argv[])
   }
 
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* 
      this main function is the master thread, so if we want to run RAxML with n threads,
      we use startPthreads to start the n-1 worker threads */
@@ -2055,7 +2055,7 @@ int main (int argc, char *argv[])
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
 
-    if(0)
+    if(1)
       {
 	/* allocate data structure for storing per-site log likelihoods 
 	   tr->originalCrunchedLength is the number of site patterns of the alignment
@@ -2181,9 +2181,9 @@ int main (int argc, char *argv[])
   }
 #endif 
 
-#ifdef IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* workers escape from their while loop (should be joined in pthread case )  */
-  masterBarrier(THREAD_EXIT_GRACEFULLY,tr); 
+  masterBarrier(THREAD_EXIT_GRACEFULLY,tr);
 #endif
 
 

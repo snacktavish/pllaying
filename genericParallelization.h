@@ -26,7 +26,6 @@ void *likelihoodThread(void *tData);
 /******************/
 #ifdef _FINE_GRAIN_MPI
 #include <mpi.h>
-#include "mpiHelpers.h"
 
 #ifdef DEBUG_MPI_EACH_SEND
 #define DEBUG_PRINT(text, elem) printf(text, elem)

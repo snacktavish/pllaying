@@ -976,7 +976,7 @@ void newviewIterative (tree *tr, int startIndex)
 
 #ifdef _DEBUG_RECOMPUTATION
   /* recom */
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 #else
   countTraversal(tr);
 #endif
@@ -1484,7 +1484,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
 
     storeExecuteMaskInTraversalDescriptor(tr);      
 
-#ifdef IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
     /* do the parallel for join for pthreads
        not that we do not need a reduction operation here, but just a barrier to make 
        sure that all threads are done with their partition */
@@ -1796,7 +1796,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   assert(tr->td[0].count == 1);  
   
-#ifdef IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
 
   masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr);
@@ -1809,7 +1809,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   tr->td[0].traversalHasChanged = FALSE;
 
-#ifdef IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* invoke another parallel region to gather the marginal ancestral probabilities 
      from the threads/MPI processes */
 

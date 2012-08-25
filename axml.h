@@ -919,12 +919,6 @@ typedef  struct  {
   volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  /*
-    do we need this stuff ?
-  */
-  /*unsigned int **bitVectors;
-    hashtable *h;*/
-  
     
   int *partitionAssignment;     
  

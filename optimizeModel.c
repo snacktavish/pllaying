@@ -373,7 +373,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
       assert(pos == numberOfModels);
 
-#if IS_PARALLEL      
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
       masterBarrier(THREAD_OPT_RATE, tr);
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
@@ -1026,7 +1026,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
     *result     = (double *)malloc(sizeof(double) * numberOfModels),
     *_x         = (double *)malloc(sizeof(double) * numberOfModels);   
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
    int revertModel = 0;
 #endif   
 
@@ -1085,7 +1085,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4, tr->useMedian); 
 #endif		
 	    }
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  revertModel++;
 #endif
 	}  
@@ -1093,7 +1093,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
   /* broadcast new alpha value to all parallel threads/processes */
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   if(revertModel > 0)
     masterBarrier(THREAD_COPY_ALPHA, tr);
 #endif
@@ -1141,7 +1141,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
     *result = (double *)malloc(sizeof(double) * numberOfModels),
     *_x     = (double *)malloc(sizeof(double) * numberOfModels); 
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
    int revertModel = 0;
 #endif
 
@@ -1227,7 +1227,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 
       for(k = 0, pos = 0; k < ll->entries; k++)
 	{
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  revertModel = 0;
 #endif
 	  if(ll->ld[k].valid)
@@ -1242,7 +1242,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 		      initReversibleGTR(tr, index);
 #endif
 		    }
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 		  revertModel++;
 #endif
 		}
@@ -1250,7 +1250,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 	    }
 	}
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       if(revertModel > 0)
 	masterBarrier(THREAD_COPY_RATES, tr);
 #endif
@@ -1570,7 +1570,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 }
 
 
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
 void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
@@ -1857,7 +1857,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }	            	  
 	  
-#if NOT IS_PARALLEL
+#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  {
 	    int 
 	      localCount = 0;
@@ -1993,7 +1993,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }
 	}         
-#if NOT IS_PARALLEL
+#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       for(model = 0; model < tr->NumberOfModels; model++)	
 	{   	  	  	 
 	  int 
@@ -2011,7 +2011,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 #endif
     }
   
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   masterBarrier(THREAD_COPY_RATE_CATS, tr);
 #endif               
 }
@@ -2074,7 +2074,7 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  memcpy(oldCategorizedRates[model], tr->partitionData[model].perSiteRates, tr->maxCategories * sizeof(double));	  	 	  
 	}      
       
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
@@ -2332,7 +2332,7 @@ static void autoProtein(tree *tr)
 		}
 	    }
 	  
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 	  
@@ -2370,7 +2370,7 @@ static void autoProtein(tree *tr)
       
       printBothOpen("\n\n");
             
-#if IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 
