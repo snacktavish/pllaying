@@ -433,41 +433,10 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		}
 	    }
 	}
-#ifdef _USE_PTHREADS   
-      {
-	volatile double result;
-	
-	masterBarrier(THREAD_OPT_ALPHA, tr);
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++) 
-	      result += globalResult[i] ; /* TODO untested !  */
-
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
-
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += globalResult[i * tr->NumberOfModels + j]; /* TODO untested?  */
-		
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-      masterBarrier(THREAD_OPT_ALPHA, tr);     
-#else
+#if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+      masterBarrier(THREAD_OPT_ALPHA, tr);
+#else  
       evaluateGeneric(tr, tr->start, TRUE);
-#endif
 #endif
             
       for(i = 0; i < ll->entries; i++)	

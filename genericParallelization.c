@@ -692,9 +692,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       newviewIterative(localTree, 0);
       break;     
     case THREAD_EVALUATE: 
-      {
-	reduceEvaluateIterative(localTree, tid); 
-      }
+      reduceEvaluateIterative(localTree, tid); 
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
@@ -737,15 +735,11 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       break;          
     case THREAD_COPY_ALPHA: 
     case THREAD_OPT_ALPHA:
-#ifdef _FINE_GRAIN_MPI
-      assert(0); 
-#endif
       /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
 	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
       
-      
       /* distribute the new discrete gamma rates to the threads */
-      broadCastAlpha(localTree, tr, tid);
+      broadCastAlpha(localTree,tr, tid);
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
       if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
@@ -1062,6 +1056,22 @@ void masterPostBarrier(int jobType, tree *tr)
 #endif
 	  }
       }
+    case THREAD_OPT_ALPHA: 
+      {
+	int j;
+	volatile double partitionResult;	
+	volatile double result = 0.0;
+
+	for(j = 0; j < tr->NumberOfModels; j++)
+	  {
+	    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++) 
+	      partitionResult += globalResult[i * tr->NumberOfModels + j];
+	    
+	    result +=  partitionResult;
+	    tr->perPartitionLH[j] = partitionResult;
+	  }
+	break; 
+      }      
     case THREAD_OPT_RATE: 
       {
 	volatile double result;	
