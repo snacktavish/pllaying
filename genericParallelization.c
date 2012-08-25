@@ -559,17 +559,11 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 	{
 	  numberPerWorker[i] = doublesToBuffer(buf,src,tr,n,i,FALSE, TRUE); 
 	  displacements[i] = i == 0 ? 0 : displacements[i-1] + numberPerWorker[i-1]; 
-	  printf("numPerW = %d\tdispl=%d\n", numberPerWorker[i], displacements[i]); 
 	}
       
       MPI_Gatherv(buf, numberCollected, MPI_DOUBLE,
 		  resultBuf, numberPerWorker, displacements,  MPI_DOUBLE,
 		  0, MPI_COMM_WORLD); 
-
-      printf("\n\nMASTER received"); 
-      for(int i = 0; i < tr->originalCrunchedLength; ++i)
-	printf("%f,", resultBuf[i]);
-      printf("\n\n"); 
 
       double *bufPtr = resultBuf; 
       for(int i = 0 ; i < n; ++i)
@@ -1514,7 +1508,6 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   size_t
     model;
 
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
@@ -1539,37 +1532,12 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   else
     computeFraction(localTree, tid, n);
 
-#else  /* sequential */
-  assert(tr == localTree);
-
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
-#endif	   
-
   initializePartitionData(localTree); 
 
-#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  /* figure in tip sequence data per-site pattern weights */ 
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    {
-      size_t
-	j,
-	lower = tr->partitionData[model].lower,
-	width = tr->partitionData[model].upper - lower;  
-
-      for(j = 1; j <= (size_t)tr->mxtips; j++)
-	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
-
-      memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
-    }  
-#else
   {
     size_t 
       model,  
-      j,
-      i,
-      globalCounter = 0,
-      localCounter  = 0,
+      i,      
       countOffset,
       myLength = 0;
 
@@ -1597,182 +1565,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
     distributeYVectors(localTree, tr); 
   }
-#endif
 
   initMemorySavingAndRecom(localTree);
 }
-
-
-/* interface to outside  */
-void initializePartitions(tree *tr, tree *localTree, int tid, int n)
-{
-  initializePartitionsMaster(tr,localTree,tid,n); 
-}
-
-
-
-void initMemorySavingAndRecom(tree *tr)
-{
-#ifdef DEBUG_PARALLEL
-  printf("process %d: entering memorySavingRecom()\n", tr->threadID); 
-#endif
-
-  tree
-    *localTree = tr; 
-  size_t model; 
-
-  /* initialize gap bit vectors at tips when memory saving option is enabled */
-
-  if(localTree->saveMemory)
-    {
-      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-	{
-	  int        
-	    undetermined = getUndetermined(localTree->partitionData[model].dataType);
-
-	  size_t
-	    i,
-	    j,
-	    width =  localTree->partitionData[model].width;
-
-	  if(width > 0)
-	    {	   	    	      	    	     
-	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
-		for(i = 0; i < width; i++)
-		  if(localTree->partitionData[model].yVector[j][i] == undetermined)
-		    localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
-	    }     
-	}
-    }
-  /* recom */
-  if(localTree->useRecom)
-    allocRecompVectorsInfo(localTree);
-  else
-    localTree->rvec = (recompVectors*)NULL;
-  /* E recom */
-
-#ifdef DEBUG_PARALLEL
-  printf("process %d: leaving memorySavingRecom()\n", tr->threadID); 
-#endif
-}
-
-
-/* mostly malloc calls and initialization  */
-void initializePartitionData(tree *localTree)
-{
-  /* in ancestralVectorWidth we store the total length in bytes (!) of 
-     one conditional likelihood array !
-     we need to know this length such that in the pthreads version the master thread can actually 
-     gather the scattered ancestral probabilities from the threads such that they can be printed to screen!
-  */
-
-  size_t 
-    maxCategories = (size_t)localTree->maxCategories;
-
-  size_t 
-    ancestralVectorWidth = 0,
-    model; 
-  int tid  = localTree->threadID; 
-
-
-  /* aberer: added this, we need it for mpi    */
-  if(NOT MASTER_P)
-    {
-      localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
-      localTree->wr              = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double)); 
-      localTree->wr2             = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double));   
-    }
-  /* end aberer */
-
-  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
-    {
-      size_t 
-	j,       
-	width = localTree->partitionData[model].width;
-
-      const partitionLengths 
-	*pl = getPartitionLengths(&(localTree->partitionData[model]));
-
-      localTree->partitionData[model].wr = (double *)malloc(sizeof(double) * width);
-      localTree->partitionData[model].wr2 = (double *)malloc(sizeof(double) * width);     
-
-
-      /* 
-	 globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch
-	 to this end, it must also be initialized with zeros -> calloc
-      */
-
-      localTree->partitionData[model].globalScaler    = (unsigned int *)calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));  	         
-
-      localTree->partitionData[model].left              = (double *)malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].right             = (double *)malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].EIGN              = (double*)malloc((size_t)pl->eignLength * sizeof(double));
-      localTree->partitionData[model].EV                = (double*)malloc_aligned((size_t)pl->evLength * sizeof(double));
-      localTree->partitionData[model].EI                = (double*)malloc((size_t)pl->eiLength * sizeof(double));
-
-      localTree->partitionData[model].substRates        = (double *)malloc((size_t)pl->substRatesLength * sizeof(double));
-      localTree->partitionData[model].frequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].empiricalFrequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].tipVector         = (double *)malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
-      localTree->partitionData[model].symmetryVector    = (int *)malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
-      localTree->partitionData[model].frequencyGrouping = (int *)malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
-
-      localTree->partitionData[model].perSiteRates      = (double *)malloc(sizeof(double) * maxCategories);
-
-      localTree->partitionData[model].nonGTR = FALSE;            
-
-      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);      
-      localTree->partitionData[model].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
-
-
-      localTree->partitionData[model].xVector = (double **)malloc(sizeof(double*) * (size_t)localTree->mxtips);   
-
-      for(j = 0; j < (size_t)localTree->mxtips; j++)	        	  	  	  	 
-	localTree->partitionData[model].xVector[j]   = (double*)NULL;   
-
-      localTree->partitionData[model].xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));  
-
-      localTree->partitionData[model].sumBuffer = (double *)malloc_aligned(width *
-									   (size_t)(localTree->partitionData[model].states) *
-									   discreteRateCategories(localTree->rateHetModel) *
-									   sizeof(double));
-
-
-      /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
-
-      localTree->partitionData[model].ancestralBuffer = (double *)malloc_aligned(width *
-										 (size_t)(localTree->partitionData[model].states) * 
-										 sizeof(double));
-
-      /* count and accumulate how many bytes we will need for storing a full ancestral vector. for this we addf over the per-partition space requirements in bytes */
-      /* ancestralVectorWidth += ((size_t)(tr->partitionData[model].upper - tr->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double)); */
-      ancestralVectorWidth += ((size_t)(localTree->partitionData[model].upper - localTree->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
-      /* :TODO: do we have to use the original tree for that   */
-
-      localTree->partitionData[model].wgt = (int *)malloc_aligned(width * sizeof(int));	  
-
-      /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
-
-      localTree->partitionData[model].rateCategory = (int *)calloc(width, sizeof(int));
-
-      if(width > 0 && localTree->saveMemory)
-	{
-	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
-	  assert(4 == sizeof(unsigned int));
-	  localTree->partitionData[model].gapVector = (unsigned int*)calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
-	  localTree->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *								      
-									       ((size_t)(localTree->partitionData[model].states)) *
-									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
-	}
-      else
-	{
-	  localTree->partitionData[model].gapVectorLength = 0;  
-	  localTree->partitionData[model].gapVector = (unsigned int*)NULL; 
-	  localTree->partitionData[model].gapColumn = (double*)NULL;	    	    	   
-	}              
-    }
-}
-
-
-
 

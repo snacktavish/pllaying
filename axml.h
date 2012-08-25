@@ -1508,6 +1508,8 @@ void initializePartitions(tree *tr, tree *localTree, int tid, int n);
 void multiprocessorScheduling(tree *tr, int tid); 
 void computeFraction(tree *localTree, int tid, int n); 
 void computeFractionMany(tree *localTree, int tid); 
+void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n); 
+void startPthreads(tree *tr); 
 
 typedef struct
 {

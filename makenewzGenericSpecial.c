@@ -944,7 +944,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
 
-#ifdef IS_PARALLEL
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
     /* if this is the first iteration of NR we will need to first do this one-time call 
        of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
