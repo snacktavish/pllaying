@@ -539,6 +539,7 @@ void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n
 
 static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 {
+  int i; 
   double 
     resultBuf[tr->originalCrunchedLength],
     buf[tr->originalCrunchedLength]; 
@@ -553,10 +554,10 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 #ifdef _FINE_GRAIN_MPI 
   /* this communicates all the values to the master */
   
-  int numberPerWorker[tr->numberOfThreads];   
+  int numberPerWorker[tr->numberOfThreads];     
   if(MASTER_P)			/* master counts number to receive, receives and writes back */
     {
-      for(int i = 0; i < n; ++i)
+      for(i = 0; i < n; ++i)
 	{
 	  numberPerWorker[i] = doublesToBuffer(buf,src,tr,n,i,FALSE, TRUE); 
 	  displacements[i] = i == 0 ? 0 : displacements[i-1] + numberPerWorker[i-1]; 
@@ -567,7 +568,7 @@ static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
 		  0, MPI_COMM_WORLD); 
 
       double *bufPtr = resultBuf; 
-      for(int i = 0 ; i < n; ++i)
+      for(i = 0 ; i < n; ++i)
 	{
 	  int numberWritten = doublesToBuffer(bufPtr, dst,tr,n,i, FALSE, FALSE); 
 	  bufPtr += numberWritten; 
