@@ -1456,7 +1456,7 @@ extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 extern void perSiteLogLikelihoods(tree *tr, double *logLikelihoods);
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
-extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid);
+extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs);
 extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
