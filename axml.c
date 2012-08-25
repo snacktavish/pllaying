@@ -1334,7 +1334,9 @@ static void makeFileNames(void)
     printf("RAxML output files with the run ID <%s> already exist \n", run_id);
     printf("in directory %s ...... exiting\n", workdir);
 
-    /* exit(-1); */
+#ifdef PRODUCTIVE
+    exit(-1);
+#endif
   }
 }
 
@@ -2340,7 +2342,6 @@ int main (int argc, char *argv[])
 
     treeEvaluate(tr, 32);
     printBothOpen("tree evaluated: %f\n", tr->likelihood);
-    assert(tr->likelihood > -10000); 
     
     /* now start the ML search algorithm */
 

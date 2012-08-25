@@ -3,7 +3,7 @@
 
 CC = mpicc
 
-CFLAGS = -D_OPTIMIZED_FUNCTIONS -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -O2 -fomit-frame-pointer -funroll-loops 
+CFLAGS = -std=c11 -D_OPTIMIZED_FUNCTIONS -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -O2 -fomit-frame-pointer -funroll-loops 
 #-D_USE_MPI2
 
 LIBRARIES = -lm

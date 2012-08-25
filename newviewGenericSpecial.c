@@ -1482,7 +1482,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   {
     /* store execute mask in traversal descriptor */
 
-    storeExecuteMaskInTraversalDescriptor(tr);      
+    storeExecuteMaskInTraversalDescriptor(tr); 
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
     /* do the parallel for join for pthreads

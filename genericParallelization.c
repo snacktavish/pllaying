@@ -31,19 +31,20 @@ extern double *globalResult;
 extern volatile char *barrierBuffer;
 void pinToCore(int tid);
 
+MPI_Datatype TRAVERSAL_MPI; 
 
 /*****************/
 /* MPI specific  */
 /*****************/
 #ifdef _FINE_GRAIN_MPI
 
-int* addIntToBuf(int* buf, int *toAdd)
+inline int* addIntToBuf(int* buf, int *toAdd)
 {
   *buf  = *toAdd; 
   return buf; 
 }
 
-int* popIntFromBuf(int *buf, int *result)
+inline int* popIntFromBuf(int *buf, int *result)
 {
   *result = *buf; 
   return buf; 
@@ -51,13 +52,13 @@ int* popIntFromBuf(int *buf, int *result)
 
 
 /* :TODO: if we really want to overdo it, this could be templated => or use defines instead  */ 
-double* addDblToBuf(double* buf, double *toAdd)
+inline double* addDblToBuf(double* buf, double *toAdd)
 {
   *buf  = *toAdd; 
   return buf; 
 }
 
-double* popDblFromBuf(double *buf, double *result)
+inline double* popDblFromBuf(double *buf, double *result)
 {
   *result = *buf; 
   return buf; 
@@ -73,10 +74,11 @@ double* popDblFromBuf(double *buf, double *result)
 */
 
 #define ELEMS_IN_TRAV_INFO  9
-void defineTraversalInfoMPI(MPI_Datatype *result)
+void defineTraversalInfoMPI()
 {
-  /* :TODO: I guess, we have to free the mpi datatype later */
   /* :TODO: in the best case, add all defined datatypes to an array in tree */
+  MPI_Datatype *result  = &TRAVERSAL_MPI; 
+
 
   int i ; 
   MPI_Aint base; 
@@ -103,6 +105,7 @@ void defineTraversalInfoMPI(MPI_Datatype *result)
   MPI_Type_struct( ELEMS_IN_TRAV_INFO+1 , blocklen, disp, type, result);
   MPI_Type_commit(result);
 }
+
 
 #endif
 
@@ -692,7 +695,7 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
 
 
   /* 
-     aberer: i implemented this as a mpi_gather operation into this buffer, 
+     aberer: I implemented this as a mpi_gather operation into this buffer, 
      pthreads version emulates this gather; 
      master takes care of the reduction; 
   */
@@ -734,13 +737,8 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
     {
       MPI_Bcast(localTree->td[0].executeModel, localTree->NumberOfModels, MPI_INT, 0,MPI_COMM_WORLD); 
       MPI_Bcast(localTree->td[0].parameterValues, localTree->NumberOfModels, MPI_DOUBLE, 0,MPI_COMM_WORLD); 
-      if(localTree->td[0].traversalHasChanged)
-	{
-	  /* define the datatype and broadcast */
-	  MPI_Datatype trav_MPI; 
-	  defineTraversalInfoMPI(&trav_MPI); 
-	  MPI_Bcast(localTree->td[0].ti, localTree->td[0].count, trav_MPI, 0, MPI_COMM_WORLD ); 
-	}
+      if(localTree->td[0].traversalHasChanged)	
+	MPI_Bcast(localTree->td[0].ti, localTree->td[0].count, TRAVERSAL_MPI, 0, MPI_COMM_WORLD ); 
     }
 #endif
 }
@@ -842,7 +840,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 
   switch(currentJob)
     { 
-    case THREAD_NEWVIEW:      
+    case THREAD_NEWVIEW: 
       /* just a newview on the fraction of sites that have been assigned to this thread */
 
       newviewIterative(localTree, 0);
@@ -1211,7 +1209,7 @@ void masterPostBarrier(int jobType, tree *tr)
 	    
 	    tr->perPartitionLH[model] = partitionResult;
 #ifdef DEBUG_PARALLEL
-	    printf("[%d] result for partition %d => %f\n", model, partitionResult); 
+	    printf("[%d] result for partition %d => %f\n", tr->threadID, model, partitionResult); 
 #endif
 	  }
       }
@@ -1513,6 +1511,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   size_t
     model;
 
+  defineTraversalInfoMPI();
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
