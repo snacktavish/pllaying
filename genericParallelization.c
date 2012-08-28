@@ -24,20 +24,25 @@ extern unsigned int* mask32;
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
 
+#ifdef MEASURE_TIME_PARALLEL
+extern double masterTimePerPhase; 
+double timeBuffer[NUM_PAR_JOBS]; 
+double timePerRegion[NUM_PAR_JOBS]; 
+#endif
+
 void initializePartitionData(tree *localTree);
 void initMemorySavingAndRecom(tree *tr); 
+char* getJobName(int tmp); 
 
 extern double *globalResult; 
 extern volatile char *barrierBuffer;
 void pinToCore(int tid);
 
-MPI_Datatype TRAVERSAL_MPI; 
-
 /*****************/
 /* MPI specific  */
 /*****************/
 #ifdef _FINE_GRAIN_MPI
-
+extern MPI_Datatype TRAVERSAL_MPI; 
 inline int* addIntToBuf(int* buf, int *toAdd)
 {
   *buf  = *toAdd; 
@@ -51,7 +56,6 @@ inline int* popIntFromBuf(int *buf, int *result)
 }
 
 
-/* :TODO: if we really want to overdo it, this could be templated => or use defines instead  */ 
 inline double* addDblToBuf(double* buf, double *toAdd)
 {
   *buf  = *toAdd; 
@@ -65,6 +69,33 @@ inline double* popDblFromBuf(double *buf, double *result)
 }
 
 
+
+void initMPI(int argc, char *argv[])
+{  
+  MPI_Init(&argc, &argv);
+  MPI_Comm_rank(MPI_COMM_WORLD, &processID);
+  MPI_Comm_size(MPI_COMM_WORLD, &processes);
+
+  if(MASTER_P)
+    printf("\nThis is RAxML Process Number: %d (MASTER)\n", processID);   
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
+/* this is the trap for the mpi worker processes   */
+boolean workerTrap(tree *tr)
+{
+  if(NOT MASTER_P) 
+    {
+      threadData tData; 
+      tData.tr = tr; 
+      tData.threadNumber = processID; 
+      
+      likelihoodThread(&tData);
+      return TRUE; 
+    }
+  return FALSE; 
+}
 
 
 /* 
@@ -143,7 +174,11 @@ void startPthreads(tree *tr)
   jobCycle        = 0;
   threadJob       = 0;
 
-  printf("\nThis is the RAxML Master Pthread\n");
+  printf("\nThis is the RAxML Master Pthread\n");  
+
+#ifdef MEASURE_TIME_PARALLEL
+  timeBuffer = calloc(NUM_PAR_JOBS * tr->numberOfThreads, sizeof(double)); 
+#endif
 
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -169,6 +204,64 @@ void startPthreads(tree *tr)
     }
 }
 #endif
+
+#ifdef MEASURE_TIME_PARALLEL
+void reduceTimesWorkerRegions(tree *tr, double *mins, double *maxs)
+{
+  int tid = tr->threadID; 
+  int i,j ; 
+  double reduction[NUM_PAR_JOBS * tr->numberOfThreads]; 
+
+  ASSIGN_GATHER(reduction, timeBuffer, NUM_PAR_JOBS, DOUBLE, tr->threadID); 
+
+#ifdef _USE_PTHREADS
+  /* we'd need a proper barrier here... this evaluation is mostly interesting for MPI  */
+  printf("\n\ncomment out MEASURE_TIME_PARALLEL\n\n");   
+  assert(0); 
+#else 
+   MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+  /* find min and max time */
+  if(MASTER_P)
+    {      
+      for(j = 0; j < NUM_PAR_JOBS; ++j)
+	{
+	  boolean isFirst = TRUE; 
+	  for(i = 0; i < tr->numberOfThreads; ++i)
+	    {	      
+	      double num = timeBuffer[i * NUM_PAR_JOBS + j]; 
+	      if(isFirst || num < mins[j])
+		mins[j] = num; 
+	      if(isFirst || num > maxs[j])
+		maxs[j] = num; 
+	      isFirst = FALSE; 
+	    }
+	}	
+    }  
+}
+
+
+void printParallelTimePerRegion(double *mins, double *maxs)
+{
+  int i; 
+  double allTime = 0; 
+  double relTime[NUM_PAR_JOBS+1]; 
+  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
+    allTime += timePerRegion[i]; 
+  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
+    relTime[i] = (timePerRegion[i] / allTime) * 100 ; 
+
+  printf("\n\nTime spent per region \nmasterTimeAbs\tmasterTimeRel\tloadBalance\tcommOverhead\n"); 
+  for(i = 0; i < NUM_PAR_JOBS; ++i )
+    if(timePerRegion[i] != 0)
+      printf("%f\t%.2f\%\t%.2f\%\t%.2f\%\t%s\n", timePerRegion[i], relTime[i], (maxs[i] - mins[i]) * 100  / maxs[i] , (maxs[i] - timePerRegion[i]) * 100  / timePerRegion[i], getJobName(i) ); 
+  printf("================\n%f\t%.2f\%\tSEQUENTIAL\n", timePerRegion[NUM_PAR_JOBS], relTime[i]); 
+  printf("loadbalance: (minT - maxT) / maxT, \twhere minT is the time the fastest worker took for this region (maxT analogous) \n"); 
+  printf("commOverhead: (maxWorker - masterTime) / masterTime, \t where maxWorker is the time the slowest worker spent in this region and masterTime is the time the master spent in this region (e.g., doing additional reduction stuff)\n"); 
+}
+#endif
+
 
 
 
@@ -744,62 +837,44 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
 }
 
 
-
-
-void printParallelDebugInfo(int type, int tid )
+char* getJobName(int type)
 {
   switch(type)  
     {
-    case  THREAD_NEWVIEW: 
-      printf("[%d] working on  THREAD_NEWVIEW\n ", tid); 
-      break; 
+    case  THREAD_NEWVIEW:       
+      return "THREAD_NEWVIEW";
     case THREAD_EVALUATE: 
-      printf("[%d] working on  THREAD_EVALUATE\n ", tid); 
-      break; 
+      return "THREAD_EVALUATE";
     case THREAD_MAKENEWZ: 
-      printf("[%d] working on  THREAD_MAKENEWZ\n ", tid); 
-      break; 
+      return "THREAD_MAKENEWZ";
     case THREAD_MAKENEWZ_FIRST: 
-      printf("[%d] working on  THREAD_MAKENEWZ_FIRST\n ", tid); 
-      break; 
+      return "THREAD_MAKENEWZ_FIRST";
     case THREAD_RATE_CATS: 
-      printf("[%d] working on  THREAD_RATE_CATS\n ", tid); 
-      break; 
+      return "THREAD_RATE_CATS";
     case THREAD_COPY_RATE_CATS: 
-      printf("[%d] working on  THREAD_COPY_RATE_CATS\n ", tid); 
-      break; 
+      return "THREAD_COPY_RATE_CATS";
     case THREAD_COPY_INIT_MODEL: 
-      printf("[%d] working on  THREAD_COPY_INIT_MODEL\n ", tid); 
-      break; 
+      return "THREAD_COPY_INIT_MODEL";
     case THREAD_INIT_PARTITION: 
-      printf("[%d] working on  THREAD_INIT_PARTITION\n ", tid); 
-      break; 
+      return "THREAD_INIT_PARTITION";
     case THREAD_OPT_ALPHA: 
-      printf("[%d] working on  THREAD_OPT_ALPHA\n ", tid); 
-      break; 
+      return "THREAD_OPT_ALPHA";
     case THREAD_OPT_RATE: 
-      printf("[%d] working on  THREAD_OPT_RATE\n ", tid); 
-      break; 
+      return "THREAD_OPT_RATE";
     case THREAD_COPY_ALPHA: 
-      printf("[%d] working on  THREAD_COPY_ALPHA\n ", tid); 
-      break; 
+      return "THREAD_COPY_ALPHA";
     case THREAD_COPY_RATES: 
-      printf("[%d] working on  THREAD_COPY_RATES\n ", tid); 
-      break; 
+      return "THREAD_COPY_RATES";
     case THREAD_PER_SITE_LIKELIHOODS: 
-      printf("[%d] working on  THREAD_PER_SITE_LIKELIHOODS\n ", tid); 
-      break; 
+      return "THREAD_PER_SITE_LIKELIHOODS";
     case THREAD_NEWVIEW_ANCESTRAL: 
-      printf("[%d] working on  THREAD_NEWVIEW_ANCESTRAL\n ", tid); 
-      break; 
+      return "THREAD_NEWVIEW_ANCESTRAL";
     case THREAD_GATHER_ANCESTRAL: 
-      printf("[%d] working on  THREAD_GATHER_ANCESTRAL\n ", tid); 
-      break; 
+      return "THREAD_GATHER_ANCESTRAL";
     case THREAD_EXIT_GRACEFULLY: 
-      printf("[%d] working on  THREAD_EXIT_GRACEFULLY\n ", tid); 
-      break; 
+      return "THREAD_EXIT_GRACEFULLY";
     default: assert(0); 
-    }  
+    }
 }
 
 
@@ -818,6 +893,11 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
     model,
     localCounter;
 
+#ifdef MEASURE_TIME_PARALLEL
+  double timeForParallelRegion = gettime();
+#endif
+
+
 #ifdef _USE_PTHREADS
   /* some stuff associated with the barrier implementation using Pthreads and busy wait */
   int currentJob = threadJob >> 16;
@@ -834,8 +914,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
   int currentJob = localTree->td[0].functionType; 
 #endif
 #ifdef DEBUG_PARALLEL
-  /* printf("process %d: current job is %d\n", tid, currentJob);  */
-  printParallelDebugInfo(currentJob, tid);
+  printf("[%d] working on %s\n", tid, getJobName(currentJob)); 
 #endif  
 
   switch(currentJob)
@@ -1118,16 +1197,29 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       assert(0); 
       break; 
     case THREAD_EXIT_GRACEFULLY: 
-#ifdef _FINE_GRAIN_MPI
-      MPI_Finalize(); 
+      {
+#ifdef MEASURE_TIME_PARALLEL
+	double
+	  mins[NUM_PAR_JOBS], maxs[NUM_PAR_JOBS]; 
+	reduceTimesWorkerRegions(tr, mins, maxs); 
+	if(MASTER_P)
+	  printParallelTimePerRegion(mins, maxs);
 #endif
-      return FALSE; 
+#ifdef _FINE_GRAIN_MPI
+	MPI_Finalize(); 
+#endif
+	return FALSE; 
+      }
       break; 
     default:
       printf("Job %d\n", currentJob);
       assert(0);
     }
 
+#ifdef MEASURE_TIME_PARALLEL 
+  timeBuffer[currentJob] += (gettime() - timeForParallelRegion);   
+#endif
+  
   return TRUE; 
 }
 
@@ -1208,9 +1300,6 @@ void masterPostBarrier(int jobType, tree *tr)
 	      partitionResult += globalResult[i * tr->NumberOfModels + model]; 
 	    
 	    tr->perPartitionLH[model] = partitionResult;
-#ifdef DEBUG_PARALLEL
-	    printf("[%d] result for partition %d => %f\n", tr->threadID, model, partitionResult); 
-#endif
 	  }
       }
     case THREAD_OPT_ALPHA: 
@@ -1275,6 +1364,11 @@ void masterPostBarrier(int jobType, tree *tr)
 
 void masterBarrier(int jobType, tree *tr)
 {
+#ifdef MEASURE_TIME_PARALLEL
+  assert(jobType < NUM_PAR_JOBS); 
+  timePerRegion[NUM_PAR_JOBS]  += gettime()- masterTimePerPhase ; 
+  masterTimePerPhase = gettime();
+#endif
 
 #ifdef _USE_PTHREADS
   const int 
@@ -1307,6 +1401,11 @@ void masterBarrier(int jobType, tree *tr)
 
   /* code executed by the master, once the barrier is crossed */
   masterPostBarrier(jobType, tr);
+
+#ifdef MEASURE_TIME_PARALLEL
+  timePerRegion[jobType] += gettime() - masterTimePerPhase; 
+  masterTimePerPhase = gettime();
+#endif
 }
 
 
@@ -1511,19 +1610,19 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
   size_t
     model;
 
-  defineTraversalInfoMPI();
-
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
 
 #ifdef _USE_PTHREADS
   if(MASTER_P)
-#endif
     globalResult = calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
-#ifdef _USE_PTHREADS    
   else 
-#endif
     assignAndInitPart1(localTree, tr , &tid); 
+#else 
+  globalResult = calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
+  assignAndInitPart1(localTree, tr , &tid); 
+  defineTraversalInfoMPI();
+#endif
   
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     localTree->partitionData[model].width        = 0;
@@ -1572,4 +1671,6 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
   initMemorySavingAndRecom(localTree);
 }
+
+
 

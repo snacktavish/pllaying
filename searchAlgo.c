@@ -1756,7 +1756,7 @@ START_FAST_SPRS:
 
       if(fastIterations > 1)
         cleanupHashTable(tr->h, (fastIterations % 2));		
-
+      
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, fastIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
           &bCounter, 1, FALSE, FALSE, tr->threadID);	    
 

@@ -155,6 +155,9 @@ const partitionLengths pLengths[MAX_MODEL] = {
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 double *globalResult;
+#ifdef MEASURE_TIME_PARALLEL
+double masterTimePerPhase; 
+#endif
 #endif
 
 #ifdef _USE_PTHREADS
@@ -166,4 +169,5 @@ volatile char            *barrierBuffer;
 #ifdef _FINE_GRAIN_MPI
 int processes;
 int processID; 
+MPI_Datatype TRAVERSAL_MPI; 
 #endif

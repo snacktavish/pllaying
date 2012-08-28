@@ -1207,6 +1207,7 @@ extern void mcmc(tree *tr, analdef *adef);
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model);
+void printParallelTimePerRegion(); 
 #endif
 
 extern void computePlacementBias(tree *tr, analdef *adef);
@@ -1506,6 +1507,9 @@ extern void masterBarrier(int jobType, tree *tr);
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+
+boolean workerTrap(tree *tr); 
+void initMPI(int argc, char *argv[]); 
 void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
 void multiprocessorScheduling(tree *tr, int tid); 
 void computeFraction(tree *localTree, int tid, int n); 

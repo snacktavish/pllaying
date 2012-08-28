@@ -9,10 +9,10 @@ extern double *globalResult;
 /* CONFIG */
 /**********/
 
+/* #define MEASURE_TIME_PARALLEL */
 #define _PORTABLE_PTHREADS
 /* #define DEBUG_PARALLEL */
 /* #define DEBUG_MPI_EACH_SEND */
-
 
 
 #define NOT ! 
@@ -21,12 +21,17 @@ void *likelihoodThread(void *tData);
 
 
 
+#ifdef MEASURE_TIME_PARALLEL
+#define NUM_PAR_JOBS 16
+extern double masterTimePerPhase; 
+#endif
+
+
 /******************/
 /* MPI SPECIFIC   */
 /******************/
 #ifdef _FINE_GRAIN_MPI
 #include <mpi.h>
-
 #ifdef DEBUG_MPI_EACH_SEND
 #define DEBUG_PRINT(text, elem) printf(text, elem)
 #else 
@@ -70,7 +75,7 @@ int* popIntFromBuf(int *buf, int *result);
 #define ASSIGN_DBL(x,y) (x = y)
 #define ASSIGN_DBLS(tar,src,length) memmove(tar, src, length * sizeof(double))
 #define DOUBLE double 	/* just rededining that to make the source code less confusing */
-#define ASSIGN_GATHER(tar,src,length,type,tid) (memcpy((tar) + (tid) * (length) ,src, length * sizeof(type)))
+#define ASSIGN_GATHER(tar,src,length,type,tid) (memmove((tar) + (tid) * (length) ,src, length * sizeof(type)))
 #define SEND_BUF(buf, bufSize, type) 
 #define RECV_BUF(buf, bufSize, type) 
 #define BCAST_BUF(buf, bufSize,type,who)  
