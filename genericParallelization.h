@@ -11,7 +11,7 @@ extern double *globalResult;
 
 /* #define MEASURE_TIME_PARALLEL */
 #define _PORTABLE_PTHREADS
-/* #define DEBUG_PARALLEL */
+/* #define DEBUG_PARALLEL  */
 /* #define DEBUG_MPI_EACH_SEND */
 
 
@@ -38,14 +38,18 @@ extern double masterTimePerPhase;
 #define DEBUG_PRINT(text, elem) NULL
 #endif
 
+/* for the broadcast of traversal descriptor */
+#define TRAVERSAL_LENGTH 5
+#define traversalSize sizeof(traversalInfo)
+#define messageSize(x)   (3 * sizeof(int) +  x * (sizeof(int)+ sizeof(double)) + TRAVERSAL_LENGTH * traversalSize)
+
 #define VOLATILE_PAR 
 #define MASTER_P (processID == 0)
-#define POP_OR_PUT(buf, elem)  (MASTER_P ? (addIntToBuf((buf++), (elem)) , DEBUG_PRINT("\tSEND %d\n", *elem ) ) : ( popIntFromBuf((buf++), (elem)), DEBUG_PRINT("\tRECV %d\n", *elem))) 
-#define POP_OR_PUT_DBL(buf, elem) (MASTER_P ? (addDblToBuf((buf++), (elem)) , DEBUG_PRINT("\tSEND %f\n", *elem ) ) : ( popDblFromBuf((buf++), (elem)), DEBUG_PRINT("\tRECV %f\n", *elem))) 
+#define POP_OR_PUT_BYTES(bufPtr, elem, type) (MASTER_P ? (bufPtr = addBytes((bufPtr), &(elem), sizeof(type))) : (bufPtr = popBytes((bufPtr), &(elem), sizeof(type))))
 
 #define ASSIGN_INT(x,y) (MPI_Bcast(&y,1,MPI_INT,0,MPI_COMM_WORLD),DEBUG_PRINT("\tSEND/RECV %d\n", y)) 
-#define ASSIGN_BUF(x,y) ((POP_OR_PUT(bufPtr, &y)),assertCtr++)
-#define ASSIGN_BUF_DBL(x,y) (POP_OR_PUT_DBL(bufPtrDbl,&y))
+#define ASSIGN_BUF(x,y,type) (POP_OR_PUT_BYTES(bufPtr, y,type))
+#define ASSIGN_BUF_DBL(x,y) (POP_OR_PUT_BYTES(bufPtrDbl,y, double))
 #define ASSIGN_DBL(x,y) (MPI_Bcast(&y,1,MPI_DOUBLE, 0, MPI_COMM_WORLD), DEBUG_PRINT("\tSEND/RECV %f\n", y)) 
 #define ASSIGN_DBLS(tar,src,length) MPI_Bcast(tar, length, MPI_DOUBLE, 0, MPI_COMM_WORLD)
 #define DOUBLE MPI_DOUBLE
@@ -55,11 +59,21 @@ extern double masterTimePerPhase;
 #define BCAST_BUF(buf, bufSize,type,who)  MPI_Bcast(buf, bufSize, type, who,MPI_COMM_WORLD )
 
 
+
+#define INIT_LENGTH
+typedef struct  _jobDef
+{
+  int functionType; 
+  int count; 
+  int traveralHasChanged;
+  
+  
+} InitjobDescr; 
+
 extern int processes; 
 extern int processID; 
-
-int* addIntToBuf(int* buf, int *toAdd);
-int* popIntFromBuf(int *buf, int *result); 
+char* addBytes(char *buf, void *toAdd, int numBytes); 
+char* popBytes(char *buf, void *result, int numBytes); 
 #endif 
 
 /*********************/
@@ -70,7 +84,7 @@ int* popIntFromBuf(int *buf, int *result);
 #define VOLATILE_PAR volatile 
 #define MASTER_P (tid == 0)
 #define ASSIGN_INT(x,y) (x = y)
-#define ASSIGN_BUF(x,y) (x = y)
+#define ASSIGN_BUF(x,y,type) (x = y)
 #define ASSIGN_BUF_DBL(x,y) (x = y)
 #define ASSIGN_DBL(x,y) (x = y)
 #define ASSIGN_DBLS(tar,src,length) memmove(tar, src, length * sizeof(double))
@@ -79,6 +93,8 @@ int* popIntFromBuf(int *buf, int *result);
 #define SEND_BUF(buf, bufSize, type) 
 #define RECV_BUF(buf, bufSize, type) 
 #define BCAST_BUF(buf, bufSize,type,who)  
+#define TRAVERSAL_LENGTH 5
+#define messageSize(x) 0
 #endif
 
 

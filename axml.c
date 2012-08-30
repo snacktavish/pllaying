@@ -1898,8 +1898,8 @@ void initializePartitionsSequential(tree *tr, tree *localTree, int tid, int n)
 void initializePartitions(tree *tr, tree *localTree, int tid, int n)
 {
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  initializePartitionsMaster(tr,localTree,tid,n); 
-#else 
+  initializePartitionsMaster(tr,localTree,tid,n);
+#else
   initializePartitionsSequential(tr,localTree,tid,n); 
 #endif
 }
@@ -2013,7 +2013,7 @@ int main (int argc, char *argv[])
     tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
     for(i = 1; i <= (size_t)tr->mxtips; i++)
-      tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];	
+      tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
 
     setupTree(tr);
 
@@ -2196,7 +2196,7 @@ int main (int argc, char *argv[])
     computeBIGRAPID(tr, adef, TRUE); 
   }
   else
-  {
+    {
     /* not important, only used to keep track of total accumulated exec time 
        when checkpointing and restarts were used */
 

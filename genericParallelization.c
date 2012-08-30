@@ -9,13 +9,6 @@
 
 
 /* 
-   GENERAL :TODO:
-   unified system for tid/processId , numberOfThreads / processes
-*/
-
-
-
-/* 
  * GENERAL QUESTIONS: 
  * when to communicate rateCategories, wr, w2r 
  */
@@ -23,6 +16,7 @@
 extern unsigned int* mask32; 
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
+extern boolean treeIsInitialized; 
 
 #ifdef MEASURE_TIME_PARALLEL
 extern double masterTimePerPhase; 
@@ -43,31 +37,19 @@ void pinToCore(int tid);
 /*****************/
 #ifdef _FINE_GRAIN_MPI
 extern MPI_Datatype TRAVERSAL_MPI; 
-inline int* addIntToBuf(int* buf, int *toAdd)
+
+
+inline char* addBytes(char *buf, void *toAdd, int numBytes)
 {
-  *buf  = *toAdd; 
-  return buf; 
+  memcpy(buf, toAdd, numBytes);  
+  return buf + numBytes;  
 }
 
-inline int* popIntFromBuf(int *buf, int *result)
+inline char* popBytes(char *buf, void *result, int numBytes)
 {
-  *result = *buf; 
-  return buf; 
+  memcpy(result, buf, numBytes); 
+  return buf + numBytes;   
 }
-
-
-inline double* addDblToBuf(double* buf, double *toAdd)
-{
-  *buf  = *toAdd; 
-  return buf; 
-}
-
-inline double* popDblFromBuf(double *buf, double *result)
-{
-  *result = *buf; 
-  return buf; 
-}
-
 
 
 void initMPI(int argc, char *argv[])
@@ -85,6 +67,10 @@ void initMPI(int argc, char *argv[])
 /* this is the trap for the mpi worker processes   */
 boolean workerTrap(tree *tr)
 {
+  /* :KLUDGE: for broadcasting, we need to know, if the tree structure
+     already has been initialized */  
+  treeIsInitialized = FALSE; 
+
   if(NOT MASTER_P) 
     {
       threadData tData; 
@@ -170,13 +156,14 @@ void startPthreads(tree *tr)
   pthread_attr_t attr;
   int rc, t;
   threadData *tData;
+  treeIsInitialized = FALSE; 
 
   jobCycle        = 0;
   threadJob       = 0;
 
   printf("\nThis is the RAxML Master Pthread\n");  
 
-#ifdef MEASURE_TIME_PARALLEL
+#if (NOT defined(_USE_PTHREADS) && defined( MEASURE_TIME_PARALLEL))
   timeBuffer = calloc(NUM_PAR_JOBS * tr->numberOfThreads, sizeof(double)); 
 #endif
 
@@ -699,18 +686,18 @@ static void broadCastAlpha(tree *localTree, tree *tr, int tid)
   
   int
     i,
-    bufSize = localTree->NumberOfModels * 4; 
+    bufSize = localTree->NumberOfModels * 4 * sizeof(double); 
 
-  double bufDbl[bufSize], 
+  char bufDbl[bufSize], 
     *bufPtrDbl = bufDbl;   
 
-  RECV_BUF(bufDbl, bufSize, MPI_DOUBLE); 
+  RECV_BUF(bufDbl, bufSize, MPI_BYTE); 
 
   for(model = 0; model < localTree->NumberOfModels; model++)
     for(i = 0; i < 4; ++i)
       ASSIGN_BUF_DBL(localTree->partitionData[model].gammaRates[i], tr->partitionData[model].gammaRates[i]); 
   
-  SEND_BUF(bufDbl, bufSize, MPI_DOUBLE);  
+  SEND_BUF(bufDbl, bufSize, MPI_BYTE);  
 #endif 
 }
 
@@ -735,11 +722,10 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
   /* determine size of buffer needed first */
   int bufSize = 0; 
 #ifdef _FINE_GRAIN_MPI
-
   for(model = 0; model < localTree->NumberOfModels; ++model )
     {	  
       const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model])); /* this is constant, isnt it?  */
-      bufSize += pl->eignLength + pl->evLength + pl->eiLength + pl->tipVectorLength; 
+      bufSize += (pl->eignLength + pl->evLength + pl->eiLength + pl->tipVectorLength) * sizeof(double) ; 
     }
 #endif      
   
@@ -750,9 +736,9 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
      TODO memcpy still is more efficient
   */
   
-  double bufDbl[bufSize],
-    *bufPtrDbl  = bufDbl;
-  RECV_BUF(bufDbl, bufSize, MPI_DOUBLE);
+  char bufDbl[bufSize], 
+    *bufPtrDbl = bufDbl; 
+  RECV_BUF(bufDbl, bufSize, MPI_BYTE);
   int i ; 
 
   for(model = 0; model < localTree->NumberOfModels; model++)
@@ -768,7 +754,7 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
       for(i = 0; i < pl->tipVectorLength; ++i)
 	ASSIGN_BUF_DBL(localTree->partitionData[model].tipVector[i],   tr->partitionData[model].tipVector[i]);
     }
-  SEND_BUF(bufDbl, bufSize, MPI_DOUBLE); 
+  SEND_BUF(bufDbl, bufSize, MPI_BYTE); /*  */
 #endif
 }
 
@@ -807,15 +793,16 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
 /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
 inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
 {
-
-  ASSIGN_INT(localTree->td[0].functionType,           tr->td[0].functionType);
-  ASSIGN_INT( localTree->td[0].count,                 tr->td[0].count) ;
-  ASSIGN_INT(localTree->td[0].traversalHasChanged,    tr->td[0].traversalHasChanged);
-
+  /* TODO these two regions could be joined */
 #ifdef _USE_PTHREADS
   /* memcpy -> memmove (see ticket #43). This function is sometimes called with localTree == tr,
    * in which case some memcpy implementations can corrupt the buffers.
-   */ 
+   */
+  
+  localTree->td[0].functionType =            tr->td[0].functionType;
+  localTree->td[0].count =                   tr->td[0].count ;
+  localTree->td[0].traversalHasChanged =     tr->td[0].traversalHasChanged;
+
 
   memmove(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
   memmove(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
@@ -823,15 +810,43 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
   if(localTree->td[0].traversalHasChanged)
     memmove(localTree->td[0].ti, tr->td[0].ti, localTree->td[0].count * sizeof(traversalInfo));
 
-#else  /* MPI */
-  localTree = tr; 
+#else
+  /* MPI */
+  /* like in raxml-light: first we send a small message, if the
+     travesalDescriptor is longer, then resend */
+  
+  int length = treeIsInitialized ? localTree->NumberOfModels : 0;   
+  char broadCastBuffer[messageSize(length)]; 
+  char *bufPtr = broadCastBuffer; 
+  int i; 
 
-  if(localTree->td[0].functionType != THREAD_INIT_PARTITION)				/* :KLUDGE: is not initialized in this case   */
+  RECV_BUF(broadCastBuffer, messageSize(length), MPI_BYTE); 
+
+  ASSIGN_BUF(localTree->td[0].functionType, tr->td[0].functionType , int);   
+  ASSIGN_BUF(localTree->td[0].count,  tr->td[0].count , int); 
+  ASSIGN_BUF(localTree->td[0].traversalHasChanged, tr->td[0].traversalHasChanged , int); 
+
+  if(treeIsInitialized)  
+    { 
+      for(i = 0; i < localTree->NumberOfModels; ++i)
+	{
+	  ASSIGN_BUF(localTree->td[0].executeModel[i],      tr->td[0].executeModel[i], int); 
+	  ASSIGN_BUF(localTree->td[0].parameterValues[i],	 tr->td[0].parameterValues[i], double); 
+	}      
+
+      for(i = 0; i < TRAVERSAL_LENGTH; ++i )
+	ASSIGN_BUF(localTree->td[0].ti[i], tr->td[0].ti[i], traversalInfo); 
+    }
+    
+  SEND_BUF(broadCastBuffer, messageSize(length), MPI_BYTE); 
+
+  /* now we send the second part of the traversal descriptor, if we
+     exceed the pre-set number of elements */
+  if(treeIsInitialized && localTree->td[0].count > TRAVERSAL_LENGTH) 
     {
-      MPI_Bcast(localTree->td[0].executeModel, localTree->NumberOfModels, MPI_INT, 0,MPI_COMM_WORLD); 
-      MPI_Bcast(localTree->td[0].parameterValues, localTree->NumberOfModels, MPI_DOUBLE, 0,MPI_COMM_WORLD); 
-      if(localTree->td[0].traversalHasChanged)	
-	MPI_Bcast(localTree->td[0].ti, localTree->td[0].count, TRAVERSAL_MPI, 0, MPI_COMM_WORLD ); 
+      /* lets use the MPI_Datatype for this thing, what I've read it's
+	 supposed to be more secure and efficient */
+      MPI_Bcast(localTree->td[0].ti + TRAVERSAL_LENGTH, localTree->td[0].count - TRAVERSAL_LENGTH, TRAVERSAL_MPI, 0, MPI_COMM_WORLD );
     }
 #endif
 }
@@ -1032,13 +1047,12 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 
 
 	if( localTree->rateHetModel == CAT) /* TRICKY originally this should only be executed by workers  */
-	  { 
-	    int bufSize = 2 * localTree->originalCrunchedLength; 
-	    double 
-	      bufDbl[bufSize],
-	      *bufPtrDbl = bufDbl; 	 
+	  { 	    
+	    int bufSize = 2 * localTree->originalCrunchedLength * sizeof(double); 
+	    char bufDbl[bufSize], 
+	      *bufPtrDbl = bufDbl; 
 
-	    RECV_BUF(bufDbl, bufSize,MPI_DOUBLE); 
+	    RECV_BUF(bufDbl, bufSize,MPI_BYTE); 
 
 	    /* this should be local  */
 	    for(model = 0; model < localTree->NumberOfModels; model++) 
@@ -1052,7 +1066,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 		ASSIGN_BUF_DBL(localTree->patratStored[i], tr->patratStored[i]); 
 	      }
 
-	    SEND_BUF(bufDbl, bufSize, MPI_DOUBLE); 
+	    SEND_BUF(bufDbl, bufSize, MPI_BYTE); 
 	  }
       } 
       break;    
@@ -1088,28 +1102,30 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	*/
 
 	int i, 
-	  buf[localTree->NumberOfModels],
-	  assertCtr = 0, 
-	  *bufPtr = buf, 
+	  /* buf[localTree->NumberOfModels], */
+	  /* assertCtr = 0,  */
 	  dblBufSize = 0; 
+	int bufSize = localTree->NumberOfModels * sizeof(int); 
+	char buf[bufSize], 
+	  *bufPtr = buf; 
      
-	RECV_BUF(buf, localTree->NumberOfModels, MPI_INT);
+	RECV_BUF(buf, bufSize, MPI_BYTE);
 
 	for( model = 0; model < localTree->NumberOfModels; ++model)
 	  {
-	    ASSIGN_BUF(localTree->partitionData[model].numberOfCategories, tr->partitionData[model].numberOfCategories); 
-	    dblBufSize += localTree->partitionData[model].numberOfCategories; 
+	    ASSIGN_BUF(localTree->partitionData[model].numberOfCategories, tr->partitionData[model].numberOfCategories, int); 
+	    dblBufSize += localTree->partitionData[model].numberOfCategories * sizeof(double); 
 	  }
 
-	SEND_BUF(buf, localTree->NumberOfModels, MPI_INT); 
+	SEND_BUF(buf, bufSize, MPI_BYTE); 
 
 
-	dblBufSize += 2 * localTree->originalCrunchedLength; 
-	double
-	  bufDbl[dblBufSize], 
-	  *bufPtrDbl = bufDbl;      
+	dblBufSize += 2 * localTree->originalCrunchedLength * sizeof(double); 
 
-	RECV_BUF(bufDbl, dblBufSize, MPI_DOUBLE);      
+	char bufDbl[dblBufSize],
+	  *bufPtrDbl = bufDbl;
+
+	RECV_BUF(bufDbl, dblBufSize, MPI_BYTE); 
 
 	for(i = 0; i < localTree->originalCrunchedLength; ++i)
 	  {	 
@@ -1121,14 +1137,12 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	  for(i = 0; i < localTree->partitionData[model].numberOfCategories; i++)
 	    ASSIGN_BUF_DBL(localTree->partitionData[model].perSiteRates[i], tr->partitionData[model].perSiteRates[i]);
 
-	SEND_BUF(bufDbl, dblBufSize, MPI_DOUBLE); 
-
-
+	SEND_BUF(bufDbl, dblBufSize, MPI_BYTE); 
 
 
 	/* lets test, if it is a good idea to send around the basic categories  */
 #ifdef _FINE_GRAIN_MPI
-	/* TODO: this is inefficient, need to clarify how much this is necessary   */
+	/* TODO this is inefficient, but is seems to have a small impact on performance */
 	MPI_Bcast(tr->rateCategory, tr->originalCrunchedLength, MPI_INT, 0, MPI_COMM_WORLD); 
 	MPI_Bcast(tr->wr2, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
 	MPI_Bcast(tr->wr, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
@@ -1420,39 +1434,31 @@ static void assignAndInitPart1(tree *localTree, tree *tr, int *tid)
     totalLength = 0; 
 
 #ifdef _USE_PTHREADS
-
   localTree->threadID = *tid; 
   printf("my id is %d\n", *tid); 
   assert(localTree != tr);
   localTree->numberOfThreads = tr->numberOfThreads;
 #else  /* => MPI */
-  int 
-    assertCtr = 0;
-
   *tid = processID; 
   localTree->threadID = processID; 
   tr->numberOfThreads = processes;
-  int bufSize = 8 + tr->NumberOfModels * 8;
-#ifdef _LOCAL_DISCRETIZATION
-  bufSize++;
-#endif
-  int buf[bufSize]; 
-  int *bufPtr = buf; 
-  if(NOT MASTER_P)		/* :TRICKY: workers receive buffer here */
-    MPI_Bcast(buf, bufSize, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
 
-  ASSIGN_BUF( localTree->useRecom,                  tr->useRecom);
-  ASSIGN_BUF( localTree->rateHetModel,              tr->rateHetModel);
-  ASSIGN_BUF( localTree->useMedian,                 tr->useMedian); 
-  ASSIGN_BUF( localTree->saveMemory,                tr->saveMemory);
-  ASSIGN_BUF( localTree->maxCategories,             tr->maxCategories);
-  ASSIGN_BUF( localTree->originalCrunchedLength,    tr->originalCrunchedLength);
-  ASSIGN_BUF( localTree->mxtips,                    tr->mxtips);
-  ASSIGN_BUF( localTree->numBranches,               tr->numBranches);
-#ifdef _LOCAL_DISCRETIZATION
-  ASSIGN_BUF( localTree->aliaswgt,                  tr->aliaswgt);
-#endif    
+  int bufSize = (8 + tr->NumberOfModels * 8) * sizeof(int);
+  char buf[bufSize], 
+    *bufPtr = buf;  
+  RECV_BUF(buf, bufSize, MPI_BYTE); 
+
+
+  ASSIGN_BUF( localTree->useRecom,                  tr->useRecom, int);
+  ASSIGN_BUF( localTree->rateHetModel,              tr->rateHetModel, int);
+  ASSIGN_BUF( localTree->useMedian,                 tr->useMedian, int); 
+  ASSIGN_BUF( localTree->saveMemory,                tr->saveMemory, int);
+  ASSIGN_BUF( localTree->maxCategories,             tr->maxCategories, int);
+  ASSIGN_BUF( localTree->originalCrunchedLength,    tr->originalCrunchedLength, int);
+  ASSIGN_BUF( localTree->mxtips,                    tr->mxtips, int);
+  ASSIGN_BUF( localTree->numBranches,               tr->numBranches, int);
+
 
   localTree->td[0].count = 0; 
 
@@ -1472,24 +1478,20 @@ static void assignAndInitPart1(tree *localTree, tree *tr, int *tid)
   
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     {
-      ASSIGN_BUF(      localTree->partitionData[model].numberOfCategories,     tr->partitionData[model].numberOfCategories);
-      ASSIGN_BUF(      localTree->partitionData[model].states,                 tr->partitionData[model].states);
-      ASSIGN_BUF(      localTree->partitionData[model].maxTipStates ,          tr->partitionData[model].maxTipStates);
-      ASSIGN_BUF(      localTree->partitionData[model].dataType ,              tr->partitionData[model].dataType);
-      ASSIGN_BUF(      localTree->partitionData[model].protModels ,            tr->partitionData[model].protModels);
-      ASSIGN_BUF(      localTree->partitionData[model].protFreqs ,             tr->partitionData[model].protFreqs);
-      ASSIGN_BUF(      localTree->partitionData[model].lower ,                 tr->partitionData[model].lower);
-      ASSIGN_BUF(      localTree->partitionData[model].upper ,                 tr->partitionData[model].upper); 
+      ASSIGN_BUF(      localTree->partitionData[model].numberOfCategories,     tr->partitionData[model].numberOfCategories, int);
+      ASSIGN_BUF(      localTree->partitionData[model].states,                 tr->partitionData[model].states, int);
+      ASSIGN_BUF(      localTree->partitionData[model].maxTipStates ,          tr->partitionData[model].maxTipStates, int);
+      ASSIGN_BUF(      localTree->partitionData[model].dataType ,              tr->partitionData[model].dataType, int);
+      ASSIGN_BUF(      localTree->partitionData[model].protModels ,            tr->partitionData[model].protModels, int);
+      ASSIGN_BUF(      localTree->partitionData[model].protFreqs ,             tr->partitionData[model].protFreqs, int);
+      ASSIGN_BUF(      localTree->partitionData[model].lower ,                 tr->partitionData[model].lower, int);
+      ASSIGN_BUF(      localTree->partitionData[model].upper ,                 tr->partitionData[model].upper, int); 
 
       localTree->perPartitionLH[model]                      = 0.0;
       totalLength += (localTree->partitionData[model].upper -  localTree->partitionData[model].lower);
     }
 
-#ifdef _FINE_GRAIN_MPI
-  assert(assertCtr == bufSize); /* will fail, if anybody changes structures, s.t. more variables need to be sent around */
-  if(MASTER_P)			/* :TRICKY: master broadcasts buffer here  */
-    MPI_Bcast(buf, bufSize, MPI_INT, 0, MPI_COMM_WORLD);
-#endif
+  SEND_BUF(buf, bufSize, MPI_BYTE); 
 
   assert(totalLength == localTree->originalCrunchedLength);
 
@@ -1609,6 +1611,8 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 { 
   size_t
     model;
+
+  treeIsInitialized = TRUE; 
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localTree->NumberOfModels, tr->NumberOfModels); 
