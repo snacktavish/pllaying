@@ -78,6 +78,7 @@
 
 #define _PORTABLE_PTHREADS
 
+boolean setupTree (tree *tr);
 
 /***************** UTILITY FUNCTIONS **************************/
 
@@ -585,7 +586,124 @@ static unsigned int KISS32(void)
 
   return (x+y+w);
 }
+/* read the binary MSA format and store date on tree *tr */
+void read_msa(tree *tr, const char *filename)
+  {
+    size_t 
+      i,
+      model;
 
+    unsigned char *y;
+  double **empiricalFrequencies;
+
+    FILE 
+      *byteFile = myfopen(filename, "rb");	 
+
+    /* read the alignment info */
+    myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
+    myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
+    myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
+    myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
+    /* initialize topology */
+    setupTree(tr);
+
+    /* Joint branch length estimate is activated by default */
+    /*
+    if(adef->perGeneBranchLengths)
+      tr->numBranches = tr->NumberOfModels;
+    else
+      tr->numBranches = 1;
+    */
+    tr->numBranches = 1;
+
+    /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
+       let's not worry about this right now, because it is indeed RAxML-specific */
+
+    tr->aliaswgt                   = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
+
+    tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));	  
+    tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+
+    tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+
+    for(i = 0; i < (size_t)tr->NumberOfModels; i++)
+      tr->executeModel[i] = TRUE;
+
+
+
+    /* data structures for convergence criterion need to be initialized after! setupTree */
+    if(tr->searchConvergenceCriterion)
+    {                     
+      tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
+      tr->h = initHashTable(tr->mxtips * 4);        
+    }
+
+    /* read tip names */
+    for(i = 1; i <= (size_t)tr->mxtips; i++)
+    {
+      int len;
+      myBinFread(&len, sizeof(int), 1, byteFile);
+      tr->nameList[i] = (char*)malloc(sizeof(char) * (size_t)len);
+      myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
+      /*printf("%s \n", tr->nameList[i]);*/
+    }  
+
+    for(i = 1; i <= (size_t)tr->mxtips; i++)
+      addword(tr->nameList[i], tr->nameHash, i);
+
+    /* read partition info (boudaries, data type) */
+    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    {
+      int 
+        len;
+
+      pInfo 
+        *p = &(tr->partitionData[model]);	   
+
+      myBinFread(&(p->states),             sizeof(int), 1, byteFile);
+      myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
+      myBinFread(&(p->lower),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->upper),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->width),              sizeof(int), 1, byteFile);
+      myBinFread(&(p->dataType),           sizeof(int), 1, byteFile);
+      myBinFread(&(p->protModels),         sizeof(int), 1, byteFile);
+      myBinFread(&(p->autoProtModels),     sizeof(int), 1, byteFile);
+      myBinFread(&(p->protFreqs),          sizeof(int), 1, byteFile);
+      myBinFread(&(p->nonGTR),             sizeof(boolean), 1, byteFile);
+      myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile); 
+
+      /* later on if adding secondary structure data
+
+         int    *symmetryVector;
+         int    *frequencyGrouping;
+         */
+
+      myBinFread(&len, sizeof(int), 1, byteFile);
+      p->partitionName = (char*)malloc(sizeof(char) * (size_t)len);
+      myBinFread(p->partitionName, sizeof(char), len, byteFile);
+
+      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+      myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);	   
+    }
+
+    /* Read all characters from tips */
+    y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
+
+    tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
+
+    for(i = 1; i <= (size_t)tr->mxtips; i++)
+      tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];	
+
+    myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
+
+    fclose(byteFile);
+  }
 /* removed the static keyword for using this function in the examples */
 boolean setupTree (tree *tr)
 {

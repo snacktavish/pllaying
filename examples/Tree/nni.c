@@ -57,6 +57,7 @@ int main(int argc, char * argv[])
   tr = (tree *)malloc(sizeof(tree));
   tr->mxtips           = 5 + rand() % 5 ;
   tr->randomNumberSeed = rand();
+  tr->NumberOfModels   = 1;
 
   /* Setup some default values 
      TODO: The minimal initialization can be substantially smaller than what is
