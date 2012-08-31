@@ -44,7 +44,7 @@ int main(int argc, char * argv[])
   makeRandomTree(tr);
 
   /* Print the tree */
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, SUMMARIZE_LH, 0,0);
+  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 0, 0, 0, 0, SUMMARIZE_LH, 0,0);
   fprintf(stderr, "%s", tr->tree_string);
 
 

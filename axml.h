@@ -1173,14 +1173,14 @@ typedef  struct {
 
 typedef struct 
 {
-  int leftLength;
-  int rightLength;
-  int eignLength;
+  int leftLength;         /* s^2 */
+  int rightLength;/* s^2 */
+  int eignLength;/* s */
   int evLength;
   int eiLength;
-  int substRatesLength;
-  int frequenciesLength;
-  int tipVectorLength;
+  int substRatesLength;   /* (s^2 - s)/2 free model parameters for matrix Q i.e. substitution rates */
+  int frequenciesLength;  /* s frequency of each state */ 
+  int tipVectorLength;    /* ASK */
   int symmetryVectorLength;
   int frequencyGroupingLength;
 
@@ -1190,7 +1190,7 @@ typedef struct
 
   const char *inverseMeaning;
 
-  int states;
+  int states;   /* s */
 
   boolean smoothFrequencies;
 
