@@ -598,37 +598,60 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid
 
 
 void broadcastAfterRateOpt(tree *tr, tree *localTree, int n, int tid)
-{				
-  /*  TODO aberer: all these broadcasts here could be summarized into
-      a single Alltoall. However, since we have a different number of
-      sites per process, this is potentially error prone and I would
-      not expect too much performance improvement */
+{				  
+  /*  aberer: mpi_alltoallv/w may be more efficient, but it is a
+      hell to set up */
 
-  int i ; 
-  double buf[tr->originalCrunchedLength * 3]; 
-  
+  int
+    num1 = 0,
+    num2 = 0,
+    num3 = 0, 
+    i ; 
+    
   for(i = 0; i < n; ++i)
     {
+      double
+	allBuf[tr->originalCrunchedLength * 3],
+	buf1[tr->originalCrunchedLength],
+	buf2[tr->originalCrunchedLength], 
+	buf3[tr->originalCrunchedLength]; 
+
 #ifdef _USE_PTHREADS
       if(i != tid)
 	continue; 
 #endif
       int numDouble = 0; 
       
-      numDouble += doublesToBuffer(buf, localTree->patrat, tr, n,i, TRUE, i!= tid); 
-      numDouble += doublesToBuffer(buf, localTree->patratStored, tr, n,i, TRUE, i!= tid); 
-      numDouble += doublesToBuffer(buf, localTree->lhs, tr, n,i, TRUE, i!= tid); 
+      /* extract doubles  */
+
+      num1 = doublesToBuffer(buf1, localTree->patrat, tr, n,i, TRUE, i!= tid); 
+      num2 = doublesToBuffer(buf2, localTree->patratStored, tr, n,i, TRUE, i!= tid); 
+      num3 = doublesToBuffer(buf3, localTree->lhs, tr, n,i, TRUE, i!= tid); 
+
+      numDouble += num1 + num2 + num3; 
+
+      /* copy doubles  */
       
-      BCAST_BUF(buf, numDouble, MPI_DOUBLE, i); 
+      memcpy(allBuf, buf1, num1 * sizeof(double)); 
+      memcpy(allBuf + num1, buf2, num2 * sizeof(double)); 
+      memcpy(allBuf + (num1 + num2) , buf3, num3 * sizeof(double)); 
+
+      BCAST_BUF(allBuf, numDouble, MPI_DOUBLE, i); 
+
+      memcpy(buf1, allBuf, num1 * sizeof(double)); 
+      memcpy(buf2, allBuf + num1, num2 * sizeof(double)); 
+      memcpy(buf3, allBuf + (num1 + num2), num3 * sizeof(double)); 
       
-      int assertNum = 0; 
-      assertNum += doublesToBuffer(buf, tr->patrat, tr, n,i,FALSE, FALSE); 
-      assertNum += doublesToBuffer(buf, tr->patratStored, tr, n,i,FALSE, FALSE); 
-      assertNum += doublesToBuffer(buf, tr->lhs, tr, n,i,FALSE, FALSE); 
-      
-      assert(assertNum == numDouble); 
+      /* re-insert doubles  */
+      int assertCtr = 0; 
+      assertCtr += doublesToBuffer(buf1, tr->patrat, tr, n,i,FALSE, FALSE); 
+      assertCtr += doublesToBuffer(buf2, tr->patratStored, tr, n,i,FALSE, FALSE); 
+      assertCtr += doublesToBuffer(buf3, tr->lhs, tr, n,i,FALSE, FALSE); 
+
+      assert(assertCtr == numDouble); 
     }
 }
+
 
 
 static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
