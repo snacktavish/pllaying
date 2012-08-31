@@ -1334,9 +1334,7 @@ static void makeFileNames(void)
     printf("RAxML output files with the run ID <%s> already exist \n", run_id);
     printf("in directory %s ...... exiting\n", workdir);
 
-#ifdef PRODUCTIVE
     exit(-1);
-#endif
   }
 }
 

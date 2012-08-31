@@ -59,7 +59,6 @@ extern "C" {
 #endif
 #endif
 
-#define PRODUCTIVE 
 
 #include "genericParallelization.h"
 

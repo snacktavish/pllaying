@@ -596,32 +596,39 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, int n, int tid
 }
 
 
-void gatherAndRedistributeDoubles(double *local, double *global, tree *tr, int n, int tid)
-{  
-  int i; 
-  double 
-    buf[tr->originalCrunchedLength]; 
+
+void broadcastAfterRateOpt(tree *tr, tree *localTree, int n, int tid)
+{				
+  /*  TODO aberer: all these broadcasts here could be summarized into
+      a single Alltoall. However, since we have a different number of
+      sites per process, this is potentially error prone and I would
+      not expect too much performance improvement */
+
+  int i ; 
+  double buf[tr->originalCrunchedLength * 3]; 
   
-  for(i = 0; i < n; ++i )
-    {      
+  for(i = 0; i < n; ++i)
+    {
 #ifdef _USE_PTHREADS
-      if(i != tid) 		/* for pthreads, only operate on private rates */
-	continue;
+      if(i != tid)
+	continue; 
 #endif
-
-      /* extract rates into buffer (for relevant thread) or just get the number of rates for this thread */
-      int numberOfRates = doublesToBuffer(buf, local,tr, n , i, TRUE, i != tid); 
+      int numDouble = 0; 
       
-      /* each mpi worker broadcasts its rates (pthreads: no effect) */
-      BCAST_BUF(buf, numberOfRates, MPI_DOUBLE, i); 
-
-      /* now each process received the rates and writes it back into its structure */
-      int assertNum = doublesToBuffer(buf, global, tr, n, i, FALSE, FALSE); 
-      assert(assertNum == numberOfRates); 
-    }  
+      numDouble += doublesToBuffer(buf, localTree->patrat, tr, n,i, TRUE, i!= tid); 
+      numDouble += doublesToBuffer(buf, localTree->patratStored, tr, n,i, TRUE, i!= tid); 
+      numDouble += doublesToBuffer(buf, localTree->lhs, tr, n,i, TRUE, i!= tid); 
+      
+      BCAST_BUF(buf, numDouble, MPI_DOUBLE, i); 
+      
+      int assertNum = 0; 
+      assertNum += doublesToBuffer(buf, tr->patrat, tr, n,i,FALSE, FALSE); 
+      assertNum += doublesToBuffer(buf, tr->patratStored, tr, n,i,FALSE, FALSE); 
+      assertNum += doublesToBuffer(buf, tr->lhs, tr, n,i,FALSE, FALSE); 
+      
+      assert(assertNum == numDouble); 
+    }
 }
-
-
 
 
 static void collectDouble(double *dst, double *src, tree *tr, int n, int tid)
@@ -1104,10 +1111,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 
 	optRateCatPthreads(localTree, localTree->lower_spacing, localTree->upper_spacing, localTree->lhs, n, tid);
 
-	gatherAndRedistributeDoubles(localTree->patrat, tr->patrat, localTree, n, tid); 
-	gatherAndRedistributeDoubles(localTree->patratStored, tr->patratStored, localTree, n, tid); 
-	gatherAndRedistributeDoubles(localTree->lhs, tr->lhs, localTree, n, tid); 
-
+	broadcastAfterRateOpt(tr, localTree, n,  tid); 
       }
       break;
     case THREAD_COPY_RATE_CATS:
