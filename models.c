@@ -3841,19 +3841,10 @@ void initModel(tree *tr, double **empiricalFrequencies)
       
       tr->fracchange /= ((double)tr->NumberOfModels);
     }  
-  
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);  
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  masterBarrier(THREAD_COPY_INIT_MODEL, tr);  
 #endif
-
- 
-
-#ifdef _USE_PTHREADS
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);   
-#endif
-
- 
-
 }
 
 

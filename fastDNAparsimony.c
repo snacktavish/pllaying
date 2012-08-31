@@ -103,7 +103,7 @@ extern double masterTime;
 
 /************************************************ pop count stuff ***********************************************/
 
-inline unsigned int bitcount_32_bit(unsigned int i)
+ unsigned int bitcount_32_bit(unsigned int i)
 {
   return ((unsigned int) __builtin_popcount(i));
 }

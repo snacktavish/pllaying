@@ -152,15 +152,23 @@ const partitionLengths pLengths[MAX_MODEL] = {
   {4096, 4096, 64, 4096, 4096, 2016, 64, 4160, 64, 2016, FALSE, 64, (char*)NULL, 64, TRUE, (unsigned int*)NULL}
 };
 
+
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+double *globalResult;
+boolean treeIsInitialized; 
+#ifdef MEASURE_TIME_PARALLEL
+double masterTimePerPhase; 
+#endif
+#endif
+
 #ifdef _USE_PTHREADS
 volatile int             jobCycle = 0;
 volatile int             threadJob = 0;
-volatile double          *reductionBuffer;
-volatile double          *reductionBufferTwo;
 volatile char            *barrierBuffer;
 #endif
 
 #ifdef _FINE_GRAIN_MPI
 int processes;
-double *globalResult;
+int processID; 
+MPI_Datatype TRAVERSAL_MPI; 
 #endif

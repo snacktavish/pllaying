@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,20 +60,7 @@ extern "C" {
 #endif
 
 
-
-#ifdef _USE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#include <mpi.h>
-
-#endif
-
-
+#include "genericParallelization.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /* maximum iterations of smoothings per insert in the */
@@ -441,6 +429,7 @@ struct stringEnt
   char *word;
   struct stringEnt *next;
 };
+
 
 typedef struct stringEnt stringEntry;
  
@@ -931,12 +920,6 @@ typedef  struct  {
   volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  /*
-    do we need this stuff ?
-  */
-  /*unsigned int **bitVectors;
-    hashtable *h;*/
-  
     
   int *partitionAssignment;     
  
@@ -1060,9 +1043,6 @@ typedef  struct  {
   double lzr[NUM_BRANCHES];
   double lzi[NUM_BRANCHES];
 
- 
- 
-
 
   unsigned int **bitVectors;
 
@@ -1109,6 +1089,9 @@ typedef  struct
   topolRELL **t;
 }
   topolRELL_LIST;
+
+
+
 
 
 /**************************************************************/
@@ -1182,6 +1165,7 @@ typedef  struct {
   boolean       bayesian;
   int           num_generations;
 #endif
+
 } analdef;
 
 
@@ -1222,6 +1206,7 @@ extern void mcmc(tree *tr, analdef *adef);
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model);
+void printParallelTimePerRegion(); 
 #endif
 
 extern void computePlacementBias(tree *tr, analdef *adef);
@@ -1391,7 +1376,7 @@ extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
 
 extern void newviewIterative(tree *tr, int startIndex);
 
-extern void evaluateIterative(tree *);
+extern void evaluateIterative(tree *tr);
 
 extern void *malloc_aligned( size_t size);
 
@@ -1455,8 +1440,8 @@ extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int nu
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
 
 
-extern inline unsigned int bitcount_32_bit(unsigned int i);
-extern inline unsigned int bitcount_64_bit(unsigned long i);
+extern  unsigned int bitcount_32_bit(unsigned int i); 
+/* extern inline unsigned int bitcount_64_bit(unsigned long i); */
 
 extern FILE *getNumberOfTrees(tree *tr, char *fileName, analdef *adef);
 
@@ -1489,7 +1474,7 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #endif
 
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 
 
 
@@ -1508,17 +1493,9 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
-#define THREAD_NEWVIEW_ANCESTRAL 13
-#define THREAD_GATHER_ANCESTRAL 14
-
-
-
-typedef struct
-{
-  tree *tr;
-  int threadNumber;
-}
-  threadData;
+#define THREAD_NEWVIEW_ANCESTRAL      13
+#define THREAD_GATHER_ANCESTRAL       14
+#define THREAD_EXIT_GRACEFULLY        15
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
@@ -1529,41 +1506,24 @@ extern void masterBarrier(int jobType, tree *tr);
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+
+boolean workerTrap(tree *tr); 
+void initMPI(int argc, char *argv[]); 
+void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
+void multiprocessorScheduling(tree *tr, int tid); 
+void computeFraction(tree *localTree, int tid, int n); 
+void computeFractionMany(tree *localTree, int tid); 
+void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n); 
+void startPthreads(tree *tr); 
+
+typedef struct
+{
+  tree *tr;
+  int threadNumber;
+}
+  threadData;
 extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#define THREAD_COPY_RATE_CATS  0
-#define THREAD_COPY_INIT_MODEL 1
-#define THREAD_NEWVIEW         2
-#define THREAD_EVALUATE        3
-#define THREAD_MAKENEWZ_FIRST  4
-#define THREAD_MAKENEWZ        5
-#define THREAD_OPT_RATE        6
-#define THREAD_COPY_RATES      7
-#define THREAD_RATE_CATS       8
-#define THREAD_NEWVIEW_MASKED  9
-#define THREAD_OPT_ALPHA       10
-#define THREAD_COPY_ALPHA      11
-#define THREAD_OPTIMIZE_PER_SITE_AA 12
-#define EXIT_GRACEFULLY        13
-
-
-
-
-    
-
-
-extern void masterBarrierMPI(int jobType, tree *tr);
-extern void fineGrainWorker(tree *tr);
-extern void startFineGrainMpi(tree *tr, analdef *adef);
-
-MPI_Datatype traversalDescriptor;
-MPI_Datatype jobDescriptor;
-
-
 #endif
 
 
@@ -1603,3 +1563,6 @@ static int virtual_width( int n ) {
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+
+

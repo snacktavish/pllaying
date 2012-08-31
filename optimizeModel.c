@@ -59,9 +59,7 @@ extern char lengthFileNameModel[1024];
 extern char *protModels[20];
 
 
-#ifdef _USE_PTHREADS
-extern volatile double          *reductionBuffer;
-#endif
+
 
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
 
@@ -293,7 +291,7 @@ static linkageList* initLinkageListGTR(tree *tr)
 
   /* we can now pass an appropriate integer vector to the linkage list initialization function :-) */
 
-  ll = initLinkageList(links, tr);
+  ll = initLinkageList(links, tr); 
 
   free(links);
   
@@ -375,40 +373,11 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 
       assert(pos == numberOfModels);
 
-#ifdef _USE_PTHREADS
-      {
-	volatile double result;
-	
-	masterBarrier(THREAD_OPT_RATE, tr);
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
-
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_RATE, tr);     
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
+      masterBarrier(THREAD_OPT_RATE, tr);
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, tr->start, TRUE);      
-#endif
 #endif     
       
       /* update likelihoods and the sum of per-partition likelihoods for those partitions that share the parameter.
@@ -464,39 +433,10 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		}
 	    }
 	}
-#ifdef _USE_PTHREADS   
-      {
-	volatile double result;
-	
-	masterBarrier(THREAD_OPT_ALPHA, tr);
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
-	      result += reductionBuffer[i];  	        
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
-
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += reductionBuffer[i * tr->NumberOfModels + j];
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }
-      }
-#else
-#ifdef _FINE_GRAIN_MPI
-      masterBarrierMPI(THREAD_OPT_ALPHA, tr);     
-#else
+#if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+      masterBarrier(THREAD_OPT_ALPHA, tr);
+#else  
       evaluateGeneric(tr, tr->start, TRUE);
-#endif
 #endif
             
       for(i = 0; i < ll->entries; i++)	
@@ -1086,7 +1026,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
     *result     = (double *)malloc(sizeof(double) * numberOfModels),
     *_x         = (double *)malloc(sizeof(double) * numberOfModels);   
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
    int revertModel = 0;
 #endif   
 
@@ -1145,7 +1085,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4, tr->useMedian); 
 #endif		
 	    }
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  revertModel++;
 #endif
 	}  
@@ -1153,16 +1093,10 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 
   /* broadcast new alpha value to all parallel threads/processes */
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   if(revertModel > 0)
     masterBarrier(THREAD_COPY_ALPHA, tr);
 #endif
-
-#ifdef _FINE_GRAIN_MPI
-  if(revertModel > 0)
-    masterBarrierMPI(THREAD_COPY_ALPHA, tr);
-#endif
-
   
   free(startLH);
   free(startAlpha);
@@ -1207,7 +1141,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
     *result = (double *)malloc(sizeof(double) * numberOfModels),
     *_x     = (double *)malloc(sizeof(double) * numberOfModels); 
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
    int revertModel = 0;
 #endif
 
@@ -1293,7 +1227,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 
       for(k = 0, pos = 0; k < ll->entries; k++)
 	{
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  revertModel = 0;
 #endif
 	  if(ll->ld[k].valid)
@@ -1308,7 +1242,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 		      initReversibleGTR(tr, index);
 #endif
 		    }
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 		  revertModel++;
 #endif
 		}
@@ -1316,13 +1250,9 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 	    }
 	}
 
-#ifdef _USE_PTHREADS      
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       if(revertModel > 0)
 	masterBarrier(THREAD_COPY_RATES, tr);
-#endif
-#ifdef _FINE_GRAIN_MPI
-      if(revertModel > 0)
-	masterBarrierMPI(THREAD_COPY_RATES, tr);
 #endif
       
       assert(pos == numberOfModels);
@@ -1612,7 +1542,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 	    if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
 	      {
 		found = 1;
-		tr->rateCategory[i] = k;				
+		tr->rateCategory[i] = k; 
 		break;
 	      }
 	  }
@@ -1640,7 +1570,7 @@ static void categorizePartition(tree *tr, rateCategorize *rc, int model, int low
 }
 
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
 void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
@@ -1927,7 +1857,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }	            	  
 	  
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  {
 	    int 
 	      localCount = 0;
@@ -2063,8 +1993,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	       tr->wr2[i] = temp * wtemp;
 	    }
 	}         
-#if !(defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-      for(model = 0; model < tr->NumberOfModels; model++)
+#if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+      for(model = 0; model < tr->NumberOfModels; model++)	
 	{   	  	  	 
 	  int 
 	    localCount,
@@ -2081,11 +2011,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 #endif
     }
   
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_RATE_CATS, tr);
-#endif  
-   
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   masterBarrier(THREAD_COPY_RATE_CATS, tr);
 #endif               
 }
@@ -2148,22 +2074,15 @@ static void optimizeRateCategories(tree *tr, int _maxCategories)
 	  memcpy(oldCategorizedRates[model], tr->partitionData[model].perSiteRates, tr->maxCategories * sizeof(double));	  	 	  
 	}      
       
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr);
-#else
-#ifdef _FINE_GRAIN_MPI
-      /*      tr->lhs = lhs;*/
-      tr->lower_spacing = lower_spacing;
-      tr->upper_spacing = upper_spacing;
-      masterBarrierMPI(THREAD_RATE_CATS, tr);
-#else
+      masterBarrier(THREAD_RATE_CATS, tr);      
+#else      
       for(model = 0; model < tr->NumberOfModels; model++)      
 	optRateCatModel(tr, model, lower_spacing, upper_spacing, tr->lhs);
 #endif     
-#endif
 
       for(model = 0; model < tr->NumberOfModels; model++)
 	{     
@@ -2413,11 +2332,8 @@ static void autoProtein(tree *tr)
 		}
 	    }
 	  
-#ifdef _USE_PTHREADS	
-	  masterBarrier(THREAD_COPY_RATES, tr);	   
-#endif
-#ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+	  masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 	  
 	  resetBranches(tr);
@@ -2454,11 +2370,8 @@ static void autoProtein(tree *tr)
       
       printBothOpen("\n\n");
             
-#ifdef _USE_PTHREADS	
-	  masterBarrier(THREAD_COPY_RATES, tr);	   
-#endif
-#ifdef _FINE_GRAIN_MPI
-	  masterBarrierMPI(THREAD_COPY_RATES, tr);     
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+      masterBarrier(THREAD_COPY_RATES, tr);     
 #endif
 
       resetBranches(tr);

@@ -976,7 +976,7 @@ void newviewIterative (tree *tr, int startIndex)
 
 #ifdef _DEBUG_RECOMPUTATION
   /* recom */
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 #else
   countTraversal(tr);
 #endif
@@ -1101,7 +1101,7 @@ void newviewIterative (tree *tr, int startIndex)
           for(j = 0; j < (size_t)tr->partitionData[model].gapVectorLength; j++)
           {		     
             x3_gap[j] = x1_gap[j] & x2_gap[j];
-            setBits += (size_t)(bitcount_32_bit(x3_gap[j]));		      
+            setBits += (size_t)(bitcount_32_bit(x3_gap[j])); 
           }
 
           requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		
@@ -1482,25 +1482,18 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   {
     /* store execute mask in traversal descriptor */
 
-    storeExecuteMaskInTraversalDescriptor(tr);      
+    storeExecuteMaskInTraversalDescriptor(tr); 
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
     /* do the parallel for join for pthreads
        not that we do not need a reduction operation here, but just a barrier to make 
        sure that all threads are done with their partition */
 
     masterBarrier(THREAD_NEWVIEW, tr);
 #else
-#ifdef _FINE_GRAIN_MPI
-
-    /* same as above but for MPI */
-
-    masterBarrierMPI(THREAD_NEWVIEW, tr);
-#else
     /* in the sequential case we now simply call newviewIterative() */
 
     newviewIterative(tr, 0);
-#endif
 #endif
 
   }
@@ -1803,7 +1796,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   assert(tr->td[0].count == 1);  
   
-#ifdef _USE_PTHREADS  
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
 
   masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr);
@@ -1816,7 +1809,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   tr->td[0].traversalHasChanged = FALSE;
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* invoke another parallel region to gather the marginal ancestral probabilities 
      from the threads/MPI processes */
 

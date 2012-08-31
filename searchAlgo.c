@@ -1400,11 +1400,7 @@ static void readCheckpoint(tree *tr)
 #endif
   }
 
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);
-#endif
-
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   masterBarrier(THREAD_COPY_INIT_MODEL, tr);
 #endif
 
@@ -1760,7 +1756,7 @@ START_FAST_SPRS:
 
       if(fastIterations > 1)
         cleanupHashTable(tr->h, (fastIterations % 2));		
-
+      
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, fastIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
           &bCounter, 1, FALSE, FALSE, tr->threadID);	    
 
@@ -2120,7 +2116,8 @@ cleanup:
 
 
 /* The number of maximum smoothing iterations is given explicitely */
-boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
+boolean 
+treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   boolean result;
   result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */
