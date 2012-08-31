@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include "axml.h"
 
 void getStartingTree(tree *tr);
@@ -8,6 +9,7 @@ void makeRandomTree(tree *tr);
 #ifdef __cplusplus
 extern "C" {
 boolean setupTree (tree *tr);
+nodeptr pickRandomSubtree(tree *tr);
 }
 #else
 boolean setupTree (tree *tr);
@@ -48,11 +50,13 @@ int main(int argc, char * argv[])
   
   /* Do we want to print branch lengths? */
   printBranchLengths = FALSE;
+
+  srand(time(NULL));
   
   /* Set the minimum required info for the tree structure */
   tr = (tree *)malloc(sizeof(tree));
-  tr->mxtips           = 5;
-  tr->randomNumberSeed = 666;
+  tr->mxtips           = 5 + rand() % 5 ;
+  tr->randomNumberSeed = rand();
 
   /* Setup some default values 
      TODO: The minimal initialization can be substantially smaller than what is
@@ -68,7 +72,10 @@ int main(int argc, char * argv[])
   fprintf(stderr, "%s\n", tr->tree_string);
 
   
-  p = tr->nodep[tr->mxtips + 1];
+  do
+   {
+     p = pickRandomSubtree(tr);
+   } while (isTip(p->back->number, tr->mxtips));
   /* perform the NNI move */
   do_NNI(tr, p, 1);
 
