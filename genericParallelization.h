@@ -13,6 +13,8 @@ extern double *globalResult;
 #define _PORTABLE_PTHREADS
 /* #define DEBUG_PARALLEL  */
 /* #define DEBUG_MPI_EACH_SEND */
+/* #define _REPRODUCIBLE_MPI_OR_PTHREADS */
+
 
 
 #define NOT ! 
@@ -81,6 +83,7 @@ char* popBytes(char *buf, void *result, int numBytes);
 /*********************/
 #ifdef _USE_PTHREADS
 #include <pthread.h>
+#define _REPRODUCIBLE_MPI_OR_PTHREADS
 #define VOLATILE_PAR volatile 
 #define MASTER_P (tid == 0)
 #define ASSIGN_INT(x,y) (x = y)

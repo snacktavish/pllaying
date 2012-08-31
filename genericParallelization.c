@@ -314,8 +314,6 @@ void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
 }
 
 
-
-/* TODO: move to separate file?  */
 boolean isThisMyPartition(tree *localTree, int tid, int model)
 { 
   if(localTree->partitionAssignment[model] == tid)
@@ -520,6 +518,8 @@ void multiprocessorScheduling(tree *tr, int tid)
 */
 void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) 
 {
+#ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
+
   /* only the master executes this  */
   assert(tr->threadID == 0); 
   
@@ -535,7 +535,11 @@ void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 )
 	  dlnLdlz[b] += globalResult[t * tr->numBranches * 2 + b ]; 
 	  d2lnLdlz2[b] += globalResult[t * tr->numBranches * 2 + tr->numBranches + b]; 
 	}
-    } 
+    }
+#else 
+  memcpy(dlnLdlz, globalResult, sizeof(double) * tr->numBranches); 
+  memcpy(d2lnLdlz2, globalResult + tr->numBranches, sizeof(double) * tr->numBranches);
+#endif
 }
 
 
@@ -772,7 +776,7 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
      the actual sum over the entries in the reduction buffer will then be computed 
      by the master thread which ensures that the sum is determinsitic */
 
-
+#ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
   /* 
      aberer: I implemented this as a mpi_gather operation into this buffer, 
      pthreads version emulates this gather; 
@@ -783,8 +787,18 @@ static void reduceEvaluateIterative(tree *localTree, int tid)
   for(model = 0; model < localTree->NumberOfModels; ++model)
     buf[model] = localTree->perPartitionLH[model];        
 
+  /* either make reproducible or efficient */
   ASSIGN_GATHER(globalResult, buf, localTree->NumberOfModels, DOUBLE, tid); 
+#else 
+  /* the efficient mpi version: a proper reduce  */
+  double buf[localTree->NumberOfModels]; 
+  memset(buf, 0, sizeof(double) * localTree->NumberOfModels); 
+  MPI_Reduce(localTree->perPartitionLH, buf, localTree->NumberOfModels, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD); 
+  if(MASTER_P)
+    memcpy(localTree->perPartitionLH, buf, localTree->NumberOfModels * sizeof(double)) ;
+#endif
 }
+
 
 
 /* the one below is a hack we are re-assigning the local pointer to the global one
@@ -802,7 +816,6 @@ inline static void broadcastTraversalInfo(tree *localTree, tree *tr)
   localTree->td[0].functionType =            tr->td[0].functionType;
   localTree->td[0].count =                   tr->td[0].count ;
   localTree->td[0].traversalHasChanged =     tr->td[0].traversalHasChanged;
-
 
   memmove(localTree->td[0].executeModel,    tr->td[0].executeModel,    sizeof(boolean) * localTree->NumberOfModels);
   memmove(localTree->td[0].parameterValues, tr->td[0].parameterValues, sizeof(double) * localTree->NumberOfModels);
@@ -963,13 +976,25 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	/* as for evaluate above, the final sum over the derivatives will be computed by the 
 	   master thread in its sequential part of the code */
 
+#ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 	/* MPI: implemented as a gather again, pthreads: just buffer copying */	
 	double buf[ 2 * localTree->numBranches]; 
 	memcpy( buf, dlnLdlz, localTree->numBranches * sizeof(double) ); 
-	memcpy(buf + localTree->numBranches, d2lnLdlz2, localTree->numBranches * sizeof(double)); 
-	
-	ASSIGN_GATHER(globalResult, buf,  2 * localTree->numBranches, DOUBLE, tid); 
+	memcpy(buf + localTree->numBranches, d2lnLdlz2, localTree->numBranches * sizeof(double)); 	
 
+	ASSIGN_GATHER(globalResult, buf,  2 * localTree->numBranches, DOUBLE, tid); 
+#else 	
+	double result[localTree->numBranches];
+	memset(result,0, localTree->numBranches * sizeof(double)); 
+	MPI_Reduce( dlnLdlz , result , localTree->numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	if(MASTER_P)
+	  memcpy(globalResult, result, sizeof(double) * localTree->numBranches); 
+	
+	memset(result,0,localTree->numBranches * sizeof(double)); 
+	MPI_Reduce( d2lnLdlz2 , result , localTree->numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	if(MASTER_P)
+	  memcpy(globalResult + localTree->numBranches, result, sizeof(double) * localTree->numBranches); 
+#endif
       }
 
       break;
@@ -1195,12 +1220,8 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 	   in the proper order 
 	*/
 
-	collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid);
+	collectDouble(tr->lhs,                localTree->lhs,                  localTree, n, tid); 	
 
-	for(i = 0; i < tr->originalCrunchedLength; ++i)
-	  printf("%f,", tr->lhs[i]); 
-	printf("\n"); 
-	
       }
       break;
       /* check for errors */
@@ -1295,74 +1316,31 @@ void *likelihoodThread(void *tData)
 */
 void masterPostBarrier(int jobType, tree *tr)
 {
-  int 
-    i, 
-    model; 
-
   assert(tr->threadID == 0); 
   
   switch(jobType)
     {
     case THREAD_EVALUATE: 
-      {      
-	for(model = 0; model < tr->NumberOfModels; model++)
-	  { 
-	    volatile double 
-	      partitionResult = 0.0;  
-	    
-	    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-	      partitionResult += globalResult[i * tr->NumberOfModels + model]; 
-	    
-	    tr->perPartitionLH[model] = partitionResult;
-	  }
-      }
+    case THREAD_OPT_RATE: 
     case THREAD_OPT_ALPHA: 
       {
-	int j;
+#ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
+	int i,j;
 	volatile double partitionResult;	
-	volatile double result = 0.0;
 
 	for(j = 0; j < tr->NumberOfModels; j++)
 	  {
 	    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++) 
-	      partitionResult += globalResult[i * tr->NumberOfModels + j];
-	    
-	    result +=  partitionResult;
+	      partitionResult += globalResult[i * tr->NumberOfModels + j];	    
+
 	    tr->perPartitionLH[j] = partitionResult;
 	  }
+#endif      
 	break; 
-      }      
-    case THREAD_OPT_RATE: 
-      {
-	volatile double result;	
-
-	if(tr->NumberOfModels == 1)
-	  {
-	    for(i = 0, result = 0.0; i < tr->numberOfThreads; i++)    	  
-	      result += globalResult[i]; 		
-
-	    tr->perPartitionLH[0] = result;
-	  }
-	else
-	  {
-	    int j;
-	    volatile double partitionResult;
-	
-	    result = 0.0;
-
-	    for(j = 0; j < tr->NumberOfModels; j++)
-	      {
-		for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-		  partitionResult += globalResult[i * tr->NumberOfModels + j]; 
-
-		result +=  partitionResult;
-		tr->perPartitionLH[j] = partitionResult;
-	      }
-	  }	
-	break; 
-      }
+      } 
     case THREAD_PER_SITE_LIKELIHOODS:
       {
+	int i; 
 	/* now just compute the sum over per-site log likelihoods for error checking */      
 	double accumulatedPerSiteLikelihood = 0.; 
 	for(i = 0; i < tr->originalCrunchedLength; i++)
