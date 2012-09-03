@@ -1,14 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
+#define GLOBAL_VARIABLES_DEFINITION
 #include "axml.h"
+#include "globalVariables.h"
 
 
-#ifdef __cplusplus
-extern "C"
- {
-   void read_msa (tree * tr, char * filename);
- }
-#endif
+
+void read_msa (tree * tr, char * filename);
 
 int main(int argc, char * argv[])
 {

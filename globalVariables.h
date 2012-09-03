@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#ifdef GLOBAL_VARIABLES_DEFINITION
+
 double masterTime;
 double accumulatedTime;
 
@@ -171,4 +173,17 @@ volatile char            *barrierBuffer;
 int processes;
 int processID; 
 MPI_Datatype TRAVERSAL_MPI; 
+#endif
+
+#else
+extern char infoFileName[1024];
+extern char resultFileName[1024];
+extern const partitionLengths pLengths[MAX_MODEL];
+extern const char * protModels[NUM_PROT_MODELS];
+extern char * secondaryModelList[21];
+extern double masterTime;
+extern char logFileName[1024];
+extern char * secondaryModelList[21];
+extern unsigned int * mask32;
+
 #endif

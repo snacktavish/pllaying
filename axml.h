@@ -764,17 +764,24 @@ typedef struct {
     
   double *sumBuffer; 
   double *ancestralBuffer;
+
   double *gammaRates;
   double *EIGN;
   double *EV;
   double *EI;
   double *left;
   double *right;
+
+  /* those are entries in the Q matrix */
+  double *substRates;    
+
   double *frequencies;
   double *empiricalFrequencies;
+
   double *tipVector; 
-  double *substRates;    
+
   double *perSiteRates;
+
   double *wr;
   double *wr2;
   int    *wgt; 
@@ -1553,12 +1560,12 @@ void newviewGTRGAMMA_AVX(int tipCase,
 void reorder( double *x, int n, int span );
 void reorder_back( double *x, int n, int span );
 
-
 static int virtual_width( int n ) {
     const int global_vw = 2;
     return (n+1) / global_vw * global_vw;
 }
 
+boolean modelExists(char *model, tree *tr);
 
 #ifdef __cplusplus
 } /* extern "C" */

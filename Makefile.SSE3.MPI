@@ -1,16 +1,16 @@
 # Makefile August 2006 by Alexandros Stamatakis
 # Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
 
-CC = ccache mpicc
+CC = mpicc
 
-CFLAGS = -g -std=c11 -D_OPTIMIZED_FUNCTIONS -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -O2 -fomit-frame-pointer -funroll-loops 
+CFLAGS = -g -D_OPTIMIZED_FUNCTIONS -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -O2 -fomit-frame-pointer -funroll-loops 
 #-D_USE_MPI2
 
 LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o
+objs    = utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o
 
 all : raxmlLight-MPI
 
