@@ -746,60 +746,77 @@ typedef unsigned int parsimonyNumber;
 
 
 typedef struct {
-  int     states;
-  int     maxTipStates;
-  int     lower;
-  int     upper;
-  int     width;
-  int     dataType;
+  /* ALIGNMENT DATA */
+  /* This depends only on the type of data in this partition of the alignment */
+  int     dataType;         /* e.g. DNA_DATA, AA_DATA, etc  within range (MIN_MODEL, MAX_MODEL)  */
+  int     states;           /* Number of states in inner vectors */
+  int     maxTipStates;     /* Number of undetermined states (Possible states at the tips) */
+  /* These are the boundaries of the partition itself, sites within these boudaries must share the type of data */
+  char   *partitionName;
+  int     lower;            /* starting position of the partition within [1, tr->originalCrunchedLength] */
+  int     upper;            /* ending position  */
+  int     width;            /* upper - lower, possibly we dont need this, number of site patterns*/
+  int    *wgt;              /* Number of occurencies of each site pattern */
+  double *empiricalFrequencies;    /* empirical Frequency of each state according to this alignment partition */
+
+
+  /* MODEL OF RATE HETEROGENETY, We use either GAMMA or PSR */
+  /* Rate heterogenety: Per Site Categories (PSR) model aka CAT, see updatePerSiteRates() */
+  /* Rate of site i is given by perSiteRates[rateCategory[i]] , wr stored to save multipl.*/
+  double *perSiteRates;     /* Values of rates*/
+  int    *rateCategory;     /* Category index for each site */
+  int     numberOfCategories;/* size of the set of possible categories */
+  double *wr;               /* perSiteRates[tr->rateCategory[i]] * aliaswgt[i] */
+  double *wr2;              /* perSiteRates[tr->rateCategory[i]]^2 * aliaswgt[i] */
+
+  /* Rate heterogenety: GAMMA model of rate heterogenety */
+  double alpha;             /* parameter to be optimized */
+  double *gammaRates;       /* 4 gamma categories (rates), computed given an alpha*/
+
+
+  /* TRANSITION MODEL: We always assume General Time Reversibility */
+  /* Transistion probability matrix: P(t) = exp(Qt)*/
+  /* Branch length t is the expected number of substitutions per site */
+  /* Pij(t) is the probability of going from state i to state j in a branch of length t */
+  /* Relative substitution rates (Entries in the Q matrix) */
+  /* In GTR we can write Q = S * D, where S is a symmetrical matrix and D a diagonal with the state frequencies */
+  double *substRates;       /* Entries in S, e.g. 6 free parameters in DNA */   
+  double *frequencies;      /* State frequencies, entries in D, are initialized as empiricalFrequencies */
+  /* Matrix decomposition: Explanation of the mathematical background? */
+  double *EIGN;             /* eigenvalues */
+  double *EV;               /* eigenvectors */
+  double *EI;
+  double *left;  
+  double *right;
+  double *tipVector; 
+  /* Protein specific ?? */
   int     protModels;
   int     autoProtModels;
   int     protFreqs;
+  /* specific for secondary structures ?? */
   boolean nonGTR;
-  int     numberOfCategories;
-
-  char   *partitionName;
   int    *symmetryVector;
   int    *frequencyGrouping;
-    
-  double *sumBuffer; 
-  double *ancestralBuffer;
 
-  double *gammaRates;
-  double *EIGN;
-  double *EV;
-  double *EI;
-  double *left;
-  double *right;
 
-  /* those are entries in the Q matrix */
-  double *substRates;    
-
-  double *frequencies;
-  double *empiricalFrequencies;
-
-  double *tipVector; 
-
-  double *perSiteRates;
-
-  double *wr;
-  double *wr2;
-  int    *wgt; 
-  int    *rateCategory;
-  double alpha;
-
-  double          **xVector;
-  size_t           *xSpaceVector;
-  unsigned char   **yVector;
-  unsigned int     *globalScaler; 
-
+  /* LIKELIHOOD VECTORS */
+  /* partial LH Inner vectors / ancestral vectors, we have 2*tips - 3 inner nodes */
+  double          **xVector;          /* Probability entries for inner nodes */
+  unsigned char   **yVector;          /* Tip entries (sequence) for tip nodes */
+  unsigned int     *globalScaler;     /* Counters for scaling operations done at node i */
+  /* These are for the saveMemory option (tracking gaps to skip computations and memory) */
+  size_t           *xSpaceVector;     
   int               gapVectorLength;
   unsigned int     *gapVector;
   double           *gapColumn; 
 
+  /* Parsimony vectors at each node */
   size_t parsimonyLength;
   parsimonyNumber *parsVect; 
 
+  /* These buffers of size width are used to pre-compute ?? */
+  double *sumBuffer; 
+  double *ancestralBuffer;
 } pInfo;
 
 
