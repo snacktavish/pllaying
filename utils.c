@@ -192,7 +192,6 @@ void read_msa(tree *tr, const char *filename)
       empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
       myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);
     }
-
     /* Read all characters from tips */
     y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
@@ -202,6 +201,13 @@ void read_msa(tree *tr, const char *filename)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
 
     myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
+
+    /* Initialize the model */
+    //printf("Here 1!\n");
+    initializePartitionsSequential(tr); 
+    //printf("Here 2!\n");
+    initModel(tr, empiricalFrequencies);
+
 
     fclose(byteFile);
   }
@@ -1145,12 +1151,14 @@ void initializePartitionsSequential(tree *tr)
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {
       size_t
-	j,
-	lower = tr->partitionData[model].lower,
-	width = tr->partitionData[model].upper - lower;  
+	j;
+	size_t lower = tr->partitionData[model].lower;
+	size_t width = tr->partitionData[model].upper - lower;
 
       for(j = 1; j <= (size_t)tr->mxtips; j++)
+      {
 	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
+        }
 
       memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
     }  

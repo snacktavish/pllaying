@@ -7,7 +7,7 @@ LIB_SRC      = $(patsubst %.c, $(SRC_DIR)%.c, $(LIB_CFILES))
 LIB_OBJ      = $(patsubst %.c, %.o, $(LIB_CFILES)) sim_reorder.o
 CFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -DGLOBAL_VARIABLES_DEFINITION
 
-all: read nni likelihood
+all: read nni 
 
 nni: $(LIB_OBJ) likelihood.c
 	@echo "===> COMPILE $@"

@@ -8,20 +8,21 @@ LIB_OBJ      = $(patsubst %.c, %.o, $(LIB_CFILES))
 CFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS -msse3 -g 
 CXXFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS -msse3 -g 
 
-all: msa
+all: msa likelihood
 
-msa: $(LIB_OBJ) msa.c
+likelihood: $(LIB_OBJ) likelihood.c
 	@echo "===> COMPILE $@"
 	$(CC) -I$(SRC_DIR) $+ -o $@ -lm
 
-sim_reorder.o: ../../sim_reorder.cpp
-	$(CPP) -c ../../sim_reorder.cpp -o sim_reorder.o
+msa: $(LIB_OBJ) msa.c
+	@echo "===> COMPILE $@"
+	$(CC) -I$(SRC_DIR) $+ -o $@ -lm -g
 
 %.o: $(SRC_DIR)%.c
 	$(CC) $(CFLAGS) -c $+ -o $@
 
 
 clean:
-	-rm msa *.o
+	-rm msa likelihood *.o
 
 .PHONY: all clean

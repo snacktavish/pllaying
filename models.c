@@ -3804,6 +3804,7 @@ void initModel(tree *tr, double **empiricalFrequencies)
       tr->rateCategory[j] = 0;           
     } 
 
+  /* PSR (CAT) model init */
   for(model = 0; model < tr->NumberOfModels; model++)
     {            
       tr->partitionData[model].numberOfCategories = 1;           
@@ -3826,7 +3827,8 @@ void initModel(tree *tr, double **empiricalFrequencies)
       
                      
 #ifndef _LOCAL_DISCRETIZATION      
-      initReversibleGTR(tr, model);
+      initReversibleGTR(tr, model); /* Decomposition of Q matrix */
+      /* GAMMA model init */
       makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4, tr->useMedian);    
 #endif 
     }                   		       
