@@ -1007,41 +1007,6 @@ static nodeptr pickRandomSubtree(tree *tr)
 /* END TEST CODE */
 #endif
 
-/* small example program that executes ancestral state computations 
-   on the entire subtree rooted at p.
-
-   Note that this is a post-order traversal.
-*/
-
-  
-static void computeAllAncestralVectors(nodeptr p, tree *tr)
-{
-  /* if this is not a tip, for which evidently it does not make sense 
-     to compute the ancestral sequence because we have the real one ....
-  */
-
-  if(!isTip(p->number, tr->mxtips))
-    {
-      /* descend recursively to compute the ancestral states in the left and right subtrees */
-
-      computeAllAncestralVectors(p->next->back, tr);
-      computeAllAncestralVectors(p->next->next->back, tr);
-      
-      /* then compute the ancestral state at node p */
-
-      newviewGenericAncestral(tr, p);
-
-      /* and print it to terminal, the two booleans that are set to true here 
-	 tell the function to print the marginal probabilities as well as 
-	 a discrete inner sequence, that is, ACGT etc., always selecting and printing 
-	 the state that has the highest probability */
-
-      printAncestralState(p, TRUE, TRUE, tr);
-    }
-}
-
-
-
 
 /* interface to outside  */
 
@@ -1404,20 +1369,6 @@ int main (int argc, char *argv[])
 	
 	exit(0);
       }
-
-    /***** test code for ancestral state comps */
-
-    if(0)
-      {
-	/* compute all ancestral probability vectors for the inner node 
-	   that is connected to the first taxon in the input alignment,
-	   i.e., tr->nodep[1]->back
-	*/
-
-	computeAllAncestralVectors(tr->nodep[1]->back, tr);
-	exit(0);
-      }
-
 
 
     /* For this branch we are only interested in testing with -f b  */
