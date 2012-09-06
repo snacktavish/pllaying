@@ -1117,7 +1117,7 @@ int main (int argc, char *argv[])
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
 
-    setupTree(tr);
+        setupTree(tr, FALSE);
 
     /* data structures for convergence criterion need to be initialized after! setupTree */
 

@@ -106,7 +106,7 @@ void read_msa(tree *tr, const char *filename)
     myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
     /* initialize topology */
-    setupTree(tr);
+    setupTree(tr, TRUE);
 
     /* Joint branch length estimate is activated by default */
     /*
@@ -656,7 +656,7 @@ static unsigned int KISS32(void)
 }
 
 /* removed the static keyword for using this function in the examples */
-boolean setupTree (tree *tr)
+boolean setupTree (tree *tr, boolean doInit)
 {
   nodeptr  p0, p, q;
   int
@@ -667,7 +667,8 @@ boolean setupTree (tree *tr)
     tips,
     inter; 
 
-  init_default(tr);
+  if(doInit)
+    init_default(tr);
 
   tr->bigCutoff = FALSE;
 
