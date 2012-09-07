@@ -1415,6 +1415,17 @@ void newviewIterative (tree *tr, int startIndex)
 
 }
 
+static void computeTraversalSubtree(tree *tr, nodeptr p) 
+{
+  /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
+  if(tr->useRecom)
+  {
+    int traversal_counter = 0;
+    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &traversal_counter);
+  }
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+}
+
 
 /* here is the generic function that could be called from the user program 
    it re-computes the vector at node p (regardless of whether it's orientation is 
@@ -1428,20 +1439,14 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   if(isTip(p->number, tr->mxtips))
     return;
 
-  if(tr->useRecom)
-  {
-    int count = 0;
-    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-  }
-
   /* the first entry of the traversal descriptor is always reserved for evaluate or branch length optimization calls,
      hence we start filling the array at the second entry with index one. This is not very nice and should be fixed 
      at some point */
 
   tr->td[0].count = 0;
 
-  /* compute the traversal descriptor */
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+  /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
+  computeTraversalSubtree(tr, p);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
