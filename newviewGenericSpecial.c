@@ -1415,7 +1415,7 @@ void newviewIterative (tree *tr, int startIndex)
 
 }
 
-static void computeTraversalSubtree(tree *tr, nodeptr p) 
+void computeTraversalSubtree(tree *tr, nodeptr p) 
 {
   /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
   if(tr->useRecom)

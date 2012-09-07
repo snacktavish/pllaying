@@ -1081,9 +1081,8 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
     int
       slot = -1,
       count = 0;
-    /* Ensure all correct subtree sizes are available */
-    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-    computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
+
+    /* Ensure p and q get a unpinnable slot in physical memory */
     if(!isTip(q->number, tr->mxtips))
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
@@ -1103,13 +1102,10 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
-                         tr->rvec, tr->useRecom);
+    computeTraversalSubtree(tr, p);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
-                         tr->rvec, tr->useRecom);
-
+    computeTraversalSubtree(tr, q);
 
   /* call the Newton-Raphson procedure */
 

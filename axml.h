@@ -1383,6 +1383,7 @@ extern boolean isTip(int number, int maxTips);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
 */
 /* recom functions */
+extern void computeTraversalSubtree(tree *tr, nodeptr p);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
 extern void allocRecompVectorsInfo(tree *tr);
 extern void allocTraversalCounter(tree *tr);
