@@ -730,18 +730,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* recom part */
   if(tr->useRecom)
   {
-    int
-      slot = -1,
-      count = 0;
-    if(fullTraversal)
-    {
-      determineFullTraversalStlen(p, tr);
-    }
-    else
-    {
-      computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-      computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
-    }
+    int slot = -1;
     if(!isTip(q->number, tr->mxtips))
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
@@ -764,26 +753,18 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* one entry in the traversal descriptor is already used, hence set the tarversal length counter to 1 */
   tr->td[0].count = 1;
 
-  /* do we need to recompute any of the vectors at or below p ? */
-
   if(fullTraversal)
   { 
-    assert(isTip(p->number, tr->mxtips));
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE, 
-        tr->rvec, tr->useRecom);     
+    assert(isTip(q->back->number, tr->mxtips));
+    computeTraversal(tr, q, FALSE);
   }
   else
   {
     if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-      computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
-          tr->rvec, tr->useRecom);     
-
-    /* recompute/reorient any descriptors at or below q ? 
-       computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
+      computeTraversal(tr, p, TRUE);
 
     if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-      computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
-          tr->rvec, tr->useRecom);     
+      computeTraversal(tr, q, TRUE);
   }
 
 

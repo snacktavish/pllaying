@@ -1415,15 +1415,18 @@ void newviewIterative (tree *tr, int startIndex)
 
 }
 
-void computeTraversalSubtree(tree *tr, nodeptr p) 
+void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal) 
 {
   /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
   if(tr->useRecom)
   {
     int traversal_counter = 0;
-    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &traversal_counter);
+    if(partialTraversal)
+      computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &traversal_counter);
+    else
+      computeFullTraversalInfoStlen(p, tr->mxtips, tr->rvec);
   }
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, partialTraversal, tr->rvec, tr->useRecom);
 }
 
 
@@ -1446,7 +1449,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   tr->td[0].count = 0;
 
   /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
-  computeTraversalSubtree(tr, p);
+  computeTraversal(tr, p, TRUE);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */

@@ -1102,10 +1102,10 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversalSubtree(tr, p);
+    computeTraversal(tr, p, TRUE);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversalSubtree(tr, q);
+    computeTraversal(tr, q, TRUE);
 
   /* call the Newton-Raphson procedure */
 

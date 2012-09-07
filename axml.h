@@ -1379,11 +1379,9 @@ extern double evaluateGenericVector (tree *tr, nodeptr p);
 extern void categorizeGeneric (tree *tr, nodeptr p);
 extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0, int maxiter, int model);
 extern boolean isTip(int number, int maxTips);
-/*
-extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
-*/
+
 /* recom functions */
-extern void computeTraversalSubtree(tree *tr, nodeptr p);
+extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
 extern void allocRecompVectorsInfo(tree *tr);
 extern void allocTraversalCounter(tree *tr);
@@ -1393,7 +1391,7 @@ extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
 extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
 
 extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
-extern void determineFullTraversalStlen(nodeptr p, tree *tr);
+extern void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec);
 extern void printTraversalInfo(tree *tr);
 extern void countTraversal(tree *tr);
 

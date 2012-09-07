@@ -374,7 +374,7 @@ void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int 
 
 /* pre-compute the node stlens (this needs to be known prior to running the strategy) */
 
-static void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec) 
+void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec) 
 {
   if(isTip(p->number, maxTips))
     return;
@@ -427,30 +427,6 @@ static void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors 
     }
   }
 }
-
-void determineFullTraversalStlen(nodeptr p, tree *tr)
-{
-#ifdef  _DEBUG_RECOMPUTATION
-  double 
-    travTime = gettime();
-#endif
-
-  nodeptr 
-    q = p->back;
-
-
-  computeFullTraversalInfoStlen(p, tr->mxtips, tr->rvec);   
-  computeFullTraversalInfoStlen(q, tr->mxtips, tr->rvec); 
-
-#ifdef  _DEBUG_RECOMPUTATION
-  tr->stlenTime += (gettime() - travTime);
-#endif  
-}
-
-
-
-
-
 
 
 #ifdef _DEBUG_RECOMPUTATION
