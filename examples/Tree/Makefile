@@ -6,12 +6,9 @@ LIB_CFILES   = bipartitionList.c evaluateGenericSpecial.c evaluatePartialGeneric
 LIB_SRC      = $(patsubst %.c, $(SRC_DIR)%.c, $(LIB_CFILES))
 LIB_OBJ      = $(patsubst %.c, %.o, $(LIB_CFILES)) sim_reorder.o
 CFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -DGLOBAL_VARIABLES_DEFINITION
+CXXFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS -msse3 -g 
 
 all: read nni 
-
-nni: $(LIB_OBJ) likelihood.c
-	@echo "===> COMPILE $@"
-	$(CPP) -I$(SRC_DIR) $+ -o $@ -lm
 
 nni: $(LIB_OBJ) nni.c
 	@echo "===> COMPILE $@"
@@ -29,6 +26,6 @@ sim_reorder.o: ../../sim_reorder.cpp
 
 
 clean:
-	-rm nni read likelihood *.o
+	-rm nni read *.o
 
 .PHONY: all clean
