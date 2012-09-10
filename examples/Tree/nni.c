@@ -67,11 +67,11 @@ int main(int argc, char * argv[])
 
   /* Generate a random tree according to the seed given in tr->randomNumberSeed */
   makeRandomTree(tr);
+  printf ( "Working with random topology of %d taxa\n", tr->mxtips );
 
   printf ( "Newick notation BEFORE NNI\n" );
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
-  fprintf(stderr, "%s\n", tr->tree_string);
-
+  printTopology(tr, FALSE);
+  printTopology(tr, TRUE);
   
   do
    {
@@ -81,8 +81,8 @@ int main(int argc, char * argv[])
   do_NNI(tr, p, 1);
 
   printf ( "Newick notation AFTER NNI\n" );
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
-  fprintf(stderr, "%s", tr->tree_string);
+  printTopology(tr, FALSE);
+  printTopology(tr, TRUE);
 
   
 

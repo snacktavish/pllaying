@@ -1349,6 +1349,7 @@ extern boolean freeBestTree ( bestlist *bt );
 extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
 			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
+void printTopology(tree *tr, boolean printInner);
 
 
 
