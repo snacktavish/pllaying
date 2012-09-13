@@ -33,22 +33,23 @@ double doNNI(tree * tr, nodeptr p, int swap, int optBran) {
 	if (swap == 1) {
 		tmp = p->next->back;
 		hookup(p->next, q->next->back, q->next->z, tr->numBranches);
-		hookup(q->next, tmp, p->next->z, tr->numBranches);
+		hookup(q->next, tmp, tmp->z, tr->numBranches);
 	} else {
 		tmp = p->next->next->back;
 		hookup(p->next->next, q->next->back, q->next->z, tr->numBranches);
-		hookup(q->next, tmp, p->next->next->z, tr->numBranches);
+		hookup(q->next, tmp, tmp->z, tr->numBranches);
 	}
 	if (optBran) {
 		newviewGeneric(tr, p, FALSE);
 		newviewGeneric(tr, q, FALSE);
-		//update(tr, p);
+		update(tr, p);
 		//printf("New branch length %f \n", getBranchLength(tr, 0, p) );
 		evaluateGeneric(tr,p, FALSE);
 		return tr->likelihood;
 	} else {
 		newviewGeneric(tr, p, FALSE);
 		newviewGeneric(tr, q, FALSE);
+		evaluateGeneric(tr, p, FALSE);
 		return tr->likelihood;
 	}
 }
@@ -88,12 +89,12 @@ nniMove* evalNNIForBranch(tree* tr, nodeptr p) {
 
 	/******************** NNI part *******************************/
 	/* Now try to do an NNI move of type 1 */
-	double lh_nni1 = doNNI(tr, p, 0, TRUE);
+	double lh_nni1 = doNNI(tr, p, 1, TRUE);
 	printf("likelihood of the 1.NNI move: %f\n", lh_nni1);
 	//printTopology(tr, TRUE);
 
 	/* Restore previous NNI move */
-	doNNI(tr, p, 0, FALSE);
+	doNNI(tr, p, 1, FALSE);
 	/* Restore the old branch length */
 	p->z[0] = zOld;
 	p->back->z[0] = zOld;
@@ -104,12 +105,12 @@ nniMove* evalNNIForBranch(tree* tr, nodeptr p) {
 	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);
 
 	/* Try to do an NNI move of type 2 */
-	double lh_nni2 = doNNI(tr, p, 1, TRUE);
+	double lh_nni2 = doNNI(tr, p, 0, TRUE);
 	printf("likelihood of the 2.NNI move: %f\n", lh_nni2);
 	//printTopology(tr, TRUE);
 
 	/* Restore previous NNI move */
-	doNNI(tr, p, 1, FALSE);
+	doNNI(tr, p, 0, FALSE);
 	/* Restore the old branch length */
 	p->z[0] = zOld;
 	p->back->z[0] = zOld;
@@ -189,6 +190,7 @@ int main(int argc, char * argv[])
 	//fprintf(stderr, "%s\n", tr->tree_string);
 
 	/* Initialize the NNI list */
+
 	nniMove** nniList = malloc( (tr->ntips - 3) * sizeof(int));
 	int i;
 	for (i = 0; i < tr->ntips-2; i++) {
@@ -196,8 +198,10 @@ int main(int argc, char * argv[])
 	}
 
 	/* fill up the NNI list */
+
 	nodeptr p = tr->start->back;
 	nodeptr q = p->next;
+	//evalNNIForBranch(tr, q->back);
 	int cnt = 1;
 	while ( q != p ) {
 		evalNNIForSubtree(tr, q->back, nniList, &cnt);
@@ -205,9 +209,6 @@ int main(int argc, char * argv[])
 	}
 	evaluateGeneric(tr, tr->start, TRUE);
 	printf("Likelihood before evaluating all NNIs: %f\n", tr->likelihood);
-
-
-
 
 	/*
 	nodeptr p;
@@ -236,7 +237,6 @@ void evalNNIForSubtree(tree* tr, nodeptr p, nniMove** nniList, int* cnt) {
 		*cnt = *cnt + 1;
 		nniList[*cnt] = bestnni;
 		nodeptr q = p->next;
-		exit(0);
 		while ( q != p ) {
 			evalNNIForSubtree(tr, q->back, nniList, cnt);
 			q = q->next;
