@@ -31,13 +31,13 @@ void do_NNI(tree * tr, nodeptr p, int swap)
    {
      tmp = p->next->back;
      hookup(p->next, q->next->back, q->next->z, tr->numBranches);
-     hookup(q->next, tmp,           p->next->z, tr->numBranches);
+     hookup(q->next, tmp,           tmp->z, tr->numBranches);
    }
   else
    {
       tmp = p->next->next->back;
       hookup(p->next->next, q->next->back, q->next->z,       tr->numBranches);
-      hookup(q->next,       tmp,           p->next->next->z, tr->numBranches);
+      hookup(q->next,       tmp,           tmp->z, tr->numBranches);
    }
 }
 
