@@ -122,7 +122,6 @@ boolean update(tree *tr, nodeptr p)
       }	 
 
 
-
       p->z[i] = q->z[i] = z[i];	 
     }
   }
@@ -133,14 +132,12 @@ boolean update(tree *tr, nodeptr p)
   return TRUE;
 }
 
-
-
-
 boolean smooth (tree *tr, nodeptr p)
 {
   nodeptr  q;
 
   if (! update(tr, p))               return FALSE; /*  Adjust branch */
+
   if (! isTip(p->number, tr->mxtips)) 
   {                                  /*  Adjust descendants */
     q = p->next;
@@ -176,44 +173,42 @@ static boolean allSmoothed(tree *tr)
 }
 
 
-
+/* do maxtimes rounds of branch length optimization */
 boolean smoothTree (tree *tr, int maxtimes)
 {
-  nodeptr  p, q;   
-  int i, count = 0;
+	nodeptr  p, q;
+	int i, count = 0;
 
-  p = tr->start;
-  for(i = 0; i < tr->numBranches; i++)
-    tr->partitionConverged[i] = FALSE;
+	p = tr->start;
+	for(i = 0; i < tr->numBranches; i++)
+		tr->partitionConverged[i] = FALSE;
 
-  while (--maxtimes >= 0) 
-  {    
-    for(i = 0; i < tr->numBranches; i++)	
-      tr->partitionSmoothed[i] = TRUE;		
+	while (--maxtimes >= 0)
+	{
+		for(i = 0; i < tr->numBranches; i++)
+			tr->partitionSmoothed[i] = TRUE;
 
-    if (! smooth(tr, p->back))       return FALSE;
-    if (!isTip(p->number, tr->mxtips)) 
-    {
-      q = p->next;
-      while (q != p) 
-      {
-        if (! smooth(tr, q->back))   return FALSE;
-        q = q->next;
-      }
-    }
+		if (! smooth(tr, p->back))       return FALSE;
+		if (!isTip(p->number, tr->mxtips))
+		{
+			q = p->next;
+			while (q != p)
+			{
+				if (! smooth(tr, q->back))   return FALSE;
+				q = q->next;
+			}
+		}
 
-    count++;
+		count++;
 
-    if (allSmoothed(tr)) 
-      break;      
-  }
+		if (allSmoothed(tr))
+			break;
+	}
 
-  for(i = 0; i < tr->numBranches; i++)
-    tr->partitionConverged[i] = FALSE;
+	for(i = 0; i < tr->numBranches; i++)
+		tr->partitionConverged[i] = FALSE;
 
-
-
-  return TRUE;
+	return TRUE;
 } 
 
 
