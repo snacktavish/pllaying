@@ -174,7 +174,7 @@ int countTips(nodeptr p, int numsp)
 }
 
 
-static double getBranchLength(tree *tr, int perGene, nodeptr p)
+double getBranchLength(tree *tr, int perGene, nodeptr p)
 {
   double 
     z = 0.0,
