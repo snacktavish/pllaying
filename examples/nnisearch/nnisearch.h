@@ -11,32 +11,41 @@ typedef struct {
 	tree* tr;
 	nodeptr p;
 	int nniType;
-	double len0; /* original length of the NNI branch */
-	double len1; /* optimized length of the NNI branch before the NNI move */
-	double len2; /* optimized length of the NNI branch after the NNI move */
+	double z[NUM_BRANCHES];
+	double likelihood;
+	double deltaLH;
 } nniMove;
 
-typedef struct {
-	tree* tree;
-	nniMove** data;
-} nniList;
-
+int cmp_nni(const void* nni1, const void* nni2) {
+	nniMove* myNNI1 = (nniMove*) nni1;
+	nniMove* myNNI2 = (nniMove*) nni2;
+	return (int) (1000000.f*myNNI1->deltaLH - 1000000.f*myNNI2->deltaLH);
+}
 /*
  *  Find the best NNI move for the current branch
  *  Return NULL if no positive NNI is found
  *  Otherwise return the best positive NNI move found
  */
-nniMove* evalNNIForBranch(tree* tr, nodeptr p);
+nniMove getBestNNIForBran(tree* tr, nodeptr p);
 
-double doNNI(tree * tr, nodeptr p, int swap, int optBran);
+double doOneNNI(tree * tr, nodeptr p, int swap, int optBran);
 
 /*
  *  Go through all 2(n-3) internal branches of the tree and
- *  evalute all possible NNI moves
+ *  evaluate all possible NNI moves
  */
 void evalAllNNI(tree* tr);
 
-void evalNNIForSubtree(tree* tr, nodeptr p, nniMove** nniList, int* cnt);
+/*
+ *  do a full round of fast NNI
+ */
+double doNNISearch(tree* tr);
+
+/*
+ *  cnt: number of internal branches that have been visited
+ *  cnt_nni: number of positive NNI found
+ */
+void evalNNIForSubtree(tree* tr, nodeptr p, nniMove* nniList, int* cnt_bran, int* cnt_nni);
 /*
  *  Save the likelihood vector of p and q to the 2 pointer p_lhsave and
  *  q_lhsave.
