@@ -718,9 +718,9 @@ static void restoreSubsRates(tree *tr, analdef *adef, int model, int numSubsRate
   int i;
   for(i=0; i<numSubsRates; i++)
     tr->partitionData[model].substRates[i] = prevSubsRates[i];
-#ifndef _LOCAL_DISCRETIZATION
+
   initReversibleGTR(tr, model);
-#endif
+
   /* TODO need to broadcast rates here for parallel version */
 
   evaluateGeneric(tr, tr->start, TRUE);
@@ -764,9 +764,8 @@ static void simpleModelProposal(state * instate)
       editSubsRates(instate->tr,instate->model, state, new_value);
     }
   //recalculate eigens
-#ifndef _LOCAL_DISCRETIZATION
+
   initReversibleGTR(instate->tr, instate->model); /* 1. recomputes Eigenvectors, Eigenvalues etc. for Q decomp. */
-#endif
 
   /* TODO: need to broadcast rates here for parallel version ! */
 
@@ -807,27 +806,17 @@ static void simpleGammaProposal(state * instate)
   if(newalpha < ALPHA_MIN) newalpha = ALPHA_MIN;
   instate->tr->partitionData[instate->model].alpha = newalpha;
 
-#ifndef _LOCAL_DISCRETIZATION
   makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4, instate->tr->useMedian);
-#endif
 
-  /* TODO: for the parallel version: need to broadcast the gamma rates before re-evaluating !!!! 
-     also note the _LOCAL_DISCRETIZATION flag that should only be used for the parallel stuff !
-   */
-
+  
   evaluateGeneric(instate->tr, instate->tr->start, TRUE);
 }
 
 static void resetSimpleGammaProposal(state * instate)
 {
   instate->tr->partitionData[instate->model].alpha = instate->curAlpha;
-#ifndef _LOCAL_DISCRETIZATION
-  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4, instate->tr->useMedian);
-#endif
 
-   /* TODO: for the parallel version: need to broadcast the gamma rates before re-evaluating !!!! 
-     also note the _LOCAL_DISCRETIZATION flag that should only be used for the parallel stuff !
-   */
+  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4, instate->tr->useMedian);
 
   evaluateGeneric(instate->tr, instate->tr->start, TRUE);
 }

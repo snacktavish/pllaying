@@ -8,7 +8,7 @@ LIB_OBJ      = $(patsubst %.c, %.o, $(LIB_CFILES))
 CFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS -msse3 -g 
 CXXFLAGS       = -I$(SRC_DIR) -c -Wall -g -march=native -O2 -fomit-frame-pointer -funroll-loops -D_GNU_SOURCE -D__SIM_SSE3 -D_OPTIMIZED_FUNCTIONS -msse3 -g 
 
-all: msa likelihood ancestral
+all: msa likelihood ancestral phylip
 
 ancestral: $(LIB_OBJ) ancestral.c
 	@echo "===> COMPILE $@"
@@ -22,11 +22,15 @@ msa: $(LIB_OBJ) msa.c
 	@echo "===> COMPILE $@"
 	$(CC) -I$(SRC_DIR) $+ -o $@ -lm -g
 
+phylip: $(LIB_OBJ) phylip_parser.c
+	@echo "===> COMPILE $@"
+	$(CC) -I$(SRC_DIR) $+ -o $@ -lm -g
+
 %.o: $(SRC_DIR)%.c
 	$(CC) $(CFLAGS) -c $+ -o $@
 
 
 clean:
-	-rm msa likelihood ancestral *.o
+	-rm msa likelihood ancestral phylip *.o
 
 .PHONY: all clean
