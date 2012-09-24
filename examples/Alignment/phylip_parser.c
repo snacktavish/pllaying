@@ -9,6 +9,14 @@
 #define MIN_NUM_SPECIES 4
 #define MIN_NUM_SITES 1
 
+typedef  struct {
+  int             *alias;       /* site representing a pattern */
+  int             *aliaswgt;    /* weight by pattern */
+  int             *rateCategory;
+  int              endsite;     /* # of sequence patterns */
+  double          *patrat;      /* rates per pattern */
+  double          *patratStored;
+} cruncheddata;
 typedef  struct
 {
   int              numsp; /* number of sequences/species */
@@ -16,9 +24,85 @@ typedef  struct
   unsigned char    **y;    
   unsigned char    *y0;
   /*int              *wgt; */
+
+  int              *alias; /* site representing a pattern */
 } rawdata;
 
+static void sitesort(rawdata *rdta, cruncheddata *cdta, tree *tr, analdef *adef)
+{
+  int  gap, i, j, jj, jg, k, n, nsp;
+  int  
+    *index, 
+    *category = (int*)NULL;
 
+  boolean  flip, tied;
+  unsigned char  **data;
+
+  /*
+  if(adef->useSecondaryStructure)
+  {
+    assert(tr->NumberOfModels > 1 && adef->useMultipleModel);
+    adaptRdataToSecondary(tr, rdta);
+  }
+  if(adef->useMultipleModel)    
+    category      = tr->model;
+    */
+
+
+  index    = cdta->alias;
+  data     = rdta->y;
+  n        = rdta->sites;
+  nsp      = rdta->numsp;
+  index[0] = -1;
+
+
+  //if(adef->compressPatterns)
+  {
+    for (gap = n / 2; gap > 0; gap /= 2)
+    {
+      for (i = gap + 1; i <= n; i++)
+      {
+        j = i - gap;
+
+        do
+        {
+          jj = index[j];
+          jg = index[j+gap];
+          /*
+          if(adef->useMultipleModel)
+          {		     		      
+            assert(category[jj] != -1 &&
+                category[jg] != -1);
+
+            flip = (category[jj] > category[jg]);
+            tied = (category[jj] == category[jg]);		     
+
+          }
+          else
+          */
+          {
+            flip = 0;
+            tied = 1;
+          }
+
+          for (k = 1; (k <= nsp) && tied; k++)
+          {
+            flip = (data[k][jj] >  data[k][jg]);
+            tied = (data[k][jj] == data[k][jg]);
+          }
+
+          if (flip)
+          {
+            index[j]     = jg;
+            index[j+gap] = jj;
+            j -= gap;
+          }
+        }
+        while (flip && (j > 0));
+      }
+    }
+  }
+}
 static int read_species_and_sites(FILE *INFILE, rawdata *rdta)
 {
   if(fscanf(INFILE, "%d %d", & rdta->numsp, & rdta->sites) != 2)
@@ -226,13 +310,20 @@ int main(int argc, char * argv[])
   char **nameList; 
 
   if (argc != 2)
-   {
-     fprintf (stderr, "syntax: %s [phylip-file]\n", argv[0]);
-     return (1);
-   }
+  {
+    fprintf (stderr, "syntax: %s [phylip-file]\n", argv[0]);
+    return (1);
+  }
   /* read all the tips from the given file  */
   rawdata *rdta;
   rdta = (rawdata *)malloc(sizeof(rawdata));
+
+  /* all these can be omitted soon, now for compatibility */
+  cruncheddata *cdta = (cruncheddata *)malloc(sizeof(cruncheddata));
+  tree         *tr   = (tree *)malloc(sizeof(tree));
+  analdef      *adef = (analdef *)malloc(sizeof(analdef));
+  adef->compressPatterns = TRUE;
+
 
   FILE *INFILE;
   INFILE = myfopen(argv[1], "rb");
@@ -251,15 +342,22 @@ int main(int argc, char * argv[])
   if(!getdata(INFILE, rdta, nameList))
     exit(-1);
 
-  /*show what you got*/
   int i, j;
+  /* sort columns order */
+  for (i = 1; i <= rdta->sites; i++)
+    cdta->alias[i] = i;
+   //sitesort(rdta, cdta, tr, adef);
+   //sitecombcrunch(rdta, cdta, tr, adef);
+   //makevalues(rdta, cdta, tr, adef);
+
+  /*show what you got*/
   char *seq;
   for(i=1; i<rdta->numsp; i++)
   {
     printf("Seqname: %s\n", nameList[i]);
     printf("Characters: ");
     seq = rdta->y[i];
-    for(j=1; j<rdta->sites; j++)
+    for(j=1; j<rdta->sites/15; j++)
       printf("%c", seq[j]);
 
     printf("\n\n");
