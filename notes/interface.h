@@ -1,6 +1,8 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
+// This is from a non-updated older brainstoring
+
 struct phylip_data
  {
    int          ntaxa;
