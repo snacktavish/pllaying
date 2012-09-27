@@ -1487,6 +1487,8 @@ extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
 
+extern double getBranchLength(tree *tr, int perGene, nodeptr p);
+
 #ifdef _IPTOL
 extern void writeCheckpoint();
 #endif
