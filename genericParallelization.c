@@ -709,15 +709,6 @@ static void broadCastAlpha(tree *localTree, tree *tr, int tid)
   int 
     model; 
 
-#ifdef _LOCAL_DISCRETIZATION 
-  assert(0); 
-  for(model = 0; model < localTree->NumberOfModels; model++)
-    {
-      localTree->partitionData[model].alpha = tr->partitionData[model].alpha;
-      makeGammaCats(localTree->partitionData[model].alpha, localTree->partitionData[model].gammaRates, 4, tr->useMedian); 
-    }   
-#else
-  
   int
     i,
     bufSize = localTree->NumberOfModels * 4 * sizeof(double); 
@@ -732,7 +723,6 @@ static void broadCastAlpha(tree *localTree, tree *tr, int tid)
       ASSIGN_BUF_DBL(localTree->partitionData[model].gammaRates[i], tr->partitionData[model].gammaRates[i]); 
   
   SEND_BUF(bufDbl, bufSize, MPI_BYTE);  
-#endif 
 }
 
 
@@ -740,18 +730,6 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 {
   int 
     model;
-#ifdef _LOCAL_DISCRETIZATION 
-  assert(0); 
-  for(model = 0; model < localTree->NumberOfModels; model++)
-    {
-      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-      
-      if(tid > 0)
-	memcpy(localTree->partitionData[model].substRates,        tr->partitionData[model].substRates, pl->substRatesLength * sizeof(double));
-      
-      initReversibleGTR(localTree, model);     
-    } 
-#else
 
   /* determine size of buffer needed first */
   int bufSize = 0; 
@@ -789,7 +767,6 @@ static void broadCastRates(tree *localTree, tree *tr, int tid)
 	ASSIGN_BUF_DBL(localTree->partitionData[model].tipVector[i],   tr->partitionData[model].tipVector[i]);
     }
   SEND_BUF(bufDbl, bufSize, MPI_BYTE); /*  */
-#endif
 }
 
 
@@ -1071,22 +1048,7 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
       break;                       
     case THREAD_COPY_INIT_MODEL:
       {
-	/* 
-	   need to copy base freqs before local per-thread/per-process Q matrix exponentiation 
-	*/
 
-#ifdef _LOCAL_DISCRETIZATION   
-	assert(0); /* andre: did not implement this part, since it is not sure, if it persists   */
-
-	if(tid > 0)
-	  for(model = 0; model < localTree->NumberOfModels; model++)	    	     
-	    {
-	      const partitionLengths *pl = getPartitionLengths(&(tr->partitionData[model]));
-	 
-	      if(tid > 0)
-		memcpy(localTree->partitionData[model].frequencies,        tr->partitionData[model].frequencies,        pl->frequenciesLength * sizeof(double));
-	    }
-#endif
 	/* need to be very careful here ! THREAD_COPY_INIT_MODEL is also used when the program is restarted 
 	   it is hence not sufficient to just initialize everything by the default values ! */
 
