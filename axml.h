@@ -1271,7 +1271,7 @@ extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint
 extern void printLog ( tree *tr);
 extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
-extern int main ( int argc, char *argv[] );
+/* extern int main ( int argc, char *argv[] ); */
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
 extern void initReversibleGTR (tree *tr, int model);
 extern double LnGamma ( double alpha );
