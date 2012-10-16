@@ -1246,7 +1246,9 @@ extern void computeRogueTaxa(tree *tr, char* treeSetFileName, analdef *adef);
 extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits);
 
 
-
+/* Handling branch lengths*/
+extern double get_branch_length(tree *tr, nodeptr p, int partition_id);
+extern void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl);
 
 
 extern size_t discreteRateCategories(int rateHetModel);

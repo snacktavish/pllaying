@@ -155,5 +155,22 @@ int main(int argc, char * argv[])
 
   free_likelihood_vector(vector);
 
+  /* Pick an inner branch */
+  printf("numBranches %d \n", tr->numBranches);
+  //tr->numBranches = 1;
+  p = tr->nodep[tr->mxtips + 1];
+  int partition_id = 0; /* single partition */
+  double bl = get_branch_length(tr, p, partition_id);
+  printf("z value: %f , bl value %f\n", p->z[partition_id], bl);
+  /* set the bl to 2.5 */
+  double new_bl = 2.5;
+  set_branch_length(tr, p, partition_id, new_bl);
+  printf("Changed BL to %f\n", new_bl);
+  printf("new z value: %f , new bl value %f\n", p->z[partition_id], get_branch_length(tr, p, partition_id));
+  /* set back to original */
+  printf("Changed to previous BL\n");
+  set_branch_length(tr, p, partition_id, bl);
+  printf("new z value: %f , new bl value %f\n", p->z[partition_id], get_branch_length(tr, p, partition_id));
+
   return (0);
 }

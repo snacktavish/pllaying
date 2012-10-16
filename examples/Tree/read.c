@@ -47,5 +47,7 @@ int main(int argc, char * argv[])
   printTopology(tr, FALSE);
   printTopology(tr, TRUE);
 
+
+
   return(EXIT_SUCCESS);
 }
