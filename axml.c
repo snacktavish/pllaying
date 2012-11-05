@@ -1097,8 +1097,8 @@ int main (int argc, char *argv[])
 
     tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));	  
 
-    tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
-    tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    //tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    //tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
     tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
     tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
     tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 

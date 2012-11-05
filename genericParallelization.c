@@ -1158,8 +1158,8 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 #ifdef _FINE_GRAIN_MPI
 	/* TODO this is inefficient, but is seems to have a small impact on performance */
 	MPI_Bcast(tr->rateCategory, tr->originalCrunchedLength, MPI_INT, 0, MPI_COMM_WORLD); 
-	MPI_Bcast(tr->wr2, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
-	MPI_Bcast(tr->wr, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+	//MPI_Bcast(tr->wr2, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
+  //MPI_Bcast(tr->wr, tr->originalCrunchedLength, MPI_DOUBLE, 0, MPI_COMM_WORLD); 
 #endif
 
 
@@ -1174,8 +1174,8 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 		  for(localCounter = 0, i = localTree->partitionData[model].lower;  i < localTree->partitionData[model].upper; i++, localCounter++)
 		    {	     
 		      localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i];
-		      localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
-		      localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i]; 
+		      //localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
+		      //localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i]; 
 		    } 
 	      }
 	    else	  
@@ -1185,8 +1185,8 @@ boolean execFunction(tree *tr, tree *localTree, int tid, int n)
 		    if(i % n == tid)
 		      {		 
 			localTree->partitionData[model].rateCategory[localCounter] = tr->rateCategory[i]; 
-			localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
-			localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 
+			//localTree->partitionData[model].wr[localCounter]             = tr->wr[i];
+			//localTree->partitionData[model].wr2[localCounter]            = tr->wr2[i];		 
 
 			localCounter++;
 		      }

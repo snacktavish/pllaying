@@ -766,8 +766,11 @@ typedef struct {
   double *perSiteRates;     /* Values of rates*/
   int    *rateCategory;     /* Category index for each site */
   int     numberOfCategories;/* size of the set of possible categories */
-  double *wr;               /* perSiteRates[tr->rateCategory[i]] * aliaswgt[i] */
-  double *wr2;              /* perSiteRates[tr->rateCategory[i]]^2 * aliaswgt[i] */
+  //double *wr;               /* perSiteRates[tr->rateCategory[i]] * aliaswgt[i] */
+  //double *wr2;              /* perSiteRates[tr->rateCategory[i]]^2 * aliaswgt[i] */
+
+  // tr->wr[i] = tr->partitionData[model].perSiteRates[tr->rateCategory[i]] * tr->aliaswgt[i];
+  // tr->wr2[i]= tr->partitionData[model].perSiteRates[tr->rateCategory[i]] * tr->wr[i];
 
   /* Rate heterogenety: GAMMA model of rate heterogenety */
   double alpha;             /* parameter to be optimized */
@@ -977,8 +980,8 @@ typedef  struct  {
   int              maxCategories;
   int              categories;
 
-  double           *wr;
-  double           *wr2;
+  //double           *wr;
+  //double           *wr2;
   
   double           coreLZ[NUM_BRANCHES];
   int              numBranches;

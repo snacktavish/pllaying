@@ -1838,20 +1838,22 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	      assert(ABS(1.0 - accRat) < 1.0E-5);
 	    }
 
+    /*
 	  for(i = lower; i < upper; i++)
-	    {
-	      double
-		w = ((double)tr->aliaswgt[i]);	      
+    {
+      double
+        w = ((double)tr->aliaswgt[i]);	      
 
-	       double
-		 wtemp,
-		 temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
+      double
+        wtemp,
+        temp = tr->partitionData[model].perSiteRates[tr->rateCategory[i]];
 
-	       wtemp = temp * w;
+      wtemp = temp * w;
 
-	       tr->wr[i]  = wtemp;
-	       tr->wr2[i] = temp * wtemp;
-	    }	            	  
+      //tr->wr[i]  = wtemp;
+      //tr->wr2[i] = temp * wtemp;
+    }	            	  
+    */
 	  
 #if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 	  {
@@ -1860,8 +1862,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    
 	    for(i = lower, localCount = 0; i < upper; i++, localCount++)
 	      {	    	      
-		tr->partitionData[model].wr[localCount]  = tr->wr[i];
-		tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+//		tr->partitionData[model].wr[localCount]  = tr->wr[i];
+//		tr->partitionData[model].wr2[localCount] = tr->wr2[i];
 		tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
 	      }
 	  }
@@ -1974,6 +1976,7 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	    lower = tr->partitionData[model].lower,
 	    upper = tr->partitionData[model].upper;
 
+    /*
 	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
 	    {
 	      double
@@ -1985,9 +1988,10 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 
 	       wtemp = temp * w;
 
-	       tr->wr[i]  = wtemp;
-	       tr->wr2[i] = temp * wtemp;
+//	       tr->wr[i]  = wtemp;
+//	       tr->wr2[i] = temp * wtemp;
 	    }
+      */
 	}         
 #if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       for(model = 0; model < tr->NumberOfModels; model++)	
@@ -1999,8 +2003,8 @@ void updatePerSiteRates(tree *tr, boolean scaleRates)
 	  
 	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
 	    {	    	      
-	      tr->partitionData[model].wr[localCount]  = tr->wr[i];
-	      tr->partitionData[model].wr2[localCount] = tr->wr2[i];
+	      //tr->partitionData[model].wr[localCount]  = tr->wr[i];
+	      //tr->partitionData[model].wr2[localCount] = tr->wr2[i];
 	      tr->partitionData[model].rateCategory[localCount] = tr->rateCategory[i];
 	    }
 	}
