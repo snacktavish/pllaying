@@ -141,4 +141,5 @@ init_lexan (const char * text, int n)
 {
   rawtext      = text;
   rawtext_size = n;
+  pos = 0;
 }

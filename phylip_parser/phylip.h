@@ -12,4 +12,6 @@ struct phylip_data
    char      ** seq;
  };
 
+struct phylip_data * alloc_phylip_struct (int taxa, int seqlen);
+
 #endif

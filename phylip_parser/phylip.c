@@ -409,6 +409,8 @@ usage (const char * cmd_name)
   fprintf (stderr, "Usage: %s [PHYLIP-FILE] [PHYLIP_INTERLEAVED | PHYLIP_SEQUENTIAL]\n", cmd_name);
 }
 
+/*
+
 int 
 main (int argc, char * argv[])
 {
@@ -449,3 +451,4 @@ main (int argc, char * argv[])
 
   return (EXIT_SUCCESS);
 }
+*/

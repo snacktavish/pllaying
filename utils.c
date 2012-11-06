@@ -50,9 +50,6 @@
 #include "cycle.h"
 
 
-
-
-
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
 #include <xmmintrin.h>
 /*
@@ -66,6 +63,9 @@
 #endif
 
 #include "axml.h"
+#include "phylip_parser/lexer.h"
+#include "phylip_parser/phylip.h"
+#include "phylip_parser/xalloc.h"
 #include "globalVariables.h"
 
 
@@ -88,6 +88,165 @@ void storeValuesInTraversalDescriptor(tree *tr, double *value)
     tr->td[0].parameterValues[model] = value[model];
 }
 
+void read_phylip_msa(tree * tr, const char * filename, int format, int type)
+{
+    size_t
+      i, j,
+      model;
+
+  struct phylip_data * pd;
+  double **empiricalFrequencies;
+
+  pd = parse_phylip (filename, format);
+
+  tr->mxtips                 = pd->taxa;
+  tr->originalCrunchedLength = pd->seqlen;
+  tr->NumberOfModels         = 1;
+
+  setupTree(tr, TRUE);
+
+  tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
+
+    tr->numBranches = 1;
+
+    /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
+       let's not worry about this right now, because it is indeed RAxML-specific */
+
+  tr->aliaswgt = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+  for (i = 0;i < tr->originalCrunchedLength; ++i)
+   {
+     tr->aliaswgt[i] = 1;
+   }
+
+  tr->rateCategory           =  (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+
+  tr->wr                     =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->wr2                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patrat                 =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patratStored           =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->lhs                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+
+  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+
+
+
+        
+  for(i = 0; i < (size_t)tr->NumberOfModels; i++)
+    tr->executeModel[i] = TRUE;
+
+
+
+  /* data structures for convergence criterion need to be initialized after! setupTree */
+  if(tr->searchConvergenceCriterion)
+  {
+    tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
+    tr->h = initHashTable(tr->mxtips * 4);
+  }
+
+  /* read tip names */
+  for(i = 1; i <= (size_t)tr->mxtips; i++)
+  {
+    tr->nameList[i] = pd->label[i - 1];
+  }
+
+  for(i = 1; i <= (size_t)tr->mxtips; i++)
+    addword(tr->nameList[i], tr->nameHash, i);
+
+  /* read partition info (boudaries, data type) */
+  empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+  {
+    int
+      len;
+
+    pInfo
+      *p = &(tr->partitionData[model]);
+
+    p->states             =  4;   /* according to the type */
+    p->maxTipStates       = 16;   /* according to the type */
+    p->lower              =  0;
+    p->upper              = pd->seqlen;
+    p->width              = p->upper - p->lower;
+    p->dataType           =   DNA_DATA; /* dna type */
+    p->protModels         =   2;
+    p->autoProtModels     =   0;
+    p->protFreqs          =   0;
+    p->nonGTR             =   FALSE;
+    p->numberOfCategories =   0;
+    
+    /* later on if adding secondary structure data
+
+       int    *symmetryVector;
+       int    *frequencyGrouping;
+       */
+
+    p->partitionName = strdup ("PartName");
+
+//    empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+//    empiricalfrequencies[model][0] = 0.2036082474;
+//    empiricalfrequencies[model][1] = 0.2268041237;
+//    empiricalfrequencies[model][2] = 0.2731958763;
+//    empiricalfrequencies[model][3] = 0.2963917526;
+  }
+  /* Read all characters from tips */
+//  y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
+
+  tr->yVector = (char **) malloc(sizeof(char*) * (tr->mxtips+1));
+ for (i=0; i < tr->mxtips; ++i)
+        tr->yVector[i+1] = pd->seq[i]; //(unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
+  for (i = 1; i <= pd->taxa; ++ i)
+   {
+     printf ("%s\n", tr->yVector[i]);
+   }
+ 
+ for (i = 1; i <= pd->taxa; ++ i)
+  {
+    for (j = 0; j < pd->seqlen; ++ j)
+     {
+       switch (tr->yVector[i][j])
+        {
+          case 'A':
+          case 'a':
+            tr->yVector[i][j] = 1;
+            break;
+          case 'C':
+          case 'c':
+            tr->yVector[i][j] = 2;
+            break;
+
+          case 'G':
+          case 'g':
+            tr->yVector[i][j] = 4;
+            break;
+
+          case 'T':
+          case 't':
+            tr->yVector[i][j] = 8;
+            break;
+
+          case '-':
+            tr->yVector[i][j] = 15;
+            break;
+
+
+        }
+     }
+  }
+
+/*
+  for(i = 1; i <= (size_t)tr->mxtips; i++)
+    tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
+*/
+  //myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
+
+  /* Initialize the model */
+  //printf("Here 1!\n");
+  initializePartitionsSequential(tr); 
+  //printf("Here 2!\n");
+  //initModel(tr, empiricalFrequencies);
+
+}
+
 void read_msa(tree *tr, const char *filename)
   {
     size_t
@@ -100,13 +259,16 @@ void read_msa(tree *tr, const char *filename)
     FILE
       *byteFile = myfopen(filename, "rb");
 
+
     /* read the alignment info */
     myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
     myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
     myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
+
+    setupTree(tr, TRUE);
+    
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
     /* initialize topology */
-    setupTree(tr, TRUE);
 
     /* Joint branch length estimate is activated by default */
     /*
@@ -126,9 +288,9 @@ void read_msa(tree *tr, const char *filename)
     tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
     tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double));
     tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patrat          = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->lhs             = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
     tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
 
