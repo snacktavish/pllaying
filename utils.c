@@ -96,9 +96,18 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
       model;
 
   struct phylip_data * pd;
+  struct msa_sites * ms;
   double **empiricalFrequencies;
 
   pd = parse_phylip (filename, format);
+
+  ms = construct_msa_sites (pd, SITES | CREATE | SITES_COMPUTE_WEIGHTS);
+
+  free_phylip_struct (pd);
+  pd = transpose (ms);
+  free_sites_struct (ms);
+
+
 
   tr->mxtips                 = pd->taxa;
   tr->originalCrunchedLength = pd->seqlen;
@@ -112,12 +121,12 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
-
-  tr->aliaswgt = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+  tr->aliaswgt = pd->weight;
+  /*tr->aliaswgt = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
   for (i = 0;i < tr->originalCrunchedLength; ++i)
    {
      tr->aliaswgt[i] = 1;
-   }
+   }*/
 
   tr->rateCategory           =  (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
 

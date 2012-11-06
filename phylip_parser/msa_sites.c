@@ -69,6 +69,59 @@ compact_sites (struct msa_sites * ms)
   ms->site = tmp;
 }
 
+static void
+eliminate_dups (struct msa_sites * ms, int weights)
+{
+  int unique = 1;
+  int i, j;
+  int * oi;
+
+  oi = ssort1main (ms->site, ms->seqlen);
+
+  /* Locate unique sites and mark pointers, free duplicates */
+  for (i = 1; i < ms->seqlen; ++ i)
+   {
+     if (!strcmp (ms->site[i], ms->site[i - 1])) 
+      {
+        free (ms->site[i]);
+        ms->site[i] = ms->site[i - 1];
+      }
+     else
+      {
+        ++unique;
+      }
+   }
+
+  /* store unique sites in a null-terminated array */
+  ms->unique_site    = (char **) malloc ((unique) * sizeof (char *));
+  ms->unique_site[0] = ms->site[0];
+  if (weights)
+   {
+     ms->weight         = (int *) malloc ((unique) * sizeof (char *));
+     ms->weight[0]      = 1;
+   }
+
+  for (j = 0, i = 1; i < ms->seqlen; ++ i)
+   {
+     if (ms->site[i] != ms->site[i - 1])
+      {
+        ms->unique_site[++j] = ms->site[i];
+        if (weights)  ms->weight[j] = 1;
+      }
+     else
+      {
+        if (weights)  ++ ms->weight[j];
+      }
+   }
+
+  free(ms->site);
+  ms->site = ms->unique_site;
+
+  ms->unique_site = NULL;
+  ms->seqlen = unique;
+  free (oi);
+}
+
 
 struct msa_sites *
 alloc_sites_struct (int taxa, int seqlen)
@@ -78,10 +131,11 @@ alloc_sites_struct (int taxa, int seqlen)
 
    ms = (struct msa_sites *) malloc (sizeof (struct msa_sites));
 
-   ms->taxa   = taxa;
-   ms->seqlen = seqlen;
-   ms->label  = (char **) calloc (taxa, sizeof (char *));
-   ms->site   = (char **) calloc (seqlen, sizeof (char *));
+   ms->taxa        = taxa;
+   ms->seqlen      = seqlen;
+   ms->label       = (char **) calloc (taxa, sizeof (char *));
+   ms->site        = (char **) calloc (seqlen, sizeof (char *));
+   ms->weight      = NULL;
    ms->unique_site = NULL;
 
    for (i = 0; i < seqlen; ++ i)
@@ -148,6 +202,29 @@ dump_sites (struct msa_sites * ms)
     }
  }
 
+struct phylip_data *
+transpose (struct msa_sites * ms)
+{
+  struct phylip_data * pd;
+  int i, j;
+
+  pd = alloc_phylip_struct (ms->taxa, ms->seqlen);
+
+  for (i = 0; i < ms->taxa; ++ i)
+    pd->label[i] = strdup (ms->label[i]);
+
+  for (i = 0; i < pd->seqlen; ++ i)
+   {
+     for (j = 0; j < pd->taxa; ++ j)
+      {
+        pd->seq[j][i] = ms->site[i][j];
+      }
+   }
+  pd->weight = ms->weight;
+
+  return (pd);
+}
+
 struct msa_sites * 
 construct_msa_sites (struct phylip_data * pd, int flags)
 {
@@ -167,15 +244,29 @@ construct_msa_sites (struct phylip_data * pd, int flags)
       }
    }
 
-  if (flags & SITES_COMPACT)
+  if (flags & SITES_ELIMINATE_DUPLICATES)
+   {
+     eliminate_dups (ms, flags & SITES_COMPUTE_WEIGHTS);
+   }
+  else if (flags & SITES_COMPACT)
    {
      compact_sites (ms);
    }
-  if (flags & SITES_SORTED)
+  else
    {
-     sort_sites (ms);
+     if (flags & SITES_SORTED)
+      {
+        sort_sites (ms);
+      }
+     if (flags & SITES_COMPUTE_WEIGHTS)
+      {
+        /* set all weights to 1 */
+        ms->weight = (int *) malloc  (ms->seqlen * sizeof (int));
+        for (i = 0; i < ms->seqlen; ++ i)
+          ms->weight[i] = 1;
+      }
    }
-  
+
   return (ms);
 }
 

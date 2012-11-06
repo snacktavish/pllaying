@@ -98,6 +98,7 @@ alloc_phylip_struct (int taxa, int seqlen)
    pd->seqlen = seqlen;
    pd->label  = (char **) calloc (taxa, sizeof (char *));
    pd->seq    = (char **) calloc (taxa, sizeof (char *));
+   pd->weight = NULL;
 
    for (i = 0; i < taxa; ++ i)
     {
@@ -409,46 +410,3 @@ usage (const char * cmd_name)
   fprintf (stderr, "Usage: %s [PHYLIP-FILE] [PHYLIP_INTERLEAVED | PHYLIP_SEQUENTIAL]\n", cmd_name);
 }
 
-/*
-
-int 
-main (int argc, char * argv[])
-{
-  struct phylip_data * pd;
-  struct msa_sites * ms;
-  int format;
-
-  if (argc != 3)
-   {
-     usage (argv[0]);
-     return (EXIT_FAILURE);
-   }
-  
-  if (strcmp (argv[2], "PHYLIP_INTERLEAVED") && strcmp (argv[2], "PHYLIP_SEQUENTIAL"))
-   {
-     usage (argv[0]);
-     return (EXIT_FAILURE);
-   }
-
-  format = strcmp (argv[2], "PHYLIP_INTERLEAVED") ? PHYLIP_SEQUENTIAL : PHYLIP_INTERLEAVED;
-
-  pd = parse_phylip (argv[1], format);
-  if (!pd) 
-   {
-     return (EXIT_FAILURE);
-   }
-  
-//  dump_struct (pd);
-
-//  printf ("=> Sorting\n");
-  ms = construct_msa_sites (pd, SITES_CREATE | SITES_COMPACT | SITES_SORTED);
-  dump_sites (ms);
-
-  free_phylip_struct (pd);
-  free_sites_struct (ms);
-
-
-
-  return (EXIT_SUCCESS);
-}
-*/

@@ -10,6 +10,7 @@ struct phylip_data
    int          seqlen;
    char      ** label;
    char      ** seq;
+   int        * weight;
  };
 
 struct phylip_data * alloc_phylip_struct (int taxa, int seqlen);
