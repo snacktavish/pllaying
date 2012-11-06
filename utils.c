@@ -88,6 +88,7 @@ void storeValuesInTraversalDescriptor(tree *tr, double *value)
     tr->td[0].parameterValues[model] = value[model];
 }
 
+#ifdef EXPERIMENTAL
 void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 {
     size_t
@@ -246,6 +247,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   //initModel(tr, empiricalFrequencies);
 
 }
+#endif
 
 void read_msa(tree *tr, const char *filename)
   {
