@@ -1111,8 +1111,6 @@ static void writeCheckpoint(tree *tr, int state)
   myfwrite(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
   myfwrite(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
   myfwrite(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
-  //myfwrite(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
-  //myfwrite(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
 
   /* need to store this as well in checkpoints, otherwise the branch lengths 
      in the output tree files will be wrong, not the internal branch lengths though */
@@ -1363,8 +1361,6 @@ static void readCheckpoint(tree *tr)
   myfread(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
   myfread(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
   myfread(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
-  //myfread(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
-  //myfread(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
 
 
   /* need to read this as well in checkpoints, otherwise the branch lengths 

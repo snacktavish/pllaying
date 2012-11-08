@@ -478,18 +478,6 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    /* under the CAT model, wrptr[] and wr2ptr[] are pre-computed extension sof the weight pointer:
-       wrptr[i]  = wgt[i] * rptr[cptr[i]].
-       and 
-       wr2ptr[i]  = wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] 
-
-       this is also something that is required for the derivatives because when computing the 
-       derivative of the exponential() the rate must be multiplied with the 
-       exponential 
-
-       wgt is just the pattern site wieght 
-       */
-
     /* compute the accumulated first and second derivatives of this site */
 
     dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
@@ -1876,8 +1864,6 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
 
     dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
     d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
-    //dlnLdlz   += wrptr[i] * dlnLidlz;
-    //d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *d1 = dlnLdlz;
@@ -2035,8 +2021,6 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
 
     dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
     d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
-    //dlnLdlz  += wrptr[i] * dlnLidlz;
-    //d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *ext_dlnLdlz   = dlnLdlz;
