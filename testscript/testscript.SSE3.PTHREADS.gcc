@@ -11,10 +11,10 @@ cd ..
 LOCALVER=`pwd`                                                                                            
 cd ${WORKINGDIR}   
 # NO NEED TO EDIT BEYOND THIS POINT
-# Choose an identification number for the output of the stable version
-OUTPUTID1="131313"
 # Choose an identification number for the output of the developed version
-OUTPUTID2="121212"
+OUTPUTID1="developed"
+# Choose an identification number for the output of the stable version
+OUTPUTID2="stable"
 
 WGET="`which wget`"
 if [ -z "$WGET" ] ; then
@@ -108,8 +108,8 @@ LIKELIHOOD2=`grep -i "Likelihood   :" RAxML_info.${OUTPUTID2}`
 
 if [ "$LIKELIHOOD1" != "$LIKELIHOOD2" ] ; then
         echo "\n Error: the computed likelihoods are different!!!"
-        echo "  $LIKELIHOOD1 (stable version)"
-        echo "  $LIKELIHOOD2 (developed version)"
+        echo "  $LIKELIHOOD1 (${OUTPUTID1} version)"
+        echo "  $LIKELIHOOD2 (${OUTPUTID2} version)"
         exit 1
 else
         echo "\n The computed likelihoods are identical!"
@@ -122,7 +122,7 @@ TREE2=`cat ${WORKINGDIR}/RAxML_result.${OUTPUTID2}`
 
 if [ "$TREE1" != "$TREE2" ] ; then
 	echo "\n Error: the computed trees are different!!!!"
-	echo "  diff <tree_stable_version> <tree_developed_version>:"
+	echo "  diff <tree_${OUTPUTID1}_version> <tree_${OUTPUTID1}_version>:"
         diff ${WORKINGDIR}/RAxML_result.${OUTPUTID1} ${WORKINGDIR}/RAxML_result.${OUTPUTID2}
 	exit 1
 else
