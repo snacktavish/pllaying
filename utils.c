@@ -130,8 +130,6 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
   tr->rateCategory           =  (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
 
-  tr->wr                     =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->wr2                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
   tr->patrat                 =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
   tr->patratStored           =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
   tr->lhs                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
@@ -297,11 +295,9 @@ void read_msa(tree *tr, const char *filename)
     myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);
 
     tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-    tr->wr              = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->wr2             = (double *) malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patrat          = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->lhs             = (double *)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
     tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
 
@@ -1180,11 +1176,7 @@ void initializePartitionData(tree *localTree)
   int tid  = localTree->threadID; 
 
   if(tid > 0)
-    {
       localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
-      localTree->wr              = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double)); 
-      localTree->wr2             = (double *) calloc((size_t)localTree->originalCrunchedLength, sizeof(double));   
-    }
 
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     {
@@ -1194,10 +1186,6 @@ void initializePartitionData(tree *localTree)
 
       const partitionLengths 
 	*pl = getPartitionLengths(&(localTree->partitionData[model]));
-
-      localTree->partitionData[model].wr = (double *)malloc(sizeof(double) * width);
-      localTree->partitionData[model].wr2 = (double *)malloc(sizeof(double) * width);     
-
 
       /* 
 	 globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch

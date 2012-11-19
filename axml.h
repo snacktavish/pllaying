@@ -762,13 +762,10 @@ typedef struct {
 
   /* MODEL OF RATE HETEROGENETY, We use either GAMMA or PSR */
   /* Rate heterogenety: Per Site Categories (PSR) model aka CAT, see updatePerSiteRates() */
-  /* Rate of site i is given by perSiteRates[rateCategory[i]] , wr stored to save multipl.*/
+  /* Rate of site i is given by perSiteRates[rateCategory[i]] */
   double *perSiteRates;     /* Values of rates*/
   int    *rateCategory;     /* Category index for each site */
   int     numberOfCategories;/* size of the set of possible categories */
-  double *wr;               /* perSiteRates[tr->rateCategory[i]] * aliaswgt[i] */
-  double *wr2;              /* perSiteRates[tr->rateCategory[i]]^2 * aliaswgt[i] */
-
   /* Rate heterogenety: GAMMA model of rate heterogenety */
   double alpha;             /* parameter to be optimized */
   double *gammaRates;       /* 4 gamma categories (rates), computed given an alpha*/
@@ -977,9 +974,6 @@ typedef  struct  {
   int              maxCategories;
   int              categories;
 
-  double           *wr;
-  double           *wr2;
-  
   double           coreLZ[NUM_BRANCHES];
   int              numBranches;
   

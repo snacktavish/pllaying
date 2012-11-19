@@ -1,4 +1,4 @@
-/*  RAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees
+/*  pAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees
  *  Copyright August 2006 by Alexandros Stamatakis
  *
  *  Partially derived from
@@ -370,7 +370,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
     volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *EIGN, double *gammaRates, double lz, int *wrptr);
 
 static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt, 
     double *rptr, double *EIGN, int *cptr, double lz);
 
 
@@ -378,7 +378,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
     volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz);
 
 static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, double *rptr, int *cptr, int upper,
-    double *wrptr, double *wr2ptr,  volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable);
+    int *wgt, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable);
 
 #endif
 
@@ -388,8 +388,9 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
 
 
 static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz, const int states)
+    /* rptr perSiteRates pointer, cptr rateCategory pointer */
 {
   int 
     i, 
@@ -477,22 +478,10 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    /* under the CAT model, wrptr[] and wr2ptr[] are pre-computed extension sof the weight pointer:
-       wrptr[i]  = wgt[i] * rptr[cptr[i]].
-       and 
-       wr2ptr[i]  = wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] 
-
-       this is also something that is required for the derivatives because when computing the 
-       derivative of the exponential() the rate must be multiplied with the 
-       exponential 
-
-       wgt is just the pattern site wieght 
-       */
-
     /* compute the accumulated first and second derivatives of this site */
 
-    dlnLdlz  += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   /* 
@@ -784,7 +773,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
       if(tr->rateHetModel == CAT)
         coreCAT_FLEX(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wr, tr->partitionData[model].wr2,
+            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt,
             tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz, states);
       else
         coreGAMMA_FLEX(width, sumBuffer,
@@ -796,7 +785,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
         case 4: /* DNA */
           if(tr->rateHetModel == CAT)
             coreGTRCAT(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wr, tr->partitionData[model].wr2,
+                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt, 
                 tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz);
           else 
             coreGTRGAMMA(width, sumBuffer,
@@ -808,7 +797,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
           if(tr->rateHetModel == CAT)
             coreGTRCATPROT(tr->partitionData[model].EIGN, lz, tr->partitionData[model].numberOfCategories,  tr->partitionData[model].perSiteRates,
                 tr->partitionData[model].rateCategory, width,
-                tr->partitionData[model].wr, tr->partitionData[model].wr2,
+                tr->partitionData[model].wgt, 
                 &dlnLdlz, &d2lnLdlz2,
                 sumBuffer);
           else
@@ -1800,7 +1789,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
 
 
 static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz)
 {
   int i;
@@ -1873,8 +1862,8 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    dlnLdlz   += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *d1 = dlnLdlz;
@@ -1964,7 +1953,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
 
 
 static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, double *rptr, int *cptr, int upper,
-    double *wrptr, double *wr2ptr,  volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable)
+    int *wgt, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable)
 {
   int i, l;
   double *d1, *d_start, *sum;
@@ -2030,8 +2019,8 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    dlnLdlz  += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *ext_dlnLdlz   = dlnLdlz;
