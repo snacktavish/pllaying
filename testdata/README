@@ -29,3 +29,6 @@ large.aa.singlegene.binary
 large.dna.binary		1000 sequences x 1000bp
 large.dna.model
 large.dna.singlegene.binary
+
+gappy.dna.binary    50 x 2527bp  
+gappy.startingTree.dna.tree
