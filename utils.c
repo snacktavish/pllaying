@@ -66,8 +66,11 @@
 #include "phylip_parser/lexer.h"
 #include "phylip_parser/phylip.h"
 #include "phylip_parser/xalloc.h"
+
+
 #include "globalVariables.h"
 
+//extern unsigned int mask32[32];
 
 
 /***************** UTILITY FUNCTIONS **************************/
