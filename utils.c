@@ -1329,22 +1329,22 @@ void initializePartitionsSequential(tree *tr)
     assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
 
   initializePartitionData(tr); 
-  
+
   /* figure in tip sequence data per-site pattern weights */ 
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+  {
+    size_t
+      j;
+    size_t lower = tr->partitionData[model].lower;
+    size_t width = tr->partitionData[model].upper - lower;
+
+    for(j = 1; j <= (size_t)tr->mxtips; j++)
     {
-      size_t
-	j;
-	size_t lower = tr->partitionData[model].lower;
-	size_t width = tr->partitionData[model].upper - lower;
+      tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
+    }
 
-      for(j = 1; j <= (size_t)tr->mxtips; j++)
-      {
-	tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
-        }
-
-      memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
-    }  
+    memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
+  }  
 
   initMemorySavingAndRecom(tr);
 }
