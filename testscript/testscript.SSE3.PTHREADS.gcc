@@ -99,7 +99,7 @@ cd ${WORKINGDIR}
 ${LOCALVER}/raxmlLight-PTHREADS $@ -n ${OUTPUTID1}
 ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/raxmlLight-PTHREADS $@ -n ${OUTPUTID2}
 echo "\n"
-echo " Testscript finished successfully. Check the messages below."
+echo " Testscript finished. Check the messages below."
 echo "\n"
 
 #Check the likelihoods
