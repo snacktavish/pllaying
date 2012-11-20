@@ -1,0 +1,70 @@
+
+
+This is RAxML-Light version 1.0.5 released by Alexandros Stamatakis in June 2011.
+
+
+Alignment has 1049 columns
+
+Proportion of gaps and completely undetermined characters in this alignment: 65.03%
+
+RAxML rapid hill-climbing mode
+
+Using 1 distinct models/data partitions with joint branch length optimization
+
+
+All free model parameters will be estimated by RAxML
+GAMMA model of rate heteorgeneity, ML estimate of alpha-parameter
+
+Partition: 0
+Alignment Patterns: 1049
+Name: No Name Provided
+DataType: DNA
+Substitution Matrix: GTR
+
+
+
+
+RAxML was called as follows:
+
+/home/pississn/Library/phylogenetic-likelihood-library/testscript/libphylolike-0.0.0/raxmlLight -m GAMMA -s /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.dna.binary -t /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.startingTree.dna.tree -S -n stable 
+
+
+Memory Saving Option: ENABLED
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_0 likelihood: -19913.090096
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_1 likelihood: -19913.090096
+
+Best rearrangement radius: 5
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_2 likelihood: -19886.871152
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_3 likelihood: -19880.924767
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_4 likelihood: -19880.838548
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_5 likelihood: -19880.782499
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_6 likelihood: -19880.733963
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_7 likelihood: -19879.591265
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_8 likelihood: -19876.718548
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_9 likelihood: -19876.718548
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_10 likelihood: -19876.718548
+
+Checkpoint written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_binaryCheckpoint.stable_11 likelihood: -19876.718548
+
+
+Overall Time for 1 Inference 41.374493
+
+Overall accumulated Time (in case of restarts): 41.374493
+
+Likelihood   : -19876.718548
+
+
+Final tree written to:                 /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_result.stable
+Execution Log File written to:         /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_log.stable
+Execution information file written to: /home/pississn/Library/phylogenetic-likelihood-library/testscript/RAxML_info.stable

@@ -1,0 +1,228 @@
+Starting superscript Tue Nov 20 15:17:05 CET 2012, Errors
+SSE3_GCC with -m PSR -s /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.dna.binary -t /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.startingTree.dna.tree -S
+utils.c:389:6: warning: conflicting types for ‘myBinFread’ [enabled by default]
+utils.c:276:5: note: previous implicit declaration of ‘myBinFread’ was here
+utils.c:993:6: warning: conflicting types for ‘init_default’ [enabled by default]
+utils.c:843:5: note: previous implicit declaration of ‘init_default’ was here
+utils.c:1326:6: warning: conflicting types for ‘initializePartitionsSequential’ [enabled by default]
+utils.c:379:5: note: previous implicit declaration of ‘initializePartitionsSequential’ was here
+--2012-11-20 15:17:16--  http://sco.h-its.org/exelixis/libphylolike/libphylolike-0.0.0.tar.bz2
+Resolving sco.h-its.org (sco.h-its.org)... 212.126.215.74
+Connecting to sco.h-its.org (sco.h-its.org)|212.126.215.74|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 1530207 (1.5M) [application/x-bzip2]
+Saving to: `libphylolike-0.0.0.tar.bz2'
+
+     0K .......... .......... .......... .......... ..........  3% 11.9M 0s
+    50K .......... .......... .......... .......... ..........  6% 17.3M 0s
+   100K .......... .......... .......... .......... .......... 10% 24.7M 0s
+   150K .......... .......... .......... .......... .......... 13% 28.5M 0s
+   200K .......... .......... .......... .......... .......... 16% 55.4M 0s
+   250K .......... .......... .......... .......... .......... 20% 65.1M 0s
+   300K .......... .......... .......... .......... .......... 23% 6.16M 0s
+   350K .......... .......... .......... .......... .......... 26% 79.1M 0s
+   400K .......... .......... .......... .......... .......... 30% 67.1M 0s
+   450K .......... .......... .......... .......... .......... 33% 61.1M 0s
+   500K .......... .......... .......... .......... .......... 36% 56.2M 0s
+   550K .......... .......... .......... .......... .......... 40% 72.5M 0s
+   600K .......... .......... .......... .......... .......... 43% 5.30M 0s
+   650K .......... .......... .......... .......... .......... 46% 85.8M 0s
+   700K .......... .......... .......... .......... .......... 50% 6.87M 0s
+   750K .......... .......... .......... .......... .......... 53% 71.9M 0s
+   800K .......... .......... .......... .......... .......... 56% 71.6M 0s
+   850K .......... .......... .......... .......... .......... 60% 80.5M 0s
+   900K .......... .......... .......... .......... .......... 63% 82.9M 0s
+   950K .......... .......... .......... .......... .......... 66% 74.8M 0s
+  1000K .......... .......... .......... .......... .......... 70% 76.6M 0s
+  1050K .......... .......... .......... .......... .......... 73% 90.2M 0s
+  1100K .......... .......... .......... .......... .......... 76% 62.9M 0s
+  1150K .......... .......... .......... .......... .......... 80% 90.2M 0s
+  1200K .......... .......... .......... .......... .......... 83% 44.4M 0s
+  1250K .......... .......... .......... .......... .......... 86% 74.8M 0s
+  1300K .......... .......... .......... .......... .......... 90% 89.5M 0s
+  1350K .......... .......... .......... .......... .......... 93% 81.0M 0s
+  1400K .......... .......... .......... .......... .......... 97% 64.1M 0s
+  1450K .......... .......... .......... .......... ....      100% 92.8M=0.05s
+
+2012-11-20 15:17:16 (28.9 MB/s) - `libphylolike-0.0.0.tar.bz2' saved [1530207/1530207]
+
+In file included from axml.c:74:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+axml.c: In function ‘setupTree’:
+axml.c:571:17: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+axml.c:585:24: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+axml.c: In function ‘printREADME’:
+axml.c:838:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.c:928:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.c: In function ‘get_args’:
+axml.c:1014:5: warning: variable ‘treeSet’ set but not used [-Wunused-but-set-variable]
+axml.c: At top level:
+axml.c:1616:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.c:2216:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.c: In function ‘initializePartitions’:
+axml.c:2361:74: warning: unused parameter ‘n’ [-Wunused-parameter]
+In file included from randomTree.c:5:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from optimizeModel.c:42:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from trash.c:15:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from searchAlgo.c:47:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+searchAlgo.c: In function ‘initInfoList’:
+searchAlgo.c:284:16: warning: comparison between signed and unsigned integer expressions [-Wsign-compare]
+In file included from topologies.c:46:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from fastDNAparsimony.c:77:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+fastDNAparsimony.c: In function ‘parsimonySPR’:
+fastDNAparsimony.c:1976:3: warning: C++ style comments are not allowed in ISO C90 [enabled by default]
+fastDNAparsimony.c:1976:3: warning: (this will be reported only once per input file) [enabled by default]
+fastDNAparsimony.c:1974:16: warning: unused variable ‘score’ [-Wunused-variable]
+In file included from treeIO.c:45:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from models.c:46:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from evaluatePartialGenericSpecial.c:41:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+evaluatePartialGenericSpecial.c: In function ‘computeVectorGTRCATPROT’:
+evaluatePartialGenericSpecial.c:396:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluatePartialGenericSpecial.c: In function ‘computeVectorGTRGAMMAPROT’:
+evaluatePartialGenericSpecial.c:617:2: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluatePartialGenericSpecial.c: At top level:
+evaluatePartialGenericSpecial.c:180:15: warning: ‘evaluatePartialCAT_FLEX’ defined but not used [-Wunused-function]
+In file included from evaluateGenericSpecial.c:40:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+evaluateGenericSpecial.c: In function ‘evaluateGTRGAMMAPROT_GAPPED_SAVE’:
+evaluateGenericSpecial.c:834:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c:878:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c: In function ‘evaluateGTRCATPROT’:
+evaluateGenericSpecial.c:996:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c:1027:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c: In function ‘evaluateGTRCATPROT_SAVE’:
+evaluateGenericSpecial.c:1086:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c:1130:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+evaluateGenericSpecial.c: At top level:
+evaluateGenericSpecial.c:120:15: warning: ‘evaluateGAMMA_FLEX’ defined but not used [-Wunused-function]
+evaluateGenericSpecial.c:199:15: warning: ‘evaluateCAT_FLEX’ defined but not used [-Wunused-function]
+In file included from newviewGenericSpecial.c:42:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+newviewGenericSpecial.c:56:15: warning: use of C99 long long integer constant [-Wlong-long]
+newviewGenericSpecial.c:56:39: warning: use of C99 long long integer constant [-Wlong-long]
+newviewGenericSpecial.c: In function ‘newviewGTRGAMMA_GAPPED_SAVE’:
+newviewGenericSpecial.c:1447:7: warning: C++ style comments are not allowed in ISO C90 [enabled by default]
+newviewGenericSpecial.c:1447:7: warning: (this will be reported only once per input file) [enabled by default]
+newviewGenericSpecial.c:1573:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:1624:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:1866:6: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:1903:6: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2053:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2095:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: In function ‘newviewGTRGAMMA’:
+newviewGenericSpecial.c:2566:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2608:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: In function ‘newviewGTRCAT’:
+newviewGenericSpecial.c:2743:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2775:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2807:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2853:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2885:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2917:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2952:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:2991:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3023:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3055:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3090:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: In function ‘newviewGTRCAT_SAVE’:
+newviewGenericSpecial.c:3181:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3213:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3245:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3281:2: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3336:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3368:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3400:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3471:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3503:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3535:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3570:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3636:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3668:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3700:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3735:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: In function ‘newviewGTRGAMMAPROT_GAPPED_SAVE’:
+newviewGenericSpecial.c:3833:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3841:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3868:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3876:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3947:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3955:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3972:6: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:3989:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4043:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4051:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4069:6: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4109:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4156:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4172:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4217:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4265:9: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: In function ‘newviewGTRGAMMAPROT’:
+newviewGenericSpecial.c:4361:3: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4369:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4442:3: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4450:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4468:8: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4511:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c:4561:5: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+newviewGenericSpecial.c: At top level:
+newviewGenericSpecial.c:168:13: warning: ‘newviewCAT_FLEX’ defined but not used [-Wunused-function]
+newviewGenericSpecial.c:381:13: warning: ‘newviewGAMMA_FLEX’ defined but not used [-Wunused-function]
+In file included from makenewzGenericSpecial.c:44:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+makenewzGenericSpecial.c: In function ‘makenewzGeneric’:
+makenewzGenericSpecial.c:1090:11: warning: variable ‘originalExecute’ set but not used [-Wunused-but-set-variable]
+makenewzGenericSpecial.c: In function ‘coreGTRCAT’:
+makenewzGenericSpecial.c:1859:7: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+makenewzGenericSpecial.c: In function ‘coreGTRCATPROT’:
+makenewzGenericSpecial.c:2017:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+makenewzGenericSpecial.c:2020:4: warning: ISO C90 forbids mixed declarations and code [-pedantic]
+makenewzGenericSpecial.c: At top level:
+makenewzGenericSpecial.c:162:13: warning: ‘sumCAT_FLEX’ defined but not used [-Wunused-function]
+makenewzGenericSpecial.c:244:13: warning: ‘sumGAMMA_FLEX’ defined but not used [-Wunused-function]
+makenewzGenericSpecial.c:368:13: warning: ‘coreCAT_FLEX’ defined but not used [-Wunused-function]
+makenewzGenericSpecial.c:492:13: warning: ‘coreGAMMA_FLEX’ defined but not used [-Wunused-function]
+In file included from bipartitionList.c:52:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+In file included from restartHashTable.c:45:0:
+axml.h:687:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:965:33: warning: "_FINE_GRAIN_MPI" is not defined [-Wundef]
+axml.h:1255:35: warning: "_USE_PTHREADS" is not defined [-Wundef]
+SSE3_GCC with -m GAMMA -s /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.dna.binary -t /home/pississn/Library/phylogenetic-likelihood-library/testscript/../testdata/gappy.startingTree.dna.tree -S

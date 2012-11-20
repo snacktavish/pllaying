@@ -180,7 +180,7 @@ if [ $# -eq 1 ] ; then
       done
     done
     echo "\n"
-    echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok!"
+    echo " Supertestscript finished. Check files ${LOGFILE} and ${ERRLOGFILE} to ensure that everything is ok!"
     echo "\n"
     exit
   fi
