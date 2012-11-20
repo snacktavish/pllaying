@@ -155,7 +155,7 @@ if [ $# -eq 1 ] ; then
     BL_PARTITION_GAPPY="-M -S" # NOTE: this will be taken as 2 arguments
     echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
     echo "Starting superscript `date`, Log" > $LOGFILE 
-    for VERSION in SSE3_GCC #SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+    for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
     do 
       for MODEL in PSR GAMMA 
       do
@@ -185,8 +185,6 @@ if [ $# -eq 1 ] ; then
     exit
   fi
 
-  #TODO NOTE: We still need to pass the TREE_* somewehre to the scripts
-
   SIMPLE=""  # NOTE: this will be ignored in the loop, we will not run the simple case!
   BL_PARTITION="-M"
   SIMPLE_RF_CONV="-D"
@@ -195,7 +193,7 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
 
-  for VERSION in SSE3_GCC #SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+  for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   do 
     for MODEL in PSR GAMMA 
     do
