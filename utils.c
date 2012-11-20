@@ -70,7 +70,7 @@
 
 #include "globalVariables.h"
 
-//extern unsigned int mask32[32];
+extern unsigned int mask32[32];
 
 
 /***************** UTILITY FUNCTIONS **************************/
