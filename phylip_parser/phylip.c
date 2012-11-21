@@ -19,6 +19,7 @@ struct rawdata
  };
 
 
+int debug = 0;
 static char * 
 read_file (const char * filename, int * n)
 {
@@ -98,7 +99,6 @@ alloc_phylip_struct (int taxa, int seqlen)
    pd->seqlen = seqlen;
    pd->label  = (char **) calloc (taxa, sizeof (char *));
    pd->seq    = (char **) calloc (taxa, sizeof (char *));
-   pd->weight = NULL;
 
    for (i = 0; i < taxa; ++ i)
     {
@@ -203,12 +203,14 @@ parse_phylip_sequential (char * rawdata, struct phylip_data * pd, int input)
   i = 0;
   while (token.class != LEX_EOF && token.class != LEX_UNKNOWN && i < pd->taxa)
    {
+//     printf ("%d\n", i);
      CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
 
      /* do something with the label */
      if (token.class != LEX_STRING && token.class != LEX_NUMBER) 
       {
-        FREE (2, rawdata, seq_size);
+//        FREE (2, rawdata, seq_size);
+        free (seq_size);
         return (0);
       }
      pd->label[i] = strndup(token.lexeme, token.len);
@@ -221,10 +223,15 @@ parse_phylip_sequential (char * rawdata, struct phylip_data * pd, int input)
         /* do something with the sequence(s) */
         if (token.class != LEX_STRING)
          {
-           FREE (2, rawdata, seq_size);
+  //         FREE (2, rawdata, seq_size);
+           free (seq_size);
            return (0);
          }
         seq_size[i] += token.len;
+//        if (i == 81)
+ //        {
+  //         printf ("%.*s %d\n", token.len, token.lexeme, seq_size[i]);
+   //      }
         if (seq_size[i] <= pd->seqlen)
          {
            strncat(pd->seq[i], token.lexeme, token.len);
@@ -235,6 +242,7 @@ parse_phylip_sequential (char * rawdata, struct phylip_data * pd, int input)
          }
 
         NEXT_TOKEN
+//        if (i == 81 && seq_size[i] == 1050) { debug = 1; printf ("DEBUG: %d %d\n", token.len, token.lexeme[0]);}
       } while (seq_size[i] < pd->seqlen);
 
      if (seq_size[i] > pd->seqlen) break;
@@ -242,11 +250,13 @@ parse_phylip_sequential (char * rawdata, struct phylip_data * pd, int input)
    }
  if (token.class == LEX_UNKNOWN || (i < pd->taxa && seq_size[i] > pd->seqlen)) 
   {
-    FREE (2, rawdata, seq_size);
+    free (seq_size);
+//    FREE (2, rawdata, seq_size);
     return (0);
   }
  
- FREE (2, seq_size, rawdata);
+ //FREE (2, seq_size, rawdata);
+  free (seq_size);
 
   return (1);
 }
@@ -269,7 +279,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
      
      if (token.class != LEX_STRING && token.class != LEX_NUMBER)
       {
-        FREE (2, rawdata, seq_size);
+//        FREE (2, rawdata, seq_size);
+        free (seq_size);
         return (0);
       }
      pd->label[i] = strndup(token.lexeme, token.len);
@@ -281,7 +292,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
         CONSUME(LEX_WHITESPACE)
         if (token.class != LEX_STRING)
          {
-           FREE (2, rawdata, seq_size);
+           free (seq_size);
+//           FREE (2, rawdata, seq_size);
            return (0);
          }
         seq_size[i] += token.len;
@@ -300,7 +312,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
    }
   if (token.class == LEX_UNKNOWN || (i < pd->taxa && seq_size[i] > pd->seqlen)) 
    {
-     FREE (2, rawdata, seq_size);
+//     FREE (2, rawdata, seq_size);
+     free (seq_size);
      return (0);
    }
 
@@ -316,7 +329,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
         CONSUME(LEX_WHITESPACE)
         if (token.class != LEX_STRING)
          {
-           FREE (2, rawdata, seq_size);
+ //          FREE (2, rawdata, seq_size);
+           free (seq_size);
            return (0);
          }
         seq_size[i] += token.len;
@@ -336,7 +350,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
    }
   if (token.class == LEX_UNKNOWN || (i < pd->taxa && seq_size[i] > pd->seqlen)) 
    {
-     FREE (2, rawdata, seq_size);
+//     FREE (2, rawdata, seq_size);
+     free (seq_size);
      return (0);
    }
 
@@ -345,7 +360,8 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
      if (seq_size[i] != pd->seqlen) break;
    }
 
-  FREE (2, seq_size, rawdata);
+  //FREE (2, seq_size, rawdata);
+  free (seq_size);
 
   if (i < pd->taxa) return (0);
 
@@ -354,7 +370,7 @@ parse_phylip_interleaved (char * rawdata, struct phylip_data * pd, int input)
 }
 
 struct phylip_data *
-parse_phylip (const char * phyfile, int type)
+pl_phylip_parse (const char * phyfile, int type)
 {
   int n, input;
   char * rawdata;
@@ -380,13 +396,16 @@ parse_phylip (const char * phyfile, int type)
      free (rawdata);
      return (0);
    }
+  printf ("Read phylip header\n");
   
   switch (type)
    {
      case PHYLIP_SEQUENTIAL:
        if (!parse_phylip_sequential(rawdata, pd, input))
         {
+  printf ("Error in phylip_sequential\n");
           free_phylip_struct (pd);
+          free (rawdata);
           return (NULL);
         }
        break;
@@ -394,14 +413,137 @@ parse_phylip (const char * phyfile, int type)
        if (!parse_phylip_interleaved(rawdata, pd, input))
         {
           free_phylip_struct (pd);
+          free (rawdata);
           return (NULL);
         }
        break;
      default:
        break;
    }
+  
+  free (rawdata);
 
   return (pd);
+}
+
+void
+pl_phylip_subst (struct phylip_data * pd, int type)
+{
+  int meaningDNA[256];
+  int meaningAA[256];
+  int * data;
+  int i, j;
+
+  for (i = 0; i < 256; ++ i)
+   {
+     meaningDNA[i] = -1;
+     meaningAA[i]  = -1;
+   }
+
+  /* DNA data */
+
+  meaningDNA['A'] =  1;
+  meaningDNA['B'] = 14;
+  meaningDNA['C'] =  2;
+  meaningDNA['D'] = 13;
+  meaningDNA['G'] =  4;
+  meaningDNA['H'] = 11;
+  meaningDNA['K'] = 12;
+  meaningDNA['M'] =  3;
+  meaningDNA['R'] =  5;
+  meaningDNA['S'] =  6;
+  meaningDNA['T'] =  8;
+  meaningDNA['U'] =  8;
+  meaningDNA['V'] =  7;
+  meaningDNA['W'] =  9;
+  meaningDNA['Y'] = 10;
+  meaningDNA['a'] =  1;
+  meaningDNA['b'] = 14;
+  meaningDNA['c'] =  2;
+  meaningDNA['d'] = 13;
+  meaningDNA['g'] =  4;
+  meaningDNA['h'] = 11;
+  meaningDNA['k'] = 12;
+  meaningDNA['m'] =  3;
+  meaningDNA['r'] =  5;
+  meaningDNA['s'] =  6;
+  meaningDNA['t'] =  8;
+  meaningDNA['u'] =  8;
+  meaningDNA['v'] =  7;
+  meaningDNA['w'] =  9;
+  meaningDNA['y'] = 10;
+
+  meaningDNA['N'] =
+  meaningDNA['n'] =
+  meaningDNA['O'] =
+  meaningDNA['o'] =
+  meaningDNA['X'] =
+  meaningDNA['x'] =
+  meaningDNA['-'] =
+  meaningDNA['?'] = 15;
+ 
+  /* AA data */
+
+  meaningAA['A'] =  0;  /* alanine */
+  meaningAA['R'] =  1;  /* arginine */
+  meaningAA['N'] =  2;  /*  asparagine*/
+  meaningAA['D'] =  3;  /* aspartic */
+  meaningAA['C'] =  4;  /* cysteine */
+  meaningAA['Q'] =  5;  /* glutamine */
+  meaningAA['E'] =  6;  /* glutamic */
+  meaningAA['G'] =  7;  /* glycine */
+  meaningAA['H'] =  8;  /* histidine */
+  meaningAA['I'] =  9;  /* isoleucine */
+  meaningAA['L'] =  10; /* leucine */
+  meaningAA['K'] =  11; /* lysine */
+  meaningAA['M'] =  12; /* methionine */
+  meaningAA['F'] =  13; /* phenylalanine */
+  meaningAA['P'] =  14; /* proline */
+  meaningAA['S'] =  15; /* serine */
+  meaningAA['T'] =  16; /* threonine */
+  meaningAA['W'] =  17; /* tryptophan */
+  meaningAA['Y'] =  18; /* tyrosine */
+  meaningAA['V'] =  19; /* valine */
+  meaningAA['B'] =  20; /* asparagine, aspartic 2 and 3*/
+  meaningAA['Z'] =  21; /*21 glutamine glutamic 5 and 6*/
+  meaningAA['a'] =  0;  /* alanine */
+  meaningAA['r'] =  1;  /* arginine */
+  meaningAA['n'] =  2;  /*  asparagine*/
+  meaningAA['d'] =  3;  /* aspartic */
+  meaningAA['c'] =  4;  /* cysteine */
+  meaningAA['q'] =  5;  /* glutamine */
+  meaningAA['e'] =  6;  /* glutamic */
+  meaningAA['g'] =  7;  /* glycine */
+  meaningAA['h'] =  8;  /* histidine */
+  meaningAA['i'] =  9;  /* isoleucine */
+  meaningAA['l'] =  10; /* leucine */
+  meaningAA['k'] =  11; /* lysine */
+  meaningAA['m'] =  12; /* methionine */
+  meaningAA['f'] =  13; /* phenylalanine */
+  meaningAA['p'] =  14; /* proline */
+  meaningAA['s'] =  15; /* serine */
+  meaningAA['t'] =  16; /* threonine */
+  meaningAA['w'] =  17; /* tryptophan */
+  meaningAA['y'] =  18; /* tyrosine */
+  meaningAA['v'] =  19; /* valine */
+  meaningAA['b'] =  20; /* asparagine, aspartic 2 and 3*/
+  meaningAA['z'] =  21; /*21 glutamine glutamic 5 and 6*/
+
+  meaningAA['X'] = 
+  meaningAA['x'] = 
+  meaningAA['?'] = 
+  meaningAA['*'] = 
+  meaningAA['-'] = 22;
+
+  data = (type == DNA_DATA) ? meaningDNA : meaningAA; 
+
+  for (i = 0; i < pd->taxa; ++ i)
+   {
+     for (j = 0; j < pd->seqlen; ++ j)
+      {
+        pd->seq[i][j] = data[(int)pd->seq[i][j]];
+      }
+   }
 }
 
 void 
