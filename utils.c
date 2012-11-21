@@ -277,9 +277,6 @@ void read_msa(tree *tr, const char *filename)
     myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
     myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
 
-    setupTree(tr, TRUE);
-    
-    myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
     /* initialize topology */
 
     /* Joint branch length estimate is activated by default */
@@ -290,6 +287,9 @@ void read_msa(tree *tr, const char *filename)
       tr->numBranches = 1;
     */
     tr->numBranches = 1;
+    setupTree(tr, TRUE);
+    
+    myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
 
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */

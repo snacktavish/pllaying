@@ -155,7 +155,7 @@ if [ $# -eq 1 ] ; then
     BL_PARTITION_GAPPY="-M -S" # NOTE: this will be taken as 2 arguments
     echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
     echo "Starting superscript `date`, Log" > $LOGFILE 
-    for VERSION in SSE3_GCC #SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+    for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
     do 
       for MODEL in PSR GAMMA 
       do
@@ -180,12 +180,10 @@ if [ $# -eq 1 ] ; then
       done
     done
     echo "\n"
-    echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok!"
+    echo " Supertestscript finished. Check files ${LOGFILE} and ${ERRLOGFILE} to ensure that everything is ok!"
     echo "\n"
     exit
   fi
-
-  #TODO NOTE: We still need to pass the TREE_* somewehre to the scripts
 
   SIMPLE=""  # NOTE: this will be ignored in the loop, we will not run the simple case!
   BL_PARTITION="-M"
@@ -195,7 +193,7 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
 
-  for VERSION in SSE3_GCC #SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+  for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   do 
     for MODEL in PSR GAMMA 
     do
@@ -228,5 +226,5 @@ else
 fi
 
 echo "\n"
-echo " Supertestscript finished successfully. Check file ${LOGFILE} to ensure that everything is ok!"
+echo " Supertestscript finished. Check files ${LOGFILE} and ${ERRLOGFILE} to ensure that everything is ok!"
 echo "\n"
