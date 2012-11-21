@@ -11,7 +11,8 @@ typedef struct {
 	tree* tr;
 	nodeptr p;
 	int nniType;
-	double z[NUM_BRANCHES];
+	double z[NUM_BRANCHES]; // optimize branch lengths
+	double z0[NUM_BRANCHES]; // unoptimized branch lengths
 	double likelihood;
 	double deltaLH;
 } nniMove;
@@ -25,8 +26,13 @@ int cmp_nni(const void* nni1, const void* nni2) {
  *  Find the best NNI move for the current branch
  *  Return NULL if no positive NNI is found
  *  Otherwise return the best positive NNI move found
+ *
+ *  @param tr the current tree data structure
+ *  @param p the node representing the current branch
+ *  @param curLH the curren log-likelihood of the tree
+ *  @return the best NNI move found for this branch or nothing
  */
-nniMove getBestNNIForBran(tree* tr, nodeptr p);
+nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH);
 
 double doOneNNI(tree * tr, nodeptr p, int swap, int optBran);
 
@@ -38,6 +44,7 @@ void evalAllNNI(tree* tr);
 
 /*
  *  do a full round of fast NNI
+ *  return new tree log-likelihood if found improving NNI otherwise 0.0
  */
 double doNNISearch(tree* tr);
 
@@ -45,7 +52,7 @@ double doNNISearch(tree* tr);
  *  cnt: number of internal branches that have been visited
  *  cnt_nni: number of positive NNI found
  */
-void evalNNIForSubtree(tree* tr, nodeptr p, nniMove* nniList, int* cnt_bran, int* cnt_nni);
+void evalNNIForSubtree(tree* tr, nodeptr p, nniMove* nniList, int* cnt_bran, int* cnt_nni, double curLH);
 /*
  *  Save the likelihood vector of p and q to the 2 pointer p_lhsave and
  *  q_lhsave.
