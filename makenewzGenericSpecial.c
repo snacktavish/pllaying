@@ -1,4 +1,4 @@
-/*  RAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees
+/*  pAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees
  *  Copyright August 2006 by Alexandros Stamatakis
  *
  *  Partially derived from
@@ -55,14 +55,11 @@
 /* pointers to reduction buffers for storing and gathering the first and second derivative 
    of the likelihood in Pthreads and MPI */
 
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-extern volatile double *reductionBufferTwo;
-#endif
-
-#ifdef _FINE_GRAIN_MPI
+#if IS_PARALLEL
+void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) ; 
 extern double *globalResult;
 #endif
+
 
 
 extern const unsigned int mask32[32];
@@ -376,7 +373,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
     volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *EIGN, double *gammaRates, double lz, int *wrptr);
 
 static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt, 
     double *rptr, double *EIGN, int *cptr, double lz);
 
 
@@ -384,7 +381,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
     volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz);
 
 static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, double *rptr, int *cptr, int upper,
-    double *wrptr, double *wr2ptr,  volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable);
+    int *wgt, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable);
 
 #endif
 
@@ -394,8 +391,9 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
 
 
 static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz, const int states)
+    /* rptr perSiteRates pointer, cptr rateCategory pointer */
 {
   int 
     i, 
@@ -483,22 +481,10 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    /* under the CAT model, wrptr[] and wr2ptr[] are pre-computed extension sof the weight pointer:
-       wrptr[i]  = wgt[i] * rptr[cptr[i]].
-       and 
-       wr2ptr[i]  = wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] 
-
-       this is also something that is required for the derivatives because when computing the 
-       derivative of the exponential() the rate must be multiplied with the 
-       exponential 
-
-       wgt is just the pattern site wieght 
-       */
-
     /* compute the accumulated first and second derivatives of this site */
 
-    dlnLdlz  += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   /* 
@@ -790,7 +776,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
       if(tr->rateHetModel == CAT)
         coreCAT_FLEX(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wr, tr->partitionData[model].wr2,
+            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt,
             tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz, states);
       else
         coreGAMMA_FLEX(width, sumBuffer,
@@ -802,7 +788,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
         case 4: /* DNA */
           if(tr->rateHetModel == CAT)
             coreGTRCAT(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wr, tr->partitionData[model].wr2,
+                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt, 
                 tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz);
           else 
             coreGTRGAMMA(width, sumBuffer,
@@ -814,7 +800,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
           if(tr->rateHetModel == CAT)
             coreGTRCATPROT(tr->partitionData[model].EIGN, lz, tr->partitionData[model].numberOfCategories,  tr->partitionData[model].perSiteRates,
                 tr->partitionData[model].rateCategory, width,
-                tr->partitionData[model].wr, tr->partitionData[model].wr2,
+                tr->partitionData[model].wgt, 
                 &dlnLdlz, &d2lnLdlz2,
                 sumBuffer);
           else
@@ -950,91 +936,33 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
     /* if this is the first iteration of NR we will need to first do this one-time call 
        of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
        subsequent calls to masterBarrier(THREAD_MAKENEWZ, tr); will not require this
        */
+
     if(firstIteration)
-    {
-      tr->td[0].traversalHasChanged = TRUE;	 
-      masterBarrier(THREAD_MAKENEWZ_FIRST, tr);
-      firstIteration = FALSE;
-      tr->td[0].traversalHasChanged = FALSE;
-    }
-    else
-    {	 
-      masterBarrier(THREAD_MAKENEWZ, tr);
-    }
-
-    /* here again we collect the first and secdon derivatives from the various threads 
-       and sum them up. It's similar to what we do in evaluateGeneric() 
-       with the only difference that we have to collect two values (firsrt and second derivative) 
-       instead of onyly one (the log likelihood */
-
-    {
-      int 
-        b;
-
-      for(b = 0; b < tr->numBranches; b++)
       {
-        dlnLdlz[b] = 0.0;
-        d2lnLdlz2[b] = 0.0;
-        for(i = 0; i < tr->numberOfThreads; i++)
-        {
-          dlnLdlz[b]   += reductionBuffer[i * tr->numBranches + b];
-          d2lnLdlz2[b] += reductionBufferTwo[i * tr->numBranches + b];
-        }
+	tr->td[0].traversalHasChanged = TRUE; 
+	masterBarrier(THREAD_MAKENEWZ_FIRST, tr); 
+	firstIteration = FALSE; 
+	tr->td[0].traversalHasChanged = FALSE; 
       }
-    }
-#else
-#ifdef _FINE_GRAIN_MPI
-
-    /* same as for pthreads, but the reduction is implemented in a slightly different
-       way using the MPI_Reduce() command that can compute reductions on more than one element 
-       */
-
-    if(firstIteration)
-    {
-      masterBarrierMPI(THREAD_MAKENEWZ_FIRST, tr);
-      firstIteration = FALSE;
-    }
-    else
-      masterBarrierMPI(THREAD_MAKENEWZ, tr);
-
-    if(tr->numBranches == 1)
-    {
-      int 
-        model;	  	  
-
-      dlnLdlz[0]   = globalResult[0];
-      d2lnLdlz2[0] = globalResult[1];	  	  	 
-    }
-    else
-    {
-      int
-        model;
-
-      for(model = 0; model < tr->NumberOfModels; model++)
-      {	     	     
-        dlnLdlz[model]   = globalResult[model * 2 + 0];
-        d2lnLdlz2[model] = globalResult[model * 2 + 1];	    
-      }
-    }
-
-#else
-
+    else 
+      masterBarrier(THREAD_MAKENEWZ, tr); 
+    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2); 
+#else 
     /* sequential part, if this is the first newton-raphson implementation,
        do the precomputations as well, otherwise just execute the computation
        of the derivatives */
     if(firstIteration)
-    {
-      makenewzIterative(tr);
-      firstIteration = FALSE;
-    }
+      {
+	makenewzIterative(tr);
+	firstIteration = FALSE;
+      }
     execCore(tr, dlnLdlz, d2lnLdlz2);
-#endif
 #endif
 
     /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 
@@ -1145,9 +1073,8 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
     int
       slot = -1,
       count = 0;
-    /* Ensure all correct subtree sizes are available */
-    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-    computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
+
+    /* Ensure p and q get a unpinnable slot in physical memory */
     if(!isTip(q->number, tr->mxtips))
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
@@ -1167,13 +1094,10 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
-                         tr->rvec, tr->useRecom);
+    computeTraversal(tr, p, TRUE);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
-                         tr->rvec, tr->useRecom);
-
+    computeTraversal(tr, q, TRUE);
 
   /* call the Newton-Raphson procedure */
 
@@ -1868,7 +1792,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
 
 
 static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
-    volatile double *d1, volatile double *d2, double *wrptr, double *wr2ptr,
+    volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz)
 {
   int i;
@@ -1941,8 +1865,8 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    dlnLdlz   += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *d1 = dlnLdlz;
@@ -2032,7 +1956,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
 
 
 static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, double *rptr, int *cptr, int upper,
-    double *wrptr, double *wr2ptr,  volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable)
+    int *wgt, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable)
 {
   int i, l;
   double *d1, *d_start, *sum;
@@ -2098,8 +2022,8 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
 
-    dlnLdlz  += wrptr[i] * dlnLidlz;
-    d2lnLdlz2 += wr2ptr[i] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
+    dlnLdlz  += wgt[i] * rptr[cptr[i]] * dlnLidlz;
+    d2lnLdlz2 += wgt[i] * rptr[cptr[i]] * rptr[cptr[i]] * (d2lnLidlz2 - dlnLidlz * dlnLidlz);
   }
 
   *ext_dlnLdlz   = dlnLdlz;

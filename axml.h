@@ -31,6 +31,7 @@
 
 #include <assert.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -59,19 +60,7 @@ extern "C" {
 #endif
 
 
-
-#ifdef _USE_PTHREADS
-
-#include <pthread.h>
-
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#include <mpi.h>
-
-#endif
-
+#include "genericParallelization.h"
 #include "mem_alloc.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
@@ -442,6 +431,7 @@ struct stringEnt
   struct stringEnt *next;
 };
 
+
 typedef struct stringEnt stringEntry;
  
 typedef struct
@@ -757,53 +747,74 @@ typedef unsigned int parsimonyNumber;
 
 
 typedef struct {
-  int     states;
-  int     maxTipStates;
-  int     lower;
-  int     upper;
-  int     width;
-  int     dataType;
+  /* ALIGNMENT DATA */
+  /* This depends only on the type of data in this partition of the alignment */
+  int     dataType;         /* e.g. DNA_DATA, AA_DATA, etc  within range (MIN_MODEL, MAX_MODEL)  */
+  int     states;           /* Number of states in inner vectors */
+  int     maxTipStates;     /* Number of undetermined states (Possible states at the tips) */
+  /* These are the boundaries of the partition itself, sites within these boudaries must share the type of data */
+  char   *partitionName;
+  int     lower;            /* starting position of the partition within [1, tr->originalCrunchedLength] */
+  int     upper;            /* ending position  */
+  int     width;            /* upper - lower, possibly we dont need this, number of site patterns*/
+  int    *wgt;              /* Number of occurencies of each site pattern */
+  double *empiricalFrequencies;    /* empirical Frequency of each state according to this alignment partition */
+
+
+  /* MODEL OF RATE HETEROGENETY, We use either GAMMA or PSR */
+  /* Rate heterogenety: Per Site Categories (PSR) model aka CAT, see updatePerSiteRates() */
+  /* Rate of site i is given by perSiteRates[rateCategory[i]] */
+  double *perSiteRates;     /* Values of rates*/
+  int    *rateCategory;     /* Category index for each site */
+  int     numberOfCategories;/* size of the set of possible categories */
+  /* Rate heterogenety: GAMMA model of rate heterogenety */
+  double alpha;             /* parameter to be optimized */
+  double *gammaRates;       /* 4 gamma categories (rates), computed given an alpha*/
+
+
+  /* TRANSITION MODEL: We always assume General Time Reversibility */
+  /* Transistion probability matrix: P(t) = exp(Qt)*/
+  /* Branch length t is the expected number of substitutions per site */
+  /* Pij(t) is the probability of going from state i to state j in a branch of length t */
+  /* Relative substitution rates (Entries in the Q matrix) */
+  /* In GTR we can write Q = S * D, where S is a symmetrical matrix and D a diagonal with the state frequencies */
+  double *substRates;       /* Entries in S, e.g. 6 free parameters in DNA */   
+  double *frequencies;      /* State frequencies, entries in D, are initialized as empiricalFrequencies */
+  /* Matrix decomposition: Explanation of the mathematical background? */
+  double *EIGN;             /* eigenvalues */
+  double *EV;               /* eigenvectors */
+  double *EI;
+  double *left;  
+  double *right;
+  double *tipVector; 
+  /* Protein specific ?? */
   int     protModels;
   int     autoProtModels;
   int     protFreqs;
+  /* specific for secondary structures ?? */
   boolean nonGTR;
-  int     numberOfCategories;
-
-  char   *partitionName;
   int    *symmetryVector;
   int    *frequencyGrouping;
-    
-  double *sumBuffer; 
-  double *ancestralBuffer;
-  double *gammaRates;
-  double *EIGN;
-  double *EV;
-  double *EI;
-  double *left;
-  double *right;
-  double *frequencies;
-  double *empiricalFrequencies;
-  double *tipVector; 
-  double *substRates;    
-  double *perSiteRates;
-  double *wr;
-  double *wr2;
-  int    *wgt; 
-  int    *rateCategory;
-  double alpha;
 
-  double          **xVector;
-  size_t           *xSpaceVector;
-  unsigned char   **yVector;
-  unsigned int     *globalScaler; 
 
+  /* LIKELIHOOD VECTORS */
+  /* partial LH Inner vectors / ancestral vectors, we have 2*tips - 3 inner nodes */
+  double          **xVector;          /* Probability entries for inner nodes */
+  unsigned char   **yVector;          /* Tip entries (sequence) for tip nodes */
+  unsigned int     *globalScaler;     /* Counters for scaling operations done at node i */
+  /* These are for the saveMemory option (tracking gaps to skip computations and memory) */
+  size_t           *xSpaceVector;     
   int               gapVectorLength;
   unsigned int     *gapVector;
   double           *gapColumn; 
 
+  /* Parsimony vectors at each node */
   size_t parsimonyLength;
   parsimonyNumber *parsVect; 
 
+  /* These buffers of size width are used to pre-compute ?? */
+  double *sumBuffer; 
+  double *ancestralBuffer;
 } pInfo;
 
 
@@ -931,12 +942,6 @@ typedef  struct  {
   volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-  /*
-    do we need this stuff ?
-  */
-  /*unsigned int **bitVectors;
-    hashtable *h;*/
-  
     
   int *partitionAssignment;     
  
@@ -970,9 +975,6 @@ typedef  struct  {
   int              maxCategories;
   int              categories;
 
-  double           *wr;
-  double           *wr2;
-  
   double           coreLZ[NUM_BRANCHES];
   int              numBranches;
   
@@ -1060,9 +1062,6 @@ typedef  struct  {
   double lzr[NUM_BRANCHES];
   double lzi[NUM_BRANCHES];
 
- 
- 
-
 
   unsigned int **bitVectors;
 
@@ -1109,6 +1108,9 @@ typedef  struct
   topolRELL **t;
 }
   topolRELL_LIST;
+
+
+
 
 
 /**************************************************************/
@@ -1182,6 +1184,7 @@ typedef  struct {
   boolean       bayesian;
   int           num_generations;
 #endif
+
 } analdef;
 
 
@@ -1189,14 +1192,14 @@ typedef  struct {
 
 typedef struct 
 {
-  int leftLength;
-  int rightLength;
-  int eignLength;
+  int leftLength;         /* s^2 */
+  int rightLength;/* s^2 */
+  int eignLength;/* s */
   int evLength;
   int eiLength;
-  int substRatesLength;
-  int frequenciesLength;
-  int tipVectorLength;
+  int substRatesLength;   /* (s^2 - s)/2 free model parameters for matrix Q i.e. substitution rates */
+  int frequenciesLength;  /* s frequency of each state */ 
+  int tipVectorLength;    /* ASK */
   int symmetryVectorLength;
   int frequencyGroupingLength;
 
@@ -1206,7 +1209,7 @@ typedef struct
 
   const char *inverseMeaning;
 
-  int states;
+  int states;   /* s */
 
   boolean smoothFrequencies;
 
@@ -1222,6 +1225,7 @@ extern void mcmc(tree *tr, analdef *adef);
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model);
+void printParallelTimePerRegion(); 
 #endif
 
 extern void computePlacementBias(tree *tr, analdef *adef);
@@ -1237,7 +1241,9 @@ extern void computeRogueTaxa(tree *tr, char* treeSetFileName, analdef *adef);
 extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits);
 
 
-
+/* Handling branch lengths*/
+extern double get_branch_length(tree *tr, nodeptr p, int partition_id);
+extern void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl);
 
 
 extern size_t discreteRateCategories(int rateHetModel);
@@ -1262,7 +1268,7 @@ extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint
 extern void printLog ( tree *tr);
 extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
-extern int main ( int argc, char *argv[] );
+/* extern int main ( int argc, char *argv[] ); */
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
 extern void initReversibleGTR (tree *tr, int model);
 extern double LnGamma ( double alpha );
@@ -1340,6 +1346,7 @@ extern boolean freeBestTree ( bestlist *bt );
 extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
 			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
+void printTopology(tree *tr, boolean printInner);
 
 
 
@@ -1370,10 +1377,9 @@ extern double evaluateGenericVector (tree *tr, nodeptr p);
 extern void categorizeGeneric (tree *tr, nodeptr p);
 extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0, int maxiter, int model);
 extern boolean isTip(int number, int maxTips);
-/*
-extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal);
-*/
+
 /* recom functions */
+extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
 extern void allocRecompVectorsInfo(tree *tr);
 extern void allocTraversalCounter(tree *tr);
@@ -1383,7 +1389,7 @@ extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
 extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
 
 extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
-extern void determineFullTraversalStlen(nodeptr p, tree *tr);
+extern void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec);
 extern void printTraversalInfo(tree *tr);
 extern void countTraversal(tree *tr);
 
@@ -1391,7 +1397,7 @@ extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
 
 extern void newviewIterative(tree *tr, int startIndex);
 
-extern void evaluateIterative(tree *);
+extern void evaluateIterative(tree *tr);
 
 //extern void *malloc_aligned( size_t size);
 
@@ -1455,8 +1461,8 @@ extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int nu
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
 
 
-extern inline unsigned int bitcount_32_bit(unsigned int i);
-extern inline unsigned int bitcount_64_bit(unsigned long i);
+extern  unsigned int bitcount_32_bit(unsigned int i); 
+/* extern inline unsigned int bitcount_64_bit(unsigned long i); */
 
 extern FILE *getNumberOfTrees(tree *tr, char *fileName, analdef *adef);
 
@@ -1478,6 +1484,8 @@ extern void updatePerSiteRates(tree *tr, boolean scaleRates);
 
 extern void restart(tree *tr);
 
+extern double getBranchLength(tree *tr, int perGene, nodeptr p);
+
 #ifdef _IPTOL
 extern void writeCheckpoint();
 #endif
@@ -1489,7 +1497,7 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #endif
 
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 
 
 
@@ -1508,17 +1516,9 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 #define THREAD_COPY_ALPHA             10
 #define THREAD_COPY_RATES             11
 #define THREAD_PER_SITE_LIKELIHOODS   12
-#define THREAD_NEWVIEW_ANCESTRAL 13
-#define THREAD_GATHER_ANCESTRAL 14
-
-
-
-typedef struct
-{
-  tree *tr;
-  int threadNumber;
-}
-  threadData;
+#define THREAD_NEWVIEW_ANCESTRAL      13
+#define THREAD_GATHER_ANCESTRAL       14
+#define THREAD_EXIT_GRACEFULLY        15
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
@@ -1529,41 +1529,24 @@ extern void masterBarrier(int jobType, tree *tr);
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+
+boolean workerTrap(tree *tr); 
+void initMPI(int argc, char *argv[]); 
+void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
+void multiprocessorScheduling(tree *tr, int tid); 
+void computeFraction(tree *localTree, int tid, int n); 
+void computeFractionMany(tree *localTree, int tid); 
+void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n); 
+void startPthreads(tree *tr); 
+
+typedef struct
+{
+  tree *tr;
+  int threadNumber;
+}
+  threadData;
 extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
-#endif
-
-#ifdef _FINE_GRAIN_MPI
-
-#define THREAD_COPY_RATE_CATS  0
-#define THREAD_COPY_INIT_MODEL 1
-#define THREAD_NEWVIEW         2
-#define THREAD_EVALUATE        3
-#define THREAD_MAKENEWZ_FIRST  4
-#define THREAD_MAKENEWZ        5
-#define THREAD_OPT_RATE        6
-#define THREAD_COPY_RATES      7
-#define THREAD_RATE_CATS       8
-#define THREAD_NEWVIEW_MASKED  9
-#define THREAD_OPT_ALPHA       10
-#define THREAD_COPY_ALPHA      11
-#define THREAD_OPTIMIZE_PER_SITE_AA 12
-#define EXIT_GRACEFULLY        13
-
-
-
-
-    
-
-
-extern void masterBarrierMPI(int jobType, tree *tr);
-extern void fineGrainWorker(tree *tr);
-extern void startFineGrainMpi(tree *tr, analdef *adef);
-
-MPI_Datatype traversalDescriptor;
-MPI_Datatype jobDescriptor;
-
-
 #endif
 
 
@@ -1593,13 +1576,16 @@ void newviewGTRGAMMA_AVX(int tipCase,
 void reorder( double *x, int n, int span );
 void reorder_back( double *x, int n, int span );
 
-
 static int virtual_width( int n ) {
     const int global_vw = 2;
     return (n+1) / global_vw * global_vw;
 }
 
+boolean modelExists(char *model, tree *tr);
 
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+
+
+

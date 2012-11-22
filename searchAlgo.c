@@ -124,7 +124,6 @@ boolean update(tree *tr, nodeptr p)
       }	 
 
 
-
       p->z[i] = q->z[i] = z[i];	 
     }
   }
@@ -135,14 +134,12 @@ boolean update(tree *tr, nodeptr p)
   return TRUE;
 }
 
-
-
-
 boolean smooth (tree *tr, nodeptr p)
 {
   nodeptr  q;
 
   if (! update(tr, p))               return FALSE; /*  Adjust branch */
+
   if (! isTip(p->number, tr->mxtips)) 
   {                                  /*  Adjust descendants */
     q = p->next;
@@ -178,44 +175,42 @@ static boolean allSmoothed(tree *tr)
 }
 
 
-
+/* do maxtimes rounds of branch length optimization */
 boolean smoothTree (tree *tr, int maxtimes)
 {
-  nodeptr  p, q;   
-  int i, count = 0;
+	nodeptr  p, q;
+	int i, count = 0;
 
-  p = tr->start;
-  for(i = 0; i < tr->numBranches; i++)
-    tr->partitionConverged[i] = FALSE;
+	p = tr->start;
+	for(i = 0; i < tr->numBranches; i++)
+		tr->partitionConverged[i] = FALSE;
 
-  while (--maxtimes >= 0) 
-  {    
-    for(i = 0; i < tr->numBranches; i++)	
-      tr->partitionSmoothed[i] = TRUE;		
+	while (--maxtimes >= 0)
+	{
+		for(i = 0; i < tr->numBranches; i++)
+			tr->partitionSmoothed[i] = TRUE;
 
-    if (! smooth(tr, p->back))       return FALSE;
-    if (!isTip(p->number, tr->mxtips)) 
-    {
-      q = p->next;
-      while (q != p) 
-      {
-        if (! smooth(tr, q->back))   return FALSE;
-        q = q->next;
-      }
-    }
+		if (! smooth(tr, p->back))       return FALSE;
+		if (!isTip(p->number, tr->mxtips))
+		{
+			q = p->next;
+			while (q != p)
+			{
+				if (! smooth(tr, q->back))   return FALSE;
+				q = q->next;
+			}
+		}
 
-    count++;
+		count++;
 
-    if (allSmoothed(tr)) 
-      break;      
-  }
+		if (allSmoothed(tr))
+			break;
+	}
 
-  for(i = 0; i < tr->numBranches; i++)
-    tr->partitionConverged[i] = FALSE;
+	for(i = 0; i < tr->numBranches; i++)
+		tr->partitionConverged[i] = FALSE;
 
-
-
-  return TRUE;
+	return TRUE;
 } 
 
 
@@ -1118,8 +1113,6 @@ static void writeCheckpoint(tree *tr, int state)
   myfwrite(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
   myfwrite(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
   myfwrite(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
-  myfwrite(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
-  myfwrite(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
 
   /* need to store this as well in checkpoints, otherwise the branch lengths 
      in the output tree files will be wrong, not the internal branch lengths though */
@@ -1370,8 +1363,6 @@ static void readCheckpoint(tree *tr)
   myfread(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
   myfread(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
   myfread(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
-  myfread(tr->wr,  sizeof(double), tr->originalCrunchedLength, f);
-  myfread(tr->wr2,  sizeof(double), tr->originalCrunchedLength, f);
 
 
   /* need to read this as well in checkpoints, otherwise the branch lengths 
@@ -1397,16 +1388,11 @@ static void readCheckpoint(tree *tr)
     myfread(tr->partitionData[model].tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);  
     myfread(tr->partitionData[model].substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);  
     myfread(&(tr->partitionData[model].alpha), sizeof(double), 1, f);
-#ifndef _LOCAL_DISCRETIZATION
+
     makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4, tr->useMedian);
-#endif
   }
 
-#ifdef _FINE_GRAIN_MPI
-  masterBarrierMPI(THREAD_COPY_INIT_MODEL, tr);
-#endif
-
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   masterBarrier(THREAD_COPY_INIT_MODEL, tr);
 #endif
 
@@ -1762,7 +1748,7 @@ START_FAST_SPRS:
 
       if(fastIterations > 1)
         cleanupHashTable(tr->h, (fastIterations % 2));		
-
+      
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, fastIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
           &bCounter, 1, FALSE, FALSE, tr->threadID);	    
 
@@ -2122,7 +2108,8 @@ cleanup:
 
 
 /* The number of maximum smoothing iterations is given explicitely */
-boolean treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
+boolean 
+treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   boolean result;
   result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */

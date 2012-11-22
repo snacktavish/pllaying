@@ -10,7 +10,7 @@ LIBRARIES = -lm -mavx -pthread
 
 RM = rm -f
 
-objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lockless_allocator/ll_alloc.o mem_alloc.o recom.o
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o recom.o
 
 all : raxmlLight-AVX-Pthreads
 

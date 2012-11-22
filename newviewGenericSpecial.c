@@ -978,7 +978,7 @@ void newviewIterative (tree *tr, int startIndex)
 
 #ifdef _DEBUG_RECOMPUTATION
   /* recom */
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 #else
   countTraversal(tr);
 #endif
@@ -1103,7 +1103,7 @@ void newviewIterative (tree *tr, int startIndex)
           for(j = 0; j < (size_t)tr->partitionData[model].gapVectorLength; j++)
           {		     
             x3_gap[j] = x1_gap[j] & x2_gap[j];
-            setBits += (size_t)(bitcount_32_bit(x3_gap[j]));		      
+            setBits += (size_t)(bitcount_32_bit(x3_gap[j])); 
           }
 
           requiredLength = (width - setBits)  * rateHet * states * sizeof(double);		
@@ -1417,6 +1417,20 @@ void newviewIterative (tree *tr, int startIndex)
 
 }
 
+void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal) 
+{
+  /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
+  if(tr->useRecom)
+  {
+    int traversal_counter = 0;
+    if(partialTraversal)
+      computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &traversal_counter);
+    else
+      computeFullTraversalInfoStlen(p, tr->mxtips, tr->rvec);
+  }
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, partialTraversal, tr->rvec, tr->useRecom);
+}
+
 
 /* here is the generic function that could be called from the user program 
    it re-computes the vector at node p (regardless of whether it's orientation is 
@@ -1430,20 +1444,14 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   if(isTip(p->number, tr->mxtips))
     return;
 
-  if(tr->useRecom)
-  {
-    int count = 0;
-    computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-  }
-
   /* the first entry of the traversal descriptor is always reserved for evaluate or branch length optimization calls,
      hence we start filling the array at the second entry with index one. This is not very nice and should be fixed 
      at some point */
 
   tr->td[0].count = 0;
 
-  /* compute the traversal descriptor */
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+  /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
+  computeTraversal(tr, p, TRUE);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
@@ -1484,25 +1492,18 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
   {
     /* store execute mask in traversal descriptor */
 
-    storeExecuteMaskInTraversalDescriptor(tr);      
+    storeExecuteMaskInTraversalDescriptor(tr); 
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
     /* do the parallel for join for pthreads
        not that we do not need a reduction operation here, but just a barrier to make 
        sure that all threads are done with their partition */
 
     masterBarrier(THREAD_NEWVIEW, tr);
 #else
-#ifdef _FINE_GRAIN_MPI
-
-    /* same as above but for MPI */
-
-    masterBarrierMPI(THREAD_NEWVIEW, tr);
-#else
     /* in the sequential case we now simply call newviewIterative() */
 
     newviewIterative(tr, 0);
-#endif
 #endif
 
   }
@@ -1805,7 +1806,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   assert(tr->td[0].count == 1);  
   
-#ifdef _USE_PTHREADS  
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
 
   masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr);
@@ -1818,7 +1819,7 @@ void newviewGenericAncestral(tree *tr, nodeptr p)
 
   tr->td[0].traversalHasChanged = FALSE;
 
-#ifdef _USE_PTHREADS
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* invoke another parallel region to gather the marginal ancestral probabilities 
      from the threads/MPI processes */
 

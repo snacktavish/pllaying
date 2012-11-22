@@ -31,8 +31,8 @@ int main(int argc, char * argv[])
 
   /* Set the minimum required info for the tree structure */
   tr = (tree *)malloc(sizeof(tree));
-  tr->mxtips           = 20;
-  tr->randomNumberSeed = 666;
+  tr->mxtips           = 6;
+  tr->randomNumberSeed = 345;
 
   /* Setup some default values 
      TODO: The minimal initialization can be substantially smaller than what is
@@ -44,12 +44,10 @@ int main(int argc, char * argv[])
   makeRandomTree(tr);
 
   /* Print the tree */
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, SUMMARIZE_LH, 0,0);
-  fprintf(stderr, "%s", tr->tree_string);
+  printTopology(tr, FALSE);
+  printTopology(tr, TRUE);
 
 
 
   return(EXIT_SUCCESS);
 }
-
-

@@ -10,7 +10,7 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o mem_alloc.o recom.o 
+objs    = utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o mem_alloc.o
 
 all : raxmlLight
 

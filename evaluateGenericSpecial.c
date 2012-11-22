@@ -51,6 +51,11 @@
 /*#include <tmmintrin.h>*/
 #endif
 
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid); 
+#endif
+
+
 /* 
    global variables of pthreads version, reductionBuffer is the global array 
    that is used for implementing deterministic reduction operations, that is,
@@ -61,12 +66,10 @@
    Note the volatile modifier here, that guarantees that the compiler will not do weird optimizations 
    rearraengements of the code accessing those variables, because it does not know that several concurrent threads 
    will access those variables simulatenously 
+
+   UPDATE: reductionBuffer is now merged with globalResult
    */
 
-
-#ifdef _USE_PTHREADS
-extern volatile double *reductionBuffer;
-#endif
 
 /* a pre-computed 32-bit integer mask */
 
@@ -668,7 +671,6 @@ of the current partition.
          */
 
 
-
       partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
 
       /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
@@ -730,18 +732,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* recom part */
   if(tr->useRecom)
   {
-    int
-      slot = -1,
-      count = 0;
-    if(fullTraversal)
-    {
-      determineFullTraversalStlen(p, tr);
-    }
-    else
-    {
-      computeTraversalInfoStlen(p, tr->mxtips, tr->rvec, &count);
-      computeTraversalInfoStlen(q, tr->mxtips, tr->rvec, &count);
-    }
+    int slot = -1;
     if(!isTip(q->number, tr->mxtips))
     {
       q_recom = getxVector(tr->rvec, q->number, &slot, tr->mxtips);
@@ -764,26 +755,18 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* one entry in the traversal descriptor is already used, hence set the tarversal length counter to 1 */
   tr->td[0].count = 1;
 
-  /* do we need to recompute any of the vectors at or below p ? */
-
   if(fullTraversal)
   { 
-    assert(isTip(p->number, tr->mxtips));
-    computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, FALSE, 
-        tr->rvec, tr->useRecom);     
+    assert(isTip(q->back->number, tr->mxtips));
+    computeTraversal(tr, q, FALSE);
   }
   else
   {
     if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-      computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE,
-          tr->rvec, tr->useRecom);     
-
-    /* recompute/reorient any descriptors at or below q ? 
-       computeTraversalInfo computes and stores the newview() to be executed for the traversal descriptor */
+      computeTraversal(tr, p, TRUE);
 
     if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-      computeTraversalInfo(q, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, 
-          tr->rvec, tr->useRecom);     
+      computeTraversal(tr, q, TRUE);
   }
 
 
@@ -796,7 +779,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      traversal descriptor list of nodes needs to be broadcast once again */
 
   tr->td[0].traversalHasChanged = TRUE;
-#ifdef _USE_PTHREADS 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
   /* now here we enter the fork-join region for Pthreads */
 
@@ -822,34 +805,11 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
      needs to store the partial log like of each partition and we then need to collect 
      and add everything */
 
-
-  for(model = 0; model < tr->NumberOfModels; model++)
-  { 
-    volatile double 
-      partitionResult = 0.0;  
-
-    for(i = 0, partitionResult = 0.0; i < tr->numberOfThreads; i++)          	      
-      partitionResult += reductionBuffer[i * tr->NumberOfModels + model];
-
-    tr->perPartitionLH[model] = partitionResult;
-  }
-
-#else
-#ifdef _FINE_GRAIN_MPI
-
-  /* MPI parallel region, in terms of logic or programming paradigm this is also 
-     just like a fork join */
-
-  masterBarrierMPI(THREAD_EVALUATE, tr);  		  
-
 #else
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-
   evaluateIterative(tr);  
-
-#endif   
 #endif
 
   for(model = 0; model < tr->NumberOfModels; model++)
@@ -869,70 +829,6 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   tr->td[0].traversalHasChanged = FALSE;
 }
 
-
-#ifdef _USE_PTHREADS
-
-/* function that computes per-site log likelihoods in pthreads */
-
-void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
-{
-  size_t 
-    model, 
-    i;
-
-  for(model = 0; model < tr->NumberOfModels; model++)
-  {      
-    size_t 
-      localIndex = 0;
-
-    /* decide if this partition is handled by the thread when -Q is ativated 
-       or when -Q is not activated figure out which sites have been assigned to the 
-       current thread */
-
-    boolean 
-      execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
-
-    /* if the entire partition has been assigned to this thread (-Q) or if -Q is not activated 
-       we need to compute some per-site log likelihoods with thread tid for this partition */
-
-    if(execute)
-      for(i = tr->partitionData[model].lower;  i < tr->partitionData[model].upper; i++)
-      {
-        /* if -Q is active we compute all per-site log likelihoods for the partition,
-           othwerise we only compute those that have been assigned to thread tid 
-           using the cyclic distribution scheme */
-
-        if(tr->manyPartitions || (i % n == tid))
-        {
-          double 
-            l;
-
-          /* now compute the per-site log likelihood at the current site */
-
-          switch(tr->rateHetModel)
-          {
-            case CAT:
-              l = evaluatePartialGeneric (tr, localIndex, tr->partitionData[model].perSiteRates[tr->partitionData[model].rateCategory[localIndex]], model);
-              break;
-            case GAMMA:
-              l = evaluatePartialGeneric (tr, localIndex, 1.0, model);
-              break;
-            default:
-              assert(0);
-          }
-
-          /* store it in an array that is local in memory to the current thread,
-             see function collectDouble() in axml.c for understanding how we then collect these 
-             values stored in local arrays from the threads */
-
-          lhs[i] = l;
-
-          localIndex++;
-        }
-      }
-  }
-}
-#endif
 
 void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
 {
@@ -960,7 +856,7 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
 
   /* now compute per-site log likelihoods using the respective functions */
 
-#ifdef _USE_PTHREADS 
+#if (defined( _USE_PTHREADS ) || defined(_FINE_GRAIN_MPI))
   /* here we need a barrier to invoke a parallel region that calls 
      function 
      perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
@@ -972,21 +868,14 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
 
   masterBarrier(THREAD_PER_SITE_LIKELIHOODS, tr);
 
-  /* when the parallel region has terminated, the per-site log likelihoods 
+  /* 
+     when the parallel region has terminated, the per-site log likelihoods 
      are stored in array tr->lhs of the master thread which we copy to the result buffer
-     */
-
+  */
+  
   memcpy(logLikelihoods, tr->lhs, sizeof(double) * tr->originalCrunchedLength);
 
-  /* now just compute the sum over per-site log likelihoods for error checking */
 
-  for(i = 0; i < tr->originalCrunchedLength; i++)
-    accumulatedPerSiteLikelihood += logLikelihoods[i];
-#else
-#ifdef _FINE_GRAIN_MPI
-  /* not implemented yet */
-
-  assert(0);
 #else
 
   /* sequential case: just loop over all partitions and compute per site log likelihoods */
@@ -1025,18 +914,20 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
 
       logLikelihoods[i] = l;
       accumulatedPerSiteLikelihood += l;
-    }      
+    } 
   }
-#endif
-#endif
 
-  /* printf("%f %f\n", tr->likelihood, accumulatedPerSiteLikelihood); */
 
   /* error checking. We need a dirt ABS() < epsilon here, because the implementations 
      (standard versus per-site) are pretty different and hence slight numerical 
      deviations are expected */
 
   assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
+  
+#endif
+  
+
+
 }
 
 
