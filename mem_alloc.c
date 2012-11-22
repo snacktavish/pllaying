@@ -1,3 +1,6 @@
+
+#define MEM_ALLOC_NO_GUARDS 1
+
 #include "mem_alloc.h"
 
 #include <stdio.h>

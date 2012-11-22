@@ -12,4 +12,13 @@ void *rax_calloc(size_t n, size_t size);
 
 void *rax_malloc_aligned(size_t size);
 
+#ifndef MEM_ALLOC_NO_GUARDS
+#define malloc(x) XXX_DONT_USE_MALLOC_WITHOUT_RAX_PREFIX_XXX
+#define free(x) XXX_DONT_USE_FREE_WITHOUT_RAX_PREFIX_XXX
+#define calloc(x,y) XXX_DONT_USE_CALLOC_WITHOUT_RAX_PREFIX_XXX
+#define realloc(x,y) XXX_DONT_USE_REALLOC_WITHOUT_RAX_PREFIX_XXX
+#define malloc_aligned(x) XXX_DONT_USE_MALLOC_ALIGNED_WITHOUT_RAX_PREFIX_XXX
+#define posix_memalign(x,y,z) XXX_DONT_USE_POSIX_MEMALIGN_ALIGNED_WITHOUT_RAX_PREFIX_XXX
+#endif
+
 #endif

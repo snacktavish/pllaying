@@ -93,6 +93,7 @@ static void finalizeInfoFile(tree *tr, analdef *adef)
 }
 
 static int filexists(char *filename)
+{
   FILE 
     *fp = fopen(filename,"rb");
   int res; 
@@ -933,7 +934,6 @@ char getInverseMeaning(int dataType, unsigned char state)
 
 /********************* END UTILITY FUNCTIONS ********************/
 
-    localTree->partitionData[model].rateCategory = (int *)rax_calloc(width, sizeof(int));
 
 
 /******************************some functions for the likelihood computation ****************************/

@@ -69,6 +69,8 @@
 
 
 #include "globalVariables.h"
+#include "mem_alloc.h"
+
 
 extern unsigned int mask32[32];
 
@@ -131,13 +133,13 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
      tr->aliaswgt[i] = 1;
    }*/
 
-  tr->rateCategory           =  (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+  tr->rateCategory           =  (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
 
-  tr->patrat                 =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->patratStored           =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->lhs                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patrat                 =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patratStored           =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->lhs                    =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
 
-  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+  tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
 
 
 
@@ -164,7 +166,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
     addword(tr->nameList[i], tr->nameHash, i);
 
   /* read partition info (boudaries, data type) */
-  empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+  empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
   for(model = 0; model < (size_t)tr->NumberOfModels; model++)
   {
     int
@@ -202,7 +204,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   /* Read all characters from tips */
 //  y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
-  tr->yVector = (char **) malloc(sizeof(char*) * (tr->mxtips+1));
+  tr->yVector = (char **) rax_malloc(sizeof(char*) * (tr->mxtips+1));
  for (i=0; i < tr->mxtips; ++i)
         tr->yVector[i+1] = pd->seq[i]; //(unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
   for (i = 1; i <= pd->taxa; ++ i)
@@ -294,15 +296,15 @@ void read_msa(tree *tr, const char *filename)
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
 
-    tr->aliaswgt                   = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    tr->aliaswgt                   = (int *)rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
     myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);
 
-    tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->rateCategory    = (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    tr->patrat          = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
-    tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+    tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
 
     for(i = 0; i < (size_t)tr->NumberOfModels; i++)
       tr->executeModel[i] = TRUE;
@@ -321,7 +323,7 @@ void read_msa(tree *tr, const char *filename)
     {
       int len;
       myBinFread(&len, sizeof(int), 1, byteFile);
-      tr->nameList[i] = (char*)malloc(sizeof(char) * (size_t)len);
+      tr->nameList[i] = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
       /*printf("%s \n", tr->nameList[i]);*/
     }
@@ -330,7 +332,7 @@ void read_msa(tree *tr, const char *filename)
       addword(tr->nameList[i], tr->nameHash, i);
 
     /* read partition info (boudaries, data type) */
-    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
     for(model = 0; model < (size_t)tr->NumberOfModels; model++)
     {
       int
@@ -358,16 +360,16 @@ void read_msa(tree *tr, const char *filename)
          */
 
       myBinFread(&len, sizeof(int), 1, byteFile);
-      p->partitionName = (char*)malloc(sizeof(char) * (size_t)len);
+      p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
       myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);
     }
     /* Read all characters from tips */
-    y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
+    y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
-    tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
+    tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
@@ -396,7 +398,7 @@ void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
   assert(bytes_read == nmemb);
 }
 
-
+#if 0
 void *malloc_aligned(size_t size) 
 {
   void 
@@ -431,7 +433,7 @@ void *malloc_aligned(size_t size)
 
   return ptr;
 }
-
+#endif
 
 
 
@@ -846,12 +848,12 @@ boolean setupTree (tree *tr, boolean doInit)
 
   tr->maxCategories = MAX(4, tr->categories);
 
-  tr->partitionContributions = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
+  tr->partitionContributions = (double *)rax_malloc(sizeof(double) * (size_t)tr->NumberOfModels);
 
   for(i = 0; i < tr->NumberOfModels; i++)
     tr->partitionContributions[i] = -1.0;
 
-  tr->perPartitionLH = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
+  tr->perPartitionLH = (double *)rax_malloc(sizeof(double) * (size_t)tr->NumberOfModels);
 
 
   for(i = 0; i < tr->NumberOfModels; i++)    
@@ -862,14 +864,14 @@ boolean setupTree (tree *tr, boolean doInit)
   tips  = (size_t)tr->mxtips;
   inter = (size_t)(tr->mxtips - 1);
 
-  tr->fracchanges  = (double *)malloc((size_t)tr->NumberOfModels * sizeof(double));
+  tr->fracchanges  = (double *)rax_malloc((size_t)tr->NumberOfModels * sizeof(double));
 
 
   tr->treeStringLength = tr->mxtips * (nmlngth+128) + 256 + tr->mxtips * 2;
 
-  tr->tree_string  = (char*)calloc((size_t)tr->treeStringLength, sizeof(char)); 
-  tr->tree0 = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
-  tr->tree1 = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
+  tr->tree_string  = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char)); 
+  tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
+  tr->tree1 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
 
 
   /*TODO, must that be so long ?*/
@@ -877,26 +879,26 @@ boolean setupTree (tree *tr, boolean doInit)
 
 
   tr->td[0].count = 0;
-  tr->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
-  tr->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
-  tr->td[0].parameterValues = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
+  tr->td[0].ti    = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
+  tr->td[0].executeModel = (boolean *)rax_malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+  tr->td[0].parameterValues = (double *)rax_malloc(sizeof(double) * (size_t)tr->NumberOfModels);
 
   for(i = 0; i < tr->NumberOfModels; i++)
     tr->fracchanges[i] = -1.0;
   tr->fracchange = -1.0;
 
-  tr->constraintVector = (int *)malloc((2 * (size_t)tr->mxtips) * sizeof(int));
+  tr->constraintVector = (int *)rax_malloc((2 * (size_t)tr->mxtips) * sizeof(int));
 
-  tr->nameList = (char **)malloc(sizeof(char *) * (tips + 1));
+  tr->nameList = (char **)rax_malloc(sizeof(char *) * (tips + 1));
 
 
-  p0 = (nodeptr)malloc((tips + 3 * inter) * sizeof(node));
+  p0 = (nodeptr)rax_malloc((tips + 3 * inter) * sizeof(node));
   assert(p0);
 
   tr->nodeBaseAddress = p0;
 
 
-  tr->nodep = (nodeptr *) malloc((2* (size_t)tr->mxtips) * sizeof(nodeptr));
+  tr->nodep = (nodeptr *) rax_malloc((2* (size_t)tr->mxtips) * sizeof(nodeptr));
   assert(tr->nodep);    
 
   tr->nodep[0] = (node *) NULL;    /* Use as 1-based array */
@@ -959,7 +961,7 @@ boolean setupTree (tree *tr, boolean doInit)
 
   tr->nameHash = initStringHashTable(10 * tr->mxtips);
 
-  tr->partitionData = (pInfo*)malloc(sizeof(pInfo) * (size_t)tr->NumberOfModels);
+  tr->partitionData = (pInfo*)rax_malloc(sizeof(pInfo) * (size_t)tr->NumberOfModels);
 
   return TRUE;
 }
@@ -1179,7 +1181,7 @@ void initializePartitionData(tree *localTree)
   int tid  = localTree->threadID; 
 
   if(tid > 0)
-      localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
+      localTree->rateCategory    = (int *)    rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
 
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
     {
@@ -1195,34 +1197,34 @@ void initializePartitionData(tree *localTree)
 	 to this end, it must also be initialized with zeros -> calloc
       */
 
-      localTree->partitionData[model].globalScaler    = (unsigned int *)calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));  	         
+      localTree->partitionData[model].globalScaler    = (unsigned int *)rax_calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));  	         
 
-      localTree->partitionData[model].left              = (double *)malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].right             = (double *)malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].EIGN              = (double*)malloc((size_t)pl->eignLength * sizeof(double));
-      localTree->partitionData[model].EV                = (double*)malloc_aligned((size_t)pl->evLength * sizeof(double));
-      localTree->partitionData[model].EI                = (double*)malloc((size_t)pl->eiLength * sizeof(double));
+      localTree->partitionData[model].left              = (double *)rax_malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
+      localTree->partitionData[model].right             = (double *)rax_malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
+      localTree->partitionData[model].EIGN              = (double*)rax_malloc((size_t)pl->eignLength * sizeof(double));
+      localTree->partitionData[model].EV                = (double*)rax_malloc_aligned((size_t)pl->evLength * sizeof(double));
+      localTree->partitionData[model].EI                = (double*)rax_malloc((size_t)pl->eiLength * sizeof(double));
 
-      localTree->partitionData[model].substRates        = (double *)malloc((size_t)pl->substRatesLength * sizeof(double));
-      localTree->partitionData[model].frequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].empiricalFrequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].tipVector         = (double *)malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
-      localTree->partitionData[model].symmetryVector    = (int *)malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
-      localTree->partitionData[model].frequencyGrouping = (int *)malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
+      localTree->partitionData[model].substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
+      localTree->partitionData[model].frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localTree->partitionData[model].empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localTree->partitionData[model].tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      localTree->partitionData[model].symmetryVector    = (int *)rax_malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
+      localTree->partitionData[model].frequencyGrouping = (int *)rax_malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
 
-      localTree->partitionData[model].perSiteRates      = (double *)malloc(sizeof(double) * maxCategories);
+      localTree->partitionData[model].perSiteRates      = (double *)rax_malloc(sizeof(double) * maxCategories);
 
       localTree->partitionData[model].nonGTR = FALSE;            
 
-      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);      
-      localTree->partitionData[model].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
+      localTree->partitionData[model].gammaRates = (double*)rax_malloc(sizeof(double) * 4);      
+      localTree->partitionData[model].yVector = (unsigned char **)rax_malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
 
 
-      localTree->partitionData[model].xVector = (double **)calloc(sizeof(double*), (size_t)localTree->mxtips);   
+      localTree->partitionData[model].xVector = (double **)rax_calloc(sizeof(double*), (size_t)localTree->mxtips);   
 
-      localTree->partitionData[model].xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));  
+      localTree->partitionData[model].xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));  
 
-      localTree->partitionData[model].sumBuffer = (double *)malloc_aligned(width *
+      localTree->partitionData[model].sumBuffer = (double *)rax_malloc_aligned(width *
 									   (size_t)(localTree->partitionData[model].states) *
 									   discreteRateCategories(localTree->rateHetModel) *
 									   sizeof(double));
@@ -1230,7 +1232,7 @@ void initializePartitionData(tree *localTree)
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
-      localTree->partitionData[model].ancestralBuffer = (double *)malloc_aligned(width *
+      localTree->partitionData[model].ancestralBuffer = (double *)rax_malloc_aligned(width *
 										 (size_t)(localTree->partitionData[model].states) * 
 										 sizeof(double));
 
@@ -1239,18 +1241,18 @@ void initializePartitionData(tree *localTree)
       ancestralVectorWidth += ((size_t)(localTree->partitionData[model].upper - localTree->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
       /* :TODO: do we have to use the original tree for that   */
 
-      localTree->partitionData[model].wgt = (int *)malloc_aligned(width * sizeof(int));	  
+      localTree->partitionData[model].wgt = (int *)rax_malloc_aligned(width * sizeof(int));	  
 
-      /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
+      /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
 
-      localTree->partitionData[model].rateCategory = (int *)calloc(width, sizeof(int));
+      localTree->partitionData[model].rateCategory = (int *)rax_calloc(width, sizeof(int));
 
       if(width > 0 && localTree->saveMemory)
 	{
 	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
 	  assert(4 == sizeof(unsigned int));
-	  localTree->partitionData[model].gapVector = (unsigned int*)calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
-	  localTree->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *								      
+	  localTree->partitionData[model].gapVector = (unsigned int*)rax_calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
+	  localTree->partitionData[model].gapColumn = (double *)rax_malloc_aligned(((size_t)localTree->mxtips) *								      
 									       ((size_t)(localTree->partitionData[model].states)) *
 									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
 	}

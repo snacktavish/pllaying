@@ -1587,5 +1587,6 @@ boolean modelExists(char *model, tree *tr);
 } /* extern "C" */
 #endif
 
+#include "mem_alloc.h" /* sneak in mem_alloc.h to increase the chance that the XXX_BIG_FAT_MALLOC_ERRORS_XXX work */
 
 
