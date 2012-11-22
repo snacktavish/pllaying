@@ -40,11 +40,16 @@ int lex_table[SIZE_ASCII] = {
 /* |}~  */    SYMBOL_CHAR, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN
  };
 
+extern int debug ;
 
 int 
 get_next_byte (void)
 {
-  if (pos == rawtext_size) return (EOS);
+  if (pos == rawtext_size) 
+   {
+     ++pos;
+     return (EOS);
+   }
 
   return (rawtext[pos++]);
 }
@@ -96,6 +101,7 @@ get_token (int * input)
         } while (*input == SYMBOL_SPACE || *input == SYMBOL_TAB);
        token.len   = pos - start_pos;
        token.class = LEX_WHITESPACE; 
+       if (*input == SYMBOL_LFCR) --token.len;
        break;
        
      case SYMBOL_DIGIT:
@@ -103,17 +109,34 @@ get_token (int * input)
         {
           *input = get_next_symbol();   
         } while (*input == SYMBOL_DIGIT);
-       token.len   = pos - start_pos;
-       token.class = LEX_NUMBER;
+       
+       if (*input != SYMBOL_CHAR)
+        {
+          token.len   = pos - start_pos;
+          token.class = LEX_NUMBER;
+        }
+       else
+        {
+          do {
+            *input = get_next_symbol();
+          } while (*input == SYMBOL_CHAR || *input == SYMBOL_DIGIT);
+          token.len   = pos - start_pos;
+          token.class = LEX_STRING;
+        }
+       if (*input == SYMBOL_LFCR) --token.len;
        break;
 
      case SYMBOL_CHAR:
+ //    if (debug == 1) printf ("HERE!!!!! %d \n", rawtext[pos - 1]);
        do
         {
           *input = get_next_symbol();
+ //         if (debug == 1) printf ("TEST: %d\n", *input);
         } while (*input == SYMBOL_CHAR || *input == SYMBOL_DIGIT);
+  //      if (debug == 1) printf ("pos startpod %d %d\n", pos, start_pos);
        token.len   = pos - start_pos;
        token.class = LEX_STRING;
+       if (*input == SYMBOL_LFCR) --token.len;
        break;
        
      case SYMBOL_EOF:
@@ -121,11 +144,12 @@ get_token (int * input)
        break;
 
      case SYMBOL_CR:
+     case SYMBOL_LF:
      case SYMBOL_LFCR:
        do
         {
           *input = get_next_symbol();
-        } while (*input == SYMBOL_CR || *input == SYMBOL_LFCR);
+        } while (*input == SYMBOL_CR || *input == SYMBOL_LFCR || *input == SYMBOL_LF);
        token.class = LEX_NEWLINE;
        break;
      case SYMBOL_UNKNOWN:

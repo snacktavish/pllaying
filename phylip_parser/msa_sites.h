@@ -22,6 +22,6 @@ void dump_sites (struct msa_sites * ms);
 struct msa_sites * alloc_sites_struct (int taxa, int seqlen);
 void free_sites_struct (struct msa_sites * ms);
 struct msa_sites * construct_msa_sites (struct phylip_data * pd, int flags);
-struct phylip_data * transpose (struct msa_sites * ms);
+int * pl_phylip_deldups (struct phylip_data ** pd);
 
 #endif
