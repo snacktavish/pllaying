@@ -745,6 +745,7 @@ typedef struct iL {
 typedef unsigned int parsimonyNumber;
 
 
+/* TODO: Separate model data --- create new structs for Model and Partition */
 typedef struct {
   /* ALIGNMENT DATA */
   /* This depends only on the type of data in this partition of the alignment */
