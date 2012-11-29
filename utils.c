@@ -75,19 +75,19 @@ extern unsigned int mask32[32];
 
 /***************** UTILITY FUNCTIONS **************************/
 
-void storeExecuteMaskInTraversalDescriptor(tree *tr)
+void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr)
 {
   int model;
 
-  for(model = 0; model < tr->NumberOfModels; model++)
-    tr->td[0].executeModel[model] = tr->executeModel[model];
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    tr->td[0].executeModel[model] = pr->partitionData[model]->executeModel;
 }
 
-void storeValuesInTraversalDescriptor(tree *tr, double *value)
+void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value)
 {
   int model;
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
     tr->td[0].parameterValues[model] = value[model];
 }
 
@@ -114,7 +114,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
   tr->mxtips                 = pd->taxa;
   tr->originalCrunchedLength = pd->seqlen;
-  tr->NumberOfModels         = 1;
+  pr->numberOfPartitions         = 1;
 
   setupTree(tr, TRUE);
 
@@ -137,12 +137,12 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   tr->patratStored           =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
   tr->lhs                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
 
-  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)pr->numberOfPartitions);
 
 
 
         
-  for(i = 0; i < (size_t)tr->NumberOfModels; i++)
+  for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
     tr->executeModel[i] = TRUE;
 
 
@@ -164,14 +164,14 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
     addword(tr->nameList[i], tr->nameHash, i);
 
   /* read partition info (boudaries, data type) */
-  empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+  empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
+  for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
   {
     int
       len;
 
     pInfo
-      *p = &(tr->partitionData[model]);
+      *p = &(pr->partitionData[model]);
 
     p->states             =  4;   /* according to the type */
     p->maxTipStates       = 16;   /* according to the type */
@@ -193,7 +193,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
     p->partitionName = strdup ("PartName");
 
-//    empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+//    empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
 //    empiricalfrequencies[model][0] = 0.2036082474;
 //    empiricalfrequencies[model][1] = 0.2268041237;
 //    empiricalfrequencies[model][2] = 0.2731958763;
@@ -252,14 +252,14 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
   /* Initialize the model */
   //printf("Here 1!\n");
-  initializePartitionsSequential(tr); 
+  initializePartitionsSequential(tr, pr);
   //printf("Here 2!\n");
   //initModel(tr, empiricalFrequencies);
 
 }
 #endif
 
-void read_msa(tree *tr, const char *filename)
+void read_msa(tree *tr, partitionList *pr, const char *filename)
   {
     size_t
       i,
@@ -275,14 +275,14 @@ void read_msa(tree *tr, const char *filename)
     /* read the alignment info */
     myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
     myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
-    myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
+    myBinFread(&(pr->numberOfPartitions),         sizeof(int), 1, byteFile);
 
     /* initialize topology */
 
     /* Joint branch length estimate is activated by default */
     /*
     if(adef->perGeneBranchLengths)
-      tr->numBranches = tr->NumberOfModels;
+      tr->numBranches = pr->numberOfPartitions;
     else
       tr->numBranches = 1;
     */
@@ -302,10 +302,8 @@ void read_msa(tree *tr, const char *filename)
     tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
     tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
-    tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
-
-    for(i = 0; i < (size_t)tr->NumberOfModels; i++)
-      tr->executeModel[i] = TRUE;
+    for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
+      pr->partitionData[i]->executeModel = TRUE;
 
 
 
@@ -330,14 +328,14 @@ void read_msa(tree *tr, const char *filename)
       addword(tr->nameList[i], tr->nameHash, i);
 
     /* read partition info (boudaries, data type) */
-    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
-    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
+    for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
     {
       int
         len;
 
       pInfo
-        *p = &(tr->partitionData[model]);
+        *p = pr->partitionData[model];
 
       myBinFread(&(p->states),             sizeof(int), 1, byteFile);
       myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
@@ -361,8 +359,8 @@ void read_msa(tree *tr, const char *filename)
       p->partitionName = (char*)malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
-      myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);
+      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
+      myBinFread(empiricalFrequencies[model], sizeof(double), pr->partitionData[model]->states, byteFile);
     }
     /* Read all characters from tips */
     y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
@@ -376,9 +374,9 @@ void read_msa(tree *tr, const char *filename)
 
     /* Initialize the model */
     //printf("Here 1!\n");
-    initializePartitionsSequential(tr); 
+    initializePartitionsSequential(tr, pr);
     //printf("Here 2!\n");
-    initModel(tr, empiricalFrequencies);
+    initModel(tr, empiricalFrequencies, pr);
 
 
     fclose(byteFile);
@@ -828,7 +826,7 @@ static unsigned int KISS32(void)
 }
 
 /* removed the static keyword for using this function in the examples */
-boolean setupTree (tree *tr, boolean doInit)
+boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
 {
   nodeptr  p0, p, q;
   int
@@ -846,24 +844,9 @@ boolean setupTree (tree *tr, boolean doInit)
 
   tr->maxCategories = MAX(4, tr->categories);
 
-  tr->partitionContributions = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
-
-  for(i = 0; i < tr->NumberOfModels; i++)
-    tr->partitionContributions[i] = -1.0;
-
-  tr->perPartitionLH = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
-
-
-  for(i = 0; i < tr->NumberOfModels; i++)    
-    tr->perPartitionLH[i] = 0.0;	    
-
-
 
   tips  = (size_t)tr->mxtips;
   inter = (size_t)(tr->mxtips - 1);
-
-  tr->fracchanges  = (double *)malloc((size_t)tr->NumberOfModels * sizeof(double));
-
 
   tr->treeStringLength = tr->mxtips * (nmlngth+128) + 256 + tr->mxtips * 2;
 
@@ -874,15 +857,9 @@ boolean setupTree (tree *tr, boolean doInit)
 
   /*TODO, must that be so long ?*/
 
-
-
   tr->td[0].count = 0;
   tr->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
-  tr->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
-  tr->td[0].parameterValues = (double *)malloc(sizeof(double) * (size_t)tr->NumberOfModels);
 
-  for(i = 0; i < tr->NumberOfModels; i++)
-    tr->fracchanges[i] = -1.0;
   tr->fracchange = -1.0;
 
   tr->constraintVector = (int *)malloc((2 * (size_t)tr->mxtips) * sizeof(int));
@@ -959,7 +936,12 @@ boolean setupTree (tree *tr, boolean doInit)
 
   tr->nameHash = initStringHashTable(10 * tr->mxtips);
 
-  tr->partitionData = (pInfo*)malloc(sizeof(pInfo) * (size_t)tr->NumberOfModels);
+  for (i = 0; i < partitions->numberOfPartitions; i++) {
+	partitions->partitionData[i] = malloc (sizeof(pInfo));
+	partitions->partitionData[i]->partitionContribution = -1.0;
+	partitions->partitionData[i]->partitionLH = 0.0;
+	partitions->partitionData[i]->fracchange = 1.0;
+  }
 
   return TRUE;
 }
@@ -1058,9 +1040,9 @@ void printLog(tree *tr)
 }
 
 
-void getDataTypeString(tree *tr, int model, char typeOfData[1024])
+void getDataTypeString(tree *tr, pInfo *partitionInfo, char typeOfData[1024])
 {
-  switch(tr->partitionData[model].dataType)
+  switch(partitionInfo->dataType)
   {
     case AA_DATA:
       strcpy(typeOfData,"AA");
@@ -1161,7 +1143,7 @@ void computeAllAncestralVectors(nodeptr p, tree *tr)
 
 
 
-void initializePartitionData(tree *localTree)
+void initializePartitionData(tree *localTree, partitionList * localPartitions)
 {
   /* in ancestralVectorWidth we store the total length in bytes (!) of 
      one conditional likelihood array !
@@ -1181,115 +1163,117 @@ void initializePartitionData(tree *localTree)
   if(tid > 0)
       localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
 
-  for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+  for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
     {
       size_t 
 	j,       
-	width = localTree->partitionData[model].width;
+	width = localPartitions->partitionData[model]->width;
 
       const partitionLengths 
-	*pl = getPartitionLengths(&(localTree->partitionData[model]));
+	*pl = getPartitionLengths(localPartitions->partitionData[model]);
 
       /* 
 	 globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch
 	 to this end, it must also be initialized with zeros -> calloc
       */
 
-      localTree->partitionData[model].globalScaler    = (unsigned int *)calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));  	         
+      localPartitions->partitionData[model]->globalScaler    = (unsigned int *)calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));
 
-      localTree->partitionData[model].left              = (double *)malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].right             = (double *)malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
-      localTree->partitionData[model].EIGN              = (double*)malloc((size_t)pl->eignLength * sizeof(double));
-      localTree->partitionData[model].EV                = (double*)malloc_aligned((size_t)pl->evLength * sizeof(double));
-      localTree->partitionData[model].EI                = (double*)malloc((size_t)pl->eiLength * sizeof(double));
+      localPartitions->partitionData[model]->left              = (double *)malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
+      localPartitions->partitionData[model]->right             = (double *)malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
+      localPartitions->partitionData[model]->EIGN              = (double*)malloc((size_t)pl->eignLength * sizeof(double));
+      localPartitions->partitionData[model]->EV                = (double*)malloc_aligned((size_t)pl->evLength * sizeof(double));
+      localPartitions->partitionData[model]->EI                = (double*)malloc((size_t)pl->eiLength * sizeof(double));
 
-      localTree->partitionData[model].substRates        = (double *)malloc((size_t)pl->substRatesLength * sizeof(double));
-      localTree->partitionData[model].frequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].empiricalFrequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localTree->partitionData[model].tipVector         = (double *)malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
-      localTree->partitionData[model].symmetryVector    = (int *)malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
-      localTree->partitionData[model].frequencyGrouping = (int *)malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
+      localPartitions->partitionData[model]->substRates        = (double *)malloc((size_t)pl->substRatesLength * sizeof(double));
+      localPartitions->partitionData[model]->frequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model]->empiricalFrequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model]->tipVector         = (double *)malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      localPartitions->partitionData[model]->symmetryVector    = (int *)malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
+      localPartitions->partitionData[model]->frequencyGrouping = (int *)malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
 
-      localTree->partitionData[model].perSiteRates      = (double *)malloc(sizeof(double) * maxCategories);
+      localPartitions->partitionData[model]->perSiteRates      = (double *)malloc(sizeof(double) * maxCategories);
 
-      localTree->partitionData[model].nonGTR = FALSE;            
+      localPartitions->partitionData[model]->nonGTR = FALSE;
 
-      localTree->partitionData[model].gammaRates = (double*)malloc(sizeof(double) * 4);      
-      localTree->partitionData[model].yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
+      localPartitions->partitionData[model]->gammaRates = (double*)malloc(sizeof(double) * 4);
+      localPartitions->partitionData[model]->yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
 
 
-      localTree->partitionData[model].xVector = (double **)calloc(sizeof(double*), (size_t)localTree->mxtips);   
+      localPartitions->partitionData[model]->xVector = (double **)calloc(sizeof(double*), (size_t)localTree->mxtips);
 
-      localTree->partitionData[model].xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));  
+      localPartitions->partitionData[model]->xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));
 
-      localTree->partitionData[model].sumBuffer = (double *)malloc_aligned(width *
-									   (size_t)(localTree->partitionData[model].states) *
+      localPartitions->partitionData[model]->sumBuffer = (double *)malloc_aligned(width *
+									   (size_t)(localPartitions->partitionData[model]->states) *
 									   discreteRateCategories(localTree->rateHetModel) *
 									   sizeof(double));
 
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
-      localTree->partitionData[model].ancestralBuffer = (double *)malloc_aligned(width *
-										 (size_t)(localTree->partitionData[model].states) * 
+      localPartitions->partitionData[model]->ancestralBuffer = (double *)malloc_aligned(width *
+										 (size_t)(localPartitions->partitionData[model]->states) *
 										 sizeof(double));
 
       /* count and accumulate how many bytes we will need for storing a full ancestral vector. for this we addf over the per-partition space requirements in bytes */
-      /* ancestralVectorWidth += ((size_t)(tr->partitionData[model].upper - tr->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double)); */
-      ancestralVectorWidth += ((size_t)(localTree->partitionData[model].upper - localTree->partitionData[model].lower) * (size_t)(localTree->partitionData[model].states) * sizeof(double));
+      /* ancestralVectorWidth += ((size_t)(pr->partitionData[model]->upper - pr->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double)); */
+      ancestralVectorWidth += ((size_t)(localPartitions->partitionData[model]->upper - localPartitions->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double));
       /* :TODO: do we have to use the original tree for that   */
 
-      localTree->partitionData[model].wgt = (int *)malloc_aligned(width * sizeof(int));	  
+      localPartitions->partitionData[model]->wgt = (int *)malloc_aligned(width * sizeof(int));
 
       /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
 
-      localTree->partitionData[model].rateCategory = (int *)calloc(width, sizeof(int));
+      localPartitions->partitionData[model]->rateCategory = (int *)calloc(width, sizeof(int));
 
       if(width > 0 && localTree->saveMemory)
 	{
-	  localTree->partitionData[model].gapVectorLength = ((int)width / 32) + 1;
+	  localPartitions->partitionData[model]->gapVectorLength = ((int)width / 32) + 1;
 	  assert(4 == sizeof(unsigned int));
-	  localTree->partitionData[model].gapVector = (unsigned int*)calloc((size_t)localTree->partitionData[model].gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));	  	    	  	  
-	  localTree->partitionData[model].gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *								      
-									       ((size_t)(localTree->partitionData[model].states)) *
+	  localPartitions->partitionData[model]->gapVector = (unsigned int*)calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
+	  localPartitions->partitionData[model]->gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *
+									       ((size_t)(localPartitions->partitionData[model]->states)) *
 									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
 	}
       else
 	{
-	  localTree->partitionData[model].gapVectorLength = 0;  
-	  localTree->partitionData[model].gapVector = (unsigned int*)NULL; 
-	  localTree->partitionData[model].gapColumn = (double*)NULL;	    	    	   
+	  localPartitions->partitionData[model]->gapVectorLength = 0;
+	  localPartitions->partitionData[model]->gapVector = (unsigned int*)NULL;
+	  localPartitions->partitionData[model]->gapColumn = (double*)NULL;
 	}              
     }
 }
 
 
-void initMemorySavingAndRecom(tree *tr)
+void initMemorySavingAndRecom(tree *tr, partitionList *pr)
 {
   tree
     *localTree = tr; 
+  partitionList
+    *localPartitions = pr;
   size_t model; 
 
   /* initialize gap bit vectors at tips when memory saving option is enabled */
 
   if(localTree->saveMemory)
     {
-      for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
+      for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
 	{
 	  int        
-	    undetermined = getUndetermined(localTree->partitionData[model].dataType);
+	    undetermined = getUndetermined(localPartitions->partitionData[model]->dataType);
 
 	  size_t
 	    i,
 	    j,
-	    width =  localTree->partitionData[model].width;
+	    width =  localPartitions->partitionData[model]->width;
 
 	  if(width > 0)
 	    {	   	    	      	    	     
 	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
 		for(i = 0; i < width; i++)
-		  if(localTree->partitionData[model].yVector[j][i] == undetermined)
-		    localTree->partitionData[model].gapVector[localTree->partitionData[model].gapVectorLength * j + i / 32] |= mask32[i % 32];	    
+		  if(localPartitions->partitionData[model]->yVector[j][i] == undetermined)
+		    localPartitions->partitionData[model]->gapVector[localPartitions->partitionData[model]->gapVectorLength * j + i / 32] |= mask32[i % 32];
 	    }     
 	}
     }
@@ -1323,43 +1307,43 @@ void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl)
   p->z[partition_id] = z;
 }
 
-void initializePartitionsSequential(tree *tr)
+void initializePartitionsSequential(tree *tr, partitionList *pr)
 { 
   size_t
     model;
 
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
-    assert(tr->partitionData[model].width == tr->partitionData[model].upper - tr->partitionData[model].lower);
+  for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
+    assert(pr->partitionData[model]->width == pr->partitionData[model]->upper - pr->partitionData[model]->lower);
 
-  initializePartitionData(tr); 
+  initializePartitionData(tr, pr);
 
   /* figure in tip sequence data per-site pattern weights */ 
-  for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+  for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
   {
     size_t
       j;
-    size_t lower = tr->partitionData[model].lower;
-    size_t width = tr->partitionData[model].upper - lower;
+    size_t lower = pr->partitionData[model]->lower;
+    size_t width = pr->partitionData[model]->upper - lower;
 
     for(j = 1; j <= (size_t)tr->mxtips; j++)
     {
-      tr->partitionData[model].yVector[j] = &(tr->yVector[j][tr->partitionData[model].lower]);
+      pr->partitionData[model]->yVector[j] = &(tr->yVector[j][pr->partitionData[model]->lower]);
     }
 
-    memcpy((void*)(&(tr->partitionData[model].wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);            
+    memcpy((void*)(&(pr->partitionData[model]->wgt[0])),         (void*)(&(tr->aliaswgt[lower])),      sizeof(int) * width);
   }  
 
-  initMemorySavingAndRecom(tr);
+  initMemorySavingAndRecom(tr, pr);
 }
 
 
 /* interface to outside  */
-void initializePartitions(tree *tr, tree *localTree, int tid, int n)
+void initializePartitions(tree *tr, tree *localTree, partitionList *pr, int tid, int n)
 {
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   initializePartitionsMaster(tr,localTree,tid,n);
 #else
-  initializePartitionsSequential(tr); 
+  initializePartitionsSequential(tr, pr);
 #endif
 }
 

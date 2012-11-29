@@ -745,7 +745,6 @@ typedef struct iL {
 typedef unsigned int parsimonyNumber;
 
 
-/* TODO: Separate model data --- create new structs for Model and Partition */
 typedef struct {
   /* ALIGNMENT DATA */
   /* This depends only on the type of data in this partition of the alignment */
@@ -815,9 +814,20 @@ typedef struct {
   /* These buffers of size width are used to pre-compute ?? */
   double *sumBuffer; 
   double *ancestralBuffer;
+
+  /* From tree */
+  boolean executeModel;
+  double fracchange;
+  double partitionContribution;
+  double partitionLH;
+
 } pInfo;
 
-
+typedef struct
+{
+	pInfo **partitionData;
+	size_t numberOfPartitions;
+} partitionList;
 
 typedef struct 
 {
@@ -961,14 +971,8 @@ typedef  struct  {
 
   stringHashtable  *nameHash;
 
-  pInfo            *partitionData;
-  
 
   char             *secondaryStructureInput;
-
-  boolean          *executeModel;
-
-  double           *perPartitionLH;
 
   traversalData    td[1];
 
@@ -990,7 +994,6 @@ typedef  struct  {
      not change depending on datatype */
 
   
-  double           *fracchanges;
 
   /* model stuff end */
 
@@ -1002,7 +1005,6 @@ typedef  struct  {
   int              *secondaryStructurePairs;
 
 
-  double            *partitionContributions;
   double            fracchange;
   double            lhCutoff;
   double            lhAVG;
@@ -1027,7 +1029,7 @@ typedef  struct  {
   boolean          searchConvergenceCriterion;
   int              ntips;
   int              nextnode;  
-  int              NumberOfModels;    
+
 
   boolean          bigCutoff;
   boolean          partitionSmoothed[NUM_BRANCHES];
@@ -1232,7 +1234,7 @@ extern void computePlacementBias(tree *tr, analdef *adef);
 
 extern int lookupWord(char *s, stringHashtable *h);
 
-extern void getDataTypeString(tree *tr, int model, char typeOfData[1024]);
+extern void getDataTypeString(tree *tr, pInfo *partitionInfo, char typeOfData[1024]);
 
 extern unsigned int genericBitCount(unsigned int* bitVector, unsigned int bitVectorLength);
 extern int countTips(nodeptr p, int numsp);
@@ -1270,19 +1272,19 @@ extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 /* extern int main ( int argc, char *argv[] ); */
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
-extern void initReversibleGTR (tree *tr, int model);
+extern void initReversibleGTR( tree *tr, partitionList *pr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
 extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
-extern void initModel ( tree *tr, double **empiricalFrequencies);
+extern void initModel ( tree *tr, double **empiricalFrequencies, partitionList * partitions);
 extern void doAllInOne ( tree *tr, analdef *adef );
 
 extern void classifyML(tree *tr, analdef *adef);
 
 extern void resetBranches ( tree *tr );
-extern void modOpt ( tree *tr, double likelihoodEpsilon);
+extern void modOpt ( tree *tr, partitionList *pr, double likelihoodEpsilon);
 
 
 
@@ -1401,8 +1403,8 @@ extern void evaluateIterative(tree *tr);
 
 extern void *malloc_aligned( size_t size);
 
-extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
-extern void storeValuesInTraversalDescriptor(tree *tr, double *value);
+extern void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr);
+extern void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value);
 
 
 extern void makenewzIterative(tree *);
@@ -1455,7 +1457,7 @@ extern void addword(char *s, stringHashtable *h, int nodeNumber);
 
 
 extern void printBothOpen(const char* format, ... );
-extern void initRateMatrix(tree *tr);
+extern void initRateMatrix(tree *tr, partitionList *pr);
 
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
@@ -1480,7 +1482,7 @@ extern void perSiteLogLikelihoods(tree *tr, double *logLikelihoods);
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
 extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid);
-extern void updatePerSiteRates(tree *tr, boolean scaleRates);
+extern void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates);
 
 extern void restart(tree *tr);
 
@@ -1532,7 +1534,7 @@ extern void masterBarrier(int jobType, tree *tr);
 
 boolean workerTrap(tree *tr); 
 void initMPI(int argc, char *argv[]); 
-void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
+void initializePartitions(tree *tr, tree *localTree, partitionList *pr, int tid, int n);
 void multiprocessorScheduling(tree *tr, int tid); 
 void computeFraction(tree *localTree, int tid, int n); 
 void computeFractionMany(tree *localTree, int tid); 
