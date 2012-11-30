@@ -2734,8 +2734,8 @@ static void updateFracChange(tree *tr, partitionList *pr)
        for(model = 0; model < numberOfModels; model++)
 	 {
 	   size_t
-	     lower = pr->partitionData[model].lower,
-	     upper = pr->partitionData[model].upper,
+	     lower = pr->partitionData[model]->lower,
+	     upper = pr->partitionData[model]->upper,
 	     i;
 	   
 	   for(i = lower; i < upper; i++)
@@ -2756,7 +2756,7 @@ static void updateFracChange(tree *tr, partitionList *pr)
       for(model = 0; model < numberOfModels; model++)
 	{	      	  	 
 	  pr->partitionData[model]->partitionContribution = modelWeights[model] / wgtsum;
-	  tr->fracchange +=  pr->partitionData[model]->partitionContribution * pr->partitionData[model]->fracchange
+	  tr->fracchange +=  pr->partitionData[model]->partitionContribution * pr->partitionData[model]->fracchange;
 	}	      
     
       free(modelWeights);
@@ -3163,18 +3163,18 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 void initReversibleGTR(tree * tr, partitionList * pr, int model)
 { 
  double   
-   *ext_EIGN         = pr->partitionData[model].EIGN,
-   *EV               = pr->partitionData[model].EV,
-   *EI               = pr->partitionData[model].EI,
-   *frequencies      = pr->partitionData[model].frequencies,
-   *ext_initialRates = pr->partitionData[model].substRates,
-   *tipVector        = pr->partitionData[model].tipVector,
-   *fracchange       = &(pr->partitionData[model].fracchange);
+   *ext_EIGN         = pr->partitionData[model]->EIGN,
+   *EV               = pr->partitionData[model]->EV,
+   *EI               = pr->partitionData[model]->EI,
+   *frequencies      = pr->partitionData[model]->frequencies,
+   *ext_initialRates = pr->partitionData[model]->substRates,
+   *tipVector        = pr->partitionData[model]->tipVector,
+   *fracchange       = &(pr->partitionData[model]->fracchange);
  
   
- int states = pr->partitionData[model].states;
+ int states = pr->partitionData[model]->states;
 
- switch(pr->partitionData[model].dataType)
+ switch(pr->partitionData[model]->dataType)
    { 
    case GENERIC_32:
    case GENERIC_64:
@@ -3184,8 +3184,8 @@ void initReversibleGTR(tree * tr, partitionList * pr, int model)
    case DNA_DATA:
    case BINARY_DATA:    
      initGeneric(states, 
-		 getBitVector(pr->partitionData[model].dataType),
-		 getUndetermined(pr->partitionData[model].dataType) + 1,
+		 getBitVector(pr->partitionData[model]->dataType),
+		 getUndetermined(pr->partitionData[model]->dataType) + 1,
 		 fracchange,
 		 ext_EIGN, 
 		 EV, 
@@ -3195,21 +3195,21 @@ void initReversibleGTR(tree * tr, partitionList * pr, int model)
 		 tipVector);
      break;   
    case AA_DATA:
-     if(pr->partitionData[model].protModels != GTR)
+     if(pr->partitionData[model]->protModels != GTR)
        {
 	 double f[20];
 	 int l;
 
 	 
-	 if(pr->partitionData[model].protModels == AUTO)
-	   initProtMat(f, pr->partitionData[model].autoProtModels, ext_initialRates);
+	 if(pr->partitionData[model]->protModels == AUTO)
+	   initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates);
 	 else	  
-	   initProtMat(f, pr->partitionData[model].protModels, ext_initialRates);
+	   initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates);
 	 
 	 /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
 	   assert(tr->partitionData[model].protFreqs);*/
 	 
-	 if(!pr->partitionData[model].protFreqs)
+	 if(!pr->partitionData[model]->protFreqs)
 	   {	     	    
 	     for(l = 0; l < 20; l++)		
 	       frequencies[l] = f[l];
@@ -3508,17 +3508,17 @@ void initRateMatrix(tree *tr, partitionList *pr)
     {	
       int 	
 	i,
-	states = pr->partitionData[model].states,
+	states = pr->partitionData[model]->states,
 	rates  = (states * states - states) / 2;
       
-      switch(pr->partitionData[model].dataType)
+      switch(pr->partitionData[model]->dataType)
 	{
 	case BINARY_DATA:
 	case DNA_DATA:
 	case SECONDARY_DATA:
 	case SECONDARY_DATA_6:
 	case SECONDARY_DATA_7:
-	  setRates(pr->partitionData[model].substRates, rates);
+	  setRates(pr->partitionData[model]->substRates, rates);
 	  break;	  
 	case GENERIC_32:
 	case GENERIC_64:	  
@@ -3533,44 +3533,44 @@ void initRateMatrix(tree *tr, partitionList *pr)
 		
 		for(j = 0; j < states; j++)
 		  for(k = j + 1; k < states; k++)
-		    pr->partitionData[model].substRates[i++] = (double)(k - j);
+		    pr->partitionData[model]->substRates[i++] = (double)(k - j);
 		assert(i == rates);		
 	      }
 	      break;
 	    case MK_MULTI_STATE:
 	      for(i = 0; i < rates; i++)
-		pr->partitionData[model].substRates[i] = 1.0;
+		pr->partitionData[model]->substRates[i] = 1.0;
 	      
 	      break;
 	    case GTR_MULTI_STATE:
-	      setRates(pr->partitionData[model].substRates, rates);
+	      setRates(pr->partitionData[model]->substRates, rates);
 	      break;
 	    default:
 	      assert(0);
 	    }
 	  break;
 	case AA_DATA:
-	  if(pr->partitionData[model].protModels == GTR)
-	    putWAG(pr->partitionData[model].substRates);
+	  if(pr->partitionData[model]->protModels == GTR)
+	    putWAG(pr->partitionData[model]->substRates);
 	  break;
 	default:
 	  assert(0);
 	}           
       
-      if(pr->partitionData[model].nonGTR)
+      if(pr->partitionData[model]->nonGTR)
 	{
-	  assert(pr->partitionData[model].dataType == SECONDARY_DATA ||
-		 pr->partitionData[model].dataType == SECONDARY_DATA_6 ||
-		 pr->partitionData[model].dataType == SECONDARY_DATA_7);
+	  assert(pr->partitionData[model]->dataType == SECONDARY_DATA ||
+		 pr->partitionData[model]->dataType == SECONDARY_DATA_6 ||
+		 pr->partitionData[model]->dataType == SECONDARY_DATA_7);
 	  	  
 	  for(i = 0; i < rates; i++)
 	    {
-	      if(pr->partitionData[model].symmetryVector[i] == -1)
-		pr->partitionData[model].substRates[i] = 0.0;
+	      if(pr->partitionData[model]->symmetryVector[i] == -1)
+		pr->partitionData[model]->substRates[i] = 0.0;
 	      else
 		{
-		  if(pr->partitionData[model].symmetryVector[i] == pr->partitionData[model].symmetryVector[rates - 1])
-		    pr->partitionData[model].substRates[i] = 1.0;
+		  if(pr->partitionData[model]->symmetryVector[i] == pr->partitionData[model]->symmetryVector[rates - 1])
+		    pr->partitionData[model]->substRates[i] = 1.0;
 		}
 	    }
 	}
@@ -3595,23 +3595,23 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 
   for(model = 0; model < numberOfModels; model++)
     {
-      if(partitions->partitionData[model].dataType == SECONDARY_DATA ||
-    		  partitions->partitionData[model].dataType == SECONDARY_DATA_6 ||
-    		  partitions->partitionData[model].dataType == SECONDARY_DATA_7)
+      if(partitions->partitionData[model]->dataType == SECONDARY_DATA ||
+    		  partitions->partitionData[model]->dataType == SECONDARY_DATA_6 ||
+    		  partitions->partitionData[model]->dataType == SECONDARY_DATA_7)
 	{	
 	  switch(tr->secondaryStructureModel)
 	    {
 	    case SEC_6_A:
-	    	partitions->partitionData[model].nonGTR = FALSE;
+	    	partitions->partitionData[model]->nonGTR = FALSE;
 	      break;
 	    case SEC_6_B:
 	      {
 		int f[6]  = {0, 1, 2, 3, 4, 5};
 		int s[15] = {2, 0, 1, 2, 2, 2, 2, 0, 1, 1, 2, 2, 2, 2, 1};
 
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 15, f, partitions->partitionData[model].frequencyGrouping, 6);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 		  
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 	      }
 	      break;
 	    case SEC_6_C:
@@ -3619,9 +3619,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 		int f[6]  = {0, 2, 2, 1, 0, 1};
 		int s[15] = {2, 0, 1, 2, 2, 2, 2, 0, 1, 1, 2, 2, 2, 2, 1};
 
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 15, f, partitions->partitionData[model].frequencyGrouping, 6);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 		
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 	      }
 	      break;
 	    case SEC_6_D:
@@ -3629,9 +3629,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 		int f[6]  = {0, 2, 2, 1, 0, 1};
 		int s[15] = {2, -1, 1, 2, 2, 2, 2, -1, 1, 1, 2, 2, 2, 2, 1};
 
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 15, f, partitions->partitionData[model].frequencyGrouping, 6);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 	      }
 	      break;
 	    case SEC_6_E:
@@ -3639,22 +3639,22 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 		int f[6]  = {0, 1, 2, 3, 4, 5};
 		int s[15] = {2, -1, 1, 2, 2, 2, 2, -1, 1, 1, 2, 2, 2, 2, 1};
 
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 15, f, partitions->partitionData[model].frequencyGrouping, 6);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 	      }
 	      break;
 	    case SEC_7_A:
-	    	partitions->partitionData[model].nonGTR = FALSE;
+	    	partitions->partitionData[model]->nonGTR = FALSE;
 	      break;
 	    case SEC_7_B:
 	      {
 	      	int f[7]  = {0, 2, 2, 1, 0, 1, 3};
 		int s[21] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 21, f, partitions->partitionData[model].frequencyGrouping, 7);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 	      }
 	      break;
@@ -3663,9 +3663,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {-1, -1, 0, -1, -1, 4, -1, -1, -1, 3, 5, 1, -1, -1, 6, -1, -1, 7, 2, 8, 9};
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 21, f, partitions->partitionData[model].frequencyGrouping, 7);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 	      }
 	      break;
@@ -3674,9 +3674,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {2, 0, 1, 2, 2, 3, 2, 2, 0, 1, 3, 1, 2, 2, 3, 2, 2, 3, 1, 3, 3};
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 21, f, partitions->partitionData[model].frequencyGrouping, 7);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 	      }
 	      break;
@@ -3685,9 +3685,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {-1, -1, 0, -1, -1, 1, -1, -1, -1, 0, 1, 0, -1, -1, 1, -1, -1, 1, 0, 1, 1};
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 21, f, partitions->partitionData[model].frequencyGrouping, 7);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 	      }
 	      break;
@@ -3696,15 +3696,15 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 	      	int f[7]  = {0, 2, 2, 1, 0, 1, 3};
 		int s[21] = {2, 0, 1, 2, 2, 3, 2, 2, 0, 1, 3, 1, 2, 2, 3, 2, 2, 3, 1, 3, 3};		
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 21, f, partitions->partitionData[model].frequencyGrouping, 7);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 	      }
 	      break;
 	      
 	    case SEC_16:
-	    	partitions->partitionData[1].nonGTR = FALSE;
+	    	partitions->partitionData[1]->nonGTR = FALSE;
 	      break;
 	    case SEC_16_A:
 	      {
@@ -3726,9 +3726,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 			      /* UG */  3};
 			      
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 120, f, partitions->partitionData[model].frequencyGrouping, 16);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 120, f, partitions->partitionData[model]->frequencyGrouping, 16);
 			      
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 
 		}
 	      break;
@@ -3752,9 +3752,9 @@ static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partition
 			      /* UG */  0};
 			      
 		
-		setSymmetry(s, partitions->partitionData[model].symmetryVector, 120, f, partitions->partitionData[model].frequencyGrouping, 16);
+		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 120, f, partitions->partitionData[model]->frequencyGrouping, 16);
 			      
-		partitions->partitionData[model].nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = TRUE;
 	      }
 	      break;
 	    case SEC_16_C:	      
@@ -3781,8 +3781,8 @@ static void initializeBaseFreqs(partitionList *pr, double **empiricalFrequencies
 
   for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
     {
-      memcpy(pr->partitionData[model].frequencies,          empiricalFrequencies[model], sizeof(double) * pr->partitionData[model].states);
-      memcpy(pr->partitionData[model].empiricalFrequencies, empiricalFrequencies[model], sizeof(double) * pr->partitionData[model].states);
+      memcpy(pr->partitionData[model]->frequencies,          empiricalFrequencies[model], sizeof(double) * pr->partitionData[model]->states);
+      memcpy(pr->partitionData[model]->empiricalFrequencies, empiricalFrequencies[model], sizeof(double) * pr->partitionData[model]->states);
     }
 }
 
@@ -3805,27 +3805,27 @@ void initModel(tree *tr, double **empiricalFrequencies, partitionList * partitio
   /* PSR (CAT) model init */
   for(model = 0; model < partitions->numberOfPartitions; model++)
     {            
-	  partitions->partitionData[model].numberOfCategories = 1;
-	  partitions->partitionData[model].perSiteRates[0] = 1.0;
+	  partitions->partitionData[model]->numberOfCategories = 1;
+	  partitions->partitionData[model]->perSiteRates[0] = 1.0;
     }
     
-  updatePerSiteRates(tr, FALSE);
+  updatePerSiteRates(tr, partitions, FALSE);
  
   setupSecondaryStructureSymmetries(tr, partitions);
   
-  initRateMatrix(tr); 
+  initRateMatrix(tr, partitions);
 
-  initializeBaseFreqs(tr, empiricalFrequencies);
+  initializeBaseFreqs(partitions, empiricalFrequencies);
   
   for(model = 0; model < partitions->numberOfPartitions; model++)
     {
-	  partitions->partitionData[model].alpha = 1.0;
-      if(partitions->partitionData[model].protModels == AUTO)
-    	  partitions->partitionData[model].autoProtModels = WAG; /* initialize by WAG per default */
+	  partitions->partitionData[model]->alpha = 1.0;
+      if(partitions->partitionData[model]->protModels == AUTO)
+    	  partitions->partitionData[model]->autoProtModels = WAG; /* initialize by WAG per default */
       
-      initReversibleGTR(tr, model); /* Decomposition of Q matrix */
+      initReversibleGTR(tr, partitions, model); /* Decomposition of Q matrix */
       /* GAMMA model init */
-      makeGammaCats(partitions->partitionData[model].alpha, partitions->partitionData[model].gammaRates, 4, tr->useMedian);
+      makeGammaCats(partitions->partitionData[model]->alpha, partitions->partitionData[model]->gammaRates, 4, tr->useMedian);
     }                   		       
   
    

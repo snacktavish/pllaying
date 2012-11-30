@@ -71,7 +71,7 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
 {
   int    
     rateHet = (int)discreteRateCategories(tr->rateHetModel),
-            states = tr->partitionData[model].states,
+            states = pr->partitionData[model]->states,
             pNumber, 
             qNumber; 
 
@@ -110,24 +110,24 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
       *tipCase = TIP_INNER;
       if(isTip(qNumber, tr->mxtips))
       {
-        *tipX1 = tr->partitionData[model].yVector[qNumber];
-        *x2_start = tr->partitionData[model].xVector[p_slot];
+        *tipX1 = pr->partitionData[model]->yVector[qNumber];
+        *x2_start = pr->partitionData[model]->xVector[p_slot];
 
         if(tr->saveMemory)
         {
-          *x2_gap = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-          *x2_gapColumn   = &tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];  
+          *x2_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+          *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
         }
       }
       else
       {
-        *tipX1 = tr->partitionData[model].yVector[pNumber];
-        *x2_start = tr->partitionData[model].xVector[q_slot];
+        *tipX1 = pr->partitionData[model]->yVector[pNumber];
+        *x2_start = pr->partitionData[model]->xVector[q_slot];
 
         if(tr->saveMemory)
         {
-          *x2_gap = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-          *x2_gapColumn   = &tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
+          *x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+          *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
         }
       }
     }
@@ -138,24 +138,24 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
          that optimized pair-wise distances between all taxa in a tree */
 
       *tipCase = TIP_TIP;
-      *tipX1 = tr->partitionData[model].yVector[pNumber];
-      *tipX2 = tr->partitionData[model].yVector[qNumber];
+      *tipX1 = pr->partitionData[model]->yVector[pNumber];
+      *tipX2 = pr->partitionData[model]->yVector[qNumber];
     }
   }
   else
   {
     *tipCase = INNER_INNER;
 
-    *x1_start = tr->partitionData[model].xVector[p_slot];
-    *x2_start = tr->partitionData[model].xVector[q_slot];
+    *x1_start = pr->partitionData[model]->xVector[p_slot];
+    *x2_start = pr->partitionData[model]->xVector[q_slot];
 
     if(tr->saveMemory)
     {
-      *x1_gap = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-      *x1_gapColumn   = &tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]; 
+      *x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+      *x1_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
 
-      *x2_gap = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-      *x2_gapColumn   = &tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]; 
+      *x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+      *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
     }
   }
 
@@ -637,12 +637,12 @@ void makenewzIterative(tree *tr)
   for(model = 0; model < tr->NumberOfModels; model++)
   { 
     int 
-      width = tr->partitionData[model].width;
+      width = pr->partitionData[model]->width;
 
     if(tr->td[0].executeModel[model] && width > 0)
     {
       int 	   
-        states = tr->partitionData[model].states;
+        states = pr->partitionData[model]->states;
 
 
       getVects(tr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
@@ -650,10 +650,10 @@ void makenewzIterative(tree *tr)
 #ifndef _OPTIMIZED_FUNCTIONS
       assert(!tr->saveMemory);
       if(tr->rateHetModel == CAT)
-        sumCAT_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+        sumCAT_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
       else
-        sumGAMMA_FLEX_reorder(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+        sumGAMMA_FLEX_reorder(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
 #else
       switch(states)
@@ -663,19 +663,19 @@ void makenewzIterative(tree *tr)
           if(tr->rateHetModel == CAT)
           {
             if(tr->saveMemory)
-              sumCAT_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumCAT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumCAT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumCAT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width);
           }
           else
           {
             if(tr->saveMemory)
-              sumGAMMA_GAPPED_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMA_GAPPED_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumGAMMA(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMA(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width);
           }
           break;		
@@ -683,20 +683,20 @@ void makenewzIterative(tree *tr)
           if(tr->rateHetModel == CAT)
           {
             if(tr->saveMemory)
-              sumGTRCATPROT_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGTRCATPROT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else	      	      
-              sumGTRCATPROT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGTRCATPROT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width);
           }
           else
           {
 
             if(tr->saveMemory)
-              sumGAMMAPROT_GAPPED_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMAPROT_GAPPED_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumGAMMAPROT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGAMMAPROT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width);
 
           }
@@ -728,7 +728,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
   for(model = 0; model < tr->NumberOfModels; model++)
   {
     int 
-      width = tr->partitionData[model].width;
+      width = pr->partitionData[model]->width;
 
     /* check if we (the present thread for instance) needs to compute something at 
        all for the present partition */
@@ -736,7 +736,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
     if(tr->td[0].executeModel[model] && width > 0)
     {
       int 	    
-        states = tr->partitionData[model].states;
+        states = pr->partitionData[model]->states;
 
       double 
         *sumBuffer       = (double*)NULL;
@@ -748,7 +748,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
       /* set a pointer to the part of the pre-computed sumBuffer we are going to access */
 
-      sumBuffer = tr->partitionData[model].sumBuffer;
+      sumBuffer = pr->partitionData[model]->sumBuffer;
 
       /* figure out if we are optimizing branch lengths individually per partition or jointly across 
          all partitions. If we do this on a per partition basis, we also need to compute and store 
@@ -772,38 +772,38 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
       /* compute first and second derivatives with the slow generic functions */
 
       if(tr->rateHetModel == CAT)
-        coreCAT_FLEX(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt,
-            tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz, states);
+        coreCAT_FLEX(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
+            &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
+            pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz, states);
       else
         coreGAMMA_FLEX(width, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].EIGN, tr->partitionData[model].gammaRates, lz,
-            tr->partitionData[model].wgt, states);
+            &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->EIGN, pr->partitionData[model]->gammaRates, lz,
+            pr->partitionData[model]->wgt, states);
 #else
       switch(states)
       {	   
         case 4: /* DNA */
           if(tr->rateHetModel == CAT)
-            coreGTRCAT(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt, 
-                tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz);
+            coreGTRCAT(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
+                &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
+                pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz);
           else 
             coreGTRGAMMA(width, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].EIGN, tr->partitionData[model].gammaRates, lz,
-                tr->partitionData[model].wgt);
+                &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->EIGN, pr->partitionData[model]->gammaRates, lz,
+                pr->partitionData[model]->wgt);
 
           break;		    
         case 20: /* proteins */
           if(tr->rateHetModel == CAT)
-            coreGTRCATPROT(tr->partitionData[model].EIGN, lz, tr->partitionData[model].numberOfCategories,  tr->partitionData[model].perSiteRates,
-                tr->partitionData[model].rateCategory, width,
-                tr->partitionData[model].wgt, 
+            coreGTRCATPROT(pr->partitionData[model]->EIGN, lz, pr->partitionData[model]->numberOfCategories,  pr->partitionData[model]->perSiteRates,
+                pr->partitionData[model]->rateCategory, width,
+                pr->partitionData[model]->wgt,
                 &dlnLdlz, &d2lnLdlz2,
                 sumBuffer);
           else
 
-            coreGTRGAMMAPROT(tr->partitionData[model].gammaRates, tr->partitionData[model].EIGN,
-                sumBuffer, width, tr->partitionData[model].wgt,
+            coreGTRGAMMAPROT(pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN,
+                sumBuffer, width, pr->partitionData[model]->wgt,
                 &dlnLdlz, &d2lnLdlz2, lz);
 
           break;		   

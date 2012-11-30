@@ -1291,10 +1291,10 @@ int main (int argc, char *argv[])
 #endif
 
     /* read checkpoint file */
-    restart(tr);
+    restart(tr, partitions);
 
     /* continue tree search where we left it off */
-    computeBIGRAPID(tr, adef, TRUE); 
+    computeBIGRAPID(tr, partitions, adef, TRUE);
   }
   else
     {
@@ -1318,9 +1318,9 @@ int main (int argc, char *argv[])
         break;
       case parsimonyTree:	     
         /* runs only on process/thread 0 ! */
-        allocateParsimonyDataStructures(tr);
-        makeParsimonyTreeFast(tr);
-        freeParsimonyDataStructures(tr);
+        allocateParsimonyDataStructures(tr, partitions);
+        makeParsimonyTreeFast(tr, partitions);
+        freeParsimonyDataStructures(tr, partitions);
         break;
       default:
         assert(0);
@@ -1335,7 +1335,7 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
-    evaluateGeneric(tr, tr->start, TRUE);
+    evaluateGeneric(tr, partitions, tr->start, TRUE);
   printBothOpen("Starting tree evaluated\n");
 
 
@@ -1362,7 +1362,7 @@ int main (int argc, char *argv[])
 	   via the new command line switch I have added.
 	*/
 	
-	perSiteLogLikelihoods(tr, logLikelihoods);
+	perSiteLogLikelihoods(tr, partitions, logLikelihoods);
 	
 	free(logLikelihoods);
 	
@@ -1376,9 +1376,9 @@ int main (int argc, char *argv[])
       double t, masterTime = gettime();
       ticks t1 = getticks();
       printBothOpen("Eval once LH \n");
-      evaluateGeneric(tr, tr->start, TRUE);	 
+      evaluateGeneric(tr, partitions, tr->start, TRUE);
       printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
-      treeEvaluate(tr, 32); 
+      treeEvaluate(tr, partitions, 32);
       printBothOpen("tree evaluated: %f\n", tr->likelihood);
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
@@ -1416,7 +1416,7 @@ int main (int argc, char *argv[])
 
     /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
 
-    treeEvaluate(tr, 32);
+    treeEvaluate(tr, partitions, 32);
     printBothOpen("tree evaluated: %f\n", tr->likelihood);
     
     /* now start the ML search algorithm */
@@ -1432,7 +1432,7 @@ int main (int argc, char *argv[])
     }
     else
 #endif
-      computeBIGRAPID(tr, adef, TRUE); 	     
+      computeBIGRAPID(tr, partitions, adef, TRUE);
   } 
 
   /* print som more nonsense into the RAxML_info file */

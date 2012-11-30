@@ -57,7 +57,7 @@ extern partitionLengths pLengths[MAX_MODEL];
 extern char binaryCheckpointName[1024];
 extern char binaryCheckpointInputName[1024];
 
-boolean initrav (tree *tr, nodeptr p)
+boolean initrav (tree *tr, partitionList *pr, nodeptr p)
 { 
   nodeptr  q;
 
@@ -67,12 +67,12 @@ boolean initrav (tree *tr, nodeptr p)
 
     do 
     {	   
-      if (! initrav(tr, q->back))  return FALSE;		   
+      if (! initrav(tr, pr, q->back))  return FALSE;
       q = q->next;	
     } 
     while (q != p);  
 
-    newviewGeneric(tr, p, FALSE);
+    newviewGeneric(tr, pr, p, FALSE);
   }
 
   return TRUE;
@@ -132,7 +132,7 @@ boolean update(tree *tr, nodeptr p)
   return TRUE;
 }
 
-boolean smooth (tree *tr, nodeptr p)
+boolean smooth (tree *tr, partitionList *pr, nodeptr p)
 {
   nodeptr  q;
 
@@ -143,14 +143,14 @@ boolean smooth (tree *tr, nodeptr p)
     q = p->next;
     while (q != p) 
     {
-      if (! smooth(tr, q->back))   return FALSE;
+      if (! smooth(tr, pr, q->back))   return FALSE;
       q = q->next;
     }	
 
     if(tr->numBranches > 1 && !tr->useRecom)		  
-      newviewGeneric(tr, p, TRUE);	
+      newviewGeneric(tr, pr,p, TRUE);
     else
-      newviewGeneric(tr, p, FALSE);     
+      newviewGeneric(tr, pr,p, FALSE);
   }
 
   return TRUE;
@@ -174,7 +174,7 @@ static boolean allSmoothed(tree *tr)
 
 
 /* do maxtimes rounds of branch length optimization */
-boolean smoothTree (tree *tr, int maxtimes)
+boolean smoothTree (tree *tr, partitionList *pr, int maxtimes)
 {
 	nodeptr  p, q;
 	int i, count = 0;
@@ -188,13 +188,13 @@ boolean smoothTree (tree *tr, int maxtimes)
 		for(i = 0; i < tr->numBranches; i++)
 			tr->partitionSmoothed[i] = TRUE;
 
-		if (! smooth(tr, p->back))       return FALSE;
+		if (! smooth(tr, pr, p->back))       return FALSE;
 		if (!isTip(p->number, tr->mxtips))
 		{
 			q = p->next;
 			while (q != p)
 			{
-				if (! smooth(tr, q->back))   return FALSE;
+				if (! smooth(tr, pr, q->back))   return FALSE;
 				q = q->next;
 			}
 		}
@@ -319,7 +319,7 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
 }
 
 
-boolean smoothRegion (tree *tr, nodeptr p, int region)
+boolean smoothRegion (tree *tr, partitionList *pr, nodeptr p, int region)
 { 
   nodeptr  q;
 
@@ -332,18 +332,18 @@ boolean smoothRegion (tree *tr, nodeptr p, int region)
       q = p->next;
       while (q != p) 
       {
-        if (! smoothRegion(tr, q->back, --region))   return FALSE;
+        if (! smoothRegion(tr, pr, q->back, --region))   return FALSE;
         q = q->next;
       }	
 
-      newviewGeneric(tr, p, FALSE);
+      newviewGeneric(tr, pr,p, FALSE);
     }
   }
 
   return TRUE;
 }
 
-boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
+boolean regionalSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region)
 {
   nodeptr  q;
   int i;
@@ -361,7 +361,7 @@ boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
     q = p;
     do 
     {
-      if (! smoothRegion(tr, q, region)) return FALSE;
+      if (! smoothRegion(tr, pr, q, region)) return FALSE;
       q = q->next;
     } 
     while (q != p);
@@ -406,15 +406,15 @@ nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
   return  q; 
 }
 
-nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
+nodeptr  removeNodeRestoreBIG (tree *tr, partitionList *pr, nodeptr p)
 {
   nodeptr  q, r;
 
   q = p->next->back;
   r = p->next->next->back;  
 
-  newviewGeneric(tr, q, FALSE);
-  newviewGeneric(tr, r, FALSE);
+  newviewGeneric(tr, pr,q, FALSE);
+  newviewGeneric(tr, pr,r, FALSE);
 
   hookup(q, r, tr->currentZQR, tr->numBranches);
 
@@ -424,7 +424,7 @@ nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
 }
 
 
-boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
+boolean insertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q, int numBranches)
 {
   nodeptr  r, s;
   int i;
@@ -494,7 +494,7 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
     hookup(p->next->next, r, z, tr->numBranches);	                         
   }
 
-  newviewGeneric(tr, p, FALSE);
+  newviewGeneric(tr, pr,p, FALSE);
 
   if(tr->thoroughInsertion)
   {     
@@ -510,7 +510,7 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
   return  TRUE;
 }
 
-boolean insertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
+boolean insertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   nodeptr  r, s;
 
@@ -543,7 +543,7 @@ boolean insertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
     hookup(p->next->next, r, z, tr->numBranches);
   }   
 
-  newviewGeneric(tr, p, FALSE);
+  newviewGeneric(tr, pr,p, FALSE);
 
   return  TRUE;
 }
@@ -618,7 +618,7 @@ static void restoreTopologyOnly(tree *tr, bestlist *bt)
 }
 
 
-boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
+boolean testInsertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
   nodeptr  r;
@@ -637,9 +637,9 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 
   if(doIt)
   {     
-    if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;         
+    if (! insertBIG(tr, pr, p, q, tr->numBranches))       return FALSE;
 
-    evaluateGeneric(tr, p->next->next, FALSE);       
+    evaluateGeneric(tr, pr, p->next->next, FALSE);
 
     if(tr->likelihood > tr->bestOfNode)
     {
@@ -693,18 +693,18 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 
 
 
-void addTraverseBIG(tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
+void addTraverseBIG(tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 {  
   if (--mintrav <= 0) 
   {              
-    if (! testInsertBIG(tr, p, q))  return;
+    if (! testInsertBIG(tr, pr, p, q))  return;
 
   }
 
   if ((!isTip(q->number, tr->mxtips)) && (--maxtrav > 0)) 
   {    
-    addTraverseBIG(tr, p, q->next->back, mintrav, maxtrav);
-    addTraverseBIG(tr, p, q->next->next->back, mintrav, maxtrav);    
+    addTraverseBIG(tr, pr, p, q->next->back, mintrav, maxtrav);
+    addTraverseBIG(tr, pr, p, q->next->next->back, mintrav, maxtrav);
   }
 } 
 
@@ -712,7 +712,7 @@ void addTraverseBIG(tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 
 
 
-int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)   
+int rearrangeBIG(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav)
 {  
   double   p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
   nodeptr  p1, p2, q, q1, q2;
@@ -743,24 +743,24 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
       if (!isTip(p1->number, tr->mxtips)) 
       {
-        addTraverseBIG(tr, p, p1->next->back,
+        addTraverseBIG(tr, pr, p, p1->next->back,
             mintrav, maxtrav);         
 
-        addTraverseBIG(tr, p, p1->next->next->back,
+        addTraverseBIG(tr, pr, p, p1->next->next->back,
             mintrav, maxtrav);          
       }
 
       if (!isTip(p2->number, tr->mxtips)) 
       {
-        addTraverseBIG(tr, p, p2->next->back,
+        addTraverseBIG(tr, pr, p, p2->next->back,
             mintrav, maxtrav);
-        addTraverseBIG(tr, p, p2->next->next->back,
+        addTraverseBIG(tr, pr, p, p2->next->next->back,
             mintrav, maxtrav);          
       }
 
       hookup(p->next,       p1, p1z, tr->numBranches); 
       hookup(p->next->next, p2, p2z, tr->numBranches);	   	    	    
-      newviewGeneric(tr, p, FALSE);	   	    
+      newviewGeneric(tr, pr,p, FALSE);
     }
   }  
 
@@ -796,24 +796,24 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
       if (/*! q1->tip*/ !isTip(q1->number, tr->mxtips)) 
       {
-        addTraverseBIG(tr, q, q1->next->back,
+        addTraverseBIG(tr, pr, q, q1->next->back,
             mintrav2 , maxtrav);
-        addTraverseBIG(tr, q, q1->next->next->back,
+        addTraverseBIG(tr, pr, q, q1->next->next->back,
             mintrav2 , maxtrav);         
       }
 
       if (/*! q2->tip*/ ! isTip(q2->number, tr->mxtips)) 
       {
-        addTraverseBIG(tr, q, q2->next->back,
+        addTraverseBIG(tr, pr, q, q2->next->back,
             mintrav2 , maxtrav);
-        addTraverseBIG(tr, q, q2->next->next->back,
+        addTraverseBIG(tr, pr, q, q2->next->next->back,
             mintrav2 , maxtrav);          
       }	   
 
       hookup(q->next,       q1, q1z, tr->numBranches); 
       hookup(q->next->next, q2, q2z, tr->numBranches);
 
-      newviewGeneric(tr, q, FALSE); 	   
+      newviewGeneric(tr, pr,q, FALSE);
     }
   } 
 
@@ -824,7 +824,7 @@ int rearrangeBIG(tree *tr, nodeptr p, int mintrav, int maxtrav)
 
 
 
-static double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
+static double treeOptimizeRapid(tree *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
 {
   int i, index,
       *perm = (int*)NULL;   
@@ -882,13 +882,13 @@ static double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *ade
     else
       index = i;     
 
-    if(rearrangeBIG(tr, tr->nodep[index], mintrav, maxtrav))
+    if(rearrangeBIG(tr, pr, tr->nodep[index], mintrav, maxtrav))
     {    
       if(tr->thoroughInsertion)
       {
         if(tr->endLH > tr->startLH)                 	
         {			   	     
-          restoreTreeFast(tr);	 	 
+          restoreTreeFast(tr, pr);
           tr->startLH = tr->endLH = tr->likelihood;	 
           saveBestTree(bt, tr);
         }
@@ -903,7 +903,7 @@ static double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *ade
         insertInfoList(tr->nodep[index], tr->bestOfNode, iList);	    
         if(tr->endLH > tr->startLH)                 	
         {		      
-          restoreTreeFast(tr);	  	      
+          restoreTreeFast(tr, pr);
           tr->startLH = tr->endLH = tr->likelihood;	  	 	  	  	  	  	  	  
         }	    	  
       }
@@ -918,11 +918,11 @@ static double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *ade
     { 	  
       tr->bestOfNode = unlikely;
 
-      if(rearrangeBIG(tr, iList->list[i].node, mintrav, maxtrav))
+      if(rearrangeBIG(tr, pr, iList->list[i].node, mintrav, maxtrav))
       {	  
         if(tr->endLH > tr->startLH)                 	
         {	 	     
-          restoreTreeFast(tr);	 	 
+          restoreTreeFast(tr, pr);
           tr->startLH = tr->endLH = tr->likelihood;	 
           saveBestTree(bt, tr);
         }
@@ -949,17 +949,17 @@ static double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *ade
 
 
 
-boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
+boolean testInsertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 {    
   if(tr->thoroughInsertion)
   {
-    if (! insertBIG(tr, p, q, tr->numBranches))       return FALSE;    
+    if (! insertBIG(tr, pr, p, q, tr->numBranches))       return FALSE;
 
-    evaluateGeneric(tr, p->next->next, FALSE);               
+    evaluateGeneric(tr, pr, p->next->next, FALSE);
   }
   else
   {
-    if (! insertRestoreBIG(tr, p, q))       return FALSE;
+    if (! insertRestoreBIG(tr, pr, p, q))       return FALSE;
 
     {
       nodeptr x, y;
@@ -971,7 +971,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
         while ((! x->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, x, FALSE);		     
+            newviewGeneric(tr, pr,x, FALSE);
         }
       }
 
@@ -980,7 +980,7 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
         while ((! y->x)) 
         {		  
           if (! (y->x))
-            newviewGeneric(tr, y, FALSE);
+            newviewGeneric(tr, pr,y, FALSE);
         }
       }
 
@@ -989,9 +989,9 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
         while ((! x->x) || (! y->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, x, FALSE);
+            newviewGeneric(tr, pr,x, FALSE);
           if (! (y->x))
-            newviewGeneric(tr, y, FALSE);
+            newviewGeneric(tr, pr,y, FALSE);
         }
       }				      	
 
@@ -1003,10 +1003,10 @@ boolean testInsertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
   return TRUE;
 } 
 
-void restoreTreeFast(tree *tr)
+void restoreTreeFast(tree *tr, partitionList *pr)
 {
-  removeNodeRestoreBIG(tr, tr->removeNode);    
-  testInsertRestoreBIG(tr, tr->removeNode, tr->insertNode);
+  removeNodeRestoreBIG(tr, pr, tr->removeNode);
+  testInsertRestoreBIG(tr, pr, tr->removeNode, tr->insertNode);
 }
 
 static void myfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
@@ -1046,7 +1046,7 @@ static void writeTree(tree *tr, FILE *f)
 
 int ckpCount = 0;
 
-static void writeCheckpoint(tree *tr, int state)
+static void writeCheckpoint(tree *tr, partitionList *pr, int state)
 {
   int   
     model; 
@@ -1094,7 +1094,7 @@ static void writeCheckpoint(tree *tr, int state)
   tr->ckp.searchConvergenceCriterion = tr->searchConvergenceCriterion;
   tr->ckp.rateHetModel =  tr->rateHetModel;
   tr->ckp.maxCategories =  tr->maxCategories;
-  tr->ckp.NumberOfModels = tr->NumberOfModels;
+  tr->ckp.NumberOfModels = pr->numberOfPartitions;
   tr->ckp.numBranches = tr->numBranches;
   tr->ckp.originalCrunchedLength = tr->originalCrunchedLength;
   tr->ckp.mxtips = tr->mxtips;
@@ -1115,27 +1115,28 @@ static void writeCheckpoint(tree *tr, int state)
   /* need to store this as well in checkpoints, otherwise the branch lengths 
      in the output tree files will be wrong, not the internal branch lengths though */
 
-  myfwrite(tr->fracchanges,  sizeof(double), tr->NumberOfModels, f);
+  //TODO: We have to change the way to store the fracchanges
+  //myfwrite(tr->fracchanges,  sizeof(double), pr->numberOfPartitions, f);
   myfwrite(&(tr->fracchange),   sizeof(double), 1, f);
 
 
   /* pInfo */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
     int 
-      dataType = tr->partitionData[model].dataType;
+      dataType = pr->partitionData[model]->dataType;
 
-    myfwrite(&(tr->partitionData[model].numberOfCategories), sizeof(int), 1, f);
-    myfwrite(tr->partitionData[model].perSiteRates, sizeof(double), tr->maxCategories, f);
-    myfwrite(tr->partitionData[model].EIGN, sizeof(double), pLengths[dataType].eignLength, f);
-    myfwrite(tr->partitionData[model].EV, sizeof(double),  pLengths[dataType].evLength, f);
-    myfwrite(tr->partitionData[model].EI, sizeof(double),  pLengths[dataType].eiLength, f);  
+    myfwrite(&(pr->partitionData[model]->numberOfCategories), sizeof(int), 1, f);
+    myfwrite(pr->partitionData[model]->perSiteRates, sizeof(double), tr->maxCategories, f);
+    myfwrite(pr->partitionData[model]->EIGN, sizeof(double), pLengths[dataType].eignLength, f);
+    myfwrite(pr->partitionData[model]->EV, sizeof(double),  pLengths[dataType].evLength, f);
+    myfwrite(pr->partitionData[model]->EI, sizeof(double),  pLengths[dataType].eiLength, f);
 
-    myfwrite(tr->partitionData[model].frequencies, sizeof(double),  pLengths[dataType].frequenciesLength, f);
-    myfwrite(tr->partitionData[model].tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);  
-    myfwrite(tr->partitionData[model].substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);    
-    myfwrite(&(tr->partitionData[model].alpha), sizeof(double), 1, f);
+    myfwrite(pr->partitionData[model]->frequencies, sizeof(double),  pLengths[dataType].frequenciesLength, f);
+    myfwrite(pr->partitionData[model]->tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);
+    myfwrite(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
+    myfwrite(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
   }
 
 
@@ -1147,7 +1148,7 @@ static void writeCheckpoint(tree *tr, int state)
   printBothOpen("\nCheckpoint written to: %s likelihood: %f\n", extendedName, tr->likelihood);
 }
 
-static void readTree(tree *tr, FILE *f)
+static void readTree(tree *tr, partitionList *pr, FILE *f)
 {
   int 
     nodeNumber,   
@@ -1211,13 +1212,13 @@ static void readTree(tree *tr, FILE *f)
 
   }
 
-  evaluateGeneric(tr, tr->start, TRUE);  
+  evaluateGeneric(tr, pr, tr->start, TRUE);
 
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
 
 
-static void readCheckpoint(tree *tr)
+static void readCheckpoint(tree *tr, partitionList *pr)
 {
   int  
     restartErrors = 0,
@@ -1250,9 +1251,9 @@ static void readCheckpoint(tree *tr)
     restartErrors++;
   }
 
-  if(tr->ckp.NumberOfModels != tr->NumberOfModels)
+  if(tr->ckp.NumberOfModels != pr->numberOfPartitions)
   {
-    printf("restart error, you are trying to re-start a run with %d partitions, the checkpoint was obtained with: %d partitions\n", tr->NumberOfModels, tr->ckp.NumberOfModels);
+    printf("restart error, you are trying to re-start a run with %d partitions, the checkpoint was obtained with: %d partitions\n", (int)pr->numberOfPartitions, tr->ckp.NumberOfModels);
     restartErrors++;      
   }
 
@@ -1366,37 +1367,38 @@ static void readCheckpoint(tree *tr)
   /* need to read this as well in checkpoints, otherwise the branch lengths 
      in the output tree files will be wrong, not the internal branch lengths though */
 
-  myfread(tr->fracchanges,  sizeof(double), tr->NumberOfModels, f);
+  //TODO: Same problem as writing the checkpoint
+  //myfread(tr->fracchanges,  sizeof(double), pr->numberOfPartitions, f);
   myfread(&(tr->fracchange),   sizeof(double), 1, f);
 
   /* pInfo */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
     int 
-      dataType = tr->partitionData[model].dataType;
+      dataType = pr->partitionData[model]->dataType;
 
-    myfread(&(tr->partitionData[model].numberOfCategories), sizeof(int), 1, f);
-    myfread(tr->partitionData[model].perSiteRates, sizeof(double), tr->maxCategories, f);
-    myfread(tr->partitionData[model].EIGN, sizeof(double), pLengths[dataType].eignLength, f);
-    myfread(tr->partitionData[model].EV, sizeof(double),  pLengths[dataType].evLength, f);
-    myfread(tr->partitionData[model].EI, sizeof(double),  pLengths[dataType].eiLength, f);  
+    myfread(&(pr->partitionData[model]->numberOfCategories), sizeof(int), 1, f);
+    myfread(pr->partitionData[model]->perSiteRates, sizeof(double), tr->maxCategories, f);
+    myfread(pr->partitionData[model]->EIGN, sizeof(double), pLengths[dataType].eignLength, f);
+    myfread(pr->partitionData[model]->EV, sizeof(double),  pLengths[dataType].evLength, f);
+    myfread(pr->partitionData[model]->EI, sizeof(double),  pLengths[dataType].eiLength, f);
 
-    myfread(tr->partitionData[model].frequencies, sizeof(double),  pLengths[dataType].frequenciesLength, f);
-    myfread(tr->partitionData[model].tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);  
-    myfread(tr->partitionData[model].substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);  
-    myfread(&(tr->partitionData[model].alpha), sizeof(double), 1, f);
+    myfread(pr->partitionData[model]->frequencies, sizeof(double),  pLengths[dataType].frequenciesLength, f);
+    myfread(pr->partitionData[model]->tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);
+    myfread(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
+    myfread(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
 
-    makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4, tr->useMedian);
+    makeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
   }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   masterBarrier(THREAD_COPY_INIT_MODEL, tr);
 #endif
 
-  updatePerSiteRates(tr, FALSE);  
+  updatePerSiteRates(tr, pr, FALSE);
 
-  readTree(tr, f);
+  readTree(tr, pr, f);
 
   fclose(f); 
 
@@ -1414,9 +1416,9 @@ static void restoreTreeDataValuesFromCheckpoint(tree *tr)
   tr->doCutoff = tr->ckp.tr_doCutoff;
 }
 
-void restart(tree *tr)
+void restart(tree *tr, partitionList *pr)
 {  
-  readCheckpoint(tr);
+  readCheckpoint(tr, pr);
 
   switch(tr->ckp.state)
   {
@@ -1431,7 +1433,7 @@ void restart(tree *tr)
   }
 }
 
-int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bestlist *bt)
+int determineRearrangementSetting(tree *tr, partitionList *pr, analdef *adef, bestlist *bestT, bestlist *bt)
 {
   const 
     int MaxFast = 26;
@@ -1471,7 +1473,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 
   while(impr && maxtrav < MaxFast)
   {	
-    recallBestTree(bestT, 1, tr);     
+    recallBestTree(bestT, 1, tr, pr);
     nodeRectifier(tr);                      
 
     {
@@ -1481,7 +1483,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
       tr->ckp.startLH  = startLH;
       tr->ckp.impr = impr;
 
-      writeCheckpoint(tr, REARR_SETTING);    
+      writeCheckpoint(tr, pr, REARR_SETTING);
     }
 
     if (maxtrav > tr->mxtips - 3)  
@@ -1493,17 +1495,17 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
     {                	         
       tr->bestOfNode = unlikely;
 
-      if(rearrangeBIG(tr, tr->nodep[i], 1, maxtrav))
+      if(rearrangeBIG(tr, pr, tr->nodep[i], 1, maxtrav))
       {	     
         if(tr->endLH > tr->startLH)                 	
         {		 	 	      
-          restoreTreeFast(tr);	        	  	 	  	      
+          restoreTreeFast(tr, pr);
           tr->startLH = tr->endLH = tr->likelihood;		 
         }	         	       	
       }
     }
 
-    treeEvaluate(tr, 8 ); // 32 * 0.25 
+    treeEvaluate(tr, pr, 8 ); // 32 * 0.25
     saveBestTree(bt, tr); 
 
 #ifdef _DEBUG_CHECKPOINTING
@@ -1536,7 +1538,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 
   }
 
-  recallBestTree(bt, 1, tr);
+  recallBestTree(bt, 1, tr, pr);
 
   tr->doCutoff = cutoff; 
 
@@ -1551,7 +1553,7 @@ int determineRearrangementSetting(tree *tr,  analdef *adef, bestlist *bestT, bes
 
 
 
-void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel) 
+void computeBIGRAPID (tree *tr, partitionList *pr, analdef *adef, boolean estimateModel)
 {   
   int
     i,
@@ -1615,9 +1617,9 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(!adef->useCheckpoint)
   {
     if(estimateModel)
-      modOpt(tr, 10.0);
+      modOpt(tr, pr, 10.0);
     else
-      treeEvaluate(tr, 64); // 32 * 2
+      treeEvaluate(tr, pr, 64); // 32 * 2
   }
 
   /* print some stuff to the RAxML_log file */
@@ -1640,7 +1642,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   {
     if((!adef->useCheckpoint) || (adef->useCheckpoint && tr->ckp.state == REARR_SETTING))
     {
-      bestTrav = adef->bestTrav = determineRearrangementSetting(tr, adef, bestT, bt);     	  
+      bestTrav = adef->bestTrav = determineRearrangementSetting(tr, pr, adef, bestT, bt);
       printBothOpen("\nBest rearrangement radius: %d\n", bestTrav);
     }
   }
@@ -1657,9 +1659,9 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
     /* optimize model params more thoroughly or just optimize branch lengths */
     if(estimateModel)
-      modOpt(tr, 5.0);
+      modOpt(tr, pr, 5.0);
     else
-      treeEvaluate(tr, 32);   // 32 * 1 
+      treeEvaluate(tr, pr, 32);   // 32 * 1
   }
 
   /* save the current tree again, while the topology has not changed, the branch lengths have changed in the meantime, hence
@@ -1716,7 +1718,7 @@ START_FAST_SPRS:
     }
     else
       /* otherwise, restore the currently best tree */
-      recallBestTree(bestT, 1, tr); 
+      recallBestTree(bestT, 1, tr, pr);
 
     /* save states of algorithmic/heuristic variables for printing the next checkpoint */
 
@@ -1735,7 +1737,7 @@ START_FAST_SPRS:
     tr->ckp.impr = impr;                 
 
     /* write a binary checkpoint */
-    writeCheckpoint(tr, FAST_SPRS);      
+    writeCheckpoint(tr, pr, FAST_SPRS);
 
     /* this is the aforementioned convergence criterion that requires computing the RF,
        let's not worry about this right now */
@@ -1757,7 +1759,7 @@ START_FAST_SPRS:
         printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-        Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+        Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 
         if(fastIterations % 2 == 0)	      
           memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -1794,7 +1796,7 @@ START_FAST_SPRS:
 
     /* optimize branch lengths */
 
-    treeEvaluate(tr, 32);  // 32 * 1 = 32 
+    treeEvaluate(tr, pr, 32);  // 32 * 1 = 32
 
     /* save the tree with those branch lengths again */
 
@@ -1814,7 +1816,7 @@ START_FAST_SPRS:
 
     /* in here we actually do a cycle of SPR moves */
 
-    treeOptimizeRapid(tr, 1, bestTrav, adef, bt, iList);   
+    treeOptimizeRapid(tr, pr, 1, bestTrav, adef, bt, iList);
 
     /* set impr to 0 since in the immediately following for loop we check if the SPR moves above have generated 
        a better tree */
@@ -1828,11 +1830,11 @@ START_FAST_SPRS:
     {	    	
       /* restore tree i from list generated by treeOptimizeRapid */
 
-      recallBestTree(bt, i, tr);
+      recallBestTree(bt, i, tr, pr);
 
       /* optimize branch lengths of this tree */
 
-      treeEvaluate(tr, 8); // 0.25 * 32
+      treeEvaluate(tr, pr, 8); // 0.25 * 32
 
       /* calc. the likelihood improvement */
 
@@ -1886,12 +1888,12 @@ cleanup_fast:
   /* restore the currently best tree. this si actually required, because we do not know which tree
      is actually stored in the tree data structure when the above loop exits */
 
-  recallBestTree(bestT, 1, tr); 
+  recallBestTree(bestT, 1, tr, pr);
 
   {
     /* RE-TRAVERSE THE ENTIRE TREE */
 
-    evaluateGeneric(tr, tr->start, TRUE);
+    evaluateGeneric(tr, pr, tr->start, TRUE);
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
 #endif
@@ -1902,9 +1904,9 @@ cleanup_fast:
      alone */
 
   if(estimateModel)
-    modOpt(tr, 1.0);
+    modOpt(tr, pr, 1.0);
   else
-    treeEvaluate(tr, 32 ); //32 * 1
+    treeEvaluate(tr, pr, 32 ); //32 * 1
 
   /* start loop that executes thorough SPR cycles */
 
@@ -1933,7 +1935,7 @@ START_SLOW_SPRS:
     else
       /* otherwise we restore the currently best tree and load it from bestT into our tree data 
          structuire tr */
-      recallBestTree(bestT, 1, tr);
+      recallBestTree(bestT, 1, tr, pr);
 
     /* now, we write a checkpoint */
 
@@ -1952,7 +1954,7 @@ START_SLOW_SPRS:
 
     /* write binary checkpoint to file */
 
-    writeCheckpoint(tr, SLOW_SPRS);     
+    writeCheckpoint(tr, pr, SLOW_SPRS);
 
     if(impr)
     {	    
@@ -1984,7 +1986,7 @@ START_SLOW_SPRS:
           printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 
-          Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+          Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 
           if(thoroughIterations % 2 == 0)	      
             memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2029,7 +2031,7 @@ START_SLOW_SPRS:
 
     /* optimize branch lengths of best tree */
 
-    treeEvaluate(tr, 32 ); // 32 * 1
+    treeEvaluate(tr, pr, 32 ); // 32 * 1
 
     /* do some bokkeeping and printouts again */
     previousLh = lh = tr->likelihood;	      
@@ -2038,7 +2040,7 @@ START_SLOW_SPRS:
 
     /* do a cycle of thorough SPR moves with the minimum and maximum rearrangement radii */
 
-    treeOptimizeRapid(tr, rearrangementsMin, rearrangementsMax, adef, bt, iList);
+    treeOptimizeRapid(tr, pr, rearrangementsMin, rearrangementsMax, adef, bt, iList);
 
     impr = 0;			      		            
 
@@ -2047,9 +2049,9 @@ START_SLOW_SPRS:
 
     for(i = 1; i <= bt->nvalid; i++)
     {		 
-      recallBestTree(bt, i, tr);	 	    	    	
+      recallBestTree(bt, i, tr, pr);
 
-      treeEvaluate(tr, 8 ); // 0.25	* 32    	 
+      treeEvaluate(tr, pr, 8); // 0.25	* 32
 
       difference = ((tr->likelihood > previousLh)? 
           tr->likelihood - previousLh: 
@@ -2072,7 +2074,7 @@ cleanup:
   /* do a final full tree traversal, not sure if this is required here */
 
   {
-    evaluateGeneric(tr, tr->start, TRUE);
+    evaluateGeneric(tr, pr, tr->start, TRUE);
 
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
@@ -2107,13 +2109,13 @@ cleanup:
 
 /* The number of maximum smoothing iterations is given explicitely */
 boolean 
-treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
+treeEvaluate (tree *tr, partitionList *pr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   boolean result;
-  result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */
+  result = smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
   assert(result); 
 
-  evaluateGeneric(tr, tr->start, FALSE);   
+  evaluateGeneric(tr, pr, tr->start, FALSE);
   
 
   return TRUE;

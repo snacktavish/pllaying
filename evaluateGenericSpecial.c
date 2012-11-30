@@ -369,7 +369,7 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 
 /* This is the core function for computing the log likelihood at a branch */
 
-void evaluateIterative(tree *tr)
+void evaluateIterative(tree *tr, partitionList *pr)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
      are stored in the very important traversal array data structure that describes a partial or full tree traversal */
@@ -409,7 +409,7 @@ void evaluateIterative(tree *tr)
 
   /* iterate over all valid entries in the traversal descriptor */
 
-  newviewIterative(tr, 1);  
+  newviewIterative(tr, pr, 1);
 
   /* after the above call we are sure that we have properly and consistently computed the 
      conditionals to the right and left of the virtual root and we can now invoke the 
@@ -417,11 +417,11 @@ void evaluateIterative(tree *tr)
 
   /* we need to loop over all partitions. Note that we may have a mix of DNA, protein binary data etc partitions */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {    
     /* whats' the number of sites of this partition (at the current thread) */
     int 	    
-      width = tr->partitionData[model].width;
+      width = pr->partitionData[model]->width;
 
     /* 
        Important part of the tarversal descriptor: 
@@ -446,7 +446,7 @@ of the current partition.
 
                 /* get the number of states in the partition, e.g.: 4 = DNA, 20 = Protein */
 
-                states = tr->partitionData[model].states;
+                states = pr->partitionData[model]->states;
 
       double 
         *rateCategories = (double*)NULL,
@@ -477,19 +477,19 @@ of the current partition.
 
       if(tr->rateHetModel == CAT)
       {	     
-        rateCategories = tr->partitionData[model].perSiteRates;
-        categories = tr->partitionData[model].numberOfCategories;
+        rateCategories = pr->partitionData[model]->perSiteRates;
+        categories = pr->partitionData[model]->numberOfCategories;
       }
       else
       {	     
-        rateCategories = tr->partitionData[model].gammaRates;
+        rateCategories = pr->partitionData[model]->gammaRates;
         categories = 4;
       }
 
       /* set this pointer to the memory area where space has been reserved a priori for storing the 
          P matrix at the root */
 
-      diagptable = tr->partitionData[model].left;
+      diagptable = pr->partitionData[model]->left;
 
       /* figure out if we need to address tip vectors (a char array that indexes into a precomputed tip likelihood 
          value array or if we need to address inner vectors */
@@ -506,31 +506,31 @@ of the current partition.
              note that inner nodes are enumerated/indexed starting at 0 to save allocating some 
              space for additional pointers */
 
-          x2_start = tr->partitionData[model].xVector[p_slot];		  
+          x2_start = pr->partitionData[model]->xVector[p_slot];
 
           /* get the corresponding tip vector */
 
-          tip      = tr->partitionData[model].yVector[qNumber];	 
+          tip      = pr->partitionData[model]->yVector[qNumber];
 
           /* memory saving stuff, let's deal with this later or ask Fernando ;-) */
 
           if(tr->saveMemory)
           {
-            x2_gap         = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-            x2_gapColumn   = &(tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]);
+            x2_gap         = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+            x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]);
           }
         }           
         else
         {	
           /* p is a tip, same as above */
 
-          x2_start = tr->partitionData[model].xVector[q_slot];		  		  
-          tip = tr->partitionData[model].yVector[pNumber];
+          x2_start = pr->partitionData[model]->xVector[q_slot];
+          tip = pr->partitionData[model]->yVector[pNumber];
 
           if(tr->saveMemory)
           {
-            x2_gap         = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-            x2_gapColumn   = &(tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]);
+            x2_gap         = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+            x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]);
           }
 
         }
@@ -541,17 +541,17 @@ of the current partition.
         assert(p_slot != q_slot);
         /* neither p nor q are tips, hence we need to get the addresses of two inner vectors */
 
-        x1_start = tr->partitionData[model].xVector[p_slot];
-        x2_start = tr->partitionData[model].xVector[q_slot];
+        x1_start = pr->partitionData[model]->xVector[p_slot];
+        x2_start = pr->partitionData[model]->xVector[q_slot];
 
         /* memory saving option */
 
         if(tr->saveMemory)
         {
-          x1_gap = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-          x2_gap = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-          x1_gapColumn   = &tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
-          x2_gapColumn   = &tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
+          x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+          x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+          x1_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
+          x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
         }
 
       }
@@ -567,7 +567,7 @@ of the current partition.
 
       /* calc P-Matrix at root for branch z connecting nodes p and q */
 
-      calcDiagptable(z, states, categories, rateCategories, tr->partitionData[model].EIGN, diagptable);	 
+      calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
 
 #ifndef _OPTIMIZED_FUNCTIONS
 
@@ -578,12 +578,12 @@ of the current partition.
       /* decide wheter CAT or GAMMA is used and compute log like */
 
       if(tr->rateHetModel == CAT)
-        partitionLikelihood = evaluateCAT_FLEX(tr->partitionData[model].rateCategory, tr->partitionData[model].wgt,
-            x1_start, x2_start, tr->partitionData[model].tipVector, 
+        partitionLikelihood = evaluateCAT_FLEX(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+            x1_start, x2_start, pr->partitionData[model]->tipVector,
             tip, width, diagptable, states);
       else
-        partitionLikelihood = evaluateGAMMA_FLEX(tr->partitionData[model].wgt,
-            x1_start, x2_start, tr->partitionData[model].tipVector,
+        partitionLikelihood = evaluateGAMMA_FLEX(pr->partitionData[model]->wgt,
+            x1_start, x2_start, pr->partitionData[model]->tipVector,
             tip, width, diagptable, states);
 #else
 
@@ -598,24 +598,24 @@ of the current partition.
             if(tr->rateHetModel == CAT)
             {		  		  
               if(tr->saveMemory)
-                partitionLikelihood =  evaluateGTRCAT_SAVE(tr->partitionData[model].rateCategory, tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector, 
+                partitionLikelihood =  evaluateGTRCAT_SAVE(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
               else
-                partitionLikelihood =  evaluateGTRCAT(tr->partitionData[model].rateCategory, tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector, 
+                partitionLikelihood =  evaluateGTRCAT(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable);
             }
             else
             {		
               if(tr->saveMemory)		   
-                partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable,
                     x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
               else
-                partitionLikelihood =  evaluateGTRGAMMA(tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood =  evaluateGTRGAMMA(pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable); 		    		  
             }
           }
@@ -625,25 +625,25 @@ of the current partition.
             if(tr->rateHetModel == CAT)
             {		   		  
               if(tr->saveMemory)
-                partitionLikelihood = evaluateGTRCATPROT_SAVE(tr->partitionData[model].rateCategory, tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood = evaluateGTRCATPROT_SAVE(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable,  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
               else
-                partitionLikelihood = evaluateGTRCATPROT(tr->partitionData[model].rateCategory, tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood = evaluateGTRCATPROT(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable);		  
             }
             else
             {		    		    		      
               if(tr->saveMemory)
-                partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable,
                     x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
 
               else
-                partitionLikelihood = evaluateGTRGAMMAPROT(tr->partitionData[model].wgt,
-                    x1_start, x2_start, tr->partitionData[model].tipVector,
+                partitionLikelihood = evaluateGTRGAMMAPROT(pr->partitionData[model]->wgt,
+                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                     tip, width, diagptable);		         
             }
           }
@@ -669,14 +669,14 @@ of the current partition.
          */
 
 
-      partitionLikelihood += (tr->partitionData[model].globalScaler[pNumber] + tr->partitionData[model].globalScaler[qNumber]) * LOG(minlikelihood);	  
+      partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(minlikelihood);
 
       /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
 
       /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
          of this partition for example */
 
-      tr->perPartitionLH[model] = partitionLikelihood; 	  
+      pr->partitionData[model]->partitionLH = partitionLikelihood;
     }
     else
     {
@@ -688,7 +688,7 @@ of the current partition.
          */
 
       if(width == 0)	    
-        tr->perPartitionLH[model] = 0.0;	   
+        pr->partitionData[model]->partitionLH = 0.0;
     }
   }
 }
@@ -696,7 +696,7 @@ of the current partition.
 
 
 
-void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
+void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -771,7 +771,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* now we copy this partition execute mask into the traversal descriptor which must come from the 
      calling program, the logic of this should not form part of the library */
 
-  storeExecuteMaskInTraversalDescriptor(tr);  
+  storeExecuteMaskInTraversalDescriptor(tr, pr);
 
   /* also store in the traversal descriptor that something has changed i.e., in the parallel case that the 
      traversal descriptor list of nodes needs to be broadcast once again */
@@ -807,11 +807,11 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-  evaluateIterative(tr);  
+  evaluateIterative(tr, pr);
 #endif
 
-  for(model = 0; model < tr->NumberOfModels; model++)
-    result += tr->perPartitionLH[model];
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    result += pr->partitionData[model]->partitionLH;
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
@@ -828,7 +828,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 }
 
 
-void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
+void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 {
   double 
     likelihood,
@@ -848,7 +848,7 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
      will then be used for calculating per-site log likelihoods 
      for each site individually and independently */
 
-  evaluateGeneric (tr, tr->start, TRUE);
+  evaluateGeneric (tr, pr, tr->start, TRUE);
 
   likelihood = tr->likelihood;
 
@@ -878,10 +878,10 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
 
   /* sequential case: just loop over all partitions and compute per site log likelihoods */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
-    lower = tr->partitionData[model].lower;
-    upper = tr->partitionData[model].upper;
+    lower = pr->partitionData[model]->lower;
+    upper = pr->partitionData[model]->upper;
 
     for(i = lower, localCount = 0; i < upper; i++, localCount++)
     {
@@ -899,10 +899,10 @@ void perSiteLogLikelihoods(tree *tr, double *logLikelihoods)
       switch(tr->rateHetModel)
       {
         case CAT:
-          l = evaluatePartialGeneric (tr, i, tr->partitionData[model].perSiteRates[tr->partitionData[model].rateCategory[localCount]], model);
+          l = evaluatePartialGeneric (tr, pr, i, pr->partitionData[model]->perSiteRates[pr->partitionData[model]->rateCategory[localCount]], model);
           break;
         case GAMMA:
-          l = evaluatePartialGeneric (tr, i, 1.0, model);
+          l = evaluatePartialGeneric (tr, pr, i, 1.0, model);
           break;
         default:
           assert(0);
