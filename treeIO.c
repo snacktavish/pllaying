@@ -174,7 +174,7 @@ int countTips(nodeptr p, int numsp)
 }
 
 
-double getBranchLength(tree *tr, int perGene, nodeptr p)
+double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
 {
   double 
     z = 0.0,
@@ -203,20 +203,20 @@ double getBranchLength(tree *tr, int perGene, nodeptr p)
 		      
 	  for(i = 0; i < tr->numBranches; i++)
 	    {
-	      assert(tr->partitionContributions[i] != -1.0);
-	      assert(tr->fracchanges[i] != -1.0);
+	      assert(pr->partitionData[i]->partitionContribution != -1.0);
+	      assert(pr->partitionData[i]->fracchange != -1.0);
 	      z = p->z[i];
 	      if(z < zmin) 
 		z = zmin;      	 
-	      x = -log(z) * tr->fracchanges[i];
-	      avgX += x * tr->partitionContributions[i];
+	      x = -log(z) * pr->partitionData[i]->fracchange;
+	      avgX += x * pr->partitionData[i]->partitionContribution;
 	    }
 
 	  x = avgX;
 	}
       else
 	{	
-	  assert(tr->fracchanges[perGene] != -1.0);
+	  assert(pr->partitionData[perGene]->fracchange != -1.0);
 	  assert(perGene >= 0 && perGene < tr->numBranches);
 	  
 	  z = p->z[perGene];
@@ -224,7 +224,7 @@ double getBranchLength(tree *tr, int perGene, nodeptr p)
 	  if(z < zmin) 
 	    z = zmin;      	 
 	  
-	  x = -log(z) * tr->fracchanges[perGene];	  
+	  x = -log(z) * pr->partitionData[perGene]->fracchange;
 	}
     }
 
@@ -233,7 +233,7 @@ double getBranchLength(tree *tr, int perGene, nodeptr p)
 
 
   
-static char *TreeInner2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, 
+static char *TreeInner2StringREC(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport, boolean printInnerNodes)
 {
   /* TODOFER simplify this, should be used just to print inner nodes for testing */
@@ -254,15 +254,15 @@ static char *TreeInner2StringREC(char *treestr, tree *tr, nodeptr p, boolean pri
   else 
   {                 	 
     *treestr++ = '(';
-    treestr = TreeInner2StringREC(treestr, tr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+    treestr = TreeInner2StringREC(treestr, tr, pr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
         finalPrint, perGene, branchLabelSupport, printSHSupport, printInnerNodes);
     *treestr++ = ',';
-    treestr = TreeInner2StringREC(treestr, tr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+    treestr = TreeInner2StringREC(treestr, tr, pr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
         finalPrint, perGene, branchLabelSupport, printSHSupport, printInnerNodes);
     if(p == tr->start->back) 
     {
       *treestr++ = ',';
-      treestr = TreeInner2StringREC(treestr, tr, p->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+      treestr = TreeInner2StringREC(treestr, tr, pr, p->back, printBranchLengths, printNames, printLikelihood, rellTree,
           finalPrint, perGene, branchLabelSupport, printSHSupport, printInnerNodes);
     }
     *treestr++ = ')';                    
@@ -289,7 +289,7 @@ static char *TreeInner2StringREC(char *treestr, tree *tr, nodeptr p, boolean pri
         if(branchLabelSupport)
           sprintf(treestr, ":%8.20f[%d]", p->z[0], p->bInf->support);
         if(printSHSupport)
-          sprintf(treestr, ":%8.20f[%d]", getBranchLength(tr, perGene, p), p->bInf->support);
+          sprintf(treestr, ":%8.20f[%d]", getBranchLength(tr, pr, perGene, p), p->bInf->support);
         if(printInnerNodes)
           sprintf(treestr, "[%d]", p->number);
 
@@ -299,13 +299,13 @@ static char *TreeInner2StringREC(char *treestr, tree *tr, nodeptr p, boolean pri
         if(rellTree || branchLabelSupport)
           sprintf(treestr, ":%8.20f", p->z[0]);	
         if(printSHSupport)
-          sprintf(treestr, ":%8.20f", getBranchLength(tr, perGene, p));
+          sprintf(treestr, ":%8.20f", getBranchLength(tr, pr, perGene, p));
       }
     }
     else
     {
       if(printBranchLengths)	    
-        sprintf(treestr, ":%8.20f", getBranchLength(tr, perGene, p));	      	   
+        sprintf(treestr, ":%8.20f", getBranchLength(tr, pr, perGene, p));
       else	    
         sprintf(treestr, "%s", "\0");	    
     }      
@@ -316,7 +316,7 @@ static char *TreeInner2StringREC(char *treestr, tree *tr, nodeptr p, boolean pri
 }
 
 
-static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, 
+static char *Tree2StringREC(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 {
   char  *nameptr;            
@@ -336,15 +336,15 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
   else 
     {                 	 
       *treestr++ = '(';
-      treestr = Tree2StringREC(treestr, tr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+      treestr = Tree2StringREC(treestr, tr, pr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
 			       finalPrint, perGene, branchLabelSupport, printSHSupport);
       *treestr++ = ',';
-      treestr = Tree2StringREC(treestr, tr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+      treestr = Tree2StringREC(treestr, tr, pr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
 			       finalPrint, perGene, branchLabelSupport, printSHSupport);
       if(p == tr->start->back) 
 	{
 	  *treestr++ = ',';
-	  treestr = Tree2StringREC(treestr, tr, p->back, printBranchLengths, printNames, printLikelihood, rellTree, 
+	  treestr = Tree2StringREC(treestr, tr, pr, p->back, printBranchLengths, printNames, printLikelihood, rellTree,
 				   finalPrint, perGene, branchLabelSupport, printSHSupport);
 	}
       *treestr++ = ')';                    
@@ -371,7 +371,7 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 	      if(branchLabelSupport)
 		sprintf(treestr, ":%8.20f[%d]", p->z[0], p->bInf->support);
 	      if(printSHSupport)
-		sprintf(treestr, ":%8.20f[%d]", getBranchLength(tr, perGene, p), p->bInf->support);
+		sprintf(treestr, ":%8.20f[%d]", getBranchLength(tr, pr, perGene, p), p->bInf->support);
 	      
 	    }
 	  else		
@@ -379,13 +379,13 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 	      if(rellTree || branchLabelSupport)
 		sprintf(treestr, ":%8.20f", p->z[0]);	
 	      if(printSHSupport)
-		sprintf(treestr, ":%8.20f", getBranchLength(tr, perGene, p));
+		sprintf(treestr, ":%8.20f", getBranchLength(tr, pr, perGene, p));
 	    }
 	}
       else
 	{
 	  if(printBranchLengths)	    
-	    sprintf(treestr, ":%8.20f", getBranchLength(tr, perGene, p));	      	   
+	    sprintf(treestr, ":%8.20f", getBranchLength(tr, pr, perGene, p));
 	  else	    
 	    sprintf(treestr, "%s", "\0");	    
 	}      
@@ -397,17 +397,17 @@ static char *Tree2StringREC(char *treestr, tree *tr, nodeptr p, boolean printBra
 
 
 
-void printTopology(tree *tr, boolean printInner)
+void printTopology(tree *tr, partitionList *pr, boolean printInner)
 {
   if(!printInner)
   {
     boolean printBranchLengths = FALSE;
-    Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 0, 0, 0, 0, SUMMARIZE_LH, 0,0);
+    Tree2String(tr->tree_string, tr, pr, tr->start->back, printBranchLengths, 0, 0, 0, 0, SUMMARIZE_LH, 0,0);
     fprintf(stderr, "%s", tr->tree_string);
   }
   else
   {
-    TreeInner2StringREC(tr->tree_string, tr, tr->start->back, FALSE, 0, 0, 0, 0, SUMMARIZE_LH, 0,0, TRUE);
+    TreeInner2StringREC(tr->tree_string, tr, pr, tr->start->back, FALSE, 0, 0, 0, 0, SUMMARIZE_LH, 0,0, TRUE);
     fprintf(stderr, "%s", tr->tree_string);
     fprintf(stderr, "Start was %d, pnb %d, pnnb %d, pback %d\n", 
         tr->start->back->number, 
@@ -422,7 +422,7 @@ void printTopology(tree *tr, boolean printInner)
 
 
 
-char *Tree2String(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
+char *Tree2String(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
 		  boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 { 
 
@@ -436,7 +436,7 @@ char *Tree2String(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths
     assert(!branchLabelSupport && !rellTree);
 
  
-  Tree2StringREC(treestr, tr, p, printBranchLengths, printNames, printLikelihood, rellTree, 
+  Tree2StringREC(treestr, tr, pr, p, printBranchLengths, printNames, printLikelihood, rellTree,
 		 finalPrint, perGene, branchLabelSupport, printSHSupport);  
     
   
@@ -446,7 +446,7 @@ char *Tree2String(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths
 }
 
 
-void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission)
+void printTreePerGene(tree *tr, partitionList *pr, analdef *adef, char *fileName, char *permission)
 {  
   FILE *treeFile;
   char extendedTreeFileName[1024];
@@ -462,7 +462,7 @@ void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission)
       strcat(extendedTreeFileName, ".PARTITION.");
       strcat(extendedTreeFileName, buf);
       /*printf("Partitiuon %d file %s\n", i, extendedTreeFileName);*/
-      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, TRUE, i, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, TRUE, i, FALSE, FALSE);
       treeFile = myfopen(extendedTreeFileName, permission);
       fprintf(treeFile, "%s", tr->tree_string);
       fclose(treeFile);

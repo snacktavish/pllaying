@@ -331,7 +331,7 @@ static void saveTree (tree *tr, topol *tpl)
 } /* saveTree */
 
 
-static boolean restoreTree (topol *tpl, tree *tr)
+static boolean restoreTree (topol *tpl, tree *tr, partitionList *pr)
 { 
   connptr  r;
   nodeptr  p, p0;    
@@ -360,7 +360,7 @@ static boolean restoreTree (topol *tpl, tree *tr)
   
   tr->nextnode   = tpl->nextnode;    
 
-  evaluateGeneric(tr, tr->start, TRUE);
+  evaluateGeneric(tr, pr, tr->start, TRUE);
   return TRUE;
 }
 
@@ -613,11 +613,11 @@ int  saveBestTree (bestlist *bt, tree *tr)
 } 
 
 
-int  recallBestTree (bestlist *bt, int rank, tree *tr)
+int  recallBestTree (bestlist *bt, int rank, tree *tr, partitionList *pr)
 { 
   if (rank < 1)  rank = 1;
   if (rank > bt->nvalid)  rank = bt->nvalid;
-  if (rank > 0)  if (! restoreTree(bt->byScore[rank], tr)) return FALSE;
+  if (rank > 0)  if (! restoreTree(bt->byScore[rank], tr, pr)) return FALSE;
   return  rank;
 }
 
