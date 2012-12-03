@@ -1264,7 +1264,7 @@ extern void getxnode ( nodeptr p );
 extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
 extern void hookupDefault ( nodeptr p, nodeptr q, int numBranches);
 extern boolean whitechar ( int ch );
-extern void printResult ( tree *tr, analdef *adef, boolean finalPrint );
+extern void printResult ( tree *tr, partitionList *pr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printLog ( tree *tr);
@@ -1307,15 +1307,15 @@ extern FILE *myfopen(const char *path, const char *mode);
 
 extern boolean initrav ( tree *tr, partitionList *pr, nodeptr p );
 extern void initravPartition ( tree *tr, nodeptr p, int model );
-extern boolean update ( tree *tr, nodeptr p );
+extern boolean update ( tree *tr, partitionList *pr, nodeptr p );
 extern boolean smooth ( tree *tr, partitionList *pr, nodeptr p );
 extern boolean smoothTree ( tree *tr, partitionList *pr, int maxtimes );
-extern boolean localSmooth ( tree *tr, nodeptr p, int maxtimes );
+extern boolean localSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
 
 extern boolean smoothRegion ( tree *tr, partitionList *pr, nodeptr p, int region );
 extern boolean regionalSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region );
-extern nodeptr removeNodeBIG ( tree *tr, nodeptr p, int numBranches);
+extern nodeptr removeNodeBIG ( tree *tr, partitionList *pr, nodeptr p, int numBranches);
 extern nodeptr removeNodeRestoreBIG ( tree *tr, partitionList *pr, nodeptr p );
 extern boolean insertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q, int numBranches);
 extern boolean insertRestoreBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
@@ -1407,8 +1407,8 @@ extern void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr);
 extern void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value);
 
 
-extern void makenewzIterative(tree *);
-extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
+extern void makenewzIterative(tree *, partitionList *pr);
+extern void execCore(tree *, partitionList *pr, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
 
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/

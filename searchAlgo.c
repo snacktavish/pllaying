@@ -89,7 +89,7 @@ boolean initrav (tree *tr, partitionList *pr, nodeptr p)
 
 
 
-boolean update(tree *tr, nodeptr p)
+boolean update(tree *tr, partitionList *pr, nodeptr p)
 {       
   nodeptr  q; 
   boolean smoothedPartitions[NUM_BRANCHES];
@@ -103,9 +103,9 @@ boolean update(tree *tr, nodeptr p)
     z0[i] = q->z[i];    
 
   if(tr->numBranches > 1)
-    makenewzGeneric(tr, p, q, z0, newzpercycle, z, TRUE);  
+    makenewzGeneric(tr, pr, p, q, z0, newzpercycle, z, TRUE);
   else
-    makenewzGeneric(tr, p, q, z0, newzpercycle, z, FALSE);
+    makenewzGeneric(tr, pr, p, q, z0, newzpercycle, z, FALSE);
 
   for(i = 0; i < tr->numBranches; i++)    
     smoothedPartitions[i]  = tr->partitionSmoothed[i];
@@ -136,7 +136,7 @@ boolean smooth (tree *tr, partitionList *pr, nodeptr p)
 {
   nodeptr  q;
 
-  if (! update(tr, p))               return FALSE; /*  Adjust branch */
+  if (! update(tr, pr, p))               return FALSE; /*  Adjust branch */
 
   if (! isTip(p->number, tr->mxtips)) 
   {                                  /*  Adjust descendants */
@@ -213,7 +213,7 @@ boolean smoothTree (tree *tr, partitionList *pr, int maxtimes)
 
 
 
-boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
+boolean localSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes)
 { 
   nodeptr  q;
   int i;
@@ -231,7 +231,7 @@ boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
     q = p;
     do 
     {
-      if (! update(tr, q)) return FALSE;
+      if (! update(tr, pr, q)) return FALSE;
       q = q->next;
     } 
     while (q != p);
@@ -323,7 +323,7 @@ boolean smoothRegion (tree *tr, partitionList *pr, nodeptr p, int region)
 { 
   nodeptr  q;
 
-  if (! update(tr, p))               return FALSE; /*  Adjust branch */
+  if (! update(tr, pr, p))               return FALSE; /*  Adjust branch */
 
   if(region > 0)
   {
@@ -382,7 +382,7 @@ boolean regionalSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes, in
 
 
 
-nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
+nodeptr  removeNodeBIG (tree *tr, partitionList *pr, nodeptr p, int numBranches)
 {  
   double   zqr[NUM_BRANCHES], result[NUM_BRANCHES];
   nodeptr  q, r;
@@ -394,7 +394,7 @@ nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
   for(i = 0; i < numBranches; i++)
     zqr[i] = q->z[i] * r->z[i];        
 
-  makenewzGeneric(tr, q, r, zqr, iterations, result, FALSE);   
+  makenewzGeneric(tr, pr, q, r, zqr, iterations, result, FALSE);
 
   for(i = 0; i < numBranches; i++)        
     tr->zqr[i] = result[i];
@@ -447,9 +447,9 @@ boolean insertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q, int numBra
     for(i = 0; i < numBranches; i++)
       defaultArray[i] = defaultz;
 
-    makenewzGeneric(tr, q, r, qz, iterations, zqr, FALSE);           
-    makenewzGeneric(tr, q, s, defaultArray, iterations, zqs, FALSE);                  
-    makenewzGeneric(tr, r, s, defaultArray, iterations, zrs, FALSE);
+    makenewzGeneric(tr, pr, q, r, qz, iterations, zqr, FALSE);
+    makenewzGeneric(tr, pr, q, s, defaultArray, iterations, zqs, FALSE);
+    makenewzGeneric(tr, pr, r, s, defaultArray, iterations, zrs, FALSE);
 
 
     for(i = 0; i < numBranches; i++)
@@ -498,7 +498,7 @@ boolean insertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q, int numBra
 
   if(tr->thoroughInsertion)
   {     
-    localSmooth(tr, p, MAX_LOCAL_SMOOTHING_ITERATIONS);   
+    localSmooth(tr, pr, p, MAX_LOCAL_SMOOTHING_ITERATIONS);
     for(i = 0; i < numBranches; i++)
     {
       tr->lzq[i] = p->next->z[i];
@@ -739,7 +739,7 @@ int rearrangeBIG(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtra
         p2z[i] = p2->z[i];	   	   
       }
 
-      if (! removeNodeBIG(tr, p,  tr->numBranches)) return badRear;
+      if (! removeNodeBIG(tr, pr, p,  tr->numBranches)) return badRear;
 
       if (!isTip(p1->number, tr->mxtips)) 
       {
@@ -790,7 +790,7 @@ int rearrangeBIG(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtra
         q2z[i] = q2->z[i];
       }
 
-      if (! removeNodeBIG(tr, q, tr->numBranches)) return badRear;
+      if (! removeNodeBIG(tr, pr, q, tr->numBranches)) return badRear;
 
       mintrav2 = mintrav > 2 ? mintrav : 2;
 
@@ -1808,7 +1808,7 @@ START_FAST_SPRS:
 
     /* print this intermediate tree to file */
 
-    printResult(tr, adef, FALSE);    
+    printResult(tr, pr, adef, FALSE);
 
     /* update the current best likelihood */
 
@@ -1959,7 +1959,7 @@ START_SLOW_SPRS:
     if(impr)
     {	    
       /* if the logl has improved write out some stuff and adapt the rearrangement radii */
-      printResult(tr, adef, FALSE);
+      printResult(tr, pr, adef, FALSE);
       /* minimum rearrangement radius */
       rearrangementsMin = 1;
       /* max radius, this is probably something I need to explain at the whiteboard */
@@ -2099,7 +2099,7 @@ cleanup:
   free(iList);
 
   printLog(tr);
-  printResult(tr, adef, TRUE);
+  printResult(tr, pr, adef, TRUE);
 
   /* and we are done, return to main() in axml.c  */
 

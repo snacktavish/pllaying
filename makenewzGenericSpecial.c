@@ -66,7 +66,7 @@ extern const unsigned int mask32[32];
 
 /* generic function to get the required pointers to the data associated with the left and right node that define a branch */
 
-static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
+static void getVects(tree *tr, partitionList *pr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
     double **x1_gapColumn, double **x2_gapColumn, unsigned int **x1_gap, unsigned int **x2_gap)
 {
   int    
@@ -625,7 +625,7 @@ void makenewzIterative(tree *tr, partitionList * pr)
 
   /* call newvieIterative to get the likelihood arrays to the left and right of the branch */
 
-  newviewIterative(tr, 1);
+  newviewIterative(tr, pr, 1);
 
 
   /* 
@@ -645,7 +645,7 @@ void makenewzIterative(tree *tr, partitionList * pr)
         states = pr->partitionData[model]->states;
 
 
-      getVects(tr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
+      getVects(tr, pr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
 
 #ifndef _OPTIMIZED_FUNCTIONS
       assert(!tr->saveMemory);
@@ -715,7 +715,7 @@ void makenewzIterative(tree *tr, partitionList * pr)
    in tr->coreLZ[model] Note that in the parallel case coreLZ must always be broadcasted together with the 
    traversal descriptor, at least for optimizing branch lengths */
 
-void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
+void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
   int model, branchIndex;
   double lz;
@@ -725,7 +725,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
   /* loop over partitions */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
     int 
       width = pr->partitionData[model]->width;
@@ -911,7 +911,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 
     if(tr->numBranches > 1)
     {
-      for(model = 0; model < tr->NumberOfModels; model++)
+      for(model = 0; model < pr->numberOfPartitions; model++)
       {
         if(pr->partitionData[model]->executeModel)
           pr->partitionData[model]->executeModel = !tr->curvatOK[model];
@@ -927,11 +927,11 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 
     /* store it in traversal descriptor */
 
-    storeExecuteMaskInTraversalDescriptor(tr); 
+    storeExecuteMaskInTraversalDescriptor(tr, pr);
 
     /* store the new branch length values to be tested in traversal descriptor */
 
-    storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
+    storeValuesInTraversalDescriptor(tr, pr, &(tr->coreLZ[0]));
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
@@ -956,10 +956,10 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
        of the derivatives */
     if(firstIteration)
       {
-	makenewzIterative(tr);
+	makenewzIterative(tr, pr);
 	firstIteration = FALSE;
       }
-    execCore(tr, dlnLdlz, d2lnLdlz2);
+    execCore(tr, pr, dlnLdlz, d2lnLdlz2);
 #endif
 
     /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 

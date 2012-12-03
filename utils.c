@@ -466,7 +466,7 @@ void printBothOpen(const char* format, ... )
   fclose(f);
 }
 
-void printResult(tree *tr, analdef *adef, boolean finalPrint)
+void printResult(tree *tr, partitionList *pr, analdef *adef, boolean finalPrint)
 {
   FILE *logFile;
   char temporaryFileName[1024] = "";
@@ -476,14 +476,14 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
   switch(adef->mode)
   {    
     case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
 
       logFile = myfopen(temporaryFileName, "wb");
       fprintf(logFile, "%s", tr->tree_string);
       fclose(logFile);
 
       if(adef->perGeneBranchLengths)
-        printTreePerGene(tr, adef, temporaryFileName, "wb");
+        printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
       break;
     case BIG_RAPID_MODE:     
       if(finalPrint)
@@ -492,7 +492,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
         {
           case GAMMA:
           case GAMMA_I:
-            Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
+            Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
                 SUMMARIZE_LH, FALSE, FALSE);
 
             logFile = myfopen(temporaryFileName, "wb");
@@ -500,15 +500,15 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
             fclose(logFile);
 
             if(adef->perGeneBranchLengths)
-              printTreePerGene(tr, adef, temporaryFileName, "wb");
+              printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
             break;
           case CAT:
-            /*Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
+            /*Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
               NO_BRANCHES, FALSE, FALSE);*/
 
 
 
-            Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
+            Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
                 TRUE, SUMMARIZE_LH, FALSE, FALSE);
 
 
@@ -525,7 +525,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
       }
       else
       {
-        Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
+        Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
             NO_BRANCHES, FALSE, FALSE);
         logFile = myfopen(temporaryFileName, "wb");
         fprintf(logFile, "%s", tr->tree_string);
@@ -1115,7 +1115,7 @@ nodeptr pickRandomSubtree(tree *tr)
 */
 
   
-void computeAllAncestralVectors(nodeptr p, tree *tr)
+void computeAllAncestralVectors(nodeptr p, tree *tr, partitionList *pr)
 {
   /* if this is not a tip, for which evidently it does not make sense 
      to compute the ancestral sequence because we have the real one ....
@@ -1125,19 +1125,19 @@ void computeAllAncestralVectors(nodeptr p, tree *tr)
     {
       /* descend recursively to compute the ancestral states in the left and right subtrees */
 
-      computeAllAncestralVectors(p->next->back, tr);
-      computeAllAncestralVectors(p->next->next->back, tr);
+      computeAllAncestralVectors(p->next->back, tr, pr);
+      computeAllAncestralVectors(p->next->next->back, tr, pr);
       
       /* then compute the ancestral state at node p */
 
-      newviewGenericAncestral(tr, p);
+      newviewGenericAncestral(tr, pr, p);
 
       /* and print it to terminal, the two booleans that are set to true here 
 	 tell the function to print the marginal probabilities as well as 
 	 a discrete inner sequence, that is, ACGT etc., always selecting and printing 
 	 the state that has the highest probability */
 
-      printAncestralState(p, TRUE, TRUE, tr);
+      printAncestralState(p, TRUE, TRUE, tr, pr);
     }
 }
 
