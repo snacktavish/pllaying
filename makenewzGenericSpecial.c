@@ -600,7 +600,7 @@ void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2
    branch and thereafter invokes the one-time only precomputation of values (sumtable) that can be re-used in each Newton-Raphson 
    iteration. Once this function has been called we can execute the actual NR procedure */
 
-void makenewzIterative(tree *tr)
+void makenewzIterative(tree *tr, partitionList * pr)
 {
   int 
     model, 
@@ -634,7 +634,7 @@ void makenewzIterative(tree *tr)
      implementations.
      */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   { 
     int 
       width = pr->partitionData[model]->width;
@@ -844,7 +844,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
 */
 
-static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
+static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxiter, double *result)
 {
   double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
@@ -913,15 +913,15 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
     {
       for(model = 0; model < tr->NumberOfModels; model++)
       {
-        if(tr->executeModel[model])
-          tr->executeModel[model] = !tr->curvatOK[model];
+        if(pr->partitionData[model]->executeModel)
+          pr->partitionData[model]->executeModel = !tr->curvatOK[model];
 
       }
     }
     else
     {
-      for(model = 0; model < tr->NumberOfModels; model++)
-        tr->executeModel[model] = !tr->curvatOK[0];
+      for(model = 0; model < pr->numberOfPartitions; model++)
+        pr->partitionData[model]->executeModel = !tr->curvatOK[0];
     }
 
 
@@ -1022,8 +1022,8 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
   /* reset  partition execution mask */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
-    tr->executeModel[model] = TRUE;
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    pr->partitionData[model]->executeModel = TRUE;
 
   /* copy the new branches in the result array of branches.
      if we don't do a per partition estimate of 
@@ -1038,7 +1038,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
    between nodes p and q.
    The new branch lengths will be stored in result */
 
-void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
+void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
 {
   int i;
   boolean originalExecute[NUM_BRANCHES];
@@ -1055,17 +1055,17 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
 
   for(i = 0; i < tr->numBranches; i++)
   {
-    originalExecute[i] =  tr->executeModel[i];
+    originalExecute[i] =  pr->partitionData[i]->executeModel;
     tr->td[0].ti[0].qz[i] =  z0[i];
     if(mask)
     {
-      if(tr->partitionConverged[i])
-        tr->executeModel[i] = FALSE;
+      if (tr->partitionConverged[i])
+        pr->partitionData[i]->executeModel = FALSE;
       else
-        tr->executeModel[i] = TRUE;
+        pr->partitionData[i]->executeModel = TRUE;
     }
   }
-  if(tr->useRecom)
+  if (tr->useRecom)
   {
     int
       slot = -1,
@@ -1098,7 +1098,7 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
 
   /* call the Newton-Raphson procedure */
 
-  topLevelMakenewz(tr, z0, maxiter, result);
+  topLevelMakenewz(tr, pr, z0, maxiter, result);
 
   /* Mark node as unpinnable */
   if(tr->useRecom)
@@ -1110,7 +1110,7 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   /* fix eceuteModel this seems to be a bit redundant with topLevelMakenewz */ 
 
   for(i = 0; i < tr->numBranches; i++)
-    tr->executeModel[i] = TRUE;
+    pr->partitionData[i]->executeModel = TRUE;
 }
 
 

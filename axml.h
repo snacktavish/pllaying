@@ -1371,7 +1371,7 @@ extern void newviewAncestralIterative(tree *tr, partitionList *pr);
 extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr, partitionList *pr);
 
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
-extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
+extern void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
 extern void makenewzGenericDistance(tree *tr, int maxiter, double *z0, double *result, int taxon1, int taxon2);
 extern double evaluatePartitionGeneric (tree *tr, nodeptr p, int model);
 extern void newviewPartitionGeneric (tree *tr, nodeptr p, int model);
