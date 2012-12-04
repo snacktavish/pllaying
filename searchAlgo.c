@@ -1393,7 +1393,7 @@ static void readCheckpoint(tree *tr, partitionList *pr)
   }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);
+  masterBarrier(THREAD_COPY_INIT_MODEL, tr, pr);
 #endif
 
   updatePerSiteRates(tr, pr, FALSE);

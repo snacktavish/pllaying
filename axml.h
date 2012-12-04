@@ -821,6 +821,10 @@ typedef struct {
   double partitionContribution;
   double partitionLH;
 
+#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+  int partitionAssignment;
+#endif
+
 } pInfo;
 
 typedef struct
@@ -952,8 +956,6 @@ typedef  struct  {
   volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-    
-  int *partitionAssignment;     
  
   unsigned char *y_ptr; 
   
@@ -1481,7 +1483,7 @@ extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 extern void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods);
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
-extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid);
+extern void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid);
 extern void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates);
 
 extern void restart(tree *tr, partitionList *pr);
@@ -1526,7 +1528,7 @@ void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
 void threadComputePearson(tree *tr, int tid);
 
-extern void masterBarrier(int jobType, tree *tr);
+extern void masterBarrier(int jobType, tree *tr, partitionList *pr);
 
 #endif
 
@@ -1544,10 +1546,11 @@ void startPthreads(tree *tr);
 typedef struct
 {
   tree *tr;
+  partitionList *pr;
   int threadNumber;
 }
   threadData;
-extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
+extern void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
 #endif
 

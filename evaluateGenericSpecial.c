@@ -786,7 +786,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
      their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
      */
 
-  masterBarrier(THREAD_EVALUATE, tr); 
+  masterBarrier(THREAD_EVALUATE, tr, pr);
 
   /* and now here we explicitly do the reduction operation , that is add over the 
      per-thread and per-partition log likelihoods to obtain the overall log like 
@@ -864,7 +864,7 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
      This corresponds to a gather operation in MPI.
      */
 
-  masterBarrier(THREAD_PER_SITE_LIKELIHOODS, tr);
+  masterBarrier(THREAD_PER_SITE_LIKELIHOODS, tr, pr);
 
   /* 
      when the parallel region has terminated, the per-site log likelihoods 

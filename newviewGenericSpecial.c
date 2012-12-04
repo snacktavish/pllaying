@@ -1497,7 +1497,7 @@ void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked)
        not that we do not need a reduction operation here, but just a barrier to make 
        sure that all threads are done with their partition */
 
-    masterBarrier(THREAD_NEWVIEW, tr);
+    masterBarrier(THREAD_NEWVIEW, tr, pr);
 #else
     /* in the sequential case we now simply call newviewIterative() */
 
@@ -1807,7 +1807,7 @@ void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p)
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
 
-  masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr);
+  masterBarrier(THREAD_NEWVIEW_ANCESTRAL, tr, pr);
 #else
   /* now call the dedicated function that does the mathematical transformation of the 
      conditional likelihood vector at p to obtain the marginal ancestral states */
@@ -1821,7 +1821,7 @@ void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p)
   /* invoke another parallel region to gather the marginal ancestral probabilities 
      from the threads/MPI processes */
 
-  masterBarrier(THREAD_GATHER_ANCESTRAL, tr);
+  masterBarrier(THREAD_GATHER_ANCESTRAL, tr, pr);
 #endif
 
   

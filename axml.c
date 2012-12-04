@@ -1230,7 +1230,7 @@ int main (int argc, char *argv[])
      */
   
   /* mpi version now also uses the generic barrier */
-  masterBarrier(THREAD_INIT_PARTITION, tr); 
+  masterBarrier(THREAD_INIT_PARTITION, tr, partitions);
 #else  /* SEQUENTIAL */
   /* 
      allocate the required data structures for storing likelihood vectors etc 
@@ -1454,7 +1454,7 @@ int main (int argc, char *argv[])
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* workers escape from their while loop (could be joined in pthread case )  */
-  masterBarrier(THREAD_EXIT_GRACEFULLY,tr);
+  masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
 #endif
 
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */

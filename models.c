@@ -3840,7 +3840,7 @@ void initModel(tree *tr, double **empiricalFrequencies, partitionList * partitio
     }  
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr);  
+  masterBarrier(THREAD_COPY_INIT_MODEL, tr, partitions);
 #endif
 }
 

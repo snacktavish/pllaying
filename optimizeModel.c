@@ -373,7 +373,7 @@ static void evaluateChange(tree *tr, partitionList *pr, int rateNumber, double *
       assert(pos == numberOfModels);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
-      masterBarrier(THREAD_OPT_RATE, tr);
+      masterBarrier(THREAD_OPT_RATE, tr, pr);
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, pr, tr->start, TRUE);
@@ -432,7 +432,7 @@ static void evaluateChange(tree *tr, partitionList *pr, int rateNumber, double *
 	    }
 	}
 #if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-      masterBarrier(THREAD_OPT_ALPHA, tr);
+      masterBarrier(THREAD_OPT_ALPHA, tr, pr);
 #else  
       evaluateGeneric(tr, pr, tr->start, TRUE);
 #endif
@@ -1092,7 +1092,7 @@ static void optAlpha(tree *tr, partitionList *pr, double modelEpsilon, linkageLi
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   if(revertModel > 0)
-    masterBarrier(THREAD_COPY_ALPHA, tr);
+    masterBarrier(THREAD_COPY_ALPHA, tr, pr);
 #endif
   
   free(startLH);
@@ -1248,7 +1248,7 @@ static void optRates(tree *tr, partitionList *pr, double modelEpsilon, linkageLi
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       if(revertModel > 0)
-	masterBarrier(THREAD_COPY_RATES, tr);
+	masterBarrier(THREAD_COPY_RATES, tr, pr);
 #endif
       
       assert(pos == numberOfModels);
@@ -1568,7 +1568,7 @@ static void categorizePartition(tree *tr, partitionList *pr, rateCategorize *rc,
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
-void optRateCatPthreads(tree *tr, partitionData *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
+void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
   int 
     model, 
@@ -1974,7 +1974,7 @@ void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
     }
   
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_RATE_CATS, tr);
+  masterBarrier(THREAD_COPY_RATE_CATS, tr, pr);
 #endif               
 }
 
@@ -2040,7 +2040,7 @@ static void optimizeRateCategories(tree *tr, partitionList *pr, int _maxCategori
       /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr);      
+      masterBarrier(THREAD_RATE_CATS, tr, pr);
 #else      
       for(model = 0; model < pr->numberOfPartitions; model++)
 	optRateCatModel(tr, pr, model, lower_spacing, upper_spacing, tr->lhs);
@@ -2294,7 +2294,7 @@ static void autoProtein(tree *tr, partitionList *pr)
 	    }
 	  
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-	  masterBarrier(THREAD_COPY_RATES, tr);     
+	  masterBarrier(THREAD_COPY_RATES, tr, pr);
 #endif
 	  
 	  resetBranches(tr);
@@ -2332,7 +2332,7 @@ static void autoProtein(tree *tr, partitionList *pr)
       printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      masterBarrier(THREAD_COPY_RATES, tr);     
+      masterBarrier(THREAD_COPY_RATES, tr, pr);
 #endif
 
       resetBranches(tr);

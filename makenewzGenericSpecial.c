@@ -943,12 +943,12 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
     if(firstIteration)
       {
 	tr->td[0].traversalHasChanged = TRUE; 
-	masterBarrier(THREAD_MAKENEWZ_FIRST, tr); 
+	masterBarrier(THREAD_MAKENEWZ_FIRST, tr, pr);
 	firstIteration = FALSE; 
 	tr->td[0].traversalHasChanged = FALSE; 
       }
     else 
-      masterBarrier(THREAD_MAKENEWZ, tr); 
+      masterBarrier(THREAD_MAKENEWZ, tr, pr);
     branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2); 
 #else 
     /* sequential part, if this is the first newton-raphson implementation,
