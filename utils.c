@@ -28,6 +28,11 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file utils.c
+ *  
+ *  @brief Miscellaneous general utility and helper functions
+ */
+
 #ifdef WIN32
 #include <direct.h>
 #endif
@@ -259,6 +264,20 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 }
 #endif
 
+/** @brief Read MSA from a file and setup the tree
+ *
+ *  Reads the MSA from \a filename and constructs the
+ *  the tree \a tr and sets up partition and model data
+ *
+ *  @todo This will be soon replaced by \a read_phylip_msa
+ *
+ *  @param tr
+ *    Pointer to the tree to be set up
+ *
+ *  @param filename
+ *    Filename containing the MSA
+ *
+ */
 void read_msa(tree *tr, const char *filename)
   {
     size_t
@@ -746,6 +765,17 @@ FILE *myfopen(const char *path, const char *mode)
 /******************************some functions for the likelihood computation ****************************/
 
 
+/** @brief Check whether a node is a tip.
+  * 
+  * @param number
+  *  Node number to be checked
+  *
+  * @param maxTips
+  *  Number of tips in the tree
+  *
+  * @return
+  *   \b TRUE if tip, \b FALSE otherwise
+  */
 boolean isTip(int number, int maxTips)
 {
   assert(number > 0);
@@ -770,7 +800,20 @@ void getxnode (nodeptr p)
 }
 
 
-/* connects node p with q and assigns the branch lengths z */
+/** @brief Connect two nodes and assign branch lengths 
+  * 
+  * Connect the two nodes \a p and \a q in each partition \e i with a branch of
+  * length \a z[i]
+  *
+  * @param p
+  *   Node \a p
+  * 
+  * @param q
+  *   Node \a q
+  *
+  * @param numBranches
+  *   Number of partitions
+  */
 void hookup (nodeptr p, nodeptr q, double *z, int numBranches)
 {
   int i;
