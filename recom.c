@@ -10,10 +10,27 @@
 
 #include "axml.h"
 
+/** @file recom.c
+ *  
+ *  @brief functions used for recomputation of vectors (only a fraction of LH vectors stored in RAM)   
+ */
+
+/** @brief Locks node \a nodenum to force it remains availably in memory
+ *
+ * @warning If a node is available we dont need to recompute it, but we neet to make sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be false at this point, it will automatically be set to true, after the counter post-order instructions have been executed 
+Omitting this call the traversal will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! 
+ *
+ *  @param rvec 
+ *
+ *  @param nodenum
+ *    Node id that must remain available in memory 
+ *
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 void protectNode(recompVectors *rvec, int nodenum, int mxtips)
 {
-  /* If a node is available we dont need to recompute it, but we neet to maker sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be false at this point, it will automatically be set to true, after the *counter post-order instructions have been executed */
-  /* This might be a but in RAxML-light, Omitting this code will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! */
 
   int slot;
   slot = rvec->iNode[nodenum - mxtips - 1];
@@ -287,13 +304,6 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 
   return slotNeedsRecomp;
 }
-
-
-
-
-
-
-
 
 
 #ifdef _DEBUG_RECOMPUTATION
