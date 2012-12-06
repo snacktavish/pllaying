@@ -1228,7 +1228,7 @@ extern void mcmc(tree *tr, analdef *adef);
 #endif
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-boolean isThisMyPartition(tree *localTree, int tid, int model);
+boolean isThisMyPartition(partitionList *pr, int tid, int model);
 void printParallelTimePerRegion(); 
 #endif
 
@@ -1536,11 +1536,11 @@ extern void masterBarrier(int jobType, tree *tr, partitionList *pr);
 
 boolean workerTrap(tree *tr); 
 void initMPI(int argc, char *argv[]); 
-void initializePartitions(tree *tr, tree *localTree, partitionList *pr, int tid, int n);
-void multiprocessorScheduling(tree *tr, int tid); 
-void computeFraction(tree *localTree, int tid, int n); 
-void computeFractionMany(tree *localTree, int tid); 
-void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n); 
+void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
+void multiprocessorScheduling(tree *tr, partitionList *pr, int tid);
+void computeFraction(partitionList *localPr, int tid, int n);
+void computeFractionMany(partitionList *localPr, int tid);
+void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 void startPthreads(tree *tr); 
 
 typedef struct

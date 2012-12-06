@@ -1580,7 +1580,7 @@ void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, doubl
 	localIndex = 0;
 
       boolean 
-	execute = ((tr->manyPartitions && isThisMyPartition(tr, tid, model)) || (!tr->manyPartitions));
+	execute = ((tr->manyPartitions && isThisMyPartition(pr, tid, model)) || (!tr->manyPartitions));
 
       if(execute)
 	for(i = pr->partitionData[model]->lower;  i < pr->partitionData[model]->upper; i++)

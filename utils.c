@@ -937,7 +937,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
   tr->nameHash = initStringHashTable(10 * tr->mxtips);
 
   for (i = 0; i < partitions->numberOfPartitions; i++) {
-	partitions->partitionData[i] = malloc (sizeof(pInfo));
+	partitions->partitionData[i] = (pInfo*)malloc (sizeof(pInfo));
 	partitions->partitionData[i]->partitionContribution = -1.0;
 	partitions->partitionData[i]->partitionLH = 0.0;
 	partitions->partitionData[i]->fracchange = 1.0;
@@ -1338,10 +1338,10 @@ void initializePartitionsSequential(tree *tr, partitionList *pr)
 
 
 /* interface to outside  */
-void initializePartitions(tree *tr, tree *localTree, partitionList *pr, int tid, int n)
+void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 {
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  initializePartitionsMaster(tr,localTree,tid,n);
+  initializePartitionsMaster(tr,localTree,pr,localPr,tid,n);
 #else
   initializePartitionsSequential(tr, pr);
 #endif

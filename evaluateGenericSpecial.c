@@ -50,7 +50,7 @@
 #endif
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid); 
+void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid);
 #endif
 
 
@@ -857,7 +857,7 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 #if (defined( _USE_PTHREADS ) || defined(_FINE_GRAIN_MPI))
   /* here we need a barrier to invoke a parallel region that calls 
      function 
-     perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid)
+     perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid)
      defined above and subsequently collects the per-site log likelihoods 
      computed by the threads and stored in local per-thread memory 
      and stores them in buffer tr->lhs.
