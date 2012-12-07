@@ -793,12 +793,16 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
 #else 
   /* the efficient mpi version: a proper reduce  */
   double buf[localPr->numberOfPartitions];
-  memset(buf, 0, sizeof(double) * localPr->numberOfPartitions);
-  //TODO: With the model separation it's necessary to change this!!!!
-  assert(0);
-  //MPI_Reduce(localTree->perPartitionLH, buf, localPr->numberOfPartitions, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  //if(MASTER_P)
-  //  memcpy(localTree->perPartitionLH, buf, localPr->numberOfPartitions * sizeof(double)) ;
+  for(model = 0; model < localPr->numberOfPartitions; ++model)
+      buf[model] = localPr->partitionData[model]->partitionLH;
+  double targetBuf[localPr->numberOfPartitions];
+  memset(targetBuf, 0, sizeof(double) * localPr->numberOfPartitions);
+  MPI_Reduce(buf, targetBuf, localPr->numberOfPartitions, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  if(MASTER_P) {
+	  for(model = 0; model < localPr->numberOfPartitions; ++model) {
+		  localPr->partitionData[model]->partitionLH = targetBuf[model];
+	  }
+  }
 #endif
 }
 
