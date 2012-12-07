@@ -1534,14 +1534,14 @@ extern void masterBarrier(int jobType, tree *tr, partitionList *pr);
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
 
-boolean workerTrap(tree *tr); 
+boolean workerTrap(tree *tr, partitionList *pr);
 void initMPI(int argc, char *argv[]); 
 void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 void multiprocessorScheduling(tree *tr, partitionList *pr, int tid);
 void computeFraction(partitionList *localPr, int tid, int n);
 void computeFractionMany(partitionList *localPr, int tid);
 void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
-void startPthreads(tree *tr); 
+void startPthreads(tree *tr, partitionList *pr);
 
 typedef struct
 {

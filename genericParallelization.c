@@ -19,7 +19,7 @@ double timeBuffer[NUM_PAR_JOBS];
 double timePerRegion[NUM_PAR_JOBS]; 
 #endif
 
-void initializePartitionData(tree *localTree);
+void initializePartitionData(tree *localTree, partitionList *localPr);
 void initMemorySavingAndRecom(tree *tr); 
 char* getJobName(int tmp); 
 
@@ -60,7 +60,7 @@ void initMPI(int argc, char *argv[])
 
 
 /* this is the trap for the mpi worker processes   */
-boolean workerTrap(tree *tr)
+boolean workerTrap(tree *tr, partitionList *pr)
 {
   /* :KLUDGE: for broadcasting, we need to know, if the tree structure
      already has been initialized */  
@@ -70,7 +70,8 @@ boolean workerTrap(tree *tr)
     {
       threadData tData; 
       tData.tr = tr; 
-      tData.threadNumber = processID; 
+      tData.threadNumber = processID;
+      tData.pr = pr;
       
       likelihoodThread(&tData);
       return TRUE; 
@@ -145,7 +146,7 @@ void pinToCore(int tid)
 }
 #endif
 
-void startPthreads(tree *tr)
+void startPthreads(tree *tr, partitionList *pr)
 {
   pthread_t *threads;
   pthread_attr_t attr;
@@ -176,6 +177,7 @@ void startPthreads(tree *tr)
   for(t = 1; t < tr->numberOfThreads; t++)
     {
       tData[t].tr  = tr;
+      tData[t].pr  = pr;
       tData[t].threadNumber = t;
       rc = pthread_create(&threads[t], &attr, likelihoodThread, (void *)(&tData[t]));
       if(rc)
@@ -354,7 +356,6 @@ void computeFraction(partitionList *localPr, int tid, int n)
       for(i = localPr->partitionData[model]->lower; i < localPr->partitionData[model]->upper; i++)
 	if(i % n == tid)
 	  width++;
-
       localPr->partitionData[model]->width = width;
     }
 }
@@ -935,7 +936,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 
   /* here the master sends and all threads/processes receive the traversal descriptor */
   broadcastTraversalInfo(localTree, tr, localPr, pr);
-  
+
 #ifdef _USE_PTHREADS
   /* make sure that nothing is going wrong */
   assert(currentJob == localTree->td[0].functionType);
@@ -1002,11 +1003,11 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
       break;
 
     case THREAD_INIT_PARTITION:       
-      
+
       /* broadcast data and initialize and allocate arrays in partitions */
       
       initializePartitions(tr, localTree, pr, localPr, tid, n);
-      
+
       break;          
     case THREAD_COPY_ALPHA: 
     case THREAD_OPT_ALPHA:
@@ -1089,7 +1090,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	ASSIGN_DBL( localTree->lower_spacing,  tr->lower_spacing);
 	ASSIGN_DBL( localTree->upper_spacing,  tr->upper_spacing);
 
-	optRateCatPthreads(localTree, pr, localTree->lower_spacing, localTree->upper_spacing, localTree->lhs, n, tid);
+	optRateCatPthreads(localTree, localPr, localTree->lower_spacing, localTree->upper_spacing, localTree->lhs, n, tid);
 
 	broadcastAfterRateOpt(tr, localTree, pr, n,  tid);
       }
@@ -1247,7 +1248,7 @@ void *likelihoodThread(void *tData)
 #ifdef _USE_PTHREADS
   tree *localTree = calloc(1,sizeof(tree )); 
   partitionList *localPr = calloc(1,sizeof(partitionList));
-  
+
   int
     myCycle = 0;
 
@@ -1352,7 +1353,7 @@ void masterBarrier(int jobType, tree *tr, partitionList *pr)
   threadJob = (jobType << 16) + jobCycle;
 
   execFunction(tr, tr, pr, pr, 0, n);
-  
+
   int 
     i, 
     sum;
@@ -1585,10 +1586,10 @@ void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, pa
   assignAndInitPart1(localTree, tr, localPr, pr, &tid);
   defineTraversalInfoMPI();
 #endif
-  
+
   for(model = 0; model < (size_t)localPr->numberOfPartitions; model++)
     localPr->partitionData[model]->width        = 0;
-  
+
   if(tr->manyPartitions)    
     {
       multiprocessorScheduling(localTree, localPr, tid);
@@ -1597,7 +1598,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, pa
   else
     computeFraction(localPr, tid, n);
 
-  initializePartitionData(localTree); 
+  initializePartitionData(localTree, localPr);
 
   {
     size_t 
@@ -1629,6 +1630,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, pa
     distributeWeights(localTree, tr, localPr, pr);
 
     distributeYVectors(localTree, tr, localPr, pr);
+
   }
 
   initMemorySavingAndRecom(localTree);

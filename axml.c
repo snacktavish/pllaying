@@ -1047,7 +1047,7 @@ int main (int argc, char *argv[])
   masterTimePerPhase = gettime();
 #endif
   initMPI(argc, argv);
-  if(workerTrap(tr))
+  if(workerTrap(tr, partitions))
     return 0; 
 #endif
 #ifdef _USE_PTHREADS
@@ -1218,7 +1218,7 @@ int main (int argc, char *argv[])
      we use startPthreads to start the n-1 worker threads */
   
 #ifdef _USE_PTHREADS
-  startPthreads(tr);
+  startPthreads(tr, partitions);
 #endif
 
   /* via masterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 

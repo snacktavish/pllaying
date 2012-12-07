@@ -81,6 +81,7 @@ void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr)
 
   for(model = 0; model < pr->numberOfPartitions; model++)
     tr->td[0].executeModel[model] = pr->partitionData[model]->executeModel;
+
 }
 
 void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value)
@@ -859,6 +860,8 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
 
   tr->td[0].count = 0;
   tr->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
+  tr->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * (size_t)NUM_BRANCHES);
+  tr->td[0].parameterValues = (double *)malloc(sizeof(double) * (size_t)NUM_BRANCHES);
 
   tr->fracchange = -1.0;
 
