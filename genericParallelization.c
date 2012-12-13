@@ -510,7 +510,7 @@ void multiprocessorScheduling(tree *tr, partitionList *pr, int tid)
 
    Note: operates on global reduction buffers 
 */
-void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) 
+void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches )
 {
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 
@@ -519,20 +519,20 @@ void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 )
   
   int b; 
   int t; 
-  for(b = 0; b < tr->numBranches; ++b)
+  for(b = 0; b < numBranches; ++b)
     {
       dlnLdlz[b] = 0; 
       d2lnLdlz2[b] = 0; 
 
       for(t = 0; t < tr->numberOfThreads; ++t)
 	{
-	  dlnLdlz[b] += globalResult[t * tr->numBranches * 2 + b ]; 
-	  d2lnLdlz2[b] += globalResult[t * tr->numBranches * 2 + tr->numBranches + b]; 
+	  dlnLdlz[b] += globalResult[t * numBranches * 2 + b ];
+	  d2lnLdlz2[b] += globalResult[t * numBranches * 2 + numBranches + b];
 	}
     }
 #else 
-  memcpy(dlnLdlz, globalResult, sizeof(double) * tr->numBranches); 
-  memcpy(d2lnLdlz2, globalResult + tr->numBranches, sizeof(double) * tr->numBranches);
+  memcpy(dlnLdlz, globalResult, sizeof(double) * numBranches);
+  memcpy(d2lnLdlz2, globalResult + numBranches, sizeof(double) * numBranches);
 #endif
 }
 
@@ -983,24 +983,26 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	/* as for evaluate above, the final sum over the derivatives will be computed by the 
 	   master thread in its sequential part of the code */
 
+	int numBranches = localPr->perGeneBranchLengths?localPr->numberOfPartitions:1;
+
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 	/* MPI: implemented as a gather again, pthreads: just buffer copying */	
-	double buf[ 2 * localTree->numBranches]; 
-	memcpy( buf, dlnLdlz, localTree->numBranches * sizeof(double) ); 
-	memcpy(buf + localTree->numBranches, d2lnLdlz2, localTree->numBranches * sizeof(double)); 	
+	double buf[ 2 * numBranches];
+	memcpy( buf, dlnLdlz, numBranches * sizeof(double) );
+	memcpy(buf + numBranches, d2lnLdlz2, numBranches * sizeof(double));
 
-	ASSIGN_GATHER(globalResult, buf,  2 * localTree->numBranches, DOUBLE, tid); 
+	ASSIGN_GATHER(globalResult, buf,  2 * numBranches, DOUBLE, tid);
 #else 	
-	double result[localTree->numBranches];
-	memset(result,0, localTree->numBranches * sizeof(double)); 
-	MPI_Reduce( dlnLdlz , result , localTree->numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	double result[numBranches];
+	memset(result,0, numBranches * sizeof(double));
+	MPI_Reduce( dlnLdlz , result , numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	if(MASTER_P)
-	  memcpy(globalResult, result, sizeof(double) * localTree->numBranches); 
+	  memcpy(globalResult, result, sizeof(double) * numBranches);
 	
-	memset(result,0,localTree->numBranches * sizeof(double)); 
-	MPI_Reduce( d2lnLdlz2 , result , localTree->numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	memset(result,0,numBranches * sizeof(double));
+	MPI_Reduce( d2lnLdlz2 , result , numBranches, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 	if(MASTER_P)
-	  memcpy(globalResult + localTree->numBranches, result, sizeof(double) * localTree->numBranches); 
+	  memcpy(globalResult + numBranches, result, sizeof(double) * numBranches);
 #endif
       }
 
@@ -1272,6 +1274,10 @@ void *likelihoodThread(void *tData)
       while (myCycle == threadJob);
       myCycle = threadJob;
 
+      if ((threadJob >> 16) != THREAD_INIT_PARTITION) {
+    	  localPr->perGeneBranchLengths = pr->perGeneBranchLengths;
+      	  localPr->numberOfPartitions = pr->numberOfPartitions;
+      }
       execFunction(tr, localTree, pr, localPr, tid, n);
 
       barrierBuffer[tid] = 1;     
@@ -1420,8 +1426,11 @@ static void assignAndInitPart1(tree *localTree, tree *tr, partitionList *localPr
   ASSIGN_BUF( localTree->maxCategories,             tr->maxCategories, int);
   ASSIGN_BUF( localTree->originalCrunchedLength,    tr->originalCrunchedLength, int);
   ASSIGN_BUF( localTree->mxtips,                    tr->mxtips, int);
-  ASSIGN_BUF( localTree->numBranches,               tr->numBranches, int);
-
+  //DIEGO: CHECK THIS
+  printf("[DEBUG] ASSIGN PR\n");
+  ASSIGN_BUF( localPr->numberOfPartitions,          pr->numberOfPartitions, int);
+  ASSIGN_BUF( localPr->perGeneBranchLengths,        pr->perGeneBranchLengths, boolean);
+  printf("[DEBUG] ASSIGNED PR\n");
 
   localTree->td[0].count = 0; 
 

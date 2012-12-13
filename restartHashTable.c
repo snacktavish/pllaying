@@ -268,7 +268,7 @@ static boolean addElementLenString(const char *fp, tree *tr, nodeptr p, int *pos
   if(!fres) 
     return FALSE;
   
-  hookupDefault(p, q, tr->numBranches);
+  hookupDefault(p, q);
 
   return TRUE;          
 }

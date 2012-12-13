@@ -1752,7 +1752,7 @@ void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
     i,
     model;
 
-  if(tr->numBranches > 1)
+  if(pr->perGeneBranchLengths && pr->numberOfPartitions > 1)
     {            
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{
@@ -2162,13 +2162,13 @@ void resetBranches(tree *tr)
   p = tr->nodep[1];
   while (nodes-- > 0) 
     {   
-      for(i = 0; i < tr->numBranches; i++)
+      for(i = 0; i < NUM_BRANCHES; i++)
 	p->z[i] = defaultz;
 	
       q = p->next;
       while(q != p)
 	{	
-	  for(i = 0; i < tr->numBranches; i++)
+	  for(i = 0; i < NUM_BRANCHES; i++)
 	    q->z[i] = defaultz;	    
 	  q = q->next;
 	}

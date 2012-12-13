@@ -831,6 +831,7 @@ typedef struct
 {
 	pInfo **partitionData;
 	size_t numberOfPartitions;
+	boolean perGeneBranchLengths;
 } partitionList;
 
 typedef struct 
@@ -982,7 +983,6 @@ typedef  struct  {
   int              categories;
 
   double           coreLZ[NUM_BRANCHES];
-  int              numBranches;
   
   
  
@@ -1264,7 +1264,8 @@ extern double randum ( long *seed );
 
 extern void getxnode ( nodeptr p );
 extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
-extern void hookupDefault ( nodeptr p, nodeptr q, int numBranches);
+extern void hookupFull ( nodeptr p, nodeptr q, double *z);
+extern void hookupDefault ( nodeptr p, nodeptr q);
 extern boolean whitechar ( int ch );
 extern void printResult ( tree *tr, partitionList *pr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
@@ -1319,7 +1320,7 @@ extern boolean smoothRegion ( tree *tr, partitionList *pr, nodeptr p, int region
 extern boolean regionalSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region );
 extern nodeptr removeNodeBIG ( tree *tr, partitionList *pr, nodeptr p, int numBranches);
 extern nodeptr removeNodeRestoreBIG ( tree *tr, partitionList *pr, nodeptr p );
-extern boolean insertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q, int numBranches);
+extern boolean insertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q);
 extern boolean insertRestoreBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
 extern boolean testInsertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
 extern void addTraverseBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
@@ -1336,11 +1337,11 @@ extern void meshTreeSearch(tree *tr, analdef *adef, int thorough);
 
 extern void initTL ( topolRELL_LIST *rl, tree *tr, int n );
 extern void freeTL ( topolRELL_LIST *rl);
-extern void restoreTL ( topolRELL_LIST *rl, tree *tr, int n );
+extern void restoreTL ( topolRELL_LIST *rl, tree *tr, int n, int numBranches );
 extern void resetTL ( topolRELL_LIST *rl );
 extern void saveTL ( topolRELL_LIST *rl, tree *tr, int index );
 
-extern int  saveBestTree (bestlist *bt, tree *tr);
+extern int  saveBestTree (bestlist *bt, tree *tr, int numBranches);
 extern int  recallBestTree (bestlist *bt, int rank, tree *tr, partitionList *pr);
 extern int initBestTree ( bestlist *bt, int newkeep, int numsp );
 extern void resetBestTree ( bestlist *bt );
@@ -1383,7 +1384,7 @@ extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0
 extern boolean isTip(int number, int maxTips);
 
 /* recom functions */
-extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal);
+extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal, int numBranches);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
 extern void allocRecompVectorsInfo(tree *tr);
 extern void allocTraversalCounter(tree *tr);

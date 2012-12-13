@@ -560,7 +560,7 @@ of the current partition.
       /* if we are using a per-partition branch length estimate, the branch has an index, otherwise, for a joint branch length
          estimate over all partitions we just use the branch length value with index 0 */
 
-      if(tr->numBranches > 1)
+      if(pr->perGeneBranchLengths)
         z = pz[model];
       else
         z = pz[0];
@@ -714,6 +714,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
         p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
         q_recom = FALSE;
 
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
@@ -724,7 +725,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* copy the branch lengths of the tree into the first entry of the traversal descriptor.
      if -M is not used tr->numBranches must be 1 */
 
-  for(i = 0; i < tr->numBranches; i++)    
+  for(i = 0; i < numBranches; i++)
     tr->td[0].ti[0].qz[i] =  q->z[i];
 
   /* recom part */
@@ -756,15 +757,15 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   if(fullTraversal)
   { 
     assert(isTip(q->back->number, tr->mxtips));
-    computeTraversal(tr, q, FALSE);
+    computeTraversal(tr, q, FALSE, numBranches);
   }
   else
   {
     if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-      computeTraversal(tr, p, TRUE);
+      computeTraversal(tr, p, TRUE, numBranches);
 
     if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-      computeTraversal(tr, q, TRUE);
+      computeTraversal(tr, q, TRUE, numBranches);
   }
 
 

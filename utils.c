@@ -121,7 +121,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
   tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
 
-    tr->numBranches = 1;
+  pr->perGeneBranchLengths = FALSE;
 
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
@@ -287,7 +287,7 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
     else
       tr->numBranches = 1;
     */
-    tr->numBranches = 1;
+    pr->perGeneBranchLengths = FALSE;
     setupTree(tr, TRUE);
     
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
@@ -486,13 +486,14 @@ void printResult(tree *tr, partitionList *pr, analdef *adef, boolean finalPrint)
       if(adef->perGeneBranchLengths)
         printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
       break;
-    case BIG_RAPID_MODE:     
+    case BIG_RAPID_MODE:
       if(finalPrint)
       {
         switch(tr->rateHetModel)
         {
           case GAMMA:
           case GAMMA_I:
+
             Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
                 SUMMARIZE_LH, FALSE, FALSE);
 
@@ -506,7 +507,6 @@ void printResult(tree *tr, partitionList *pr, analdef *adef, boolean finalPrint)
           case CAT:
             /*Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
               NO_BRANCHES, FALSE, FALSE);*/
-
 
 
             Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
@@ -781,16 +781,32 @@ void hookup (nodeptr p, nodeptr q, double *z, int numBranches)
     p->z[i] = q->z[i] = z[i];
 }
 
-/* connect node p with q and assign the default branch lengths */
-void hookupDefault (nodeptr p, nodeptr q, int numBranches)
+/* connects node p with q and assigns the branch lengths z for the whole vector*/
+void hookupFull (nodeptr p, nodeptr q, double *z)
 {
   int i;
 
   p->back = q;
   q->back = p;
 
-  for(i = 0; i < numBranches; i++)
+  memcpy(p->z, z, NUM_BRANCHES*sizeof(double) );
+  memcpy(q->z, z, NUM_BRANCHES*sizeof(double) );
+  //for(i = 0; i < numBranches; i++)
+  //  p->z[i] = q->z[i] = z[i];
+
+}
+
+/* connect node p with q and assign the default branch lengths */
+void hookupDefault (nodeptr p, nodeptr q)
+{
+  int i;
+
+  p->back = q;
+  q->back = p;
+
+  for(i = 0; i < NUM_BRANCHES; i++)
     p->z[i] = q->z[i] = defaultz;
+
 }
 
 
@@ -928,7 +944,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
   tr->ntips       = 0;
   tr->nextnode    = 0;
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < NUM_BRANCHES; i++)
     tr->partitionSmoothed[i] = FALSE;
 
   tr->bitVectors = (unsigned int **)NULL;
@@ -1290,7 +1306,8 @@ void initMemorySavingAndRecom(tree *tr, partitionList *pr)
 
 double get_branch_length(tree *tr, nodeptr p, int partition_id)
 {
-  assert(partition_id < tr->numBranches);
+  //assert(partition_id < tr->numBranches);
+  assert(partition_id < NUM_BRANCHES);
   assert(partition_id >= 0);
   assert(tr->fracchange != -1.0);
   double z = p->z[partition_id];
@@ -1300,7 +1317,8 @@ double get_branch_length(tree *tr, nodeptr p, int partition_id)
 }
 void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl)
 {
-  assert(partition_id < tr->numBranches);
+  //assert(partition_id < tr->numBranches);
+  assert(partition_id < NUM_BRANCHES);
   assert(partition_id >= 0);
   assert(tr->fracchange != -1.0);
   double z;

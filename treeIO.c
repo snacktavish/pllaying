@@ -179,10 +179,11 @@ double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
   double 
     z = 0.0,
     x = 0.0;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   assert(perGene != NO_BRANCHES);
 	      
-  if(tr->numBranches == 1)
+  if(numBranches == 1)
     {
       assert(tr->fracchange != -1.0);
       z = p->z[0];
@@ -201,7 +202,7 @@ double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
 	  double 
 	    avgX = 0.0;
 		      
-	  for(i = 0; i < tr->numBranches; i++)
+	  for(i = 0; i < numBranches; i++)
 	    {
 	      assert(pr->partitionData[i]->partitionContribution != -1.0);
 	      assert(pr->partitionData[i]->fracchange != -1.0);
@@ -217,7 +218,7 @@ double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
       else
 	{	
 	  assert(pr->partitionData[perGene]->fracchange != -1.0);
-	  assert(perGene >= 0 && perGene < tr->numBranches);
+	  assert(perGene >= 0 && perGene < numBranches);
 	  
 	  z = p->z[perGene];
 	  
@@ -454,8 +455,9 @@ void printTreePerGene(tree *tr, partitionList *pr, analdef *adef, char *fileName
   int i;
 
   assert(adef->perGeneBranchLengths);
-     
-  for(i = 0; i < tr->numBranches; i++)	
+
+  int numberOfModels = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  for(i = 0; i < numberOfModels; i++)
     {
       strcpy(extendedTreeFileName, fileName);
       sprintf(buf,"%d", i);
@@ -784,14 +786,14 @@ static boolean addElementLen (FILE *fp, tree *tr, nodeptr p, boolean readBranchL
       if (! treeProcessLength(fp, &branch))            return FALSE;
       
       /*printf("Branch %8.20f %d\n", branch, tr->numBranches);*/
-      hookup(p, q, &branch, tr->numBranches);
+      hookupFull(p, q, &branch);
     }
   else
     {
       fres = treeFlushLen(fp);
       if(!fres) return FALSE;
       
-      hookupDefault(p, q, tr->numBranches);
+      hookupDefault(p, q);
     }
   return TRUE;          
 } 
@@ -806,7 +808,7 @@ static boolean addElementLen (FILE *fp, tree *tr, nodeptr p, boolean readBranchL
 
 
 
-static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boolean readConstraint)
+static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boolean readConstraint, int numBranches)
 {
   nodeptr  q, r, s, start;
   int      n, i;              
@@ -847,12 +849,12 @@ static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boole
     {
       double b[NUM_BRANCHES];
       int i;
-      for(i = 0; i < tr->numBranches; i++)
+      for(i = 0; i < numBranches; i++)
 	b[i] = (r->z[i] + q->z[i]);
-      hookup (q, r, b, tr->numBranches);
+      hookup (q, r, b, numBranches);
     }
   else    
-    hookupDefault(q, r, tr->numBranches);    
+    hookupDefault(q, r);
 
   if(readConstraint && tr->grouped)
     {    
@@ -876,9 +878,9 @@ static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boole
       if(readConstraint && tr->grouped)	
 	tr->constraintVector[p->number] = tr->constraintVector[q->number];       
       
-      hookup(p,             q->back, q->z, tr->numBranches);   /* move connections to p */
-      hookup(p->next,       r->back, r->z, tr->numBranches);
-      hookup(p->next->next, s->back, s->z, tr->numBranches);           
+      hookup(p,             q->back, q->z, numBranches);   /* move connections to p */
+      hookup(p->next,       r->back, r->z, numBranches);
+      hookup(p->next->next, s->back, s->z, numBranches);
       
       q->back = q->next->back = q->next->next->back = (nodeptr) NULL;
     }
@@ -937,7 +939,7 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
   tr->ntips       = 0;
   tr->nextnode    = tr->mxtips + 1;      
  
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < NUM_BRANCHES; i++)
     tr->partitionSmoothed[i] = FALSE;
   
   tr->rooted      = FALSE;     
@@ -992,7 +994,8 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
       assert(!readNodeLabels);
 
       p->next->next->back = (nodeptr) NULL;      
-      tr->start = uprootTree(tr, p->next->next, FALSE, FALSE);      
+      //DIEGO: CHECK THIS
+      tr->start = uprootTree(tr, p->next->next, FALSE, FALSE, NUM_BRANCHES);
       if (! tr->start)                              
 	{
 	  printf("FATAL ERROR UPROOTING TREE\n");

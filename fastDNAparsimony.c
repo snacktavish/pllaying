@@ -701,8 +701,8 @@ static void insertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
   
   r = q->back;
   
-  hookupDefault(p->next,       q, tr->numBranches);
-  hookupDefault(p->next->next, r, tr->numBranches); 
+  hookupDefault(p->next,       q);
+  hookupDefault(p->next->next, r);
    
   newviewParsimony(tr, pr, p);
 } 
@@ -714,7 +714,7 @@ static nodeptr buildNewTip (tree *tr, nodeptr p)
   nodeptr  q;
 
   q = tr->nodep[(tr->nextnode)++];
-  hookupDefault(p, q, tr->numBranches);
+  hookupDefault(p, q);
   q->next->back = (nodeptr)NULL;
   q->next->next->back = (nodeptr)NULL;
  
@@ -731,7 +731,7 @@ static void buildSimpleTree (tree *tr, partitionList *pr, int ip, int iq, int ir
   tr->start = tr->nodep[i];
   tr->ntips = 3;
   p = tr->nodep[ip];
-  hookupDefault(p, tr->nodep[iq], tr->numBranches);
+  hookupDefault(p, tr->nodep[iq]);
   s = buildNewTip(tr, tr->nodep[ir]);
   insertParsimony(tr, pr, s, p);
 }
@@ -747,7 +747,9 @@ static void testInsertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr
 
   boolean 
     doIt = TRUE;
-    
+
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
   if(tr->grouped)
     {
       int 
@@ -783,7 +785,7 @@ static void testInsertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr
 	{
 	  int i;
 	  
-	  for(i = 0; i < tr->numBranches; i++)
+	  for(i = 0; i < numBranches; i++)
 	    z[i] = q->z[i];
 	}
 
@@ -799,9 +801,9 @@ static void testInsertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr
 	}
       
       if(saveBranches)
-	hookup(q, r, z, tr->numBranches);
+	hookup(q, r, z, numBranches);
       else
-	hookupDefault(q, r, tr->numBranches);
+	hookupDefault(q, r);
       
       p->next->next->back = p->next->back = (nodeptr) NULL;
     }
@@ -817,8 +819,8 @@ static void restoreTreeParsimony(tree *tr, partitionList *pr, nodeptr p, nodeptr
   
   int counter = 4;
   
-  hookupDefault(p->next,       q, tr->numBranches);
-  hookupDefault(p->next->next, r, tr->numBranches);
+  hookupDefault(p->next,       q);
+  hookupDefault(p->next->next, r);
   
   computeTraversalInfoParsimony(p, tr->ti, &counter, tr->mxtips, FALSE);              
   tr->ti[0] = counter;
@@ -873,7 +875,7 @@ static nodeptr  removeNodeParsimony (nodeptr p, tree *tr)
   q = p->next->back;
   r = p->next->next->back;   
     
-  hookupDefault(q, r, tr->numBranches);
+  hookupDefault(q, r);
 
   p->next->next->back = p->next->back = (node *) NULL;
   
@@ -940,8 +942,8 @@ static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintra
 	    }
 	    
 	   
-	  hookupDefault(p->next,       p1, tr->numBranches); 
-	  hookupDefault(p->next->next, p2, tr->numBranches);	   	    	    
+	  hookupDefault(p->next,       p1);
+	  hookupDefault(p->next->next, p2);
 
 	  newviewParsimony(tr, pr, p);
 	}
@@ -981,8 +983,8 @@ static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintra
 	      addTraverseParsimony(tr, pr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, FALSE);
 	    }	   
 	   
-	  hookupDefault(q->next,       q1, tr->numBranches); 
-	  hookupDefault(q->next->next, q2, tr->numBranches);
+	  hookupDefault(q->next,       q1);
+	  hookupDefault(q->next->next, q2);
 	   
 	  newviewParsimony(tr, pr, q);
 	}
@@ -1473,8 +1475,8 @@ void makeParsimonyTreeFast(tree *tr, partitionList *pr)
 	
 	int counter = 4;
 	
-	hookupDefault(q->next,       tr->insertNode, tr->numBranches);
-	hookupDefault(q->next->next, r, tr->numBranches);
+	hookupDefault(q->next,       tr->insertNode);
+	hookupDefault(q->next->next, r);
 	
 	computeTraversalInfoParsimony(q, tr->ti, &counter, tr->mxtips, FALSE);              
 	tr->ti[0] = counter;
@@ -1511,6 +1513,7 @@ void makeParsimonyTreeFast(tree *tr, partitionList *pr)
 void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
 {
   int i;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   double   
     p1z[NUM_BRANCHES], 
@@ -1524,7 +1527,7 @@ void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
 
   //printf("parsimonyScore: %u\n", score);
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
     {
       p1z[i] = p1->z[i];
       p2z[i] = p2->z[i];	   	   
@@ -1532,7 +1535,7 @@ void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
   
   tr->bestParsimony = INT_MAX; 
 
-  hookupDefault(p1, p2, tr->numBranches);
+  hookupDefault(p1, p2);
 
   p->next->next->back = p->next->back = (node *) NULL;
 
@@ -1550,8 +1553,8 @@ void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
 
   //printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
 
-  hookup(p1, p->next, p1z,       tr->numBranches);
-  hookup(p2, p->next->next, p2z, tr->numBranches);
+  hookup(p1, p->next, p1z,       numBranches);
+  hookup(p2, p->next->next, p2z, numBranches);
 }
 
 

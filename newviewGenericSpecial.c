@@ -1196,7 +1196,7 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
            use the joint branch length among all partitions that is always stored 
            at index [0] */
 
-        if(tr->numBranches > 1)
+        if(pr->perGeneBranchLengths)
         {
           qz = tInfo->qz[model];		  		    
           rz = tInfo->rz[model];		  
@@ -1415,7 +1415,7 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
 
 }
 
-void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal) 
+void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal, int numBranches)
 {
   /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
   if(tr->useRecom)
@@ -1426,7 +1426,7 @@ void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal)
     else
       computeFullTraversalInfoStlen(p, tr->mxtips, tr->rvec);
   }
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, partialTraversal, tr->rvec, tr->useRecom);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, numBranches, partialTraversal, tr->rvec, tr->useRecom);
 }
 
 
@@ -1449,7 +1449,7 @@ void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked)
   tr->td[0].count = 0;
 
   /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
-  computeTraversal(tr, p, TRUE);
+  computeTraversal(tr, p, TRUE, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
@@ -1794,7 +1794,7 @@ void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p)
 
   tr->td[0].count = 0;
 
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, tr->numBranches, TRUE, tr->rvec, tr->useRecom);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions:1, TRUE, tr->rvec, tr->useRecom);
 
   tr->td[0].traversalHasChanged = TRUE;
 

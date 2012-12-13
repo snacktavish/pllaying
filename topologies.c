@@ -50,7 +50,7 @@
 
 
 
-static void saveTopolRELLRec(tree *tr, nodeptr p, topolRELL *tpl, int *i, int numsp, int numBranches)
+static void saveTopolRELLRec(tree *tr, nodeptr p, topolRELL *tpl, int *i, int numsp)
 {
   int k;
   if(isTip(p->number, numsp))
@@ -69,11 +69,11 @@ static void saveTopolRELLRec(tree *tr, nodeptr p, topolRELL *tpl, int *i, int nu
 	      tpl->connect[*i].cq = tr->constraintVector[q->back->number]; 
 	    }
 	  
-	  for(k = 0; k < numBranches; k++)
+	  for(k = 0; k < NUM_BRANCHES; k++)
 	    tpl->connect[*i].z[k] = q->z[k];
 	  *i = *i + 1;
-	  
-	  saveTopolRELLRec(tr, q->back, tpl, i, numsp, numBranches);
+
+	  saveTopolRELLRec(tr, q->back, tpl, i, numsp);
 	  q = q->next;
 	}
     }
@@ -96,23 +96,23 @@ static void saveTopolRELL(tree *tr, topolRELL *tpl)
       tpl->connect[i].cq = tr->constraintVector[p->back->number]; 
     }
 
-  for(k = 0; k < tr->numBranches; k++)
+  for(k = 0; k < NUM_BRANCHES; k++)
     tpl->connect[i].z[k] = p->z[k];
   i++;
       
-  saveTopolRELLRec(tr, p->back, tpl, &i, tr->mxtips, tr->numBranches);   
+  saveTopolRELLRec(tr, p->back, tpl, &i, tr->mxtips);
 
   assert(i == 2 * tr->mxtips - 3);
 }
 
 
-static void restoreTopolRELL(tree *tr, topolRELL *tpl)
+static void restoreTopolRELL(tree *tr, topolRELL *tpl, int numBranches)
 {
   int i;
   
   for (i = 0; i < 2 * tr->mxtips - 3; i++) 
     {
-      hookup(tpl->connect[i].p, tpl->connect[i].q, tpl->connect[i].z,  tr->numBranches);    
+      hookup(tpl->connect[i].p, tpl->connect[i].q, tpl->connect[i].z,  numBranches);
       tr->constraintVector[tpl->connect[i].p->number] = tpl->connect[i].cp;
       tr->constraintVector[tpl->connect[i].q->number] = tpl->connect[i].cq;
     }
@@ -154,11 +154,11 @@ void freeTL(topolRELL_LIST *rl)
 }
 
 
-void restoreTL(topolRELL_LIST *rl, tree *tr, int n)
+void restoreTL(topolRELL_LIST *rl, tree *tr, int n, int numBranches)
 {
   assert(n >= 0 && n < rl->max);    
 
-  restoreTopolRELL(tr, rl->t[n]);  
+  restoreTopolRELL(tr, rl->t[n], numBranches);
 }
 
 
@@ -311,7 +311,7 @@ static nodeptr  minTreeTip (nodeptr  p, int numsp)
 }
 
 
-static void saveTree (tree *tr, topol *tpl)
+static void saveTree (tree *tr, topol *tpl, int numBranches)
 /*  Save a tree topology in a standard order so that first branches
  *  from a node contain lower value tips than do second branches from
  *  the node.  The root tip should have the lowest value of all.
@@ -320,7 +320,7 @@ static void saveTree (tree *tr, topol *tpl)
   connptr  r;  
   
   tpl->nextlink = 0;                             /* Reset link pointer */
-  r = tpl->links + saveSubtree(minTreeTip(tr->start, tr->mxtips), tpl, tr->mxtips, tr->numBranches);  /* Save tree */
+  r = tpl->links + saveSubtree(minTreeTip(tr->start, tr->mxtips), tpl, tr->mxtips, numBranches);  /* Save tree */
   r->sibling = 0;
   
   tpl->likelihood = tr->likelihood;
@@ -352,7 +352,7 @@ static boolean restoreTree (topol *tpl, tree *tr, partitionList *pr)
   /*  Copy connections from topology */
 
   for (r = tpl->links, i = 0; i < tpl->nextlink; r++, i++)     
-    hookup(r->p, r->q, r->z, tr->numBranches);      
+    hookup(r->p, r->q, r->z, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
   tr->likelihood = tpl->likelihood;
   tr->start      = tpl->start;
@@ -538,23 +538,23 @@ static int  findInList (void *item, void *list[], int n, int (* cmpFunc)(void *,
 
 
 
-static int  findTreeInList (bestlist *bt, tree *tr)
+static int  findTreeInList (bestlist *bt, tree *tr, int numBranches)
 {
   topol  *tpl;
   
   tpl = bt->byScore[0];
-  saveTree(tr, tpl);
+  saveTree(tr, tpl, numBranches);
   return  findInList((void *) tpl, (void **) (& (bt->byTopol[1])),
 		     bt->nvalid, cmpTopol);
 } 
 
 
-int  saveBestTree (bestlist *bt, tree *tr)
+int  saveBestTree (bestlist *bt, tree *tr, int numBranches)
 {    
   topol  *tpl, *reuse;
   int  tplNum, scrNum, reuseScrNum, reuseTplNum, i, oldValid, newValid;
   
-  tplNum = findTreeInList(bt, tr);
+  tplNum = findTreeInList(bt, tr, numBranches);
   tpl = bt->byScore[0];
   oldValid = newValid = bt->nvalid;
   

@@ -372,7 +372,7 @@ double evaluatePartialGeneric (tree *tr, partitionList *pr, int i, double ki, in
   /* here we figure out if all partitions are linked via the same branch length, that is,
      if we are conducting a joint branch length estimate or a per-partition branch length estimate */
 
-  if(tr->numBranches > 1)
+  if(pr->perGeneBranchLengths && pr->numberOfPartitions>1)
     branchReference = _model;
   else
     branchReference = 0;

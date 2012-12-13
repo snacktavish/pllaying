@@ -1086,10 +1086,7 @@ int main (int argc, char *argv[])
     myBinFread(&(partitions->numberOfPartitions),  sizeof(int), 1, byteFile);
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
 
-    if(adef->perGeneBranchLengths)
-      tr->numBranches = partitions->numberOfPartitions;
-    else
-      tr->numBranches = 1;
+    partitions->perGeneBranchLengths = adef->perGeneBranchLengths;
 
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
@@ -1432,7 +1429,14 @@ int main (int argc, char *argv[])
     }
     else
 #endif
-      computeBIGRAPID(tr, partitions, adef, TRUE);
+
+    	computeBIGRAPID(tr, partitions, adef, TRUE);
+
+/*partitions->numberOfPartitions=3;
+printModelAndProgramInfo(tr, partitions, adef, argc, argv);
+    computeBIGRAPID(tr, partitions, adef, TRUE);
+
+    computeBIGRAPID(tr, partitions, adef, TRUE);*/
   } 
 
   /* print som more nonsense into the RAxML_info file */

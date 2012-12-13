@@ -5,14 +5,14 @@
 #include "axml.h"
 
 
-static void insertTaxon (nodeptr p, nodeptr q, int numBranches)
+static void insertTaxon (nodeptr p, nodeptr q)
 {
   nodeptr  r;
   
   r = q->back;
   
-  hookupDefault(p->next,       q, numBranches);
-  hookupDefault(p->next->next, r, numBranches); 
+  hookupDefault(p->next,       q);
+  hookupDefault(p->next->next, r);
 } 
 
 static nodeptr buildNewTip (tree *tr, nodeptr p)
@@ -20,7 +20,7 @@ static nodeptr buildNewTip (tree *tr, nodeptr p)
   nodeptr  q;
 
   q = tr->nodep[(tr->nextnode)++];
-  hookupDefault(p, q, tr->numBranches);
+  hookupDefault(p, q);
   q->next->back = (nodeptr)NULL;
   q->next->next->back = (nodeptr)NULL;
  
@@ -42,11 +42,11 @@ static void buildSimpleTreeRandom (tree *tr, int ip, int iq, int ir)
   tr->ntips = 3;
   p = tr->nodep[ip];
   
-  hookupDefault(p, tr->nodep[iq], tr->numBranches);
+  hookupDefault(p, tr->nodep[iq]);
   
   s = buildNewTip(tr, tr->nodep[ir]);
   
-  insertTaxon(s, p, tr->numBranches);
+  insertTaxon(s, p);
 }
 
 static int randomInt(int n, tree *tr)
@@ -137,7 +137,7 @@ void makeRandomTree(tree *tr)
       
       randomBranch = branches[randomInt(branchCounter, tr)];
       
-      insertTaxon(p->back, randomBranch, tr->numBranches);      
+      insertTaxon(p->back, randomBranch);
     }
   
   free(perm);            

@@ -53,7 +53,7 @@
    of the likelihood in Pthreads and MPI */
 
 #if IS_PARALLEL
-void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) ; 
+void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches ) ;
 extern double *globalResult;
 #endif
 
@@ -718,6 +718,8 @@ void makenewzIterative(tree *tr, partitionList * pr)
 void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
   int model, branchIndex;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
   double lz;
 
   _dlnLdlz[0]   = 0.0;
@@ -754,7 +756,7 @@ void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile d
          all partitions. If we do this on a per partition basis, we also need to compute and store 
          the per-partition derivatives of the likelihood separately, otherwise not */
 
-      if(tr->numBranches > 1)
+      if(numBranches > 1)
       {
         branchIndex = model;	      
         lz = tr->td[0].parameterValues[model];
@@ -821,7 +823,7 @@ void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile d
     {
       /* set to 0 to make the reduction operation consistent */
 
-      if(width == 0 && (tr->numBranches > 1))
+      if(width == 0 && (numBranches > 1))
       {
         _dlnLdlz[model]   = 0.0;
         _d2lnLdlz2[model] = 0.0;
@@ -849,6 +851,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
   double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
   int i, maxiter[NUM_BRANCHES], model;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
   boolean firstIteration = TRUE;
   boolean outerConverged[NUM_BRANCHES];
   boolean loopConverged;
@@ -861,7 +864,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
   /* initialize loop convergence variables etc. 
      maxiter is the maximum number of NR iterations we are going to do before giving up */
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
   {
     z[i] = z0[i];
     maxiter[i] = _maxiter;
@@ -877,7 +880,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 
     /* check if we ar done for partition i or if we need to adapt the branch length again */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(outerConverged[i] == FALSE && tr->curvatOK[i] == TRUE)
       {
@@ -889,7 +892,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
       }
     }
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       /* other case, the outer loop hasn't converged but we are trying to approach 
          the maximum from the wrong side */
@@ -909,7 +912,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 
     /* set the execution mask */
 
-    if(tr->numBranches > 1)
+    if(numBranches > 1)
     {
       for(model = 0; model < pr->numberOfPartitions; model++)
       {
@@ -949,7 +952,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
       }
     else 
       masterBarrier(THREAD_MAKENEWZ, tr, pr);
-    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2); 
+    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2, numBranches);
 #else 
     /* sequential part, if this is the first newton-raphson implementation,
        do the precomputations as well, otherwise just execute the computation
@@ -965,7 +968,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
     /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 
        shorten branch */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
       {
@@ -978,7 +981,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 
     /* do the standard NR step to obrain the next value, depending on the state for eahc partition */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(tr->curvatOK[i] == TRUE && outerConverged[i] == FALSE)
       {
@@ -1014,7 +1017,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
     /* check if the loop has converged for all partitions */
 
     loopConverged = TRUE;
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
       loopConverged = loopConverged && outerConverged[i];
   }
   while (!loopConverged);
@@ -1030,7 +1033,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
      branches this will only set result[0]
      */
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
     result[i] = z[i];
 }
 
@@ -1042,6 +1045,7 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
 {
   int i;
   boolean originalExecute[NUM_BRANCHES];
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   boolean 
     p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
@@ -1053,7 +1057,7 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
   tr->td[0].ti[0].pNumber = p->number;
   tr->td[0].ti[0].qNumber = q->number;
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
   {
     originalExecute[i] =  pr->partitionData[i]->executeModel;
     tr->td[0].ti[0].qz[i] =  z0[i];
@@ -1091,10 +1095,10 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversal(tr, p, TRUE);
+    computeTraversal(tr, p, TRUE, numBranches);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversal(tr, q, TRUE);
+    computeTraversal(tr, q, TRUE, numBranches);
 
   /* call the Newton-Raphson procedure */
 
@@ -1109,7 +1113,7 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
 
   /* fix eceuteModel this seems to be a bit redundant with topLevelMakenewz */ 
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
     pr->partitionData[i]->executeModel = TRUE;
 }
 
