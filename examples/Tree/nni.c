@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#define GLOBAL_VARIABLES_DEFINITION
 #include "axml.h"
+#include "globalVariables.h"
 
 void getStartingTree(tree *tr);
 void makeRandomTree(tree *tr);
