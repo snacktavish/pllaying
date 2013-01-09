@@ -127,7 +127,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
   tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
 
-  tr->aliaswgt = pl_phylip_deldups (&pd)
+  tr->aliaswgt = pl_phylip_deldups (&pd);
   tr->originalCrunchedLength = pd->seqlen;
 
   pl_phylip_subst (pd, DNA_DATA);          /* TODO: Change to reflect the input type */
