@@ -50,9 +50,6 @@ int main(int argc, char * argv[])
   nodeptr       p;
 
   
-  /* Do we want to print branch lengths? */
-  printBranchLengths = FALSE;
-
   srand(time(NULL));
   
   /* Set the minimum required info for the tree structure */
@@ -60,6 +57,7 @@ int main(int argc, char * argv[])
   tr->mxtips           = 5 + rand() % 5 ;
   tr->randomNumberSeed = rand();
   tr->NumberOfModels   = 1;
+  tr->numBranches      = 1;
 
   /* Setup some default values 
      TODO: The minimal initialization can be substantially smaller than what is
@@ -83,8 +81,8 @@ int main(int argc, char * argv[])
   do_NNI(tr, p, 1);
 
   printf ( "Newick notation AFTER NNI\n" );
-  printTopology(tr, FALSE);
-  printTopology(tr, TRUE);
+  printTopology(tr, FALSE);     /* do not print branch lengths */
+  printTopology(tr, TRUE);      /* print branch lengths */
 
   
 
