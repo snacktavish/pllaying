@@ -3,52 +3,34 @@
 #define GLOBAL_VARIABLES_DEFINITION
 #include "axml.h"
 #include "globalVariables.h"
-
-void getStartingTree(tree *tr);
-void makeRandomTree(tree *tr);
-
-#ifdef __cplusplus
-extern "C" {
-boolean setupTree (tree *tr);
-}
-#else
-boolean setupTree (tree *tr);
-#endif
+#include "phylip_parser/phylip.h"
 
 int main(int argc, char * argv[])
 {
   tree        * tr;
-  
-  /* Do we want to print branch lengths? */
-  int           printBranchLengths = FALSE;
-  
-  /* Get a starting tree from input */
-  /*
+
   if (argc != 2)
    {
-     fprintf(stderr, " usage: %s [TREE-FILE]\n", argv[0]);
-     return(EXIT_FAILURE);
+     printf (" %s [PHYLIP-FILE]\n", argv[0]);
+     return (EXIT_FAILURE);
    }
-  getStartingTree(NULL); */
 
-  /* Set the minimum required info for the tree structure */
+  /* Allocate a tree structure */
   tr = (tree *)malloc(sizeof(tree));
-  tr->mxtips           = 6;
-  tr->randomNumberSeed = 345;
 
-  /* Setup some default values 
-     TODO: The minimal initialization can be substantially smaller than what is
-     described in axml.c 
-  */
-  setupTree(tr);
+  /* Set the thread ID... This is PTHREADS specific */
+  tr->threadID = 0;
+
+  /* Read a sequential phylip format containing DNA data */
+  read_phylip_msa ( tr, argv[1], PHYLIP_SEQUENTIAL, DNA_DATA);
 
   /* Generate a random tree according to the seed given in tr->randomNumberSeed */
+  tr->randomNumberSeed = 3456;
   makeRandomTree(tr);
 
   /* Print the tree */
-  printTopology(tr, FALSE);
-  printTopology(tr, TRUE);
-
+  printTopology(tr, FALSE);   /* do not print branch lengths */
+  printTopology(tr, TRUE);    /* print branch lengths */
 
 
   return(EXIT_SUCCESS);
