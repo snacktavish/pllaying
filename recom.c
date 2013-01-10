@@ -12,7 +12,7 @@
 
 /** @file recom.c
  *  
- *  @brief functions used for recomputation of vectors (only a fraction of LH vectors stored in RAM)   
+ *  @brief Functions used for recomputation of vectors (only a fraction of LH vectors stored in RAM)   
  */
 
 /** @brief Locks node \a nodenum to force it remains availably in memory
@@ -21,6 +21,7 @@
 Omitting this call the traversal will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! 
  *
  *  @param rvec 
+ *    Recomputation info
  *
  *  @param nodenum
  *    Node id that must remain available in memory 
@@ -41,6 +42,20 @@ void protectNode(recompVectors *rvec, int nodenum, int mxtips)
     rvec->unpinnable[slot] = FALSE;
 }
 
+/** @brief Checks if \a nodenum  is currently pinned (available in RAM)
+ *
+ *  @note shall we document static functions? 
+ * 
+ *  @param rvec 
+ *    Recomputation info
+ *
+ *  @param nodenum
+ *    Node id to be checked
+ *
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
 {
   assert(nodenum > mxtips);
@@ -51,12 +66,24 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
     return TRUE;
 }
 
+/** @brief Checks if the likelihood entries at node \a p should be updated
+ *
+ * A node needs update if one of the following holds:
+ *    1. It is not oriented (p->x == 0) 
+ *    2. We are applying recomputations and node \a p is not currently available in RAM
+ *  
+ *  @param recompute 
+ *    true if recomputation is currently applied 
+ *
+ *  @param nodeptr
+ *    Pointer to a \a node struct
+ *
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtips)
 { 
-  /* A node needs reomputation if one of the following holds:
-     1. It is not oriented (p->x == 0) 
-     2. We are applying recomputations and p is not available on RAM
-   */
   if((!p->x) || (recompute && !isNodePinned(rvec, p->number, mxtips)))
     return TRUE;
   else
@@ -65,6 +92,13 @@ boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtip
 
 
 
+/** @brief Allocates memory for recomputation structure
+ *  
+ *  
+ *  @todo this should not depend on tr (\a vectorRecomFraction should be a parameter)
+ *    true if recomputation is currently applied 
+ *
+ */
 void allocRecompVectorsInfo(tree *tr)
 {
   recompVectors 
@@ -117,7 +151,19 @@ void allocRecompVectorsInfo(tree *tr)
   tr->rvec = v;
 }
 
-
+/** @brief Find the slot id with the minimum cost to be recomputed.
+ *  
+ *  The minum cost is defined as the minimum subtree size. In general, the closer a vector is to the tips, 
+ *  the less recomputations are required to re-establish its likelihood entries
+ *
+ *  @todo remove _DEBUG_RECOMPUTATION code
+ *  
+ *  @param v
+ *
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
 {
   int 
@@ -133,7 +179,6 @@ static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
   for(i = 0; i < mxtips - 2; i++)
   {
     slot = v->iNode[i];
-
     if(slot != NODE_UNPINNED)
     {
       assert(slot >= 0 && slot < v->numVectors);
@@ -153,13 +198,11 @@ static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
       }
     }
   }
-
   assert(min_cost < mxtips * 2 && min_cost >= 2);
   assert(cheapest_slot >= 0);
 #ifdef _DEBUG_RECOMPUTATION 
   v->recomStraTime += (gettime() - straTime);
 #endif 
-
   return cheapest_slot;
 }
 
@@ -174,6 +217,9 @@ static void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
     v->iNode[nodenum - mxtips - 1] = NODE_UNPINNED; 
 }
 
+/** @brief Finds the cheapest slot and unpins it
+ *
+ */
 static int findUnpinnableSlot(recompVectors *v, int mxtips)
 {
   int     
@@ -187,6 +233,11 @@ static int findUnpinnableSlot(recompVectors *v, int mxtips)
   return slot_unpinned;
 }
 
+/** @brief Finds a free slot 
+ * 
+ *  If all slots are occupied, it will find the cheapest slot and unpin it
+ *
+ */
 static int findFreeSlot(recompVectors *v, int mxtips)
 {
   int 
@@ -214,6 +265,20 @@ static int findFreeSlot(recompVectors *v, int mxtips)
 }
 
 
+/** @brief Pins node \a nodenum to slot \a slot
+ *  
+ *  The slot is initialized as non-unpinnable (ensures that the contents of the vector will not be overwritten)
+ *
+ *  @param nodenum
+ *    node id
+ *
+ *  @param slot
+ *    slot id 
+ *    
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 static void pinAtomicNode(recompVectors *v, int nodenum, int slot, int mxtips)
 {
   v->iVector[slot] = nodenum;
@@ -245,6 +310,20 @@ static int pinNode(recompVectors *rvec, int nodenum, int mxtips)
   return slot;
 }
 
+/** @brief Marks node \nodenum as unpinnable
+ *  
+ *  The slot holding the node \nodenum is added to the pool of slot candidates that can be overwritten.
+ *
+ *  @param v
+ *    Recomputation info
+ *    
+ *  @param nodenum
+ *    node id
+ *    
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 void unpinNode(recompVectors *v, int nodenum, int mxtips)
 {
   if(nodenum <= mxtips)
@@ -263,20 +342,24 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
   }
 }
 
-/*
-#ifdef _DEBUG_RECOMPUTATION
-static void printSlots(recompVectors *rvec, int nodenum)
-{
-  int i;
-  printBothOpen("n %d , current slots:", nodenum);
-  for(i=0;i<rvec->numVectors;i++)
-    printBothOpen(" %d (%s)", rvec->iVector[i], (rvec->unpinnable[i] ? " ": "x"));
-  printBothOpen("\n");
-}
-#endif
-*/
 
-
+/** @brief Get a pinned slot \slot that holds the likelihood vector for inner node \nodenum
+ *  
+ *  If node \node nodenum is not pinned to any slot yet, the minimum cost replacement strategy is used.
+ *
+ *  @param v
+ *    Recomputation info
+ *    
+ *  @param nodenum
+ *    node id
+ *    
+ *  @param slot
+ *    slot id
+ *
+ *  @param mxtips
+ *    Number of tips in the tree
+ *
+ */
 boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 {
 #ifdef _DEBUG_RECOMPUTATION
@@ -318,6 +401,23 @@ static int subtreeSize(nodeptr p, int maxTips)
 
 #endif
 
+/** @brief Annotes unoriented tree nodes \tr with their subtree size 
+ *  
+ *  This function recursively updates the subtree size of each inner node.
+ *  @note The subtree size of node \a p->number is the number of nodes included in the subtree where node record \a p is the virtual root. 
+ *
+ *  @param p
+ *    Pointer to node 
+ *    
+ *  @param maxTips
+ *    Number of tips in the tree
+ *
+ *  @param rvec 
+ *    Recomputation info
+ *    
+ *  @param count
+ *    Number of visited nodes 
+ */
 void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count) 
 {
   if(isTip(p->number, maxTips))
@@ -383,7 +483,21 @@ void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int 
 
 
 /* pre-compute the node stlens (this needs to be known prior to running the strategy) */
-
+/** @brief Annotes all tree nodes \tr with their subtree size 
+ *  
+ *  Similar to \a computeTraversalInfoStlen, but does a full traversal ignoring orientation.
+ *  The minum cost is defined as the minimum subtree size. In general, the closer a vector is to the tips, 
+ *  the less recomputations are required to re-establish its likelihood entries
+ *
+ *  @param p
+ *    Pointer to node 
+ *    
+ *  @param maxTips
+ *    Number of tips in the tree
+ *
+ *  @param rvec 
+ *    Recomputation info
+ */
 void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec) 
 {
   if(isTip(p->number, maxTips))
@@ -556,5 +670,4 @@ void printVector(double *vector, int len, char *name)
 */
 
 #endif
-
 
