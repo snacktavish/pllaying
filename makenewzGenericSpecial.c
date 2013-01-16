@@ -1067,8 +1067,6 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
 /** @brief Optimize branch length value(s) of a given branch with the Newton-Raphtson procedure 
  *
- * @todo only one node should be passed as an argument since q = p->back is a requirement.
- *
  * @warning A given branch may have one or several branch length values (up to NUM_BRANCHES), usually the later refers to partition-specific branch length values. Thus z0 and result represent collections rather than double values. The number of branch length values is given by \a tr->numBranches 
  *
  * @param tr
@@ -1078,7 +1076,8 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
  *   One node that defines the branch (p->z)
  *
  * @param q
- *   The other node of the branch (actually q == p->back)
+ *   The other node side of the branch (usually p->back), but the branch length can be estimated even if p and q are
+ *   not connected, e.g. before the insertion of a subtree.
  *
  * @param z0 
  *   Initial branch length value(s) for the given branch \a p->z 
