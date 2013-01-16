@@ -46,6 +46,18 @@
 
 #include "axml.h"
 
+
+
+/** @file searchAlgo.c
+    
+    @brief Collection of routines for performing likelihood computation and branch optimization.
+
+    Detailed description to appear soon.
+*/
+
+
+
+
 extern double accumulatedTime;
 
 extern char seq_file[1024];
@@ -86,8 +98,23 @@ boolean initrav (tree *tr, nodeptr p)
 
 
 
+/* @brief Optimize the length of a specific branch
 
+   Optimize the length of the branch connecting \a p and \a p->back
+   for each partition (\a tr->numBranches) in tree \a tr.
 
+   @param tr
+     The tree structure
+
+   @param p
+     Endpoints of branch to be optimized 
+
+   @return
+     TODO: Always return \b TRUE. Why not change it to void?
+
+   @todo
+     Change from boolean to void?
+*/
 
 boolean update(tree *tr, nodeptr p)
 {       
@@ -132,6 +159,27 @@ boolean update(tree *tr, nodeptr p)
   return TRUE;
 }
 
+/* @brief Branch length optimization of specific branches
+
+   Optimize the length of branches that have \a p as an endpoint 
+
+   @param tr
+     The tree structure
+
+   @param p
+     Endpoint of branches to be optimized
+
+   @return
+     TODO: shouldnt return anything
+   
+   @todo
+     All these routines caused me some real headache. This routine (smooth)
+     can never return anything else than TRUE, because update can never return
+     FALSE and therefore we can change this routine (smooth) to void as well.
+     This means the other routine soothTree also does not return anything but
+     TRUE and can be also reduced to void.
+    
+*/
 boolean smooth (tree *tr, nodeptr p)
 {
   nodeptr  q;
@@ -156,6 +204,19 @@ boolean smooth (tree *tr, nodeptr p)
   return TRUE;
 } 
 
+/**  @brief Check whether the branches in all partitions have been optimized
+ 
+     Check if all branches in all partitions have reached the threshold for
+     optimization. If at least one branch can be optimized further retu
+
+     @param tr
+       The tree structure
+
+     @return
+       If at least one branch can be further optimized return \b FALSE,
+       otherwise \b TRUE.
+             
+*/
 static boolean allSmoothed(tree *tr)
 {
   int i;
@@ -173,7 +234,24 @@ static boolean allSmoothed(tree *tr)
 }
 
 
-/* do maxtimes rounds of branch length optimization */
+/** @brief Wrapper function for branch length optimization of the tree
+  
+    Perform \a maxtimes rounds of branch length optimization by running smooth()
+    on all neighbour nodes of node \a tr->start.
+
+    @param tr
+      The tree structure
+
+    @param maxtimes
+      Number of optimization rounds to perform
+
+    @return
+      \b TRUE if ...., \b FALSE if ...
+
+    @todo What does the TRUE and FALSE mean as a return value? Also count variable is unused
+          Useless. It always returns TRUE
+
+*/
 boolean smoothTree (tree *tr, int maxtimes)
 {
 	nodeptr  p, q;
@@ -252,7 +330,15 @@ boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
 
 
 
+/** @brief Reset an \a infoList
 
+    Resets an \a infoList by setting elements \a node and \a likelihood
+    of each element of the \a bestInfo list structure to \b NULL and
+    \a unlikely, respectively.
+
+    @param iList
+      The given \a infoList.
+*/
 static void resetInfoList(infoList *iList)
 {
   int 
@@ -267,6 +353,19 @@ static void resetInfoList(infoList *iList)
   }    
 }
 
+/** @brief Initialize an \a infoList
+
+    Initialize an \a infoList by creating a \a bestInfo list structure
+    of \a n elements and setting the attributes \a node and \a likelihood
+    of each element of the \a bestInfo list structure to \b NULL and
+    \a unlikely, respectively.
+
+    @param iList
+      The given \a infoList.
+
+    @param n
+      Number of elements to be created in the \a bestInfo list.
+*/
 static void initInfoList(infoList *iList, size_t n)
 {
   int 
@@ -283,12 +382,37 @@ static void initInfoList(infoList *iList, size_t n)
   }
 }
 
+/** @brief Deallocate the contents of an \a infoList
+    
+    Deallocate the contents of a given \a infoList by freeing
+    the memory used by its \a bestInfo list structure.
+
+    @param iList
+      The \a infoList to be used.
+*/
 static void freeInfoList(infoList *iList)
 { 
   free(iList->list);   
 }
 
 
+/** @brief Insert a record in an \a infoList
+
+    Insert the pair \a likelihood and \node into the \a bestList \a list
+    of \a iList \b only if there already exists a pair in \a list 
+    which has the \a likelihood attribute smaller than the given \a 
+    likelihoodby. The insertion is done by replacing the smallest
+    likelihood pair with the new pair.
+
+    @param node
+      The given node
+
+    @param likelihood
+      The given likelihood
+
+    @param iList
+      The given \a infoList where the record will possibly be appended.
+*/
 static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
 {
   int 
@@ -319,6 +443,26 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
 }
 
 
+/** @brief  Optimize branch lengths of region
+
+    Optimize the branch lenghts of only a specific region. The branch optimization starts
+    at a node \a p and is carried out in all nodes with distance upto \a region from \a p.
+
+    @param tr
+      The tree structure.
+    
+    @param p
+      Node to start branch optimization from.
+
+    @param region
+      The allowed node distance from \p for which to still perform branch optimization.
+
+    @return
+      TODO: Again, I think this is useless
+
+    @todo
+     This function returns always TRUE, change it to void!! Why is the newviewGeneric called??
+*/
 boolean smoothRegion (tree *tr, nodeptr p, int region)
 { 
   nodeptr  q;
@@ -343,6 +487,31 @@ boolean smoothRegion (tree *tr, nodeptr p, int region)
   return TRUE;
 }
 
+
+/** @brief Wrapper function for optimizing the branch length of a region \a maxtimes times
+
+    Optimize the branch lengths of a specific region \a maxtimes times. The branch optimization
+    starts at a given node \a p and is carried out in all nodes with distance upto \a region
+    from \a p.
+
+    @param tr
+      The tree structure.
+
+    @param p
+      Node to start branch optimization from.
+
+    @param maxtimes
+      Number of times to perform branch optimization.
+
+    @pram region
+      The allwed node distance from \p for which to still perform branch optimization.
+
+    @return
+      TODO: Again, this is useless
+
+    @todo
+      This function returns always TRUE, change it to void!!
+*/
 boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
 {
   nodeptr  q;
