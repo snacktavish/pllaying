@@ -98,31 +98,22 @@ boolean initrav (tree *tr, nodeptr p)
 
 
 
-/* @brief Optimize the length of a specific branch
+/** @brief Optimize the length of a specific branch
 
-   Optimize the length of the branch connecting \a p and \a p->back
-   for each partition (\a tr->numBranches) in tree \a tr.
-
-   @param tr
-     The tree structure
-
-   @param p
-     Endpoints of branch to be optimized 
-
-   @return
-     TODO: Always return \b TRUE. Why not change it to void?
-
-   @todo
-     Change from boolean to void?
+    Optimize the length of the branch connecting \a p and \a p->back
+    for each partition (\a tr->numBranches) in tree \a tr.
+ 
+    @param tr
+      The tree structure
+ 
+    @param p
+      Endpoints of branch to be optimized 
 */
-
-boolean update(tree *tr, nodeptr p)
+void update(tree *tr, nodeptr p)
 {       
   nodeptr  q; 
-  boolean smoothedPartitions[NUM_BRANCHES];
   int i;
   double   z[NUM_BRANCHES], z0[NUM_BRANCHES];
-  double _deltaz;
 
   q = p->back;   
 
@@ -134,64 +125,42 @@ boolean update(tree *tr, nodeptr p)
   else
     makenewzGeneric(tr, p, q, z0, newzpercycle, z, FALSE);
 
-  for(i = 0; i < tr->numBranches; i++)    
-    smoothedPartitions[i]  = tr->partitionSmoothed[i];
-
   for(i = 0; i < tr->numBranches; i++)
   {         
     if(!tr->partitionConverged[i])
     {	  
-      _deltaz = deltaz;
-
-      if(ABS(z[i] - z0[i]) > _deltaz)  
+      if(ABS(z[i] - z0[i]) > deltaz)  
       {	      
-        smoothedPartitions[i] = FALSE;       
+        tr->partitionSmoothed[i] = FALSE;
       }	 
-
 
       p->z[i] = q->z[i] = z[i];	 
     }
   }
-
-  for(i = 0; i < tr->numBranches; i++)    
-    tr->partitionSmoothed[i]  = smoothedPartitions[i];
-
-  return TRUE;
 }
 
-/* @brief Branch length optimization of specific branches
+/** @brief Branch length optimization of specific branches
 
-   Optimize the length of branches that have \a p as an endpoint 
+    Optimize the length of branches that have \a p as an endpoint 
 
-   @param tr
-     The tree structure
+    @param tr
+      The tree structure
 
-   @param p
-     Endpoint of branches to be optimized
-
-   @return
-     TODO: shouldnt return anything
-   
-   @todo
-     All these routines caused me some real headache. This routine (smooth)
-     can never return anything else than TRUE, because update can never return
-     FALSE and therefore we can change this routine (smooth) to void as well.
-     This means the other routine soothTree also does not return anything but
-     TRUE and can be also reduced to void.
-    
+    @param p
+      Endpoint of branches to be optimized
 */
-boolean smooth (tree *tr, nodeptr p)
+void smooth (tree *tr, nodeptr p)
 {
   nodeptr  q;
 
-  if (! update(tr, p))               return FALSE; /*  Adjust branch */
+  update(tr, p);    /*  Adjust branch */
 
   if (! isTip(p->number, tr->mxtips)) 
   {                                  /*  Adjust descendants */
     q = p->next;
     while (q != p) 
     {
-      if (! smooth(tr, q->back))   return FALSE;
+      smooth(tr, q->back);
       q = q->next;
     }	
 
@@ -200,14 +169,12 @@ boolean smooth (tree *tr, nodeptr p)
     else
       newviewGeneric(tr, p, FALSE);     
   }
-
-  return TRUE;
 } 
 
 /**  @brief Check whether the branches in all partitions have been optimized
  
      Check if all branches in all partitions have reached the threshold for
-     optimization. If at least one branch can be optimized further retu
+     optimization. If at least one branch can be optimized further return \b FALSE.
 
      @param tr
        The tree structure
@@ -244,15 +211,8 @@ static boolean allSmoothed(tree *tr)
 
     @param maxtimes
       Number of optimization rounds to perform
-
-    @return
-      \b TRUE if ...., \b FALSE if ...
-
-    @todo What does the TRUE and FALSE mean as a return value? Also count variable is unused
-          Useless. It always returns TRUE
-
 */
-boolean smoothTree (tree *tr, int maxtimes)
+void smoothTree (tree *tr, int maxtimes)
 {
 	nodeptr  p, q;
 	int i, count = 0;
@@ -266,37 +226,46 @@ boolean smoothTree (tree *tr, int maxtimes)
 		for(i = 0; i < tr->numBranches; i++)
 			tr->partitionSmoothed[i] = TRUE;
 
-		if (! smooth(tr, p->back))       return FALSE;
+		smooth(tr, p->back);
 		if (!isTip(p->number, tr->mxtips))
 		{
 			q = p->next;
 			while (q != p)
 			{
-				if (! smooth(tr, q->back))   return FALSE;
+				smooth(tr, q->back);
 				q = q->next;
 			}
 		}
-
 		count++;
 
-		if (allSmoothed(tr))
-			break;
+		if (allSmoothed(tr)) break;
 	}
 
 	for(i = 0; i < tr->numBranches; i++)
 		tr->partitionConverged[i] = FALSE;
-
-	return TRUE;
 } 
 
 
+/** @brief Optimize the branch length of edges around a specific node
+    
+    Optimize \a maxtimes the branch length of all (3) edges around a given node 
+    \a p of a tree \a tr.
 
-boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
+    @param tr
+      The tree structure
+
+    @param p
+      The node around which to optimize the edges
+
+    @param maxtimes
+      Number of optimization rounds to perform
+*/
+void localSmooth (tree *tr, nodeptr p, int maxtimes)
 { 
   nodeptr  q;
   int i;
 
-  if (isTip(p->number, tr->mxtips)) return FALSE;
+  if (isTip(p->number, tr->mxtips)) return;
 
   for(i = 0; i < tr->numBranches; i++)	
     tr->partitionConverged[i] = FALSE;	
@@ -309,7 +278,7 @@ boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
     q = p;
     do 
     {
-      if (! update(tr, q)) return FALSE;
+      update(tr, q);
       q = q->next;
     } 
     while (q != p);
@@ -323,8 +292,6 @@ boolean localSmooth (tree *tr, nodeptr p, int maxtimes)
     tr->partitionSmoothed[i] = FALSE; 
     tr->partitionConverged[i] = FALSE;
   }
-
-  return TRUE;
 }
 
 
@@ -456,35 +423,27 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
 
     @param region
       The allowed node distance from \p for which to still perform branch optimization.
-
-    @return
-      TODO: Again, I think this is useless
-
-    @todo
-     This function returns always TRUE, change it to void!! Why is the newviewGeneric called??
 */
-boolean smoothRegion (tree *tr, nodeptr p, int region)
+void smoothRegion (tree *tr, nodeptr p, int region)
 { 
   nodeptr  q;
 
-  if (! update(tr, p))               return FALSE; /*  Adjust branch */
+  update(tr, p); /*  Adjust branch */
 
-  if(region > 0)
+  if (region > 0)
   {
     if (!isTip(p->number, tr->mxtips)) 
     {                                 
       q = p->next;
       while (q != p) 
       {
-        if (! smoothRegion(tr, q->back, --region))   return FALSE;
+        smoothRegion(tr, q->back, --region);
         q = q->next;
       }	
 
       newviewGeneric(tr, p, FALSE);
     }
   }
-
-  return TRUE;
 }
 
 
@@ -505,19 +464,13 @@ boolean smoothRegion (tree *tr, nodeptr p, int region)
 
     @pram region
       The allwed node distance from \p for which to still perform branch optimization.
-
-    @return
-      TODO: Again, this is useless
-
-    @todo
-      This function returns always TRUE, change it to void!!
 */
-boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
+void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
 {
   nodeptr  q;
   int i;
 
-  if (isTip(p->number, tr->mxtips)) return FALSE;            /* Should be an error */
+  if (isTip(p->number, tr->mxtips)) return;            /* Should be an error */
 
   for(i = 0; i < tr->numBranches; i++)
     tr->partitionConverged[i] = FALSE;
@@ -530,7 +483,7 @@ boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
     q = p;
     do 
     {
-      if (! smoothRegion(tr, q, region)) return FALSE;
+      smoothRegion(tr, q, region);
       q = q->next;
     } 
     while (q != p);
@@ -540,17 +493,35 @@ boolean regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
   }
 
   for(i = 0; i < tr->numBranches; i++)
-    tr->partitionSmoothed[i] = FALSE;
-  for(i = 0; i < tr->numBranches; i++)
-    tr->partitionConverged[i] = FALSE;
-
-  return TRUE;
-} /* localSmooth */
+    tr->partitionSmoothed[i] = tr->partitionConverged = FALSE;
+} 
 
 
 
 
+/* @brief Split the tree into two components and optimize new branch length
 
+   Split the tree into two components. The disconnection point is node \a p.
+   First, a branch length is computed for the newly created branch between nodes
+   \a p->next->back and \a p->next->next->back and then the two nodes are
+   connected (hookup). Disconnection is done by setting \a p->next->next->back
+   and \a p->next->back to \b NULL.
+
+   @param tr
+     The tree structure
+
+   @param p
+     The node at which the tree should be decomposed into two components.
+
+   @param numBranches
+     Number of branches per partition
+
+   @return q
+     the node after \a p
+
+   @todo
+     Why do we return this node?
+*/
 nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
 {  
   double   zqr[NUM_BRANCHES], result[NUM_BRANCHES];
@@ -575,6 +546,27 @@ nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
   return  q; 
 }
 
+/** @brief Split the tree into two components and recompute likelihood
+
+    Split the tree into two component. The disconnection point is node \a p.
+    Set the branch length of the new node between \a p->next->back and
+    \a p->next->next->back to \a tr->currentZQR and then decompose the tree
+    into two components by setting \a p->next->back and \a p->next->next->back
+    to \b NULL.
+
+    @param tr
+      The tree structure
+
+    @param p
+      The node at which the tree should be decomposed into two components.
+
+    @return q
+      the node after \a p
+
+    @todo
+      Why do we return this node? Why do we set to tr->currentZQR and not compute
+      new optimized length?
+*/
 nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
 {
   nodeptr  q, r;
