@@ -609,6 +609,11 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
       defaultArray[i] = defaultz;
 
     makenewzGeneric(tr, q, r, qz, iterations, zqr, FALSE);           
+    /* the branch lengths values will be estimated using q, r and s
+     * q-s are not connected, but both q and s have a valid LH vector , so we can call makenewzGeneric  to get a value for
+     * lzsum, which is then use to generate reasonable starting values e1, e2, e3 for the new branches we create after the       insertion
+     */
+
     makenewzGeneric(tr, q, s, defaultArray, iterations, zqs, FALSE);                  
     makenewzGeneric(tr, r, s, defaultArray, iterations, zrs, FALSE);
 
