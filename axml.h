@@ -983,7 +983,9 @@ typedef  struct  {
   int              categories;
 
   double           coreLZ[NUM_BRANCHES];
-  int              numBranches;
+  int              numBranches;                 /* Number of length values per branch. 
+                                                   Currently can be only 1 or number of
+                                                   partitions */
   
   
  
