@@ -29,6 +29,10 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file axml.h
+  * @brief contains various important functions
+  * @todo this file will at some point be gone
+  */
 #include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -452,11 +456,15 @@ typedef struct ratec
 }
   rateCategorize;
 
-
+/** @brief To be commented
+  *
+  * The rest is her
+  * @todo remove this line when finished commenting
+  */
 typedef struct
 {
-  int tipCase;
-  int pNumber;
+  int tipCase;                  /**< @brief What is this? */
+  int pNumber;                  /**< @brief Or this */
   int qNumber;
   int rNumber;
   double qz[NUM_BRANCHES];

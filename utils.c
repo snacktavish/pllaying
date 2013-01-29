@@ -28,6 +28,11 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file utils.c
+ *  
+ *  @brief Miscellaneous general utility and helper functions
+ */
+
 #ifdef WIN32
 #include <direct.h>
 #endif
@@ -66,6 +71,7 @@
 #include "phylip_parser/lexer.h"
 #include "phylip_parser/phylip.h"
 #include "phylip_parser/xalloc.h"
+#include "phylip_parser/msa_sites.h"
 
 
 #include "globalVariables.h"
@@ -104,9 +110,9 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   struct msa_sites * ms;
   double **empiricalFrequencies;
 
-  pd = parse_phylip (filename, format);
+  pd = pl_phylip_parse (filename, format);
 
-  ms = construct_msa_sites (pd, SITES | CREATE | SITES_COMPUTE_WEIGHTS);
+  ms = construct_msa_sites (pd, SITES_CREATE | SITES_COMPUTE_WEIGHTS);
 
   free_phylip_struct (pd);
   pd = transpose (ms);
@@ -117,21 +123,16 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   tr->mxtips                 = pd->taxa;
   tr->originalCrunchedLength = pd->seqlen;
   tr->NumberOfModels         = 1;
+  tr->numBranches            = 1;
 
   setupTree(tr, TRUE);
 
   tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
 
-    tr->numBranches = 1;
+  tr->aliaswgt = pl_phylip_deldups (&pd);
+  tr->originalCrunchedLength = pd->seqlen;
 
-    /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
-       let's not worry about this right now, because it is indeed RAxML-specific */
-  tr->aliaswgt = pd->weight;
-  /*tr->aliaswgt = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-  for (i = 0;i < tr->originalCrunchedLength; ++i)
-   {
-     tr->aliaswgt[i] = 1;
-   }*/
+  pl_phylip_subst (pd, DNA_DATA);          /* TODO: Change to reflect the input type */
 
   tr->rateCategory           =  (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
 
@@ -175,12 +176,12 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
     pInfo
       *p = &(tr->partitionData[model]);
 
-    p->states             =  4;   /* according to the type */
-    p->maxTipStates       = 16;   /* according to the type */
+    p->states             =  4;   /* TODO: according to the type */
+    p->maxTipStates       = 16;   /* TODO: according to the type */
     p->lower              =  0;
     p->upper              = pd->seqlen;
     p->width              = p->upper - p->lower;
-    p->dataType           =   DNA_DATA; /* dna type */
+    p->dataType           =   DNA_DATA; /* TODO: dna type */
     p->protModels         =   2;
     p->autoProtModels     =   0;
     p->protFreqs          =   0;
@@ -207,60 +208,30 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   tr->yVector = (char **) rax_malloc(sizeof(char*) * (tr->mxtips+1));
  for (i=0; i < tr->mxtips; ++i)
         tr->yVector[i+1] = pd->seq[i]; //(unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
-  for (i = 1; i <= pd->taxa; ++ i)
-   {
-     printf ("%s\n", tr->yVector[i]);
-   }
  
- for (i = 1; i <= pd->taxa; ++ i)
-  {
-    for (j = 0; j < pd->seqlen; ++ j)
-     {
-       switch (tr->yVector[i][j])
-        {
-          case 'A':
-          case 'a':
-            tr->yVector[i][j] = 1;
-            break;
-          case 'C':
-          case 'c':
-            tr->yVector[i][j] = 2;
-            break;
-
-          case 'G':
-          case 'g':
-            tr->yVector[i][j] = 4;
-            break;
-
-          case 'T':
-          case 't':
-            tr->yVector[i][j] = 8;
-            break;
-
-          case '-':
-            tr->yVector[i][j] = 15;
-            break;
-
-
-        }
-     }
-  }
-
-/*
-  for(i = 1; i <= (size_t)tr->mxtips; i++)
-    tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
-*/
-  //myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
-
-  /* Initialize the model */
-  //printf("Here 1!\n");
-  initializePartitionsSequential(tr); 
-  //printf("Here 2!\n");
-  //initModel(tr, empiricalFrequencies);
-
+ #ifndef _USE_PTHREADS
+ #ifndef _FINE_GRAIN_MPI
+  //initializePartitionsSequential(tr); 
+  initializePartitions (tr, tr, 0, 0);
+ #endif
+ #endif
 }
 #endif
 
+/** @brief Read MSA from a file and setup the tree
+ *
+ *  Reads the MSA from \a filename and constructs the
+ *  the tree \a tr and sets up partition and model data
+ *
+ *  @todo This will be soon replaced by \a read_phylip_msa
+ *
+ *  @param tr
+ *    Pointer to the tree to be set up
+ *
+ *  @param filename
+ *    Filename containing the MSA
+ *
+ */
 void read_msa(tree *tr, const char *filename)
   {
     size_t
@@ -748,6 +719,17 @@ FILE *myfopen(const char *path, const char *mode)
 /******************************some functions for the likelihood computation ****************************/
 
 
+/** @brief Check whether a node is a tip.
+  * 
+  * @param number
+  *  Node number to be checked
+  *
+  * @param maxTips
+  *  Number of tips in the tree
+  *
+  * @return
+  *   \b TRUE if tip, \b FALSE otherwise
+  */
 boolean isTip(int number, int maxTips)
 {
   assert(number > 0);
@@ -772,7 +754,20 @@ void getxnode (nodeptr p)
 }
 
 
-/* connects node p with q and assigns the branch lengths z */
+/** @brief Connect two nodes and assign branch lengths 
+  * 
+  * Connect the two nodes \a p and \a q in each partition \e i with a branch of
+  * length \a z[i]
+  *
+  * @param p
+  *   Node \a p
+  * 
+  * @param q
+  *   Node \a q
+  *
+  * @param numBranches
+  *   Number of partitions
+  */
 void hookup (nodeptr p, nodeptr q, double *z, int numBranches)
 {
   int i;
