@@ -495,7 +495,7 @@ void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
   }
 
   for(i = 0; i < tr->numBranches; i++)
-    tr->partitionSmoothed[i] = tr->partitionConverged = FALSE;
+    tr->partitionSmoothed[i] = tr->partitionConverged[i] = FALSE;
 } 
 
 
@@ -2277,9 +2277,8 @@ cleanup:
 boolean 
 treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
-  boolean result;
-  result = smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */
-  assert(result); 
+  
+  smoothTree(tr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
   evaluateGeneric(tr, tr->start, FALSE);   
   
