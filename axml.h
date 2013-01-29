@@ -1312,14 +1312,14 @@ extern FILE *myfopen(const char *path, const char *mode);
 
 extern boolean initrav ( tree *tr, nodeptr p );
 extern void initravPartition ( tree *tr, nodeptr p, int model );
-extern boolean update ( tree *tr, nodeptr p );
-extern boolean smooth ( tree *tr, nodeptr p );
-extern boolean smoothTree ( tree *tr, int maxtimes );
-extern boolean localSmooth ( tree *tr, nodeptr p, int maxtimes );
+extern void update ( tree *tr, nodeptr p );
+extern void smooth ( tree *tr, nodeptr p );
+extern void smoothTree ( tree *tr, int maxtimes );
+extern void localSmooth ( tree *tr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
 
-extern boolean smoothRegion ( tree *tr, nodeptr p, int region );
-extern boolean regionalSmooth ( tree *tr, nodeptr p, int maxtimes, int region );
+extern void smoothRegion ( tree *tr, nodeptr p, int region );
+extern void regionalSmooth ( tree *tr, nodeptr p, int maxtimes, int region );
 extern nodeptr removeNodeBIG ( tree *tr, nodeptr p, int numBranches);
 extern nodeptr removeNodeRestoreBIG ( tree *tr, nodeptr p );
 extern boolean insertBIG ( tree *tr, nodeptr p, nodeptr q, int numBranches);
