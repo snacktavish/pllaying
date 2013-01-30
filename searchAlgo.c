@@ -1195,7 +1195,12 @@ static void myfread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 
 
+/** @brief Write tree to file
 
+    Serialize tree to a file. 
+
+    @todo Document this
+*/
 static void writeTree(tree *tr, FILE *f)
 {
   int 
@@ -1212,6 +1217,12 @@ static void writeTree(tree *tr, FILE *f)
 
 int ckpCount = 0;
 
+/** @brief Write a checkpoint
+
+    Is checkpoint enabled?
+
+    @todo fill this up
+*/
 static void writeCheckpoint(tree *tr, int state)
 {
   int   
@@ -2284,7 +2295,12 @@ treeEvaluate (tree *tr, int maxSmoothIterations)       /* Evaluate a user tree *
   return TRUE;
 }
 
-/* Perform an NNI move. swap can be either 1 or 2 */
+/** @brief Perform an NNI move
+
+    Modify the topology of tree \a tr by performing an NNI (Neighbour Neighbor
+    Interchange) move at node \a p. Perform one of the two possible NNI moves
+    based on whether \a swap is set to 1 or 2.
+*/
 void NNI(tree * tr, nodeptr p, int swap)
 {
   nodeptr       q, tmp;
