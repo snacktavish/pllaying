@@ -1,3 +1,5 @@
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <sys/times.h>
 #include <sys/types.h>
@@ -53,7 +55,7 @@ static void reorderNodes(tree *tr, nodeptr *np, nodeptr p, int *count)
 
 void nodeRectifier(tree *tr)
 {
-  nodeptr *np = (nodeptr *)malloc(2 * tr->mxtips * sizeof(nodeptr));
+  nodeptr *np = (nodeptr *)rax_malloc(2 * tr->mxtips * sizeof(nodeptr));
   int i;
   int count = 0;
   
@@ -68,7 +70,7 @@ void nodeRectifier(tree *tr)
   reorderNodes(tr, np, tr->start->back, &count); 
 
  
-  free(np);
+  rax_free(np);
 }
 
 nodeptr findAnyTip(nodeptr p, int numsp)

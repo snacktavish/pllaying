@@ -32,9 +32,9 @@ void makeP(double z1, double z2, double *rptr, double *EI, double *EIGN,
 
     /* assign some space for pre-computing and later re-using functions */
 
-    double *lz1 = (double*) malloc(sizeof(double) * states), *lz2 =
-            (double*) malloc(sizeof(double) * states), *d1 = (double*) malloc(
-                    sizeof(double) * states), *d2 = (double*) malloc(
+    double *lz1 = (double*) rax_malloc(sizeof(double) * states), *lz2 =
+            (double*) rax_malloc(sizeof(double) * states), *d1 = (double*) rax_malloc(
+                    sizeof(double) * states), *d2 = (double*) rax_malloc(
                             sizeof(double) * states);
 
     /* multiply branch lengths with eigenvalues */
@@ -98,10 +98,10 @@ void makeP(double z1, double z2, double *rptr, double *EI, double *EIGN,
 
     /* free the temporary buffers */
 
-    free(lz1);
-    free(lz2);
-    free(d1);
-    free(d2);
+    rax_free(lz1);
+    rax_free(lz2);
+    rax_free(d1);
+    rax_free(d2);
 }
 
 template<typename oiter>
@@ -625,8 +625,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
     case TIP_TIP: {
         /* allocate pre-compute memory space */
 
-        //        double *umpX1 = (double*) malloc(sizeof(double) * precomputeLength),
-        //                *umpX2 = (double*) malloc(sizeof(double) * precomputeLength);
+        //        double *umpX1 = (double*) rax_malloc(sizeof(double) * precomputeLength),
+        //                *umpX2 = (double*) rax_malloc(sizeof(double) * precomputeLength);
         /* multiply all possible tip state vectors with the respective P-matrices
          */
 
@@ -750,8 +750,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
 
         /* free precomputed vectors */
         //
-        //        free(umpX1);
-        //        free(umpX2);
+        //       rax_free(umpX1);
+        //       rax_free(umpX2);
 
 
 //         t2 = getticks();
@@ -766,8 +766,8 @@ void newviewGAMMA_FLEX(int tipCase, double *x1, double *x2, double *x3,
         /* we do analogous pre-computations as above, with the only difference that we now do them
 		 only for one tip vector */
 
-        //        double *umpX1 = (double*) malloc(sizeof(double) * precomputeLength),
-        //                *ump_x2 = (double*) malloc(sizeof(double) * states);
+        //        double *umpX1 = (double*) rax_malloc(sizeof(double) * precomputeLength),
+        //                *ump_x2 = (double*) rax_malloc(sizeof(double) * states);
         /* precompute P and left tip vector product */
 
 //        if( reorder_input ) {

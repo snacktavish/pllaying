@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifdef WIN32
 #include <direct.h>
 #endif
@@ -94,9 +96,7 @@ static int filexists(char *filename)
 {
   FILE 
     *fp = fopen(filename,"rb");
-
   int res; 
-
   if(fp)
   {
     res = 1;
@@ -935,6 +935,7 @@ char getInverseMeaning(int dataType, unsigned char state)
 /********************* END UTILITY FUNCTIONS ********************/
 
 
+
 /******************************some functions for the likelihood computation ****************************/
 
 
@@ -1010,11 +1011,13 @@ static nodeptr pickRandomSubtree(tree *tr)
 
 /* interface to outside  */
 
+
 int main (int argc, char *argv[])
 { 
-  tree  *tr = (tree*)malloc(sizeof(tree));
+    
+  tree  *tr = (tree*)rax_malloc(sizeof(tree));
 
-  analdef *adef = (analdef*)malloc(sizeof(analdef));
+  analdef *adef = (analdef*)rax_malloc(sizeof(analdef));
 
   double **empiricalFrequencies;
 
@@ -1057,6 +1060,7 @@ int main (int argc, char *argv[])
 #endif
 #endif
 
+
   /* initialize the analysis parameters in struct adef to default values */
 
   initAdef(adef);
@@ -1092,25 +1096,25 @@ int main (int argc, char *argv[])
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
 
-    tr->aliaswgt                   = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    tr->aliaswgt                   = (int *)rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
     myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);	       
 
-    tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));	  
+    tr->rateCategory    = (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));	  
 
-    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
-    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    tr->patrat          = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
+    tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
 
-    tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
+    tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
 
     for(i = 0; i < (size_t)tr->NumberOfModels; i++)
       tr->executeModel[i] = TRUE;
 
-    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
 
-    y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
+    y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
-    tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
+    tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
@@ -1129,7 +1133,7 @@ int main (int argc, char *argv[])
     {
       int len;
       myBinFread(&len, sizeof(int), 1, byteFile);
-      tr->nameList[i] = (char*)malloc(sizeof(char) * (size_t)len);
+      tr->nameList[i] = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
       /*printf("%s \n", tr->nameList[i]);*/
     }  
@@ -1164,10 +1168,10 @@ int main (int argc, char *argv[])
          */
 
       myBinFread(&len, sizeof(int), 1, byteFile);
-      p->partitionName = (char*)malloc(sizeof(char) * (size_t)len);
+      p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
+      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
       myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);	   
     }
 
@@ -1347,7 +1351,7 @@ int main (int argc, char *argv[])
 	*/
 	
 	double
-	  *logLikelihoods = (double*)malloc(tr->originalCrunchedLength * sizeof(double));
+	    *logLikelihoods = (double*)rax_malloc(tr->originalCrunchedLength * sizeof(double));
 	
 	/* just call the function, the array logLikelihoods will contain the 
 	   per-site log likelihoods of all sites.
@@ -1363,7 +1367,7 @@ int main (int argc, char *argv[])
 	
 	perSiteLogLikelihoods(tr, logLikelihoods);
 	
-	free(logLikelihoods);
+        rax_free(logLikelihoods);
 	
 	exit(0);
       }

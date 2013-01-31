@@ -99,8 +99,8 @@ static void print_state(state *s, double startLH)
 
 static state *state_init(tree *tr, analdef * adef, int maxradius, double bl_w, double rt_w, double gm_w, double bl_p)
 {
-  state *curstate  =(state *)malloc(sizeof(state));
-  nodeptr *list = (nodeptr *)malloc(sizeof(nodeptr) * 2 * tr->mxtips);
+  state *curstate  =(state *)rax_malloc(sizeof(state));
+  nodeptr *list = (nodeptr *)rax_malloc(sizeof(nodeptr) * 2 * tr->mxtips);
   curstate->list = list;
   curstate->maxradius = maxradius;
   curstate->tr = tr;
@@ -113,7 +113,7 @@ static state *state_init(tree *tr, analdef * adef, int maxradius, double bl_w, d
   curstate->rt_sliding_window_w = rt_w;
   curstate->nstates = tr->partitionData[curstate->model].states; /* 4 for DNA */
   curstate->numSubsRates = (curstate->nstates * curstate->nstates - curstate->nstates) / 2; /* 6 for DNA */
-  curstate->curSubsRates = (double *) malloc(curstate->numSubsRates * sizeof(double));
+  curstate->curSubsRates = (double *) rax_malloc(curstate->numSubsRates * sizeof(double));
   curstate->gm_sliding_window_w = gm_w;
   assert(curstate != NULL);
   return curstate;
@@ -121,9 +121,9 @@ static state *state_init(tree *tr, analdef * adef, int maxradius, double bl_w, d
 static void state_free(state *s)
 {
   assert(s != NULL);
-  free(s->list);
-  free(s->curSubsRates);
-  free(s);
+  rax_free(s->list);
+  rax_free(s->curSubsRates);
+  rax_free(s);
 }
 
 static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean printBranchLengths)

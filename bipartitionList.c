@@ -32,7 +32,7 @@
  *  Alexandros Stamatakis:"RAxML-VI-HPC: maximum likelihood-based phylogenetic analyses with thousands of taxa and mixed models". 
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
-
+#include "mem_alloc.h"
 
 #ifndef WIN32  
 #include <sys/times.h>
@@ -72,7 +72,7 @@ static void getxnodeBips (nodeptr p)
 
 entry *initEntry(void)
 {
-  entry *e = (entry*)malloc(sizeof(entry));
+  entry *e = (entry*)rax_malloc(sizeof(entry));
 
   e->bitVector     = (unsigned int*)NULL;
   e->treeVector    = (unsigned int*)NULL;
@@ -103,7 +103,7 @@ hashtable *initHashTable(hashNumberType n)
 					      4194304, 8388608, 16777216, 33554432, 67108864, 134217728,
 					      268435456, 536870912, 1073741824, 2147483648U};
   
-  hashtable *h = (hashtable*)malloc(sizeof(hashtable));
+  hashtable *h = (hashtable*)rax_malloc(sizeof(hashtable));
   
   hashNumberType
     tableSize,
@@ -124,7 +124,7 @@ hashtable *initHashTable(hashNumberType n)
 
  
 
-  h->table = (entry**)calloc((size_t)tableSize, sizeof(entry*));
+  h->table = (entry**)rax_calloc((size_t)tableSize, sizeof(entry*));
   h->tableSize = tableSize;  
   h->entryCount = 0;  
 
@@ -154,15 +154,15 @@ void freeHashTable(hashtable *h)
 	      e = e->next;
 
 	      if(previous->bitVector)
-		free(previous->bitVector);
+		rax_free(previous->bitVector);
 
 	      if(previous->treeVector)
-		free(previous->treeVector);
+		rax_free(previous->treeVector);
 
 	      if(previous->supportVector)
-		free(previous->supportVector);
+		rax_free(previous->supportVector);
 	      
-	      free(previous);	      
+	      rax_free(previous);	      
 	      entryCount++;
 	    }
 	  while(e != NULL);	  
@@ -172,7 +172,7 @@ void freeHashTable(hashtable *h)
 
   assert(entryCount == h->entryCount);
  
-  free(h->table);
+  rax_free(h->table);
 }
 
 
@@ -225,12 +225,12 @@ void cleanupHashTable(hashtable *h, int state)
 		    lastValid->next = remove->next;
 
 		  if(remove->bitVector)
-		    free(remove->bitVector);
+		    rax_free(remove->bitVector);
 		  if(remove->treeVector)
-		    free(remove->treeVector);
+		    rax_free(remove->treeVector);
 		  if(remove->supportVector)
-		    free(remove->supportVector);
-		  free(remove);		 
+		    rax_free(remove->supportVector);
+		  rax_free(remove);		 
 		}
 	      
 	      entryCount++;	     	     
@@ -267,7 +267,7 @@ void cleanupHashTable(hashtable *h, int state)
 unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
 {
   unsigned int 
-    **bitVectors = (unsigned int **)malloc(sizeof(unsigned int*) * 2 * (size_t)mxtips);
+    **bitVectors = (unsigned int **)rax_malloc(sizeof(unsigned int*) * 2 * (size_t)mxtips);
   
   int 
     i;
@@ -279,14 +279,14 @@ unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
   
   for(i = 1; i <= mxtips; i++)
     {
-      bitVectors[i] = (unsigned int *)calloc((size_t)(*vectorLength), sizeof(unsigned int));
+      bitVectors[i] = (unsigned int *)rax_calloc((size_t)(*vectorLength), sizeof(unsigned int));
       assert(bitVectors[i]);
       bitVectors[i][(i - 1) / MASK_LENGTH] |= mask32[(i - 1) % MASK_LENGTH];
     }
   
   for(i = mxtips + 1; i < 2 * mxtips; i++) 
     {
-      bitVectors[i] = (unsigned int *)malloc(sizeof(unsigned int) * (size_t)(*vectorLength));
+      bitVectors[i] = (unsigned int *)rax_malloc(sizeof(unsigned int) * (size_t)(*vectorLength));
       assert(bitVectors[i]);
     }
 
@@ -298,7 +298,7 @@ void freeBitVectors(unsigned int **v, int n)
   int i;
 
   for(i = 1; i < n; i++)
-    free(v[i]);
+    rax_free(v[i]);
 }
 
 
@@ -414,14 +414,14 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
 
       e = initEntry(); 
        
-      /*e->bitVector  = (unsigned int*)calloc(vectorLength, sizeof(unsigned int));*/
-      e->bitVector = (unsigned int*)malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      /*e->bitVector  = (unsigned int*rax_callocvectorLength, sizeof(unsigned int));*/
+      e->bitVector = (unsigned int*)rax_malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
 
-      e->treeVector = (unsigned int*)calloc((size_t)treeVectorLength, sizeof(unsigned int));
+      e->treeVector = (unsigned int*)rax_calloc((size_t)treeVectorLength, sizeof(unsigned int));
       if(computeWRF)
-	e->supportVector = (int*)calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
 
       e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
       if(computeWRF)
@@ -440,14 +440,14 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
     {
       entry *e = initEntry(); 
        
-      /*e->bitVector  = (unsigned int*)calloc(vectorLength, sizeof(unsigned int)); */
+      /*e->bitVector  = (unsigned int*rax_callocvectorLength, sizeof(unsigned int)); */
 
-      e->bitVector = (unsigned int*)malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      e->bitVector = (unsigned int*)rax_malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
-      e->treeVector = (unsigned int*)calloc((size_t)treeVectorLength, sizeof(unsigned int));
+      e->treeVector = (unsigned int*)rax_calloc((size_t)treeVectorLength, sizeof(unsigned int));
       if(computeWRF)	
-	e->supportVector = (int*)calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
 
 
       e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];

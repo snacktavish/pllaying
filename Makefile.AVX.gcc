@@ -10,7 +10,7 @@ LIBRARIES = -lm -mavx
 
 RM = rm -f
 
-objs    = utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o recom.o
+objs    = axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o mem_alloc.o recom.o mem_alloc.o 
 
 all : raxmlLight-AVX
 

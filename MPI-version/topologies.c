@@ -147,10 +147,10 @@ void freeTL(topolRELL_LIST *rl)
   int i;
   for(i = 0; i < rl->max; i++)    
     {
-      free(rl->t[i]->connect);          
-      free(rl->t[i]);
+      rax_free(rl->t[i]->connect);          
+      rax_free(rl->t[i]);
     }
-  free(rl->t);
+  rax_free(rl->t);
 }
 
 
@@ -229,8 +229,8 @@ static topol  *setupTopol (int maxtips)
 
 static void  freeTopol (topol *tpl)
 {
-  free(tpl->links);
-  free(tpl);
+  rax_free(tpl->links);
+  rax_free(tpl);
 } 
 
 
@@ -436,8 +436,8 @@ boolean  freeBestTree(bestlist *bt)
     
   /* VALGRIND */
 
-  free(bt->byScore);
-  free(bt->byTopol);
+  rax_free(bt->byScore);
+  rax_free(bt->byTopol);
 
   /* VALGRIND END */
 

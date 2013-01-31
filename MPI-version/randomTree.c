@@ -140,7 +140,7 @@ void makeRandomTree(tree *tr)
       insertTaxon(p->back, randomBranch, tr->numBranches);      
     }
   
-  free(perm);            
-  free(branches);
+  rax_free(perm);            
+  rax_free(branches);
 }
 

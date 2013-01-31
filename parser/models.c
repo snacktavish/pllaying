@@ -2999,7 +2999,7 @@ static void updateFracChange(tree *tr)
 	  tr->fracchange +=  tr->partitionContributions[model] * tr->fracchanges[model];
 	}	      
     
-      free(modelWeights);
+      rax_free(modelWeights);
     }
 }
 
@@ -3382,20 +3382,20 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
   for(i = 0; i < n; i++)
     {
-      free(EIGV[i]);
-      free(a[i]);
-      free(r[i]);
+      rax_free(EIGV[i]);
+      rax_free(a[i]);
+      rax_free(r[i]);
     }
 
-  free(r);
-  free(a);
-  free(EIGV);
+  rax_free(r);
+  rax_free(a);
+  rax_free(EIGV);
 
-  free(f);
-  free(e);
-  free(d);
-  free(invfreq);
-  free(EIGN);
+  rax_free(f);
+  rax_free(e);
+  rax_free(d);
+  rax_free(invfreq);
+  rax_free(EIGN);
 }
 
 
@@ -3712,7 +3712,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K)
 
   /* assert(gammaRates[0] >= 0.00000000000000000000000000000044136090435925743185910935350715027016962154188875); */
 
-  free(gammaProbs);
+  rax_free(gammaProbs);
      
   return;  
 }

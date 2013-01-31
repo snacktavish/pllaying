@@ -295,7 +295,7 @@ void initInfoList(int n)
 
 void freeInfoList(void)
 { 
-  free(iList.list);   
+  rax_free(iList.list);   
 }
 
 
@@ -956,7 +956,7 @@ double treeOptimizeRapid(tree *tr, int mintrav, int maxtrav, analdef *adef, best
     }
 
   if(adef->permuteTreeoptimize)
-    free(perm);
+    rax_free(perm);
 
   return tr->startLH;     
 }
@@ -1770,7 +1770,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	  else
 	    memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
 	  
-	  free(buffer);	  
+	  rax_free(buffer);	  
 
 	  assert(bCounter == tr->mxtips - 3);	    	   	  	 
 
@@ -2048,7 +2048,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	      else
 		memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
 	      
-	      free(buffer);	      
+	      rax_free(buffer);	      
 
 	      assert(bCounter == tr->mxtips - 3);
 
@@ -2201,15 +2201,15 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
   if(tr->searchConvergenceCriterion && processID == 0)
     {
       freeBitVectors(tr->bitVectors, 2 * tr->mxtips);
-      free(tr->bitVectors);
+      rax_free(tr->bitVectors);
       freeHashTable(tr->h);
-      free(tr->h);
+      rax_free(tr->h);
     }
   
   freeBestTree(bestT);
-  free(bestT);
+  rax_free(bestT);
   freeBestTree(bt);
-  free(bt);
+  rax_free(bt);
   freeInfoList();  
   
 

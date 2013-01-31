@@ -156,10 +156,10 @@ static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
   
   /* free the temporary buffers */
 
-  free(lz1);
-  free(lz2);
-  free(d1);
-  free(d2);
+  rax_free(lz1);
+  rax_free(lz2);
+  rax_free(d1);
+  rax_free(d2);
 }
 
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
@@ -479,8 +479,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	
 	/* free precomputed vectors */
 
-	free(umpX1);
-	free(umpX2);
+	rax_free(umpX1);
+	rax_free(umpX2);
       }
       break;
     case TIP_INNER:
@@ -571,8 +571,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 	      }
 	  }
 
-	free(umpX1);
-	free(ump_x2);
+	rax_free(umpX1);
+	rax_free(ump_x2);
       }
       break;
     case INNER_INNER:
@@ -967,7 +967,7 @@ void newviewIterative (tree *tr, int startIndex)
 		  /* if there is a vector of incorrect length assigned here i.e., x3 != NULL we must free 
 		     it first */
 		  if(x3_start)
-		    free(x3_start);
+		    rax_free(x3_start);
 		 
 		  /* allocate memory: note that here we use a byte-boundary aligned malloc, because we need the vectors
 		     to be aligned at 16 BYTE (SSE3) or 32 BYTE (AVX) boundaries! */

@@ -27,6 +27,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32 
 #include <unistd.h>
 #endif
@@ -84,7 +86,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 
   double 
     lz,
-    *lza = (double *)malloc(sizeof(double) * states);
+    *lza = (double *)rax_malloc(sizeof(double) * states);
 
   /* transform the root branch length to the log and check if it is not too small */
 
@@ -114,7 +116,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
       diagptable[i * states + l] = EXP(rptr[i] * lza[l]);
   }
 
-  free(lza);
+  rax_free(lza);
 }
 
 #ifndef _OPTIMIZED_FUNCTIONS

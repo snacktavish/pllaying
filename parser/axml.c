@@ -93,7 +93,7 @@ void myBinFwrite(const void *ptr, size_t size, size_t nmemb)
 
 
 
-void *malloc_aligned(size_t size) 
+void *rax_malloc_aligned(size_t size) 
 {
   void 
     *ptr = (void *)NULL;
@@ -119,7 +119,7 @@ void *malloc_aligned(size_t size)
 
 
 #else
-  res = posix_memalign( &ptr, BYTE_ALIGNMENT, size );
+  res = rax_posix_memalign( &ptr, BYTE_ALIGNMENT, size );
 
   if(res != 0) 
     assert(0);
@@ -975,7 +975,7 @@ static void inputweights (rawdata *rdta)
     rdta->wgt[i] = wv[i - 1];
 
   fclose(weightFile);
-  free(wv);
+  rax_free(wv);
 }
 static hashNumberType  hashString(char *p, hashNumberType tableSize)
 {
@@ -1446,7 +1446,7 @@ static void adaptRdataToSecondary(tree *tr, rawdata *rdta)
 	rdta->y[j][i+1] = rdta->y[j][alias[i]+1];
     }
 
-  free(alias);
+  rax_free(alias);
 }
 
 static void sitesort(rawdata *rdta, cruncheddata *cdta, tree *tr, analdef *adef)
@@ -1649,8 +1649,8 @@ static void sitecombcrunch (rawdata *rdta, cruncheddata *cdta, tree *tr, analdef
 
   if(adef->useMultipleModel)
     {
-      free(aliasModel);
-      free(aliasSuperModel);
+      rax_free(aliasModel);
+      rax_free(aliasSuperModel);
     }     
 }
 
@@ -1708,8 +1708,8 @@ static boolean makevalues(rawdata *rdta, cruncheddata *cdta, tree *tr, analdef *
 	printf("Free on raw data\n");
       */
 
-      free(rdta->y0);
-      free(rdta->y);
+      rax_free(rdta->y0);
+      rax_free(rdta->y);
       
    
       /*myBinFwrite(y, sizeof(unsigned char), ((size_t)rdta->numsp) * ((size_t)cdta->endsite) * sizeof(unsigned char));*/
