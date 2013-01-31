@@ -1686,7 +1686,7 @@ static void nodeRectifierPars(tree *tr)
   reorderNodes(tr, np, tr->start->back, &count); 
 
  
-  free(np);
+  rax_free(np);
 }
 
 
@@ -1808,8 +1808,8 @@ static void compressDNA(tree *tr, int *informative)
   
       tr->partitionData[model].parsimonyLength = compressedEntriesPadded;   
 
-      free(compressedTips);
-      free(compressedValues);
+      rax_free(compressedTips);
+      rax_free(compressedValues);
     }
   
   tr->parsimonyScore = (unsigned int*)malloc_aligned(sizeof(unsigned int) * totalNodes);  
@@ -1885,7 +1885,7 @@ void allocateParsimonyDataStructures(tree *tr)
 
   tr->ti = (int*)malloc(sizeof(int) * 4 * (size_t)tr->mxtips);  
 
-  free(informative); 
+  rax_free(informative); 
 }
 
 void freeParsimonyDataStructures(tree *tr)
@@ -1893,12 +1893,12 @@ void freeParsimonyDataStructures(tree *tr)
   size_t 
     model;
 
-  free(tr->parsimonyScore);
+  rax_free(tr->parsimonyScore);
   
   for(model = 0; model < (size_t) tr->NumberOfModels; model++)
-    free(tr->partitionData[model].parsVect);
+    rax_free(tr->partitionData[model].parsVect);
   
-  free(tr->ti);
+  rax_free(tr->ti);
 }
 
 

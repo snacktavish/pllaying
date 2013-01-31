@@ -155,15 +155,15 @@ void freeHashTable(hashtable *h)
 	      e = e->next;
 
 	      if(previous->bitVector)
-		free(previous->bitVector);
+		rax_free(previous->bitVector);
 
 	      if(previous->treeVector)
-		free(previous->treeVector);
+		rax_free(previous->treeVector);
 
 	      if(previous->supportVector)
-		free(previous->supportVector);
+		rax_free(previous->supportVector);
 	      
-	      free(previous);	      
+	      rax_free(previous);	      
 	      entryCount++;
 	    }
 	  while(e != NULL);	  
@@ -173,7 +173,7 @@ void freeHashTable(hashtable *h)
 
   assert(entryCount == h->entryCount);
  
-  free(h->table);
+  rax_free(h->table);
 }
 
 
@@ -226,12 +226,12 @@ void cleanupHashTable(hashtable *h, int state)
 		    lastValid->next = remove->next;
 
 		  if(remove->bitVector)
-		    free(remove->bitVector);
+		    rax_free(remove->bitVector);
 		  if(remove->treeVector)
-		    free(remove->treeVector);
+		    rax_free(remove->treeVector);
 		  if(remove->supportVector)
-		    free(remove->supportVector);
-		  free(remove);		 
+		    rax_free(remove->supportVector);
+		  rax_free(remove);		 
 		}
 	      
 	      entryCount++;	     	     
@@ -299,7 +299,7 @@ void freeBitVectors(unsigned int **v, int n)
   int i;
 
   for(i = 1; i < n; i++)
-    free(v[i]);
+    rax_free(v[i]);
 }
 
 

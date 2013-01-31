@@ -475,10 +475,10 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
 
   /* free the temporary arrays */
 
-  free(d_start);
-  free(e);
-  free(s);
-  free(dd);
+  rax_free(d_start);
+  rax_free(e);
+  rax_free(s);
+  rax_free(dd);
 }
 
 static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, 
@@ -981,8 +981,8 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 	      }	
 	  }
 
-	free(send);
-	free(recv);
+	rax_free(send);
+	rax_free(recv);
       }
      
       /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 

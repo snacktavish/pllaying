@@ -110,7 +110,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 	diagptable[i * states + l] = EXP(rptr[i] * lza[l]);
     }
   
-  free(lza);
+  rax_free(lza);
 }
 
 
@@ -746,7 +746,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 	  result += recv[model];
 	}
       
-      free(recv);
+      rax_free(recv);
     }
   else
     {
@@ -763,7 +763,7 @@ void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal)
 	  result += recv[model];
 	}           
       
-      free(recv);      
+      rax_free(recv);      
     }
 
 

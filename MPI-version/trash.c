@@ -68,7 +68,7 @@ void nodeRectifier(tree *tr)
   reorderNodes(tr, np, tr->start->back, &count); 
 
  
-  free(np);
+  rax_free(np);
 }
 
 nodeptr findAnyTip(nodeptr p, int numsp)

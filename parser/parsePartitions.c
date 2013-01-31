@@ -324,7 +324,7 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
 	  numberOfModels++;
 	}
       if(cc)
-	free(cc);
+	rax_free(cc);
       cc = (char *)NULL;
     }     
   
@@ -359,7 +359,7 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
 	  i++;
 	}
       if(cc)
-	free(cc);
+	rax_free(cc);
       cc = (char *)NULL;
     }         
 
@@ -557,12 +557,12 @@ void parsePartitions(analdef *adef, rawdata *rdta, tree *tr)
 
   for(i = 0; i < numberOfModels; i++)
     {
-      free(partitions[i]);
-      free(p_names[i]);
+      rax_free(partitions[i]);
+      rax_free(p_names[i]);
     }
   
-  free(partitions);
-  free(p_names);    
+  rax_free(partitions);
+  rax_free(p_names);    
     
   tr->NumberOfModels = numberOfModels;     
   
@@ -941,11 +941,11 @@ void handleExcludeFile(tree *tr, analdef *adef, rawdata *rdta)
   
   fclose(f);
   for(i = 0; i < numberOfModels; i++)
-    free(partitions[i]);
-  free(partitions);  
-  free(excludeArray);
-  free(countArray);
-  free(modelList);
+    rax_free(partitions[i]);
+  rax_free(partitions);  
+  rax_free(excludeArray);
+  rax_free(countArray);
+  rax_free(modelList);
 }
 
 
@@ -1212,8 +1212,8 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 	    }
 
 	  for(i = 0; i < tr->NumberOfModels; i++)
-	    free(tr->extendedPartitionData[i].partitionName);
-	  free(tr->extendedPartitionData);
+	    rax_free(tr->extendedPartitionData[i].partitionName);
+	  rax_free(tr->extendedPartitionData);
 	 
 	  tr->extendedPartitionData = (pInfo*)malloc(sizeof(pInfo) * (tr->NumberOfModels + 1));
 	  
@@ -1224,9 +1224,9 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 	      tr->extendedPartitionData[i].dataType =  partBuffer[i].dataType;
 	      tr->extendedPartitionData[i].protModels= partBuffer[i].protModels;
 	      tr->extendedPartitionData[i].protFreqs=  partBuffer[i].protFreqs;	      
-	      free(partBuffer[i].partitionName);
+	      rax_free(partBuffer[i].partitionName);
 	    }
-	  free(partBuffer);
+	  rax_free(partBuffer);
 
 	  tr->extendedPartitionData[i].partitionName = (char*)malloc(64 * sizeof(char));
 
@@ -1364,9 +1364,9 @@ void parseSecondaryStructure(tree *tr, analdef *adef, int sites)
 
       
       for(k = 0; k < numberOfSymbols; k++)	  
-	free(brackets[k]);
-      free(brackets);
-      free(characters);
+	rax_free(brackets[k]);
+      rax_free(brackets);
+      rax_free(characters);
 
       fclose(f);
     }

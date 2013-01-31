@@ -6,7 +6,7 @@
 
 #include "genericParallelization.h"
 #include "axml.h"
-
+#include "mem_alloc.h"
 /** @file genericParallelization.c
     
     @brief Generic master-worker parallelization with either pthreads or MPI. 
@@ -189,16 +189,16 @@ void startPthreads(tree *tr)
   printf("\nThis is the RAxML Master Pthread\n");  
 
 #if (NOT defined(_USE_PTHREADS) && defined( MEASURE_TIME_PARALLEL))
-  timeBuffer = calloc(NUM_PAR_JOBS * tr->numberOfThreads, sizeof(double)); 
+  timeBuffer = rax_calloc(NUM_PAR_JOBS * tr->numberOfThreads, sizeof(double)); 
 #endif
 
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 
-  threads    = (pthread_t *)malloc((size_t)tr->numberOfThreads * sizeof(pthread_t));
-  tData      = (threadData *)malloc((size_t)tr->numberOfThreads * sizeof(threadData));
+  threads    = (pthread_t *)rax_malloc((size_t)tr->numberOfThreads * sizeof(pthread_t));
+  tData      = (threadData *)rax_malloc((size_t)tr->numberOfThreads * sizeof(threadData));
 
-  barrierBuffer            = (volatile char *)  malloc(sizeof(volatile char)   *  (size_t)tr->numberOfThreads);
+  barrierBuffer            = (volatile char *)  rax_malloc(sizeof(volatile char)   *  (size_t)tr->numberOfThreads);
 
   for(t = 0; t < tr->numberOfThreads; t++)
     barrierBuffer[t] = 0;
@@ -464,7 +464,7 @@ void multiprocessorScheduling(tree *tr, int tid)
       /* check that we have not addedd any new models for data types with a different number of states
 	 and forgot to update modelStates */
 
-      tr->partitionAssignment = (int *)malloc((size_t)tr->NumberOfModels * sizeof(int));
+      tr->partitionAssignment = (int *)rax_malloc((size_t)tr->NumberOfModels * sizeof(int));
 
       for(model = 0; model < tr->NumberOfModels; model++)
 	{        
@@ -501,10 +501,10 @@ void multiprocessorScheduling(tree *tr, int tid)
 		n = processes,
 #endif
 		p = numberOfPartitions[s],    
-		*assignments = (int *)calloc((size_t)n, sizeof(int));  
+		*assignments = (int *)rax_calloc((size_t)n, sizeof(int));  
 
 	      partitionType 
-		*pt = (partitionType *)malloc(sizeof(partitionType) * (size_t)p);
+		*pt = (partitionType *)rax_malloc(sizeof(partitionType) * (size_t)p);
 
 
 
@@ -557,8 +557,8 @@ void multiprocessorScheduling(tree *tr, int tid)
 
 	      assert(sum == checkSum);
 
-	      free(assignments);
-	      free(pt);
+	      rax_free(assignments);
+	      rax_free(pt);
 	    }
 	}
 }
@@ -1367,7 +1367,7 @@ void *likelihoodThread(void *tData)
     *tr = td->tr;
 
 #ifdef _USE_PTHREADS
-  tree *localTree = calloc(1,sizeof(tree )); 
+  tree *localTree = rax_calloc(1,sizeof(tree )); 
   
   int
     myCycle = 0;
@@ -1561,16 +1561,16 @@ static void assignAndInitPart1(tree *localTree, tree *tr, int *tid)
 
   if(NOT MASTER_P)
     {
-      localTree->lhs                     = (double*)malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
-      localTree->perPartitionLH          = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);     
-      localTree->fracchanges             = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
-      localTree->partitionContributions  = (double*)malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
-      localTree->partitionData           = (pInfo*)malloc(sizeof(pInfo)     * (size_t)localTree->NumberOfModels);
-      localTree->td[0].ti              = (traversalInfo *)malloc(sizeof(traversalInfo) * (size_t)localTree->mxtips);
-      localTree->td[0].executeModel    = (boolean *)malloc(sizeof(boolean) * (size_t)localTree->NumberOfModels);
-      localTree->td[0].parameterValues = (double *)malloc(sizeof(double) * (size_t)localTree->NumberOfModels);
-      localTree->patrat       = (double*)malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);
-      localTree->patratStored = (double*)malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);            
+      localTree->lhs                     = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
+      localTree->perPartitionLH          = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);     
+      localTree->fracchanges             = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
+      localTree->partitionContributions  = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->NumberOfModels);
+      localTree->partitionData           = (pInfo*)rax_malloc(sizeof(pInfo)     * (size_t)localTree->NumberOfModels);
+      localTree->td[0].ti              = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)localTree->mxtips);
+      localTree->td[0].executeModel    = (boolean *)rax_malloc(sizeof(boolean) * (size_t)localTree->NumberOfModels);
+      localTree->td[0].parameterValues = (double *)rax_malloc(sizeof(double) * (size_t)localTree->NumberOfModels);
+      localTree->patrat       = (double*)rax_malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);
+      localTree->patratStored = (double*)rax_malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);            
     }
   
   for(model = 0; model < (size_t)localTree->NumberOfModels; model++)
@@ -1687,7 +1687,7 @@ void distributeWeights(tree *localTree, tree *tr)
   /* distribute the weights  */
 #ifdef _FINE_GRAIN_MPI 		/* need to broadcast a few things first */
   if(NOT MASTER_P)
-    tr->aliaswgt = malloc(sizeof(int) * tr->originalCrunchedLength); 
+    tr->aliaswgt = rax_malloc(sizeof(int) * tr->originalCrunchedLength); 
   MPI_Bcast(tr->aliaswgt, tr->originalCrunchedLength, MPI_INT, 0, MPI_COMM_WORLD);      
 #endif
   for(model = 0, globalCounter = 0; model < (size_t)localTree->NumberOfModels; model++)
@@ -1734,11 +1734,11 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
 #ifdef _USE_PTHREADS
   if(MASTER_P)
-    globalResult = calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
+    globalResult = rax_calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
   else 
     assignAndInitPart1(localTree, tr , &tid); 
 #else 
-  globalResult = calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
+  globalResult = rax_calloc((size_t) tr->numberOfThreads * (size_t)tr->NumberOfModels * 2 ,sizeof(double)); 
   assignAndInitPart1(localTree, tr , &tid); 
   defineTraversalInfoMPI();
 #endif
@@ -1768,7 +1768,7 @@ void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n)
 
     /* assign local memory for storing sequence data */
     
-    localTree->y_ptr = (unsigned char *)malloc(myLength * (size_t)(localTree->mxtips) * sizeof(unsigned char));
+    localTree->y_ptr = (unsigned char *)rax_malloc(myLength * (size_t)(localTree->mxtips) * sizeof(unsigned char));
     assert(localTree->y_ptr != NULL);
 
     for(i = 0; i < (size_t)localTree->mxtips; i++)

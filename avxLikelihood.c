@@ -1,3 +1,5 @@
+#include "mem_alloc.h"
+
 #include <unistd.h>
 
 #include <math.h>
@@ -13,6 +15,9 @@
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 #include <immintrin.h>
+
+
+
 
 #ifdef _FMA
 #include <x86intrin.h>
