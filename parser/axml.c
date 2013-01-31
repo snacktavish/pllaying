@@ -701,6 +701,7 @@ static boolean getdata(analdef *adef, rawdata *rdta, tree *tr)
     meaningAA['-'] = 
     getUndetermined(AA_DATA);
 
+
   /* DNA data */
 
   meaningDNA['A'] =  1;
