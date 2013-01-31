@@ -2091,16 +2091,22 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
 
 /* optimized function implementations */
 
+
+/**
+ *  @defgroup group1 Optimized functions
+ *  This is the optimized functions group
+ */
+
 #if 1
 //#ifdef _OPTIMIZED_FUNCTIONS
 
-/** @brief Optimized function implementations for conditional likelihood implementation
+/** @ingroup group1
+ *  @brief Optimized function implementations for conditional likelihood implementation
  *
  * Optimized unrolled, and vectorized versions of the above generi cfunctions 
    for computing the conditional likelihood at p given child nodes q and r. The procedure is the same as for the slow generic implementations.
  *
  */
-
 static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
     double *x1_start, double *x2_start, double *x3_start,
     double *EV, double *tipVector,
@@ -2996,6 +3002,11 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 }
 
 
+/** @ingroup group1
+    @brief Brief function description
+
+    Detailed function description
+*/
 static void newviewGTRGAMMA(int tipCase,
     double *x1_start, double *x2_start, double *x3_start,
     double *EV, double *tipVector,
@@ -3509,6 +3520,12 @@ static void newviewGTRGAMMA(int tipCase,
   *scalerIncrement = addScale;
 
 }
+
+/** @ingroup group1
+    @brief Brief function description
+
+    Detailed function description
+*/
 static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
     unsigned char *tipX1, unsigned char *tipX2,
