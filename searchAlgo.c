@@ -267,6 +267,8 @@ void localSmooth (tree *tr, nodeptr p, int maxtimes)
   nodeptr  q;
   int i;
 
+ 
+
   if (isTip(p->number, tr->mxtips)) return;
 
   for(i = 0; i < tr->numBranches; i++)	
@@ -343,7 +345,9 @@ static void initInfoList(infoList *iList, size_t n)
   iList->n = n;
   iList->valid = 0;
   iList->list = (bestInfo *)rax_malloc(sizeof(bestInfo) * (size_t)n);
-
+  
+  
+  
   for(i = 0; i < n; i++)
   {
     iList->list[i].node = (nodeptr)NULL;

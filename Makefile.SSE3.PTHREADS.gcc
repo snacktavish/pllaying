@@ -15,10 +15,14 @@ objs    = utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o tree
 all : raxmlLight-PTHREADS
 
 
+# check_malloc: raxmlLight-PTHREADS
+# 	sh check_malloc.sh  raxmlLight-PTHREADS
+
 
 GLOBAL_DEPS = axml.h globalVariables.h mem_alloc.h
 
 raxmlLight-PTHREADS : $(objs)
+	sh check_malloc.sh $(objs)
 	$(CC) -o raxmlLight-PTHREADS $(objs) $(LIBRARIES) 
 
 bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)

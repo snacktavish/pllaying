@@ -2231,7 +2231,6 @@ int main (int argc, char *argv[])
   MPI_Comm_size(MPI_COMM_WORLD, &processes);
   printf("\nThis is RAxML FINE-GRAIN MPI Process Number: %d\n", processID);   
   MPI_Barrier(MPI_COMM_WORLD);
-  
   {
     tree  *tr = (tree*)malloc(sizeof(tree));
   

@@ -12,6 +12,10 @@ void *rax_calloc(size_t n, size_t size);
 
 void *rax_malloc_aligned(size_t size);
 
+
+#if 0
+// using the following contraption to trigger a compile-time error does not work on some gcc versions. It will trigger a confising linker error in the best case, so it is deativated.
+
 #if defined(RAXML_USE_LLALLOC) && !defined(MEM_ALLOC_NO_GUARDS)
 #define malloc(x) XXX_DONT_USE_MALLOC_WITHOUT_RAX_PREFIX_XXX
 #define free(x) XXX_DONT_USE_FREE_WITHOUT_RAX_PREFIX_XXX
@@ -19,6 +23,7 @@ void *rax_malloc_aligned(size_t size);
 #define realloc(x,y) XXX_DONT_USE_REALLOC_WITHOUT_RAX_PREFIX_XXX
 #define malloc_aligned(x) XXX_DONT_USE_MALLOC_ALIGNED_WITHOUT_RAX_PREFIX_XXX
 #define posix_memalign(x,y,z) XXX_DONT_USE_POSIX_MEMALIGN_ALIGNED_WITHOUT_RAX_PREFIX_XXX
+#endif
 #endif
 
 #endif
