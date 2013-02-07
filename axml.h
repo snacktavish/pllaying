@@ -549,7 +549,7 @@ typedef struct
 
 
 
-  /** @brief Node record
+  /** 
    *
    * the data structure below is fundamental for representing trees 
      in the library!
@@ -732,6 +732,30 @@ typedef struct
      it summarizes, if p1->x == 1, it summarizes subtree (t2, (t3, t4)), if p3->x = 1 the likelihood vector associated with 
      node p summarizes subtree (t1, t2).
 
+     @todo I think we should rename the back pointer. It's not back, it can be forward depending on the orientation. We should renmae it to outer. Back is too confusing, I would assume it's the opposite of next, i.e. previous.
+
+     @struct noderec
+
+     @brief Tree node record
+
+     A node in a tree is a structure which contains a cyclic list of pointers to 3 nodes which we call a \e roundabout. The first node is the structure itself, and the other two nodes are accessed via \a noderec->next and \a noderec->next->next. To access the outer node with which each of the 3 nodes forms an edge one has to use the \a back pointer
+
+     @var noderec::next
+     @brief Next node in the roundabout
+
+     @var noderec::back
+     @brief Outer node
+
+     @var noderec::number
+     @brief Node identifier
+
+     In general, tips (i.e. leaves) are numbered from 1 to \e n where \e n is the number of taxa. Identifiers for internal nodes start from \e n + 1. Note
+     that for a given inner node, the identifier must be the same for all 3 nodes that compose it.
+
+     @var info::z
+     @brief The branch lengths per partition for the main node in the roundabout
+
+     @todo Append an image
   */
 typedef  struct noderec
 {
@@ -741,17 +765,30 @@ typedef  struct noderec
 #ifdef _BAYESIAN 
   double           z_tmp[NUM_BRANCHES];
 #endif 
-  struct noderec  *next;
-  struct noderec  *back;
+  struct noderec  *next;        
+  struct noderec  *back;       
   hashNumberType   hash;
   int              support;
-  int              number;
+  int              number;    
   char             x;
   char             xPars;
   char             xBips;
 }
   node, *nodeptr;
 
+/** @struct info
+    
+    @brief A brief line
+
+    @var info::lh
+    @brief this is lh
+
+    Detailed description of lh
+
+    @var info::number
+    @brief This is a number
+    Detailed description of number
+*/
 typedef struct
   {
     double lh;

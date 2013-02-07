@@ -55,6 +55,8 @@
     @brief Collection of routines for performing likelihood computation and branch optimization.
 
     Detailed description to appear soon.
+
+    @todo In general, most of the functions should be renamed to something more meaningful
 */
 
 
@@ -91,12 +93,6 @@ boolean initrav (tree *tr, nodeptr p)
 
   return TRUE;
 } 
-
-
-
-
-
-
 
 
 
@@ -468,7 +464,7 @@ void smoothRegion (tree *tr, nodeptr p, int region)
     @param maxtimes
       Number of times to perform branch optimization.
 
-    @pram region
+    @param region
       The allwed node distance from \p for which to still perform branch optimization.
 */
 void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
@@ -505,7 +501,7 @@ void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
 
 
 
-/* @brief Split the tree into two components and optimize new branch length
+/** @brief Split the tree into two components and optimize new branch length
 
    Split the tree into two components. The disconnection point is node \a p.
    First, a branch length is computed for the newly created branch between nodes
@@ -527,6 +523,8 @@ void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
 
    @todo
      Why do we return this node?
+
+    @image html remove_node_big.png "An illustration of the decomposition. The red edges are removed while a new edge (blue) is added, resulting in the decomposition of the tree to two tree components"
 */
 nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
 {  
@@ -552,9 +550,9 @@ nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
   return  q; 
 }
 
-/** @brief Split the tree into two components and recompute likelihood
+/** @brief Split the tree into two tree components and recompute likelihood
 
-    Split the tree into two component. The disconnection point is node \a p.
+    Split the tree into two tree component. The disconnection point is node \a p.
     Set the branch length of the new node between \a p->next->back and
     \a p->next->next->back to \a tr->currentZQR and then decompose the tree
     into two components by setting \a p->next->back and \a p->next->next->back
@@ -591,6 +589,29 @@ nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
 }
 
 
+/** @brief Compose a tree from two tree components
+    
+    Connects two components to one tree. There are two modes for this function which are triggered by the
+    \a tr->thoroughInsertion, the \e fast and \e thorough mode. If fast mode is used, then the lengths of
+    the new branch lengths are not optimized, otherwise they are optimized.
+
+    @param tr
+      The tree structure
+
+    @param p
+      First connection point. Must be a tip. Corresponds to \a p in \a removeNodeBIG function
+
+    @param q
+      Second connection point. A node with a valid \a q->back
+
+    @param numBranches
+      Number of branches per partition
+
+    @return
+      Returns always \b TRUE. This should be changed to void
+
+    @todo Create a diagram for this function. Also please check if the description of parameters \a p and \a q is correct. Remove RETURN?
+*/
 boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
 {
   nodeptr  r, s;
@@ -682,6 +703,29 @@ boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
   return  TRUE;
 }
 
+/** @brief Compose a tree from two components and restore prevoiusly saved branch lengths in case of \e thorough insertion
+
+    Connects two components to one tree. There are two modes for this function which are triggered by the
+    \a tr->thoroughInsertion, the \e fast and \e thorough mode. If fast mode is used, then the lengths of
+    the new branch lengths are set to defaultz, otherwise they are set to the last saved values
+
+    @param tr
+      The tree structure
+
+    @param p
+      First connection point. Must be a tip. Corresponds to \a p in \a removeNodeBIG function
+
+    @param q
+      Second connection point. A node with a valid \a q->back
+
+    @param numBranches
+      Number of branches per partition
+
+    @return
+      Returns always \b TRUE. This should be changed to void
+
+    @todo Create a diagram for this function. Also please check if the description of parameters \a p and \a q is correct. Remove RETURN?
+*/
 boolean insertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
 {
   nodeptr  r, s;
@@ -720,7 +764,13 @@ boolean insertRestoreBIG (tree *tr, nodeptr p, nodeptr q)
   return  TRUE;
 }
 
+/** @brief Restore topology??
 
+    Too many undocumented variables to understand.
+    First it seems that the code does the same as with removeNodeBig and sets some branch lengths. Then it reconnect the two components and sets some other branch lengths. 
+
+    @todo Please document this function
+*/ 
 static void restoreTopologyOnly(tree *tr, bestlist *bt)
 { 
   nodeptr p = tr->removeNode;
@@ -790,6 +840,28 @@ static void restoreTopologyOnly(tree *tr, bestlist *bt)
 }
 
 
+/** @brief Tests the likelihood of a possible insertion
+
+    Connects the points \a p and \a q of two disconnected tree components and estimates the likelihood of the tree.
+    If the likelihood is higher than the previous tested then it saves the likelihood value, nodes \a p and \q and
+    the corresponding branch lengths in global memory. Finally, the tree is disconnected to its state before the connection.
+
+    @param tr
+      The tree structure
+
+    @param p
+      The tip at which to connect the other component
+
+    @param q
+      A node from the other tree component
+
+    @return
+      Returns \b TRUE or \b FALSE. Comment it
+
+    @note The parameters \a p \and \a q are in accordance to the parameters of \a removeNodeBIG
+
+    @todo What is the point of doIt? Must be a leftover.. Is it still needed? Do a diagram. Is the if(tr->thoroughInsertion) doing anything? Comment return value
+*/
 boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 {
   double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
@@ -864,7 +936,14 @@ boolean testInsertBIG (tree *tr, nodeptr p, nodeptr q)
 
 
 
+/** @brief Check a number of placements of a component
 
+    Attempts a number of placements of a component to the tree by recursively 
+    calling itself and the function \a testInsertBIG. The placement with the 
+    highest likelihood  is saved (\a testInsertBig).
+
+    @todo Check if this is right
+*/
 void addTraverseBIG(tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 {  
   if (--mintrav <= 0) 
