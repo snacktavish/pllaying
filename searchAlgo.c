@@ -523,7 +523,7 @@ void regionalSmooth (tree *tr, nodeptr p, int maxtimes, int region)
      Number of branches per partition
 
    @return q
-     the node after \a p
+     Node from the disconnected component
 
    @todo
      Why do we return this node?
@@ -571,7 +571,7 @@ nodeptr  removeNodeBIG (tree *tr, nodeptr p, int numBranches)
 
     @todo
       Why do we return this node? Why do we set to tr->currentZQR and not compute
-      new optimized length?
+      new optimized length? What is tr->currentZQR? 
 */
 nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
 {
@@ -590,7 +590,11 @@ nodeptr  removeNodeRestoreBIG (tree *tr, nodeptr p)
   return  q;
 }
 
+/* @brief
 
+   @todo
+     What is tr->lzi ? What is thorough insertion?
+*/
 boolean insertBIG (tree *tr, nodeptr p, nodeptr q, int numBranches)
 {
   nodeptr  r, s;

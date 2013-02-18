@@ -1514,7 +1514,7 @@ void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal)
  *
  * This is the generic function that could be called from the user program 
    it re-computes the vector at node p (regardless of whether it's orientation is 
-   correct) and re-computes, reciursively, the likelihood arrays 
+   correct) and re-computes, recursively, the likelihood arrays 
    in the subtrees of p as needed and if needed 
  *
  *
@@ -1545,7 +1545,7 @@ void newviewGeneric (tree *tr, nodeptr p, boolean masked)
      you may imagine that for partition 5 the branch length optimization has already converged whereas 
      for partition 6 we still need to go over the tree again.
 
-     This si explained in more detail in:
+     This is explained in more detail in:
 
      A. Stamatakis, M. Ott: "Load Balance in the Phylogenetic Likelihood Kernel". Proceedings of ICPP 2009
 
