@@ -713,6 +713,9 @@ static void newviewGAMMA_FLEX(int tipCase,
  *
  *The function computes partial traversals only down to the point/node in the tree where the 
    conditional likelihhod vector summarizing a subtree is already oriented in the correct direction 
+
+
+   @todo Document the parameters, the description is insufficient
  *
  *
  *
@@ -1491,6 +1494,14 @@ void newviewIterative (tree *tr, int startIndex)
 
 }
 
+/** @brief Compute traversal descriptor
+    
+    Convenience function for computing the traversal descriptor of the subtree 
+    with root node \a p. 
+
+    @todo Describe also the usage of tr->useRecom (ancestral state reconstruction flag) and also
+    rename this flag to something more meaningful, i.e. tr->bAncestral
+*/
 void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal) 
 {
   /* Only if we apply recomputations we need the additional step of updating the subtree lengths */

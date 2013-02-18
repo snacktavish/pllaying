@@ -52,6 +52,10 @@
 #include "cycle.h"
 
 #define GLOBAL_VARIABLES_DEFINITION
+/** @file axml.c
+ *  
+ *  @brief Main file for the raxml-light implementation: reads command-line options,  parses (or builds) an initial tree and an alignment and runs the search algorithm (\a computeBIGRAPID)
+ */
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
@@ -1009,9 +1013,11 @@ static nodeptr pickRandomSubtree(tree *tr)
 #endif
 
 
-/* interface to outside  */
 
-
+/** @brief interface to outside  
+ *
+ *
+ * */
 int main (int argc, char *argv[])
 { 
     

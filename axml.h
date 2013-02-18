@@ -30,8 +30,7 @@
  */
 
 /** @file axml.h
-  * @brief contains various important functions
-  * @todo this file will at some point be gone
+  * @brief Data structures for tree and model 
   */
 #include <assert.h>
 #include <stdint.h>
@@ -68,7 +67,7 @@ extern "C" {
 #include "mem_alloc.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
-#define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /* maximum iterations of smoothings per insert in the */
+#define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /** @brief maximum iterations of smoothings per insert in the */
 #define iterations     10          /* maximum iterations of iterations per insert */
 #define newzpercycle   1           /* iterations of makenewz per tree traversal */
 #define nmlngth        256         /* number of characters in species name */
@@ -361,15 +360,16 @@ extern double exp_approx (double x);
 
 typedef  int boolean;
 
+/** @brief Stores the recomputation-state of likelihood vectors  */
 typedef struct
 {
-  int numVectors;      /* #inner vectors in RAM*/
-  int *iVector;        /* size: numVectors, stores node id || SLOT_UNUSED  */
-  int *iNode;          /* size: inner nodes, stores slot id || NODE_UNPINNED */
-  int *stlen;          /* #tips behind the current orientation of the indexed inner node (subtree size/cost) */ 
-  int *unpinnable;     /* size:numVectors , TRUE if we dont need the vector */
+  int numVectors;      /**< Number of inner vectors allocated in RAM*/
+  int *iVector;        /**< size: numVectors, stores node id || SLOT_UNUSED  */
+  int *iNode;          /**< size: inner nodes, stores slot id || NODE_UNPINNED */
+  int *stlen;          /**< Number of tips behind the current orientation of the indexed inner node (subtree size/cost) */ 
+  int *unpinnable;     /**< size:numVectors , TRUE if we dont need the vector */
   int maxVectorsUsed;  
-  boolean allSlotsBusy; /*on if all slots contain an ancesctral node (the usual case after first full traversal) */ 
+  boolean allSlotsBusy; /**< on if all slots contain an ancesctral node (the usual case after first full traversal) */ 
 #ifdef _DEBUG_RECOMPUTATION
   double pinTime;
   double recomStraTime;
@@ -380,12 +380,16 @@ typedef struct
 
 
 
+/** @brief ???Expected likelihood weight
+ * @todo add explanation, is this ever used?  */
 typedef struct {
   double lh;
   int tree;
   double weight;
 } elw;
 
+/** @brief ???
+ * @todo add explanation, is this ever used?  */
 struct ent
 {
   unsigned int *bitVector;
@@ -419,6 +423,8 @@ typedef unsigned char parsimonyNumber;
 #define PCF 2
 */
 
+/** @brief ???Hash tables 
+ * @todo add explanation of all hash tables  */
 typedef struct
 {
   hashNumberType tableSize;
@@ -426,8 +432,6 @@ typedef struct
   hashNumberType entryCount;
 }
   hashtable;
-
-
 struct stringEnt
 {
   int nodeNumber;
@@ -435,9 +439,7 @@ struct stringEnt
   struct stringEnt *next;
 };
 
-
 typedef struct stringEnt stringEntry;
- 
 typedef struct
 {
   hashNumberType tableSize;
@@ -448,53 +450,75 @@ typedef struct
 
 
 
-
+/** @brief Per-site Rate category entry: likelihood per-site and CAT rate applied ???
+  *
+  */
 typedef struct ratec
 {
   double accumulatedSiteLikelihood;
   double rate;
-}
-  rateCategorize;
+}rateCategorize;
 
-/** @brief To be commented
+/** @brief Traversal descriptor entry.
+  * 
+  * Contains the information required to execute an operation in a step of the tree traversal.
+  * q   r
+  *  \ /
+  *   p
   *
-  * The rest is her
-  * @todo remove this line when finished commenting
+  * The entry defines 2 input/parent nodes (q and r) and one output/child node (p)
+  * qz represents the branch length(s) of the branch connecting q and p
+  * rz represents the branch length(s) of the branch connecting r and p
+  * TIP_TIP     Both p and r are tips
+  * INNER_INNER Both p and r are inner nodes
+  * @note TIP_INNER   q is a tip and r is an inner node (by convention, flip q and r if required)
   */
 typedef struct
 {
-  int tipCase;                  /**< @brief What is this? */
-  int pNumber;                  /**< @brief Or this */
-  int qNumber;
-  int rNumber;
+  int tipCase;                  /**< Type of entry, must be TIP_TIP TIP_INNER or INNER_INNER */
+  int pNumber;                  /**< should exist in some nodeptr p->number */
+  int qNumber;/**< should exist in some nodeptr q->number */
+  int rNumber;/**< should exist in some nodeptr r->number */
   double qz[NUM_BRANCHES];
   double rz[NUM_BRANCHES];
   /* recom */
-  int slot_p;
-  int slot_q;
-  int slot_r;
+  int slot_p;                   /**< In recomputation mode, the RAM slot index for likelihood vector of node p, otherwise unused */
+  int slot_q;                   /**< In recomputation mode, the RAM slot index for likelihood vector of node q, otherwise unused */
+  int slot_r;                   /**< In recomputation mode, the RAM slot index for likelihood vector of node r, otherwise unused */
   /* E recom */
 } traversalInfo;
 
+/** @brief Traversal descriptor.
+  * 
+  * Describes the state of a traversal descriptor
+  */
 typedef struct
 {
-  traversalInfo *ti;
-  int count;
+  traversalInfo *ti;              /**< list of traversal steps */
+  int count;                      /**< number of traversal steps */
   int functionType;
-  boolean traversalHasChanged;
-  boolean *executeModel;
+  boolean traversalHasChanged;   
+  boolean *executeModel;           
   double  *parameterValues;
 } traversalData;
 
-
+/** @brief Node record structure
+  * 
+  * Each inner node is a trifurcation in the tree represented as a circular list containing 3 node records. One node record uniquely identifies a subtree, and the orientation of the likelihood vector within a node
+  *
+  * p1 -------> p2 ----> to the next node
+  * ^           |
+  * |-----p3<---|          
+  * 
+  */
 struct noderec;
 
-
-
+/** @brief Branch length information.
+  * 
+  * @todo add relevant info on where this is used ???
+  */
 typedef struct
 {
- 
-
   unsigned int *vector; 
   int support;   
   struct noderec *oP;
@@ -505,9 +529,10 @@ typedef struct
 
 
 
-
-
-
+/** @brief Linkage of partitions.
+  * 
+  * @todo add relevant info on where this is used ???
+  */
 typedef struct
 {
   boolean valid;
@@ -515,7 +540,6 @@ typedef struct
   int *partitionList;
 }
   linkageData;
-
 typedef struct
 {
   int entries;
@@ -525,7 +549,9 @@ typedef struct
 
 
 
-  /* the data structure below is fundamental for representing trees 
+  /** 
+   *
+   * the data structure below is fundamental for representing trees 
      in the library!
 
      Inner nodes are represented by three instances of the nodeptr data structure that is linked 
@@ -706,10 +732,31 @@ typedef struct
      it summarizes, if p1->x == 1, it summarizes subtree (t2, (t3, t4)), if p3->x = 1 the likelihood vector associated with 
      node p summarizes subtree (t1, t2).
 
+     @todo I think we should rename the back pointer. It's not back, it can be forward depending on the orientation. We should renmae it to outer. Back is too confusing, I would assume it's the opposite of next, i.e. previous.
+
+     @struct noderec
+
+     @brief Tree node record
+
+     A node in a tree is a structure which contains a cyclic list of pointers to 3 nodes which we call a \e roundabout. The first node is the structure itself, and the other two nodes are accessed via \a noderec->next and \a noderec->next->next. To access the outer node with which each of the 3 nodes forms an edge one has to use the \a back pointer
+
+     @var noderec::next
+     @brief Next node in the roundabout
+
+     @var noderec::back
+     @brief Outer node
+
+     @var noderec::number
+     @brief Node identifier
+
+     In general, tips (i.e. leaves) are numbered from 1 to \e n where \e n is the number of taxa. Identifiers for internal nodes start from \e n + 1. Note
+     that for a given inner node, the identifier must be the same for all 3 nodes that compose it.
+
+     @var info::z
+     @brief The branch lengths per partition for the main node in the roundabout
+
+     @todo Append an image
   */
-    
-
-
 typedef  struct noderec
 {
  
@@ -718,17 +765,30 @@ typedef  struct noderec
 #ifdef _BAYESIAN 
   double           z_tmp[NUM_BRANCHES];
 #endif 
-  struct noderec  *next;
-  struct noderec  *back;
+  struct noderec  *next;        
+  struct noderec  *back;       
   hashNumberType   hash;
   int              support;
-  int              number;
+  int              number;    
   char             x;
   char             xPars;
   char             xBips;
 }
   node, *nodeptr;
 
+/** @struct info
+    
+    @brief A brief line
+
+    @var info::lh
+    @brief this is lh
+
+    Detailed description of lh
+
+    @var info::number
+    @brief This is a number
+    Detailed description of number
+*/
 typedef struct
   {
     double lh;
@@ -753,31 +813,48 @@ typedef struct iL {
 
 typedef unsigned int parsimonyNumber;
 
-
+/** @brief Alignment, transition model, model of rate heterogenety and likelihood vectors for one partition.
+  * 
+  * @todo De-couple into smaller data structures
+  *
+  * ALIGNMENT DATA 
+  * This depends only on the type of data in this partition of the alignment 
+  *
+  * MODEL OF RATE HETEROGENETY, We use either GAMMA or PSR 
+  * Rate heterogenety: Per Site Categories (PSR) model aka CAT, 
+  * Rate of site i is given by perSiteRates[rateCategory[i]]
+  *
+  * TRANSITION MODEL: We always assume General Time Reversibility 
+  * Transistion probability matrix: P(t) = exp(Qt)
+  * Branch length t is the expected number of substitutions per site 
+  * Pij(t) is the probability of going from state i to state j in a branch of length t 
+  * Relative substitution rates (Entries in the Q matrix) 
+  * In GTR we can write Q = S * D, where S is a symmetrical matrix and D a diagonal with the state frequencies 
+  */
 typedef struct {
   /* ALIGNMENT DATA */
   /* This depends only on the type of data in this partition of the alignment */
-  int     dataType;         /* e.g. DNA_DATA, AA_DATA, etc  within range (MIN_MODEL, MAX_MODEL)  */
-  int     states;           /* Number of states in inner vectors */
-  int     maxTipStates;     /* Number of undetermined states (Possible states at the tips) */
+  int     dataType;         /**< ALIGNMNENT  e.g. DNA_DATA, AA_DATA, etc  within range (MIN_MODEL, MAX_MODEL)  */
+  int     states;           /**< ALIGNMNENT Number of states in inner vectors */
+  int     maxTipStates;     /**< ALIGNMNENT Number of undetermined states (Possible states at the tips) */
   /* These are the boundaries of the partition itself, sites within these boudaries must share the type of data */
   char   *partitionName;
-  int     lower;            /* starting position of the partition within [1, tr->originalCrunchedLength] */
-  int     upper;            /* ending position  */
-  int     width;            /* upper - lower, possibly we dont need this, number of site patterns*/
-  int    *wgt;              /* Number of occurencies of each site pattern */
-  double *empiricalFrequencies;    /* empirical Frequency of each state according to this alignment partition */
+  int     lower;            /**< ALIGNMNENT starting position of the partition within [1, tr->originalCrunchedLength] */
+  int     upper;            /**< ALIGNMNENT ending position  */
+  int     width;            /**< ALIGNMNENT upper - lower, possibly we dont need this, number of site patterns*/
+  int    *wgt;              /**< ALIGNMNENT Number of occurencies of each site pattern */
+  double *empiricalFrequencies;    /**< ALIGNMNENT empirical Frequency of each state according to this alignment partition */
 
 
   /* MODEL OF RATE HETEROGENETY, We use either GAMMA or PSR */
   /* Rate heterogenety: Per Site Categories (PSR) model aka CAT, see updatePerSiteRates() */
   /* Rate of site i is given by perSiteRates[rateCategory[i]] */
-  double *perSiteRates;     /* Values of rates*/
-  int    *rateCategory;     /* Category index for each site */
-  int     numberOfCategories;/* size of the set of possible categories */
+  double *perSiteRates;     /**<RATE HETEROGENETY  CAT Values of rates*/
+  int    *rateCategory;     /**<RATE HETEROGENETY  CAT Category index for each site */
+  int     numberOfCategories;/**<RATE HETEROGENETY  CAT size of the set of possible categories */
   /* Rate heterogenety: GAMMA model of rate heterogenety */
-  double alpha;             /* parameter to be optimized */
-  double *gammaRates;       /* 4 gamma categories (rates), computed given an alpha*/
+  double alpha;             /**<RATE HETEROGENETY GAMMA parameter to be optimized */
+  double *gammaRates;       /**<RATE HETEROGENETY GAMMA 4 gamma categories (rates), computed given an alpha*/
 
 
   /* TRANSITION MODEL: We always assume General Time Reversibility */
@@ -786,11 +863,11 @@ typedef struct {
   /* Pij(t) is the probability of going from state i to state j in a branch of length t */
   /* Relative substitution rates (Entries in the Q matrix) */
   /* In GTR we can write Q = S * D, where S is a symmetrical matrix and D a diagonal with the state frequencies */
-  double *substRates;       /* Entries in S, e.g. 6 free parameters in DNA */   
-  double *frequencies;      /* State frequencies, entries in D, are initialized as empiricalFrequencies */
-  /* Matrix decomposition: Explanation of the mathematical background? */
-  double *EIGN;             /* eigenvalues */
-  double *EV;               /* eigenvectors */
+  double *substRates;       /**< TRANSITION MODEL Entries in S, e.g. 6 free parameters in DNA */   
+  double *frequencies;      /**< State frequencies, entries in D, are initialized as empiricalFrequencies */
+  /* Matrix decomposition: @todo map this syntax to Explanation of the mathematical background */
+  double *EIGN;             /**< eigenvalues */
+  double *EV;               /**< eigenvectors */
   double *EI;
   double *left;  
   double *right;
@@ -806,7 +883,7 @@ typedef struct {
 
 
   /* LIKELIHOOD VECTORS */
-  /* partial LH Inner vectors / ancestral vectors, we have 2*tips - 3 inner nodes */
+  /* partial LH Inner vectors  ancestral vectors, we have 2*tips - 3 inner nodes */
   double          **xVector;          /* Probability entries for inner nodes */
   unsigned char   **yVector;          /* Tip entries (sequence) for tip nodes */
   unsigned int     *globalScaler;     /* Counters for scaling operations done at node i */
@@ -827,14 +904,18 @@ typedef struct {
 
 
 
+
+
+/** @brief LH entries @warning UNUSED???
+  */
 typedef struct 
 {
   int left;
   int right;
   double likelihood;
 } lhEntry;
-
-
+/** @brief LH list. @warning UNUSED???
+  */
 typedef struct 
 {
   int count;
@@ -854,6 +935,10 @@ typedef struct List_{
 #define SLOW_SPRS     3
 
 
+/** @brief Checkpointing states. 
+ * 
+ * @todo Raxml specific 
+  */
 typedef struct {
  
   int state;
@@ -917,15 +1002,19 @@ typedef struct {
 /* E recomp */
 
 
+/** @brief Tree topology.
+ * 
+ * @todo Apart from the topology this structure contains several fields that act like global variables in raxml
+  */
 typedef  struct  {
 
   int *ti;
 
   /* recomp */
-  recompVectors *rvec;            /* this data structure tracks which vectors store which nodes */
-  float maxMegabytesMemory;         /* User says how many MB in main memory should be used */
-  float vectorRecomFraction;      /* vectorRecomFraction ~= 0.8 * maxMegabytesMemory  */
-  boolean useRecom;               /* ON if we apply recomputation of ancestral vectors*/
+  recompVectors *rvec;            /**< this data structure tracks which vectors store which nodes */
+  float maxMegabytesMemory;       /**< User says how many MB in main memory should be used */
+  float vectorRecomFraction;      /**< vectorRecomFraction ~= 0.8 * maxMegabytesMemory  */
+  boolean useRecom;               /**< ON if we apply recomputation of ancestral vectors*/
 #ifdef _DEBUG_RECOMPUTATION 
   traversalCounter *travCounter;
   double stlenTime;
@@ -938,10 +1027,10 @@ typedef  struct  {
   long             randomNumberSeed;
 
   double          *lhs;
-  double          *patrat;      /* rates per pattern */
+  double          *patrat;      /**< rates per pattern */
   double          *patratStored; 
   int             *rateCategory;
-  int             *aliaswgt;    /* weight by pattern */ 
+  int             *aliaswgt;    /**< weight by pattern */ 
   boolean    manyPartitions;
 
   boolean grouped;
@@ -969,7 +1058,7 @@ typedef  struct  {
 
   stringHashtable  *nameHash;
 
-  pInfo            *partitionData;
+  pInfo            *partitionData;             /**<  List of partitions */
   
 
   char             *secondaryStructureInput;
@@ -984,7 +1073,7 @@ typedef  struct  {
   int              categories;
 
   double           coreLZ[NUM_BRANCHES];
-  int              numBranches;                 /* Number of length values per branch. 
+  int              numBranches;                 /**< Number of length values per branch. 
                                                    Currently can be only 1 or number of
                                                    partitions */
   
@@ -1004,7 +1093,8 @@ typedef  struct  {
 
   /* model stuff end */
 
-  unsigned char             **yVector;
+  unsigned char             **yVector;        /**< list of raw sequences (parsed from the alignment)*/
+
   int              secondaryStructureModel;
   int              originalCrunchedLength;
  
@@ -1024,13 +1114,12 @@ typedef  struct  {
 
   double           startLH;
   double           endLH;
-  double           likelihood;
-  
+  double           likelihood;           /**< last likelihood value evaluated for the current topology */
  
-  node           **nodep;
+  node           **nodep;                /**< pointer to the list of nodes, which describe the current topology */
   nodeptr          nodeBaseAddress;
-  node            *start;
-  int              mxtips;  
+  node            *start;                /**< starting node by default for full traversals */
+  int              mxtips;  /**< Number of tips in the topology */
 
   int              *constraintVector;
   int              numberOfSecondaryColumns;
@@ -1047,8 +1136,8 @@ typedef  struct  {
  
   double         gapyness;
 
-  char **nameList;
-  char *tree_string;
+  char **nameList;     /**< list of tips names (read from the phylip file) */
+  char *tree_string;   /**< the newick representaion of the topology */
   char *tree0;
   char *tree1;
   int treeStringLength;
@@ -1057,8 +1146,8 @@ typedef  struct  {
   unsigned int *parsimonyScore;
   
   double bestOfNode;
-  nodeptr removeNode;
-  nodeptr insertNode;
+  nodeptr removeNode;   /**< the node that has been removed. Together with \a insertNode represents an SPR move */
+  nodeptr insertNode;   /**< the node where insertion should take place . Together with \a removeNode represents an SPR move*/
 
   double zqr[NUM_BRANCHES];
   double currentZQR[NUM_BRANCHES];
@@ -1082,7 +1171,7 @@ typedef  struct  {
   int optimizeRateCategoryInvocations;
 
   checkPointState ckp;
-  boolean thoroughInsertion;
+  boolean thoroughInsertion; /**< true if the neighbor branches should be optimized when a subtree is inserted (slower)*/
   boolean useMedian;
 
 } tree;
@@ -1127,49 +1216,55 @@ typedef  struct
 
 
 
+/** @brief Connection within a topology.
+*   */
 typedef struct conntyp {
-    double           z[NUM_BRANCHES];           /* branch length */
-    node            *p, *q;       /* parent and child sectors */
-    void            *valptr;      /* pointer to value of subtree */
-    int              descend;     /* pointer to first connect of child */
-    int              sibling;     /* next connect from same parent */
+    double           z[NUM_BRANCHES];           /**< branch length */
+    node            *p, *q;       /**< parent and child sectors */
+    void            *valptr;      /**< pointer to value of subtree */
+    int              descend;     /**< pointer to first connect of child */
+    int              sibling;     /**< next connect from same parent */
     } connect, *connptr;
 
+/** @brief Single Topology
+*   */
 typedef  struct {
     double           likelihood;
-  int              initialTreeNumber;
-    connect         *links;       /* pointer to first connect (start) */
+    int              initialTreeNumber;
+    connect         *links;       /**< pointer to first connect (start) */
     node            *start;
-    int              nextlink;    /* index of next available connect */
-                                  /* tr->start = tpl->links->p */
+    int              nextlink;    /**< index of next available connect */
+                                  /**< tr->start = tpl->links->p */
     int              ntips;
     int              nextnode;
-    int              scrNum;      /* position in sorted list of scores */
-    int              tplNum;      /* position in sorted list of trees */
-
+    int              scrNum;      /**< position in sorted list of scores */
+    int              tplNum;      /**< position in sorted list of trees */
     } topol;
 
-/* small helper data structure for printing out/downstream use of marginal ancestral probability vectors */
-/* it is allocated as an array that has the same length as the input alignment and can be used to 
-   index the ancestral states for each position/site/pattern */
-
+/** @brief small helper data structure for printing out/downstream use of marginal ancestral probability vectors.
+*
+* it is allocated as an array that has the same length as the input alignment and can be used to 
+*   index the ancestral states for each position/site/pattern 
+*   */
 typedef struct {
-  double *probs; /* marginal ancestral states */
-  char c; /* most likely stated, i.e. max(probs[i]) above */
-  int states; /* number of states for this position */
+  double *probs; /**< marginal ancestral states */
+  char c; /**< most likely stated, i.e. max(probs[i]) above */
+  int states; /**< number of states for this position */
 } ancestralState;
 
-
+/** @brief List of topologies
+*
+*   */
 typedef struct {
-    double           best;        /* highest score saved */
-    double           worst;       /* lowest score saved */
-    topol           *start;       /* starting tree for optimization */
+    double           best;        /**< highest score saved */
+    double           worst;       /**< lowest score saved */
+    topol           *start;       /**< starting tree for optimization */
     topol          **byScore;
     topol          **byTopol;
-    int              nkeep;       /* maximum topologies to save */
-    int              nvalid;      /* number of topologies saved */
-    int              ninit;       /* number of topologies initialized */
-    int              numtrees;    /* number of alternatives tested */
+    int              nkeep;       /**< maximum topologies to save */
+    int              nvalid;      /**< number of topologies saved */
+    int              ninit;       /**< number of topologies initialized */
+    int              numtrees;    /**< number of alternatives tested */
     boolean          improved;
     } bestlist;
 
@@ -1177,6 +1272,8 @@ typedef struct {
 #define givenTree     1 
 #define parsimonyTree 2
 
+/** @brief Parameters (raxml-specific)
+*   */
 typedef  struct {
   int              bestTrav;
   int              max_rearrange;
@@ -1200,16 +1297,18 @@ typedef  struct {
 
 
 
+/** @brief  This is used to look up some hard-coded data for each data type 
+*   */
 typedef struct 
 {
-  int leftLength;         /* s^2 */
-  int rightLength;/* s^2 */
-  int eignLength;/* s */
+  int leftLength;         /**< s^2 */
+  int rightLength;/**< s^2 */
+  int eignLength;/**<  s */
   int evLength;
   int eiLength;
-  int substRatesLength;   /* (s^2 - s)/2 free model parameters for matrix Q i.e. substitution rates */
-  int frequenciesLength;  /* s frequency of each state */ 
-  int tipVectorLength;    /* ASK */
+  int substRatesLength;   /**< (s^2 - s)/2 free model parameters for matrix Q i.e. substitution rates */
+  int frequenciesLength;  /**< s frequency of each state */ 
+  int tipVectorLength;    /* ??? */
   int symmetryVectorLength;
   int frequencyGroupingLength;
 
