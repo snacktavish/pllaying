@@ -1394,7 +1394,7 @@ int main (int argc, char *argv[])
         {
           nodeptr p = pickRandomSubtree(tr);
           printBothOpen("Random node %d\n", p->number);
-          rearrangeBIG(tr, p, 1, 15); 
+          rearrangeBIG(tr, pr, p, 1, 15); 
           printBothOpen("Done rearrangements \n");
           evaluateGeneric(tr, tr->start, TRUE);	 
           printBothOpen("lh: after %d rearrangements: %f \n",i, tr->likelihood);

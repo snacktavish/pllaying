@@ -215,7 +215,7 @@ static boolean allSmoothed(tree *tr, int numBranches)
       Number of optimization rounds to perform
 */
 /* do maxtimes rounds of branch length optimization */
-boolean smoothTree (tree *tr, partitionList *pr, int maxtimes)
+void smoothTree (tree *tr, partitionList *pr, int maxtimes)
 {
 	nodeptr  p, q;
 	int i, count = 0;
