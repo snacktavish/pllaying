@@ -351,7 +351,7 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
    to calling the function below.
 */
 
-double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
+double evaluatePartialGeneric (tree *tr, partitionList *pr, int i, double ki, int _model)
 {
   double 
     result;
@@ -361,20 +361,20 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
     branchReference,
 
     /* number of states of the data type in this partition */
-    states = tr->partitionData[_model].states;
+    states = pr->partitionData[_model]->states;
     
   /* SOS ATTENTION: note the different indexing used for the parallel and sequential versions ! */
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   int index = i; 
 #else
-  int index = i - tr->partitionData[_model].lower;
+  int index = i - pr->partitionData[_model]->lower;
 #endif
   
   /* here we figure out if all partitions are linked via the same branch length, that is,
      if we are conducting a joint branch length estimate or a per-partition branch length estimate */
 
-  if(tr->numBranches > 1)
+  if(pr->perGeneBranchLengths && pr->numberOfPartitions>1)
     branchReference = _model;
   else
     branchReference = 0;
@@ -384,12 +384,12 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
 #ifndef _OPTIMIZED_FUNCTIONS
   if(tr->rateHetModel == CAT)
     result = evaluatePartialCAT_FLEX(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
-				     tr->partitionData[_model].wgt[index],
-				     tr->partitionData[_model].EIGN, 
-				     tr->partitionData[_model].EI, 
-				     tr->partitionData[_model].EV,
-				     tr->partitionData[_model].tipVector,
-				     tr->partitionData[_model].yVector, branchReference, tr->mxtips, states);
+				     pr->partitionData[_model]->wgt[index],
+				     pr->partitionData[_model]->EIGN,
+				     pr->partitionData[_model]->EI,
+				     pr->partitionData[_model]->EV,
+				     pr->partitionData[_model]->tipVector,
+				     pr->partitionData[_model]->yVector, branchReference, tr->mxtips, states);
   else
     /* 
        the per-site site likelihood function should only be called for the CAT model
@@ -408,42 +408,42 @@ double evaluatePartialGeneric (tree *tr, int i, double ki, int _model)
       /* switch over CAT versus GAMMA and pass all model parameters for the respective partition to the respective functions */
       if(tr->rateHetModel == CAT)      
 	result = evaluatePartialGTRCAT(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
-				       tr->partitionData[_model].wgt[index],
-				       tr->partitionData[_model].EIGN, 
-				       tr->partitionData[_model].EI, 
-				       tr->partitionData[_model].EV,
-				       tr->partitionData[_model].tipVector,
-				       tr->partitionData[_model].yVector, branchReference, tr->mxtips);
+				       pr->partitionData[_model]->wgt[index],
+				       pr->partitionData[_model]->EIGN,
+				       pr->partitionData[_model]->EI,
+				       pr->partitionData[_model]->EV,
+				       pr->partitionData[_model]->tipVector,
+				       pr->partitionData[_model]->yVector, branchReference, tr->mxtips);
       else	
 	result = evaluatePartialGTRGAMMA(index, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
-					 tr->partitionData[_model].wgt[index],
-					 tr->partitionData[_model].EIGN, 
-					 tr->partitionData[_model].EI, 
-					 tr->partitionData[_model].EV,
-					 tr->partitionData[_model].tipVector, 
-					 tr->partitionData[_model].yVector, 
-					 tr->partitionData[_model].gammaRates,
+					 pr->partitionData[_model]->wgt[index],
+					 pr->partitionData[_model]->EIGN,
+					 pr->partitionData[_model]->EI,
+					 pr->partitionData[_model]->EV,
+					 pr->partitionData[_model]->tipVector,
+					 pr->partitionData[_model]->yVector,
+					 pr->partitionData[_model]->gammaRates,
 					 branchReference, tr->mxtips);	
 	
       break;
     case 20: /* proteins */     
       if(tr->rateHetModel == CAT)
 	result = evaluatePartialGTRCATPROT(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
-					   tr->partitionData[_model].wgt[index],
-					   tr->partitionData[_model].EIGN, 
-					   tr->partitionData[_model].EI, 
-					   tr->partitionData[_model].EV,
-					   tr->partitionData[_model].tipVector, 
-					   tr->partitionData[_model].yVector, branchReference, tr->mxtips);
+					   pr->partitionData[_model]->wgt[index],
+					   pr->partitionData[_model]->EIGN,
+					   pr->partitionData[_model]->EI,
+					   pr->partitionData[_model]->EV,
+					   pr->partitionData[_model]->tipVector,
+					   pr->partitionData[_model]->yVector, branchReference, tr->mxtips);
       else
 	result =  evaluatePartialGTRGAMMAPROT(index, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
-					      tr->partitionData[_model].wgt[index],
-					      tr->partitionData[_model].EIGN, 
-					      tr->partitionData[_model].EI, 
-					      tr->partitionData[_model].EV,
-					      tr->partitionData[_model].tipVector, 
-					      tr->partitionData[_model].yVector, 
-					      tr->partitionData[_model].gammaRates,
+					      pr->partitionData[_model]->wgt[index],
+					      pr->partitionData[_model]->EIGN,
+					      pr->partitionData[_model]->EI,
+					      pr->partitionData[_model]->EV,
+					      pr->partitionData[_model]->tipVector,
+					      pr->partitionData[_model]->yVector,
+					      pr->partitionData[_model]->gammaRates,
 					      branchReference, tr->mxtips);
       break;   
     default:
@@ -904,7 +904,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 
   term = term * w;
 
- rax_free(lVector);
+  rax_free(lVector);
   
   
   return  term;
@@ -1052,7 +1052,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 
   term = term * w;
 
- rax_free(lVector);  
+  rax_free(lVector);  
 
   return  term;
 }
@@ -1203,7 +1203,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
 
   term = term * w;
 
- rax_free(lVector);  
+  rax_free(lVector);  
 
   return  term;
 }

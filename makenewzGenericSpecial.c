@@ -29,7 +29,6 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
-
 #include "mem_alloc.h"
 
 #ifndef WIN32
@@ -64,7 +63,7 @@
    of the likelihood in Pthreads and MPI */
 
 #if IS_PARALLEL
-void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2 ) ; 
+void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches ) ;
 extern double *globalResult;
 #endif
 
@@ -76,12 +75,12 @@ extern const unsigned int mask32[32];
 
 /* generic function to get the required pointers to the data associated with the left and right node that define a branch */
 
-static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
+static void getVects(tree *tr, partitionList *pr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
     double **x1_gapColumn, double **x2_gapColumn, unsigned int **x1_gap, unsigned int **x2_gap)
 {
   int    
     rateHet = (int)discreteRateCategories(tr->rateHetModel),
-            states = tr->partitionData[model].states,
+            states = pr->partitionData[model]->states,
             pNumber, 
             qNumber; 
 
@@ -120,24 +119,24 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
       *tipCase = TIP_INNER;
       if(isTip(qNumber, tr->mxtips))
       {
-        *tipX1 = tr->partitionData[model].yVector[qNumber];
-        *x2_start = tr->partitionData[model].xVector[p_slot];
+        *tipX1 = pr->partitionData[model]->yVector[qNumber];
+        *x2_start = pr->partitionData[model]->xVector[p_slot];
 
         if(tr->saveMemory)
         {
-          *x2_gap = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-          *x2_gapColumn   = &tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];  
+          *x2_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+          *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
         }
       }
       else
       {
-        *tipX1 = tr->partitionData[model].yVector[pNumber];
-        *x2_start = tr->partitionData[model].xVector[q_slot];
+        *tipX1 = pr->partitionData[model]->yVector[pNumber];
+        *x2_start = pr->partitionData[model]->xVector[q_slot];
 
         if(tr->saveMemory)
         {
-          *x2_gap = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-          *x2_gapColumn   = &tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
+          *x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+          *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
         }
       }
     }
@@ -148,24 +147,24 @@ static void getVects(tree *tr, unsigned char **tipX1, unsigned char **tipX2, dou
          that optimized pair-wise distances between all taxa in a tree */
 
       *tipCase = TIP_TIP;
-      *tipX1 = tr->partitionData[model].yVector[pNumber];
-      *tipX2 = tr->partitionData[model].yVector[qNumber];
+      *tipX1 = pr->partitionData[model]->yVector[pNumber];
+      *tipX2 = pr->partitionData[model]->yVector[qNumber];
     }
   }
   else
   {
     *tipCase = INNER_INNER;
 
-    *x1_start = tr->partitionData[model].xVector[p_slot];
-    *x2_start = tr->partitionData[model].xVector[q_slot];
+    *x1_start = pr->partitionData[model]->xVector[p_slot];
+    *x2_start = pr->partitionData[model]->xVector[q_slot];
 
     if(tr->saveMemory)
     {
-      *x1_gap = &(tr->partitionData[model].gapVector[pNumber * tr->partitionData[model].gapVectorLength]);
-      *x1_gapColumn   = &tr->partitionData[model].gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]; 
+      *x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+      *x1_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
 
-      *x2_gap = &(tr->partitionData[model].gapVector[qNumber * tr->partitionData[model].gapVectorLength]);
-      *x2_gapColumn   = &tr->partitionData[model].gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]; 
+      *x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+      *x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
     }
   }
 
@@ -622,7 +621,7 @@ void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2
  *
  *
  */
-void makenewzIterative(tree *tr)
+void makenewzIterative(tree *tr, partitionList * pr)
 {
   int 
     model, 
@@ -647,7 +646,7 @@ void makenewzIterative(tree *tr)
 
   /* call newvieIterative to get the likelihood arrays to the left and right of the branch */
 
-  newviewIterative(tr, 1);
+  newviewIterative(tr, pr, 1);
 
 
   /* 
@@ -656,26 +655,26 @@ void makenewzIterative(tree *tr)
      implementations.
      */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   { 
     int 
-      width = tr->partitionData[model].width;
+      width = pr->partitionData[model]->width;
 
     if(tr->td[0].executeModel[model] && width > 0)
     {
       int 	   
-        states = tr->partitionData[model].states;
+        states = pr->partitionData[model]->states;
 
 
-      getVects(tr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
+      getVects(tr, pr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
 
 #ifndef _OPTIMIZED_FUNCTIONS
       assert(!tr->saveMemory);
       if(tr->rateHetModel == CAT)
-        sumCAT_FLEX(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+        sumCAT_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
       else
-        sumGAMMA_FLEX_reorder(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+        sumGAMMA_FLEX_reorder(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
 #else
       switch(states)
@@ -685,19 +684,19 @@ void makenewzIterative(tree *tr)
           if(tr->rateHetModel == CAT)
           {
             if(tr->saveMemory)
-              sumCAT_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumCAT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumCAT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumCAT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width);
           }
           else
           {
             if(tr->saveMemory)
-              sumGAMMA_GAPPED_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMA_GAPPED_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumGAMMA(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMA(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width);
           }
           break;		
@@ -705,20 +704,20 @@ void makenewzIterative(tree *tr)
           if(tr->rateHetModel == CAT)
           {
             if(tr->saveMemory)
-              sumGTRCATPROT_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGTRCATPROT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else	      	      
-              sumGTRCATPROT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGTRCATPROT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width);
           }
           else
           {
 
             if(tr->saveMemory)
-              sumGAMMAPROT_GAPPED_SAVE(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector, tipX1, tipX2,
+              sumGAMMAPROT_GAPPED_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
             else
-              sumGAMMAPROT(tipCase, tr->partitionData[model].sumBuffer, x1_start, x2_start, tr->partitionData[model].tipVector,
+              sumGAMMAPROT(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
                   tipX1, tipX2, width);
 
           }
@@ -748,9 +747,11 @@ void makenewzIterative(tree *tr)
  * @note  this function actually computes the first and second derivatives of the likelihood for a given branch stored in tr->coreLZ[model] Note that in the parallel case coreLZ must always be broadcasted together with the traversal descriptor, at least for optimizing branch lengths 
  *
  */
-void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
+void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
   int model, branchIndex;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
   double lz;
 
   _dlnLdlz[0]   = 0.0;
@@ -758,10 +759,10 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
   /* loop over partitions */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
     int 
-      width = tr->partitionData[model].width;
+      width = pr->partitionData[model]->width;
 
     /* check if we (the present thread for instance) needs to compute something at 
        all for the present partition */
@@ -769,7 +770,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
     if(tr->td[0].executeModel[model] && width > 0)
     {
       int 	    
-        states = tr->partitionData[model].states;
+        states = pr->partitionData[model]->states;
 
       double 
         *sumBuffer       = (double*)NULL;
@@ -781,13 +782,13 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
       /* set a pointer to the part of the pre-computed sumBuffer we are going to access */
 
-      sumBuffer = tr->partitionData[model].sumBuffer;
+      sumBuffer = pr->partitionData[model]->sumBuffer;
 
       /* figure out if we are optimizing branch lengths individually per partition or jointly across 
          all partitions. If we do this on a per partition basis, we also need to compute and store 
          the per-partition derivatives of the likelihood separately, otherwise not */
 
-      if(tr->numBranches > 1)
+      if(numBranches > 1)
       {
         branchIndex = model;	      
         lz = tr->td[0].parameterValues[model];
@@ -805,38 +806,38 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
       /* compute first and second derivatives with the slow generic functions */
 
       if(tr->rateHetModel == CAT)
-        coreCAT_FLEX(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt,
-            tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz, states);
+        coreCAT_FLEX(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
+            &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
+            pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz, states);
       else
         coreGAMMA_FLEX(width, sumBuffer,
-            &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].EIGN, tr->partitionData[model].gammaRates, lz,
-            tr->partitionData[model].wgt, states);
+            &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->EIGN, pr->partitionData[model]->gammaRates, lz,
+            pr->partitionData[model]->wgt, states);
 #else
       switch(states)
       {	   
         case 4: /* DNA */
           if(tr->rateHetModel == CAT)
-            coreGTRCAT(width, tr->partitionData[model].numberOfCategories, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].wgt, 
-                tr->partitionData[model].perSiteRates, tr->partitionData[model].EIGN,  tr->partitionData[model].rateCategory, lz);
+            coreGTRCAT(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
+                &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
+                pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz);
           else 
             coreGTRGAMMA(width, sumBuffer,
-                &dlnLdlz, &d2lnLdlz2, tr->partitionData[model].EIGN, tr->partitionData[model].gammaRates, lz,
-                tr->partitionData[model].wgt);
+                &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->EIGN, pr->partitionData[model]->gammaRates, lz,
+                pr->partitionData[model]->wgt);
 
           break;		    
         case 20: /* proteins */
           if(tr->rateHetModel == CAT)
-            coreGTRCATPROT(tr->partitionData[model].EIGN, lz, tr->partitionData[model].numberOfCategories,  tr->partitionData[model].perSiteRates,
-                tr->partitionData[model].rateCategory, width,
-                tr->partitionData[model].wgt, 
+            coreGTRCATPROT(pr->partitionData[model]->EIGN, lz, pr->partitionData[model]->numberOfCategories,  pr->partitionData[model]->perSiteRates,
+                pr->partitionData[model]->rateCategory, width,
+                pr->partitionData[model]->wgt,
                 &dlnLdlz, &d2lnLdlz2,
                 sumBuffer);
           else
 
-            coreGTRGAMMAPROT(tr->partitionData[model].gammaRates, tr->partitionData[model].EIGN,
-                sumBuffer, width, tr->partitionData[model].wgt,
+            coreGTRGAMMAPROT(pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN,
+                sumBuffer, width, pr->partitionData[model]->wgt,
                 &dlnLdlz, &d2lnLdlz2, lz);
 
           break;		   
@@ -854,7 +855,7 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
     {
       /* set to 0 to make the reduction operation consistent */
 
-      if(width == 0 && (tr->numBranches > 1))
+      if(width == 0 && (numBranches > 1))
       {
         _dlnLdlz[model]   = 0.0;
         _d2lnLdlz2[model] = 0.0;
@@ -877,11 +878,12 @@ void execCore(tree *tr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 
 */
 
-static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
+static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxiter, double *result)
 {
   double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
   int i, maxiter[NUM_BRANCHES], model;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
   boolean firstIteration = TRUE;
   boolean outerConverged[NUM_BRANCHES];
   boolean loopConverged;
@@ -894,7 +896,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
   /* initialize loop convergence variables etc. 
      maxiter is the maximum number of NR iterations we are going to do before giving up */
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
   {
     z[i] = z0[i];
     maxiter[i] = _maxiter;
@@ -910,7 +912,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     /* check if we ar done for partition i or if we need to adapt the branch length again */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(outerConverged[i] == FALSE && tr->curvatOK[i] == TRUE)
       {
@@ -922,7 +924,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
       }
     }
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       /* other case, the outer loop hasn't converged but we are trying to approach 
          the maximum from the wrong side */
@@ -942,29 +944,29 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     /* set the execution mask */
 
-    if(tr->numBranches > 1)
+    if(numBranches > 1)
     {
-      for(model = 0; model < tr->NumberOfModels; model++)
+      for(model = 0; model < pr->numberOfPartitions; model++)
       {
-        if(tr->executeModel[model])
-          tr->executeModel[model] = !tr->curvatOK[model];
+        if(pr->partitionData[model]->executeModel)
+          pr->partitionData[model]->executeModel = !tr->curvatOK[model];
 
       }
     }
     else
     {
-      for(model = 0; model < tr->NumberOfModels; model++)
-        tr->executeModel[model] = !tr->curvatOK[0];
+      for(model = 0; model < pr->numberOfPartitions; model++)
+        pr->partitionData[model]->executeModel = !tr->curvatOK[0];
     }
 
 
     /* store it in traversal descriptor */
 
-    storeExecuteMaskInTraversalDescriptor(tr); 
+    storeExecuteMaskInTraversalDescriptor(tr, pr);
 
     /* store the new branch length values to be tested in traversal descriptor */
 
-    storeValuesInTraversalDescriptor(tr, &(tr->coreLZ[0]));
+    storeValuesInTraversalDescriptor(tr, pr, &(tr->coreLZ[0]));
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
@@ -976,29 +978,29 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
     if(firstIteration)
       {
 	tr->td[0].traversalHasChanged = TRUE; 
-	masterBarrier(THREAD_MAKENEWZ_FIRST, tr); 
+	masterBarrier(THREAD_MAKENEWZ_FIRST, tr, pr);
 	firstIteration = FALSE; 
 	tr->td[0].traversalHasChanged = FALSE; 
       }
     else 
-      masterBarrier(THREAD_MAKENEWZ, tr); 
-    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2); 
+      masterBarrier(THREAD_MAKENEWZ, tr, pr);
+    branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2, numBranches);
 #else 
     /* sequential part, if this is the first newton-raphson implementation,
        do the precomputations as well, otherwise just execute the computation
        of the derivatives */
     if(firstIteration)
       {
-	makenewzIterative(tr);
+	makenewzIterative(tr, pr);
 	firstIteration = FALSE;
       }
-    execCore(tr, dlnLdlz, d2lnLdlz2);
+    execCore(tr, pr, dlnLdlz, d2lnLdlz2);
 #endif
 
     /* do a NR step, if we are on the correct side of the maximum that's okay, otherwise 
        shorten branch */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
       {
@@ -1011,7 +1013,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
     /* do the standard NR step to obrain the next value, depending on the state for eahc partition */
 
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
     {
       if(tr->curvatOK[i] == TRUE && outerConverged[i] == FALSE)
       {
@@ -1047,7 +1049,7 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
     /* check if the loop has converged for all partitions */
 
     loopConverged = TRUE;
-    for(i = 0; i < tr->numBranches; i++)
+    for(i = 0; i < numBranches; i++)
       loopConverged = loopConverged && outerConverged[i];
   }
   while (!loopConverged);
@@ -1055,15 +1057,15 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
 
   /* reset  partition execution mask */
 
-  for(model = 0; model < tr->NumberOfModels; model++)
-    tr->executeModel[model] = TRUE;
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    pr->partitionData[model]->executeModel = TRUE;
 
   /* copy the new branches in the result array of branches.
      if we don't do a per partition estimate of 
      branches this will only set result[0]
      */
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
     result[i] = z[i];
 }
 
@@ -1097,10 +1099,11 @@ static void topLevelMakenewz(tree *tr, double *z0, int _maxiter, double *result)
  * @sa typical values for \a maxiter are constants \a iterations and \a newzpercycle
  * @note Requirement: q->z == p->z
  */
-void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
+void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
 {
   int i;
   boolean originalExecute[NUM_BRANCHES];
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   boolean 
     p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
@@ -1112,19 +1115,19 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   tr->td[0].ti[0].pNumber = p->number;
   tr->td[0].ti[0].qNumber = q->number;
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
   {
-    originalExecute[i] =  tr->executeModel[i];
+    originalExecute[i] =  pr->partitionData[i]->executeModel;
     tr->td[0].ti[0].qz[i] =  z0[i];
     if(mask)
     {
-      if(tr->partitionConverged[i])
-        tr->executeModel[i] = FALSE;
+      if (tr->partitionConverged[i])
+        pr->partitionData[i]->executeModel = FALSE;
       else
-        tr->executeModel[i] = TRUE;
+        pr->partitionData[i]->executeModel = TRUE;
     }
   }
-  if(tr->useRecom)
+  if (tr->useRecom)
   {
     int
       slot = -1,
@@ -1150,14 +1153,14 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversal(tr, p, TRUE);
+    computeTraversal(tr, p, TRUE, numBranches);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversal(tr, q, TRUE);
+    computeTraversal(tr, q, TRUE, numBranches);
 
   /* call the Newton-Raphson procedure */
 
-  topLevelMakenewz(tr, z0, maxiter, result);
+  topLevelMakenewz(tr, pr, z0, maxiter, result);
 
   /* Mark node as unpinnable */
   if(tr->useRecom)
@@ -1168,8 +1171,8 @@ void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, do
 
   /* fix eceuteModel this seems to be a bit redundant with topLevelMakenewz */ 
 
-  for(i = 0; i < tr->numBranches; i++)
-    tr->executeModel[i] = TRUE;
+  for(i = 0; i < numBranches; i++)
+    pr->partitionData[i]->executeModel = TRUE;
 }
 
 
@@ -1928,7 +1931,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
   *d1 = dlnLdlz;
   *d2 = d2lnLdlz2;
 
- rax_free(d_start);
+  rax_free(d_start);
 }
 
 
@@ -2085,7 +2088,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   *ext_dlnLdlz   = dlnLdlz;
   *ext_d2lnLdlz2 = d2lnLdlz2;
 
- rax_free(d_start);
+  rax_free(d_start);
 }
 
 

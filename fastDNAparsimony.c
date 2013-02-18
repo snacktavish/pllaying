@@ -238,7 +238,7 @@ static void computeTraversalInfoParsimony(nodeptr p, int *ti, int *counter, int 
 
 #if (defined(__SIM_SSE3) || defined(__AVX))
 
-static void newviewParsimonyIterativeFast(tree *tr)
+static void newviewParsimonyIterativeFast(tree *tr, partitionList *pr)
 {    
   INT_TYPE
     allOne = SET_ALL_BITS_ONE;
@@ -259,12 +259,12 @@ static void newviewParsimonyIterativeFast(tree *tr)
 	qNumber = (size_t)ti[index + 1],
 	rNumber = (size_t)ti[index + 2];
       
-      for(model = 0; model < tr->NumberOfModels; model++)
+      for(model = 0; model < pr->numberOfPartitions; model++)
 	{
 	  size_t
 	    k,
-	    states = tr->partitionData[model].states,
-	    width = tr->partitionData[model].parsimonyLength;	 
+	    states = pr->partitionData[model]->states,
+	    width = pr->partitionData[model]->parsimonyLength;
             
 	  unsigned int	
 	    i;      
@@ -280,9 +280,9 @@ static void newviewParsimonyIterativeFast(tree *tr)
 
 		for(k = 0; k < 2; k++)
 		  {
-		    left[k]  = &(tr->partitionData[model].parsVect[(width * 2 * qNumber) + width * k]);
-		    right[k] = &(tr->partitionData[model].parsVect[(width * 2 * rNumber) + width * k]);
-		    this[k]  = &(tr->partitionData[model].parsVect[(width * 2 * pNumber) + width * k]);
+		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
+		    right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * rNumber) + width * k]);
+		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
 		  }
 
 		for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -322,9 +322,9 @@ static void newviewParsimonyIterativeFast(tree *tr)
 
 		for(k = 0; k < 4; k++)
 		  {
-		    left[k]  = &(tr->partitionData[model].parsVect[(width * 4 * qNumber) + width * k]);
-		    right[k] = &(tr->partitionData[model].parsVect[(width * 4 * rNumber) + width * k]);
-		    this[k]  = &(tr->partitionData[model].parsVect[(width * 4 * pNumber) + width * k]);
+		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
+		    right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * rNumber) + width * k]);
+		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
 		  }
 
 		for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -376,9 +376,9 @@ static void newviewParsimonyIterativeFast(tree *tr)
 
 		for(k = 0; k < 20; k++)
 		  {
-		    left[k]  = &(tr->partitionData[model].parsVect[(width * 20 * qNumber) + width * k]);
-		    right[k] = &(tr->partitionData[model].parsVect[(width * 20 * rNumber) + width * k]);
-		    this[k]  = &(tr->partitionData[model].parsVect[(width * 20 * pNumber) + width * k]);
+		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
+		    right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * rNumber) + width * k]);
+		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
 		  }
 
 		for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -421,9 +421,9 @@ static void newviewParsimonyIterativeFast(tree *tr)
 		
 		for(k = 0; k < states; k++)
 		  {
-		    left[k]  = &(tr->partitionData[model].parsVect[(width * states * qNumber) + width * k]);
-		    right[k] = &(tr->partitionData[model].parsVect[(width * states * rNumber) + width * k]);
-		    this[k]  = &(tr->partitionData[model].parsVect[(width * states * pNumber) + width * k]);
+		    left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
+		    right[k] = &(pr->partitionData[model]->parsVect[(width * states * rNumber) + width * k]);
+		    this[k]  = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
 		  }
 
 		for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -463,7 +463,7 @@ static void newviewParsimonyIterativeFast(tree *tr)
 
 
 
-static unsigned int evaluateParsimonyIterativeFast(tree *tr)
+static unsigned int evaluateParsimonyIterativeFast(tree *tr, partitionList *pr)
 {
   INT_TYPE 
     allOne = SET_ALL_BITS_ONE;
@@ -480,16 +480,16 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
     sum;
 
   if(tr->ti[0] > 4)
-    newviewParsimonyIterativeFast(tr); 
+    newviewParsimonyIterativeFast(tr, pr);
 
   sum = tr->parsimonyScore[pNumber] + tr->parsimonyScore[qNumber];
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
     {
       size_t
 	k,
-	states = tr->partitionData[model].states,
-	width = tr->partitionData[model].parsimonyLength, 
+	states = pr->partitionData[model]->states,
+	width = pr->partitionData[model]->parsimonyLength,
 	i;
 
        switch(states)
@@ -502,8 +502,8 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
 	     
 	     for(k = 0; k < 2; k++)
 	       {
-		 left[k]  = &(tr->partitionData[model].parsVect[(width * 2 * qNumber) + width * k]);
-		 right[k] = &(tr->partitionData[model].parsVect[(width * 2 * pNumber) + width * k]);
+		 left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
+		 right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
 	       }     
 	     
 	     for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -530,8 +530,8 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
       
 	     for(k = 0; k < 4; k++)
 	       {
-		 left[k]  = &(tr->partitionData[model].parsVect[(width * 4 * qNumber) + width * k]);
-		 right[k] = &(tr->partitionData[model].parsVect[(width * 4 * pNumber) + width * k]);
+		 left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
+		 right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
 	       }        
 
 	     for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -560,8 +560,8 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
 	     
 	      for(k = 0; k < 20; k++)
 		{
-		  left[k]  = &(tr->partitionData[model].parsVect[(width * 20 * qNumber) + width * k]);
-		  right[k] = &(tr->partitionData[model].parsVect[(width * 20 * pNumber) + width * k]);
+		  left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
+		  right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
 		}  
 	   
 	      for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -598,8 +598,8 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
 
 	     for(k = 0; k < states; k++)
 	       {
-		 left[k]  = &(tr->partitionData[model].parsVect[(width * states * qNumber) + width * k]);
-		 right[k] = &(tr->partitionData[model].parsVect[(width * states * pNumber) + width * k]);
+		 left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
+		 right[k] = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
 	       }  
 	   
 	     for(i = 0; i < width; i += INTS_PER_VECTOR)
@@ -640,7 +640,7 @@ static unsigned int evaluateParsimonyIterativeFast(tree *tr)
 
 
 
-static unsigned int evaluateParsimony(tree *tr, nodeptr p, boolean full)
+static unsigned int evaluateParsimony(tree *tr, partitionList *pr, nodeptr p, boolean full)
 {
   volatile unsigned int result;
   nodeptr q = p->back;
@@ -668,13 +668,13 @@ static unsigned int evaluateParsimony(tree *tr, nodeptr p, boolean full)
 
   ti[0] = counter;
 
-  result = evaluateParsimonyIterativeFast(tr);
+  result = evaluateParsimonyIterativeFast(tr, pr);
 
   return result;
 }
 
 
-static void newviewParsimony(tree *tr, nodeptr  p)
+static void newviewParsimony(tree *tr, partitionList *pr, nodeptr  p)
 {     
   if(p->number <= tr->mxtips)
     return;
@@ -686,7 +686,7 @@ static void newviewParsimony(tree *tr, nodeptr  p)
     computeTraversalInfoParsimony(p, tr->ti, &counter, tr->mxtips, FALSE);              
     tr->ti[0] = counter;            
     
-    newviewParsimonyIterativeFast(tr);      
+    newviewParsimonyIterativeFast(tr, pr);
   }
 }
 
@@ -696,16 +696,16 @@ static void newviewParsimony(tree *tr, nodeptr  p)
 
 /****************************************************************************************************************************************/
 
-static void insertParsimony (tree *tr, nodeptr p, nodeptr q)
+static void insertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   nodeptr  r;
   
   r = q->back;
   
-  hookupDefault(p->next,       q, tr->numBranches);
-  hookupDefault(p->next->next, r, tr->numBranches); 
+  hookupDefault(p->next,       q);
+  hookupDefault(p->next->next, r);
    
-  newviewParsimony(tr, p);     
+  newviewParsimony(tr, pr, p);
 } 
 
 
@@ -715,14 +715,14 @@ static nodeptr buildNewTip (tree *tr, nodeptr p)
   nodeptr  q;
 
   q = tr->nodep[(tr->nextnode)++];
-  hookupDefault(p, q, tr->numBranches);
+  hookupDefault(p, q);
   q->next->back = (nodeptr)NULL;
   q->next->next->back = (nodeptr)NULL;
  
   return  q;
 } 
 
-static void buildSimpleTree (tree *tr, int ip, int iq, int ir)
+static void buildSimpleTree (tree *tr, partitionList *pr, int ip, int iq, int ir)
 {    
   nodeptr  p, s;
   int  i;
@@ -732,13 +732,13 @@ static void buildSimpleTree (tree *tr, int ip, int iq, int ir)
   tr->start = tr->nodep[i];
   tr->ntips = 3;
   p = tr->nodep[ip];
-  hookupDefault(p, tr->nodep[iq], tr->numBranches);
+  hookupDefault(p, tr->nodep[iq]);
   s = buildNewTip(tr, tr->nodep[ir]);
-  insertParsimony(tr, s, p);
+  insertParsimony(tr, pr, s, p);
 }
 
 
-static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBranches)
+static void testInsertParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr q, boolean saveBranches)
 { 
   unsigned int 
     mp;
@@ -748,7 +748,9 @@ static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBra
 
   boolean 
     doIt = TRUE;
-    
+
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
   if(tr->grouped)
     {
       int 
@@ -784,13 +786,13 @@ static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBra
 	{
 	  int i;
 	  
-	  for(i = 0; i < tr->numBranches; i++)
+	  for(i = 0; i < numBranches; i++)
 	    z[i] = q->z[i];
 	}
 
-      insertParsimony(tr, p, q);   
+      insertParsimony(tr, pr, p, q);
   
-      mp = evaluateParsimony(tr, p->next->next, FALSE);                      
+      mp = evaluateParsimony(tr, pr, p->next->next, FALSE);
 
       if(mp < tr->bestParsimony)
 	{
@@ -800,9 +802,9 @@ static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBra
 	}
       
       if(saveBranches)
-	hookup(q, r, z, tr->numBranches);
+	hookup(q, r, z, numBranches);
       else
-	hookupDefault(q, r, tr->numBranches);
+	hookupDefault(q, r);
       
       p->next->next->back = p->next->back = (nodeptr) NULL;
     }
@@ -811,32 +813,32 @@ static void testInsertParsimony (tree *tr, nodeptr p, nodeptr q, boolean saveBra
 } 
 
 
-static void restoreTreeParsimony(tree *tr, nodeptr p, nodeptr q)
+static void restoreTreeParsimony(tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 { 
   nodeptr
     r = q->back;
   
   int counter = 4;
   
-  hookupDefault(p->next,       q, tr->numBranches);
-  hookupDefault(p->next->next, r, tr->numBranches);
+  hookupDefault(p->next,       q);
+  hookupDefault(p->next->next, r);
   
   computeTraversalInfoParsimony(p, tr->ti, &counter, tr->mxtips, FALSE);              
   tr->ti[0] = counter;
     
-  newviewParsimonyIterativeFast(tr); 
+  newviewParsimonyIterativeFast(tr, pr);
 }
 
 
-static void addTraverseParsimony (tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav, boolean doAll, boolean saveBranches)
+static void addTraverseParsimony (tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, boolean doAll, boolean saveBranches)
 {        
   if (doAll || (--mintrav <= 0))               
-    testInsertParsimony(tr, p, q, saveBranches);	                 
+    testInsertParsimony(tr, pr, p, q, saveBranches);
 
   if (((q->number > tr->mxtips)) && ((--maxtrav > 0) || doAll))
     {	      
-      addTraverseParsimony(tr, p, q->next->back, mintrav, maxtrav, doAll, saveBranches);	      
-      addTraverseParsimony(tr, p, q->next->next->back, mintrav, maxtrav, doAll, saveBranches);              	     
+      addTraverseParsimony(tr, pr, p, q->next->back, mintrav, maxtrav, doAll, saveBranches);
+      addTraverseParsimony(tr, pr, p, q->next->next->back, mintrav, maxtrav, doAll, saveBranches);
     }
 }
 
@@ -874,14 +876,14 @@ static nodeptr  removeNodeParsimony (nodeptr p, tree *tr)
   q = p->next->back;
   r = p->next->next->back;   
     
-  hookupDefault(q, r, tr->numBranches);
+  hookupDefault(q, r);
 
   p->next->next->back = p->next->back = (node *) NULL;
   
   return  q;
 }
 
-static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boolean doAll)  
+static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav, boolean doAll)
 {   
   nodeptr  
     p1, 
@@ -930,21 +932,21 @@ static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boo
 
 	  if ((p1->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, p, p1->next->back, mintrav, maxtrav, doAll, FALSE);         
-	      addTraverseParsimony(tr, p, p1->next->next->back, mintrav, maxtrav, doAll, FALSE);          
+	      addTraverseParsimony(tr, pr, p, p1->next->back, mintrav, maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, pr, p, p1->next->next->back, mintrav, maxtrav, doAll, FALSE);
 	    }
 	 
 	  if ((p2->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, p, p2->next->back, mintrav, maxtrav, doAll, FALSE);
-	      addTraverseParsimony(tr, p, p2->next->next->back, mintrav, maxtrav, doAll, FALSE);          
+	      addTraverseParsimony(tr, pr, p, p2->next->back, mintrav, maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, pr, p, p2->next->next->back, mintrav, maxtrav, doAll, FALSE);
 	    }
 	    
 	   
-	  hookupDefault(p->next,       p1, tr->numBranches); 
-	  hookupDefault(p->next->next, p2, tr->numBranches);	   	    	    
+	  hookupDefault(p->next,       p1);
+	  hookupDefault(p->next->next, p2);
 
-	  newviewParsimony(tr, p);
+	  newviewParsimony(tr, pr, p);
 	}
     }  
        
@@ -972,20 +974,20 @@ static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boo
 	  
 	  if ((q1->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, q, q1->next->back, mintrav2 , maxtrav, doAll, FALSE);
-	      addTraverseParsimony(tr, q, q1->next->next->back, mintrav2 , maxtrav, doAll, FALSE);         
+	      addTraverseParsimony(tr, pr, q, q1->next->back, mintrav2 , maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, pr, q, q1->next->next->back, mintrav2 , maxtrav, doAll, FALSE);
 	    }
 	 
 	  if ((q2->number > tr->mxtips)) 
 	    {
-	      addTraverseParsimony(tr, q, q2->next->back, mintrav2 , maxtrav, doAll, FALSE);
-	      addTraverseParsimony(tr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, FALSE);          
+	      addTraverseParsimony(tr, pr, q, q2->next->back, mintrav2 , maxtrav, doAll, FALSE);
+	      addTraverseParsimony(tr, pr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, FALSE);
 	    }	   
 	   
-	  hookupDefault(q->next,       q1, tr->numBranches); 
-	  hookupDefault(q->next->next, q2, tr->numBranches);
+	  hookupDefault(q->next,       q1);
+	  hookupDefault(q->next->next, q2);
 	   
-	  newviewParsimony(tr, q);
+	  newviewParsimony(tr, pr, q);
 	}
     }
 
@@ -993,10 +995,10 @@ static int rearrangeParsimony(tree *tr, nodeptr p, int mintrav, int maxtrav, boo
 } 
 
 
-static void restoreTreeRearrangeParsimony(tree *tr)
+static void restoreTreeRearrangeParsimony(tree *tr, partitionList *pr)
 {    
   removeNodeParsimony(tr->removeNode, tr);  
-  restoreTreeParsimony(tr, tr->removeNode, tr->insertNode);  
+  restoreTreeParsimony(tr, pr, tr->removeNode, tr->insertNode);
 }
 
 /*
@@ -1111,7 +1113,7 @@ static boolean isInformative(tree *tr, int dataType, int site)
 }
 
 
-static void determineUninformativeSites(tree *tr, int *informative)
+static void determineUninformativeSites(tree *tr, partitionList *pr, int *informative)
 {
   int 
     model,
@@ -1132,11 +1134,11 @@ static void determineUninformativeSites(tree *tr, int *informative)
   */
 
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
     {
-      for(i = tr->partitionData[model].lower; i < tr->partitionData[model].upper; i++)
+      for(i = pr->partitionData[model]->lower; i < pr->partitionData[model]->upper; i++)
 	{
-	   if(isInformative(tr, tr->partitionData[model].dataType, i))
+	   if(isInformative(tr, pr->partitionData[model]->dataType, i))
 	     informative[i] = 1;
 	   else
 	     {
@@ -1210,7 +1212,7 @@ static void nodeRectifierPars(tree *tr)
 
 
   
-static void compressDNA(tree *tr, int *informative)
+static void compressDNA(tree *tr, partitionList *pr, int *informative)
 {
   size_t
     totalNodes,
@@ -1221,16 +1223,16 @@ static void compressDNA(tree *tr, int *informative)
 
  
 
-  for(model = 0; model < (size_t) tr->NumberOfModels; model++)
+  for(model = 0; model < (size_t) pr->numberOfPartitions; model++)
     {
       size_t
 	k,
-	states = (size_t)tr->partitionData[model].states,       
+	states = (size_t)pr->partitionData[model]->states,
 	compressedEntries,
 	compressedEntriesPadded,
 	entries = 0, 
-	lower = tr->partitionData[model].lower,
-	upper = tr->partitionData[model].upper;
+	lower = pr->partitionData[model]->lower,
+	upper = pr->partitionData[model]->upper;
 
       parsimonyNumber 
 	**compressedTips = (parsimonyNumber **)rax_malloc(states * sizeof(parsimonyNumber*)),
@@ -1255,10 +1257,10 @@ static void compressDNA(tree *tr, int *informative)
 #endif     
 
       
-      tr->partitionData[model].parsVect = (parsimonyNumber *)rax_malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
+      pr->partitionData[model]->parsVect = (parsimonyNumber *)rax_malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
      
       for(i = 0; i < compressedEntriesPadded * states * totalNodes; i++)      
-	tr->partitionData[model].parsVect[i] = 0;          
+	pr->partitionData[model]->parsVect[i] = 0;
 
       for(i = 0; i < (size_t)tr->mxtips; i++)
 	{
@@ -1270,7 +1272,7 @@ static void compressDNA(tree *tr, int *informative)
 
 	  for(k = 0; k < states; k++)
 	    {
-	      compressedTips[k] = &(tr->partitionData[model].parsVect[(compressedEntriesPadded * states * (i + 1)) + (compressedEntriesPadded * k)]);
+	      compressedTips[k] = &(pr->partitionData[model]->parsVect[(compressedEntriesPadded * states * (i + 1)) + (compressedEntriesPadded * k)]);
 	      compressedValues[k] = 0;
 	    }                
 	      
@@ -1279,7 +1281,7 @@ static void compressDNA(tree *tr, int *informative)
 	      if(informative[index])
 		{
 		  const unsigned int 
-		    *bitValue = getBitVector(tr->partitionData[model].dataType);
+		    *bitValue = getBitVector(pr->partitionData[model]->dataType);
 
 		  parsimonyNumber 
 		    value = bitValue[tr->yVector[i + 1][index]];	  
@@ -1325,7 +1327,7 @@ static void compressDNA(tree *tr, int *informative)
 	    }	 	
 	}               
   
-      tr->partitionData[model].parsimonyLength = compressedEntriesPadded;   
+      pr->partitionData[model]->parsimonyLength = compressedEntriesPadded;
 
       rax_free(compressedTips);
       rax_free(compressedValues);
@@ -1339,7 +1341,7 @@ static void compressDNA(tree *tr, int *informative)
 
 
 
-static void stepwiseAddition(tree *tr, nodeptr p, nodeptr q)
+static void stepwiseAddition(tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 {            
   nodeptr 
     r = q->back;
@@ -1361,7 +1363,7 @@ static void stepwiseAddition(tree *tr, nodeptr p, nodeptr q)
   tr->ti[1] = p->number;
   tr->ti[2] = p->back->number;
     
-  mp = evaluateParsimonyIterativeFast(tr);
+  mp = evaluateParsimonyIterativeFast(tr, pr);
   
   if(mp < tr->bestParsimony)
     {    
@@ -1374,22 +1376,22 @@ static void stepwiseAddition(tree *tr, nodeptr p, nodeptr q)
    
   if(q->number > tr->mxtips && tr->parsimonyScore[q->number] > 0)
     {	      
-      stepwiseAddition(tr, p, q->next->back);	      
-      stepwiseAddition(tr, p, q->next->next->back);              	     
+      stepwiseAddition(tr, pr, p, q->next->back);
+      stepwiseAddition(tr, pr, p, q->next->next->back);
     }
 }
 
 
 
-void allocateParsimonyDataStructures(tree *tr)
+void allocateParsimonyDataStructures(tree *tr, partitionList *pr)
 {
   int 
     i,
     *informative = (int *)rax_malloc(sizeof(int) * (size_t)tr->originalCrunchedLength);
  
-  determineUninformativeSites(tr, informative);     
+  determineUninformativeSites(tr, pr, informative);
 
-  compressDNA(tr, informative);
+  compressDNA(tr, pr, informative);
 
   for(i = tr->mxtips + 1; i <= tr->mxtips + tr->mxtips - 1; i++)
     {
@@ -1406,21 +1408,21 @@ void allocateParsimonyDataStructures(tree *tr)
   rax_free(informative); 
 }
 
-void freeParsimonyDataStructures(tree *tr)
+void freeParsimonyDataStructures(tree *tr, partitionList *pr)
 {
   size_t 
     model;
 
   rax_free(tr->parsimonyScore);
   
-  for(model = 0; model < (size_t) tr->NumberOfModels; model++)
-    rax_free(tr->partitionData[model].parsVect);
+  for(model = 0; model < (size_t) pr->numberOfPartitions; ++model)
+    rax_free(pr->partitionData[model]->parsVect);
   
   rax_free(tr->ti);
 }
 
 
-void makeParsimonyTreeFast(tree *tr)
+void makeParsimonyTreeFast(tree *tr, partitionList *pr)
 {   
   nodeptr  
     p, 
@@ -1443,7 +1445,7 @@ void makeParsimonyTreeFast(tree *tr)
   
   tr->nextnode = tr->mxtips + 1;       
   
-  buildSimpleTree(tr, perm[1], perm[2], perm[3]);      
+  buildSimpleTree(tr, pr, perm[1], perm[2], perm[3]);
   
   f = tr->start;       
   
@@ -1466,7 +1468,7 @@ void makeParsimonyTreeFast(tree *tr)
 	  tr->constraintVector[number] = -9;
 	}
           
-      stepwiseAddition(tr, q, f->back);      	  	 
+      stepwiseAddition(tr, pr, q, f->back);
       
       {
 	nodeptr	  
@@ -1474,13 +1476,13 @@ void makeParsimonyTreeFast(tree *tr)
 	
 	int counter = 4;
 	
-	hookupDefault(q->next,       tr->insertNode, tr->numBranches);
-	hookupDefault(q->next->next, r, tr->numBranches);
+	hookupDefault(q->next,       tr->insertNode);
+	hookupDefault(q->next->next, r);
 	
 	computeTraversalInfoParsimony(q, tr->ti, &counter, tr->mxtips, FALSE);              
 	tr->ti[0] = counter;
 	
-	newviewParsimonyIterativeFast(tr);	
+	newviewParsimonyIterativeFast(tr, pr);
       }
     }    
   
@@ -1496,10 +1498,10 @@ void makeParsimonyTreeFast(tree *tr)
       nodeRectifierPars(tr);
       for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
 	{
-	  rearrangeParsimony(tr, tr->nodep[i], 1, 20, FALSE);
+	  rearrangeParsimony(tr, pr, tr->nodep[i], 1, 20, FALSE);
 	  if(tr->bestParsimony < randomMP)
 	    {		
-	      restoreTreeRearrangeParsimony(tr);
+	      restoreTreeRearrangeParsimony(tr, pr);
 	      randomMP = tr->bestParsimony;
 	    }
 	}      		  	   
@@ -1509,9 +1511,10 @@ void makeParsimonyTreeFast(tree *tr)
   printf("OPT: %d\n", tr->bestParsimony);
 } 
 
-void parsimonySPR(nodeptr p, tree *tr)
+void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
 {
   int i;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   double   
     p1z[NUM_BRANCHES], 
@@ -1521,11 +1524,11 @@ void parsimonySPR(nodeptr p, tree *tr)
     p1 = p->next->back,
     p2 = p->next->next->back;
 
-  unsigned int score = evaluateParsimony(tr, p, TRUE);
+  unsigned int score = evaluateParsimony(tr, pr, p, TRUE);
 
   //printf("parsimonyScore: %u\n", score);
 
-  for(i = 0; i < tr->numBranches; i++)
+  for(i = 0; i < numBranches; i++)
     {
       p1z[i] = p1->z[i];
       p2z[i] = p2->z[i];	   	   
@@ -1533,26 +1536,26 @@ void parsimonySPR(nodeptr p, tree *tr)
   
   tr->bestParsimony = INT_MAX; 
 
-  hookupDefault(p1, p2, tr->numBranches);
+  hookupDefault(p1, p2);
 
   p->next->next->back = p->next->back = (node *) NULL;
 
   if (p1->number > tr->mxtips) 
     {
-      addTraverseParsimony(tr, p, p1->next->back, 0, 0, TRUE, TRUE);         
-      addTraverseParsimony(tr, p, p1->next->next->back, 0, 0, TRUE, TRUE);          
+      addTraverseParsimony(tr, pr, p, p1->next->back, 0, 0, TRUE, TRUE);
+      addTraverseParsimony(tr, pr, p, p1->next->next->back, 0, 0, TRUE, TRUE);
     }
   
   if(p2->number > tr->mxtips)
     {
-      addTraverseParsimony(tr, p, p2->next->back, 0, 0, TRUE, TRUE);
-      addTraverseParsimony(tr, p, p2->next->next->back, 0, 0, TRUE, TRUE);          
+      addTraverseParsimony(tr, pr, p, p2->next->back, 0, 0, TRUE, TRUE);
+      addTraverseParsimony(tr, pr, p, p2->next->next->back, 0, 0, TRUE, TRUE);
     }
 
   //printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
 
-  hookup(p1, p->next, p1z,       tr->numBranches);
-  hookup(p2, p->next->next, p2z, tr->numBranches);
+  hookup(p1, p->next, p1z,       numBranches);
+  hookup(p2, p->next->next, p2z, numBranches);
 }
 
 

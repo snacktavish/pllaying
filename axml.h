@@ -900,9 +900,25 @@ typedef struct {
   /* These buffers of size width are used to pre-compute ?? */
   double *sumBuffer; 
   double *ancestralBuffer;
+
+  /* From tree */
+  boolean executeModel;
+  double fracchange;
+  double partitionContribution;
+  double partitionLH;
+
+#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+  int partitionAssignment;
+#endif
+
 } pInfo;
 
-
+typedef struct
+{
+	pInfo **partitionData;
+	size_t numberOfPartitions;
+	boolean perGeneBranchLengths;
+} partitionList;
 
 
 
@@ -1039,8 +1055,6 @@ typedef  struct  {
   volatile int numberOfThreads;
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-    
-  int *partitionAssignment;     
  
   unsigned char *y_ptr; 
   
@@ -1058,14 +1072,7 @@ typedef  struct  {
 
   stringHashtable  *nameHash;
 
-  pInfo            *partitionData;             /**<  List of partitions */
-  
-
   char             *secondaryStructureInput;
-
-  boolean          *executeModel;
-
-  double           *perPartitionLH;
 
   traversalData    td[1];
 
@@ -1073,10 +1080,6 @@ typedef  struct  {
   int              categories;
 
   double           coreLZ[NUM_BRANCHES];
-  int              numBranches;                 /**< Number of length values per branch. 
-                                                   Currently can be only 1 or number of
-                                                   partitions */
-  
   
  
   branchInfo	   *bInf;
@@ -1089,7 +1092,6 @@ typedef  struct  {
      not change depending on datatype */
 
   
-  double           *fracchanges;
 
   /* model stuff end */
 
@@ -1102,7 +1104,6 @@ typedef  struct  {
   int              *secondaryStructurePairs;
 
 
-  double            *partitionContributions;
   double            fracchange;
   double            lhCutoff;
   double            lhAVG;
@@ -1126,7 +1127,7 @@ typedef  struct  {
   boolean          searchConvergenceCriterion;
   int              ntips;
   int              nextnode;  
-  int              NumberOfModels;    
+
 
   boolean          bigCutoff;
   boolean          partitionSmoothed[NUM_BRANCHES];
@@ -1333,7 +1334,7 @@ extern void mcmc(tree *tr, analdef *adef);
 #endif
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
-boolean isThisMyPartition(tree *localTree, int tid, int model);
+boolean isThisMyPartition(partitionList *pr, int tid, int model);
 void printParallelTimePerRegion(); 
 #endif
 
@@ -1341,7 +1342,7 @@ extern void computePlacementBias(tree *tr, analdef *adef);
 
 extern int lookupWord(char *s, stringHashtable *h);
 
-extern void getDataTypeString(tree *tr, int model, char typeOfData[1024]);
+extern void getDataTypeString(tree *tr, pInfo *partitionInfo, char typeOfData[1024]);
 
 extern unsigned int genericBitCount(unsigned int* bitVector, unsigned int bitVectorLength);
 extern int countTips(nodeptr p, int numsp);
@@ -1369,9 +1370,10 @@ extern double randum ( long *seed );
 
 extern void getxnode ( nodeptr p );
 extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
-extern void hookupDefault ( nodeptr p, nodeptr q, int numBranches);
+extern void hookupFull ( nodeptr p, nodeptr q, double *z);
+extern void hookupDefault ( nodeptr p, nodeptr q);
 extern boolean whitechar ( int ch );
-extern void printResult ( tree *tr, analdef *adef, boolean finalPrint );
+extern void printResult ( tree *tr, partitionList *pr, analdef *adef, boolean finalPrint );
 extern void printBootstrapResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printBipartitionResult ( tree *tr, analdef *adef, boolean finalPrint );
 extern void printLog ( tree *tr);
@@ -1379,19 +1381,19 @@ extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 /* extern int main ( int argc, char *argv[] ); */
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
-extern void initReversibleGTR (tree *tr, int model);
+extern void initReversibleGTR( tree *tr, partitionList *pr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
 extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
-extern void initModel ( tree *tr, double **empiricalFrequencies);
+extern void initModel ( tree *tr, double **empiricalFrequencies, partitionList * partitions);
 extern void doAllInOne ( tree *tr, analdef *adef );
 
 extern void classifyML(tree *tr, analdef *adef);
 
 extern void resetBranches ( tree *tr );
-extern void modOpt ( tree *tr, double likelihoodEpsilon);
+extern void modOpt ( tree *tr, partitionList *pr, double likelihoodEpsilon);
 
 
 
@@ -1404,58 +1406,58 @@ extern int checker ( tree *tr, nodeptr p );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
 extern void makeRandomTree ( tree *tr);
 extern void nodeRectifier ( tree *tr );
-extern void makeParsimonyTreeFast(tree *tr);
-extern void allocateParsimonyDataStructures(tree *tr);
-extern void freeParsimonyDataStructures(tree *tr);
-extern void parsimonySPR(nodeptr p, tree *tr);
+extern void makeParsimonyTreeFast(tree *tr, partitionList *pr);
+extern void allocateParsimonyDataStructures(tree *tr, partitionList *pr);
+extern void freeParsimonyDataStructures(tree *tr, partitionList *pr);
+extern void parsimonySPR(nodeptr p, partitionList *pr, tree *tr);
 
 extern FILE *myfopen(const char *path, const char *mode);
 
 
-extern boolean initrav ( tree *tr, nodeptr p );
+extern boolean initrav ( tree *tr, partitionList *pr, nodeptr p );
 extern void initravPartition ( tree *tr, nodeptr p, int model );
-extern void update ( tree *tr, nodeptr p );
-extern void smooth ( tree *tr, nodeptr p );
-extern void smoothTree ( tree *tr, int maxtimes );
-extern void localSmooth ( tree *tr, nodeptr p, int maxtimes );
+extern void update ( tree *tr, partitionList *pr, nodeptr p );
+extern void smooth ( tree *tr, partitionList *pr, nodeptr p );
+extern void smoothTree ( tree *tr, partitionList *pr, int maxtimes );
+extern void localSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
 
-extern void smoothRegion ( tree *tr, nodeptr p, int region );
-extern void regionalSmooth ( tree *tr, nodeptr p, int maxtimes, int region );
-extern nodeptr removeNodeBIG ( tree *tr, nodeptr p, int numBranches);
-extern nodeptr removeNodeRestoreBIG ( tree *tr, nodeptr p );
-extern boolean insertBIG ( tree *tr, nodeptr p, nodeptr q, int numBranches);
-extern boolean insertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
-extern boolean testInsertBIG ( tree *tr, nodeptr p, nodeptr q );
-extern void addTraverseBIG ( tree *tr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
-extern int rearrangeBIG ( tree *tr, nodeptr p, int mintrav, int maxtrav );
+extern void smoothRegion ( tree *tr, partitionList *pr, nodeptr p, int region );
+extern void regionalSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region );
+extern nodeptr removeNodeBIG ( tree *tr, partitionList *pr, nodeptr p, int numBranches);
+extern nodeptr removeNodeRestoreBIG ( tree *tr, partitionList *pr, nodeptr p );
+extern boolean insertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q);
+extern boolean insertRestoreBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
+extern boolean testInsertBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
+extern void addTraverseBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
+extern int rearrangeBIG ( tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav );
 extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
-extern boolean testInsertRestoreBIG ( tree *tr, nodeptr p, nodeptr q );
-extern void restoreTreeFast ( tree *tr );
-extern int determineRearrangementSetting ( tree *tr, analdef *adef, bestlist *bestT, bestlist *bt );
-extern void computeBIGRAPID ( tree *tr, analdef *adef, boolean estimateModel);
-extern boolean treeEvaluate ( tree *tr, int maxSmoothIterations );
+extern boolean testInsertRestoreBIG ( tree *tr, partitionList *pr, nodeptr p, nodeptr q );
+extern void restoreTreeFast ( tree *tr, partitionList *pr );
+extern int determineRearrangementSetting ( tree *tr, partitionList *pr, analdef *adef, bestlist *bestT, bestlist *bt );
+extern void computeBIGRAPID ( tree *tr, partitionList *pr, analdef *adef, boolean estimateModel);
+extern boolean treeEvaluate ( tree *tr, partitionList *pr, int maxSmoothIterations );
 extern boolean treeEvaluatePartition ( tree *tr, double smoothFactor, int model );
 
 extern void meshTreeSearch(tree *tr, analdef *adef, int thorough);
 
 extern void initTL ( topolRELL_LIST *rl, tree *tr, int n );
 extern void freeTL ( topolRELL_LIST *rl);
-extern void restoreTL ( topolRELL_LIST *rl, tree *tr, int n );
+extern void restoreTL ( topolRELL_LIST *rl, tree *tr, int n, int numBranches );
 extern void resetTL ( topolRELL_LIST *rl );
 extern void saveTL ( topolRELL_LIST *rl, tree *tr, int index );
 
-extern int  saveBestTree (bestlist *bt, tree *tr);
-extern int  recallBestTree (bestlist *bt, int rank, tree *tr);
+extern int  saveBestTree (bestlist *bt, tree *tr, int numBranches);
+extern int  recallBestTree (bestlist *bt, int rank, tree *tr, partitionList *pr);
 extern int initBestTree ( bestlist *bt, int newkeep, int numsp );
 extern void resetBestTree ( bestlist *bt );
 extern boolean freeBestTree ( bestlist *bt );
 
 
-extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
+extern char *Tree2String ( char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
 			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
-extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
-void printTopology(tree *tr, boolean printInner);
+extern void printTreePerGene(tree *tr, partitionList *pr, analdef *adef, char *fileName, char *permission);
+void printTopology(tree *tr, partitionList *pr, boolean printInner);
 
 
 
@@ -1469,16 +1471,16 @@ extern double treeLength(tree *tr, int model);
 extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef);
 extern boolean bootStop(tree *tr, hashtable *h, int numberOfTrees, double *pearsonAverage, unsigned int **bitVectors, int treeVectorLength, unsigned int vectorLength);
 extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef);
-extern double evaluatePartialGeneric (tree *, int i, double ki, int _model);
-extern void evaluateGeneric (tree *tr, nodeptr p, boolean fullTraversal);
-extern void newviewGeneric (tree *tr, nodeptr p, boolean masked);
+extern double evaluatePartialGeneric (tree *, partitionList *pr, int i, double ki, int _model);
+extern void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal);
+extern void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked);
 
-extern void newviewGenericAncestral(tree *tr, nodeptr p);
-extern void newviewAncestralIterative(tree *tr);
-extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr);
+extern void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p);
+extern void newviewAncestralIterative(tree *tr, partitionList *pr);
+extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr, partitionList *pr);
 
 extern void newviewGenericMulti (tree *tr, nodeptr p, int model);
-extern void makenewzGeneric(tree *tr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
+extern void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
 extern void makenewzGenericDistance(tree *tr, int maxiter, double *z0, double *result, int taxon1, int taxon2);
 extern double evaluatePartitionGeneric (tree *tr, nodeptr p, int model);
 extern void newviewPartitionGeneric (tree *tr, nodeptr p, int model);
@@ -1488,7 +1490,7 @@ extern double makenewzPartitionGeneric(tree *tr, nodeptr p, nodeptr q, double z0
 extern boolean isTip(int number, int maxTips);
 
 /* recom functions */
-extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal);
+extern void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal, int numBranches);
 extern void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom);
 extern void allocRecompVectorsInfo(tree *tr);
 extern void allocTraversalCounter(tree *tr);
@@ -1504,18 +1506,18 @@ extern void countTraversal(tree *tr);
 
 extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 
-extern void newviewIterative(tree *tr, int startIndex);
+extern void newviewIterative(tree *tr, partitionList *pr, int startIndex);
 
-extern void evaluateIterative(tree *tr);
+extern void evaluateIterative(tree *tr, partitionList *pr);
 
 //extern void *malloc_aligned( size_t size);
 
-extern void storeExecuteMaskInTraversalDescriptor(tree *tr);
-extern void storeValuesInTraversalDescriptor(tree *tr, double *value);
+extern void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr);
+extern void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value);
 
 
-extern void makenewzIterative(tree *);
-extern void execCore(tree *, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
+extern void makenewzIterative(tree *, partitionList *pr);
+extern void execCore(tree *, partitionList *pr, volatile double *dlnLdlz, volatile double *d2lnLdlz2);
 
 extern void determineFullTraversal(nodeptr p, tree *tr);
 /*extern void optRateCat(tree *, int i, double lower_spacing, double upper_spacing, double *lhs);*/
@@ -1564,7 +1566,7 @@ extern void addword(char *s, stringHashtable *h, int nodeNumber);
 
 
 extern void printBothOpen(const char* format, ... );
-extern void initRateMatrix(tree *tr);
+extern void initRateMatrix(tree *tr, partitionList *pr);
 
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
 				    int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);
@@ -1585,15 +1587,15 @@ extern void testGapped(tree *tr);
 extern boolean issubset(unsigned int* bipA, unsigned int* bipB, unsigned int vectorLen);
 extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 
-extern void perSiteLogLikelihoods(tree *tr, double *logLikelihoods);
+extern void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods);
 
 extern int *permutationSH(tree *tr, int nBootstrap, long _randomSeed);
-extern void perSiteLogLikelihoodsPthreads(tree *tr, double *lhs, int n, int tid);
-extern void updatePerSiteRates(tree *tr, boolean scaleRates);
+extern void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid);
+extern void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates);
 
-extern void restart(tree *tr);
+extern void restart(tree *tr, partitionList *pr);
 
-extern double getBranchLength(tree *tr, int perGene, nodeptr p);
+extern double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p);
 
 #ifdef _IPTOL
 extern void writeCheckpoint();
@@ -1633,28 +1635,29 @@ void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
 void threadComputePearson(tree *tr, int tid);
 
-extern void masterBarrier(int jobType, tree *tr);
+extern void masterBarrier(int jobType, tree *tr, partitionList *pr);
 
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
 
-boolean workerTrap(tree *tr); 
+boolean workerTrap(tree *tr, partitionList *pr);
 void initMPI(int argc, char *argv[]); 
-void initializePartitions(tree *tr, tree *localTree, int tid, int n); 
-void multiprocessorScheduling(tree *tr, int tid); 
-void computeFraction(tree *localTree, int tid, int n); 
-void computeFractionMany(tree *localTree, int tid); 
-void initializePartitionsMaster(tree *tr, tree *localTree, int tid, int n); 
-void startPthreads(tree *tr); 
+void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
+void multiprocessorScheduling(tree *tr, partitionList *pr, int tid);
+void computeFraction(partitionList *localPr, int tid, int n);
+void computeFractionMany(partitionList *localPr, int tid);
+void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
+void startPthreads(tree *tr, partitionList *pr);
 
 typedef struct
 {
   tree *tr;
+  partitionList *pr;
   int threadNumber;
 }
   threadData;
-extern void optRateCatPthreads(tree *tr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
+extern void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid);
 void allocNodex(tree *tr, int tid, int n);
 #endif
 

@@ -125,7 +125,7 @@ static void printBoth(FILE *f, const char* format, ... )
 }
 
 /* TODO: Modify this to our needs */
-static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *argv[])
+static void printModelAndProgramInfo(tree *tr, partitionList *pr, analdef *adef, int argc, char *argv[])
 {
 
   int i, model;
@@ -165,9 +165,9 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
   }
 
   if(adef->perGeneBranchLengths)
-    printBoth(infoFile, "Using %d distinct models/data partitions with individual per partition branch length optimization\n\n\n", tr->NumberOfModels);
+    printBoth(infoFile, "Using %d distinct models/data partitions with individual per partition branch length optimization\n\n\n", pr->numberOfPartitions);
   else
-    printBoth(infoFile, "Using %d distinct models/data partitions with joint branch length optimization\n\n\n", tr->NumberOfModels);	
+    printBoth(infoFile, "Using %d distinct models/data partitions with joint branch length optimization\n\n\n", pr->numberOfPartitions);
 
   printBoth(infoFile, "All free model parameters will be estimated by RAxML\n");
 
@@ -176,23 +176,23 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
   else    
     printBoth(infoFile, "ML estimate of %d per site rate categories\n\n", tr->categories);
 
-  for(model = 0; model < tr->NumberOfModels; model++)
+  for(model = 0; model < pr->numberOfPartitions; model++)
   {
     printBoth(infoFile, "Partition: %d\n", model);
-    printBoth(infoFile, "Alignment Patterns: %d\n", tr->partitionData[model].upper - tr->partitionData[model].lower);
-    printBoth(infoFile, "Name: %s\n", tr->partitionData[model].partitionName);
+    printBoth(infoFile, "Alignment Patterns: %d\n", pr->partitionData[model]->upper - pr->partitionData[model]->lower);
+    printBoth(infoFile, "Name: %s\n", pr->partitionData[model]->partitionName);
 
-    switch(tr->partitionData[model].dataType)
+    switch(pr->partitionData[model]->dataType)
     {
       case DNA_DATA:
         printBoth(infoFile, "DataType: DNA\n");	     
         printBoth(infoFile, "Substitution Matrix: GTR\n");
         break;
       case AA_DATA:
-        assert(tr->partitionData[model].protModels >= 0 && tr->partitionData[model].protModels < NUM_PROT_MODELS);
+        assert(pr->partitionData[model]->protModels >= 0 && pr->partitionData[model]->protModels < NUM_PROT_MODELS);
         printBoth(infoFile, "DataType: AA\n");	      
-        printBoth(infoFile, "Substitution Matrix: %s\n", protModels[tr->partitionData[model].protModels]);
-        printBoth(infoFile, "%s Base Frequencies:\n", (tr->partitionData[model].protFreqs == 1)?"Empirical":"Fixed");	     
+        printBoth(infoFile, "Substitution Matrix: %s\n", protModels[pr->partitionData[model]->protModels]);
+        printBoth(infoFile, "%s Base Frequencies:\n", (pr->partitionData[model]->protFreqs == 1)?"Empirical":"Fixed");
         break;
       case BINARY_DATA:
         printBoth(infoFile, "DataType: BINARY/MORPHOLOGICAL\n");	      
@@ -211,7 +211,7 @@ static void printModelAndProgramInfo(tree *tr, analdef *adef, int argc, char *ar
         printBoth(infoFile, "Substitution Matrix: %s\n", secondaryModelList[tr->secondaryStructureModel]);
         break;
       case GENERIC_32:
-        printBoth(infoFile, "DataType: Multi-State with %d distinct states in use (maximum 32)\n",tr->partitionData[model].states);		  
+        printBoth(infoFile, "DataType: Multi-State with %d distinct states in use (maximum 32)\n",pr->partitionData[model]->states);
         switch(tr->multiStateModel)
         {
           case ORDERED_MULTI_STATE:
@@ -1020,8 +1020,9 @@ static nodeptr pickRandomSubtree(tree *tr)
  * */
 int main (int argc, char *argv[])
 { 
-    
   tree  *tr = (tree*)rax_malloc(sizeof(tree));
+  partitionList *partitions = (partitionList*)rax_malloc(sizeof(partitionList));
+  partitions->partitionData = (pInfo**)rax_malloc(NUM_BRANCHES*sizeof(pInfo*));
 
   analdef *adef = (analdef*)rax_malloc(sizeof(analdef));
 
@@ -1054,7 +1055,7 @@ int main (int argc, char *argv[])
   masterTimePerPhase = gettime();
 #endif
   initMPI(argc, argv);
-  if(workerTrap(tr))
+  if(workerTrap(tr, partitions))
     return 0; 
 #endif
 #ifdef _USE_PTHREADS
@@ -1091,13 +1092,10 @@ int main (int argc, char *argv[])
 
     myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
     myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
-    myBinFread(&(tr->NumberOfModels),         sizeof(int), 1, byteFile);
+    myBinFread(&(partitions->numberOfPartitions),  sizeof(int), 1, byteFile);
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
 
-    if(adef->perGeneBranchLengths)
-      tr->numBranches = tr->NumberOfModels;
-    else
-      tr->numBranches = 1;
+    partitions->perGeneBranchLengths = adef->perGeneBranchLengths;
 
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
@@ -1111,21 +1109,18 @@ int main (int argc, char *argv[])
     tr->patratStored    = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
     tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double)); 
 
-    tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)tr->NumberOfModels);
-
-    for(i = 0; i < (size_t)tr->NumberOfModels; i++)
-      tr->executeModel[i] = TRUE;
-
-    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)tr->NumberOfModels);
+    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * partitions->numberOfPartitions);
 
     y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
-
     tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
 
-        setupTree(tr, FALSE);
+        setupTree(tr, FALSE, partitions);
+
+    for(i = 0; i < partitions->numberOfPartitions; i++)
+          partitions->partitionData[i]->executeModel = TRUE;
 
     /* data structures for convergence criterion need to be initialized after! setupTree */
 
@@ -1147,13 +1142,13 @@ int main (int argc, char *argv[])
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       addword(tr->nameList[i], tr->nameHash, i);
 
-    for(model = 0; model < (size_t)tr->NumberOfModels; model++)
+    for(model = 0; model < partitions->numberOfPartitions; model++)
     {
       int 
         len;
 
       pInfo 
-        *p = &(tr->partitionData[model]);	   
+        *p = partitions->partitionData[model];
 
       myBinFread(&(p->states),             sizeof(int), 1, byteFile);
       myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
@@ -1177,8 +1172,8 @@ int main (int argc, char *argv[])
       p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)tr->partitionData[model].states);
-      myBinFread(empiricalFrequencies[model], sizeof(double), tr->partitionData[model].states, byteFile);	   
+      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)partitions->partitionData[model]->states);
+      myBinFread(empiricalFrequencies[model], sizeof(double), partitions->partitionData[model]->states, byteFile);
     }
 
     myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
@@ -1195,10 +1190,10 @@ int main (int argc, char *argv[])
     int model;
     float approxTotalMegabytesRequired;
     requiredLength = 0;
-    for(model = 0; model < tr->NumberOfModels; model++)
+    for(model = 0; model < partitions->numberOfPartitions; model++)
     {
-      size_t width  = (size_t)tr->partitionData[model].width;
-      size_t states = (size_t)tr->partitionData[model].states;
+      size_t width  = (size_t)partitions->partitionData[model]->width;
+      size_t states = (size_t)partitions->partitionData[model]->states;
       requiredLength += virtual_width(width) * rateHet * states * sizeof(double);
     }
     requiredLength *= tr->mxtips - 2;
@@ -1227,7 +1222,7 @@ int main (int argc, char *argv[])
      we use startPthreads to start the n-1 worker threads */
   
 #ifdef _USE_PTHREADS
-  startPthreads(tr);
+  startPthreads(tr, partitions);
 #endif
 
   /* via masterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 
@@ -1239,18 +1234,18 @@ int main (int argc, char *argv[])
      */
   
   /* mpi version now also uses the generic barrier */
-  masterBarrier(THREAD_INIT_PARTITION, tr); 
+  masterBarrier(THREAD_INIT_PARTITION, tr, partitions);
 #else  /* SEQUENTIAL */
   /* 
      allocate the required data structures for storing likelihood vectors etc 
      */
 
-  initializePartitions(tr, tr, 0, 0);
+  initializePartitions(tr, tr, partitions, 0, 0);
 #endif
 
   /* print out some info on partitions, models, data types etc, not very interesting */
 
-  printModelAndProgramInfo(tr, adef, argc, argv);
+  printModelAndProgramInfo(tr, partitions, adef, argc, argv);
 
   /* Tells us if the SEV-based memory saving option has been activated in the command line or not.
      printBothOpen() allows to simultaneously print to terminal and to the RAxML_info file, thereby making 
@@ -1281,7 +1276,7 @@ int main (int argc, char *argv[])
      initialize model parameters like empirical base frequencies, the rates in the Q matrix, the alpha shape parameters,
      the per-site substitution rates to default starting values */
 
-  initModel(tr, empiricalFrequencies); 
+  initModel(tr, empiricalFrequencies, partitions);
   printBothOpen("Model initialized\n");
   
 
@@ -1300,10 +1295,10 @@ int main (int argc, char *argv[])
 #endif
 
     /* read checkpoint file */
-    restart(tr);
+    restart(tr, partitions);
 
     /* continue tree search where we left it off */
-    computeBIGRAPID(tr, adef, TRUE); 
+    computeBIGRAPID(tr, partitions, adef, TRUE);
   }
   else
     {
@@ -1327,9 +1322,9 @@ int main (int argc, char *argv[])
         break;
       case parsimonyTree:	     
         /* runs only on process/thread 0 ! */
-        allocateParsimonyDataStructures(tr);
-        makeParsimonyTreeFast(tr);
-        freeParsimonyDataStructures(tr);
+        allocateParsimonyDataStructures(tr, partitions);
+        makeParsimonyTreeFast(tr, partitions);
+        freeParsimonyDataStructures(tr, partitions);
         break;
       default:
         assert(0);
@@ -1344,7 +1339,7 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
-    evaluateGeneric(tr, tr->start, TRUE);
+    evaluateGeneric(tr, partitions, tr->start, TRUE);
   printBothOpen("Starting tree evaluated\n");
 
 
@@ -1357,7 +1352,7 @@ int main (int argc, char *argv[])
 	*/
 	
 	double
-	    *logLikelihoods = (double*)rax_malloc(tr->originalCrunchedLength * sizeof(double));
+	  *logLikelihoods = (double*)rax_malloc(tr->originalCrunchedLength * sizeof(double));
 	
 	/* just call the function, the array logLikelihoods will contain the 
 	   per-site log likelihoods of all sites.
@@ -1371,7 +1366,7 @@ int main (int argc, char *argv[])
 	   via the new command line switch I have added.
 	*/
 	
-	perSiteLogLikelihoods(tr, logLikelihoods);
+	perSiteLogLikelihoods(tr, partitions, logLikelihoods);
 	
         rax_free(logLikelihoods);
 	
@@ -1385,9 +1380,9 @@ int main (int argc, char *argv[])
       double t, masterTime = gettime();
       ticks t1 = getticks();
       printBothOpen("Eval once LH \n");
-      evaluateGeneric(tr, tr->start, TRUE);	 
+      evaluateGeneric(tr, partitions, tr->start, TRUE);
       printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
-      treeEvaluate(tr, 32); 
+      treeEvaluate(tr, partitions, 32);
       printBothOpen("tree evaluated: %f\n", tr->likelihood);
       ticks t2 = getticks();
       printBothOpen( "lh: %f %f\n", elapsed( t2, t1 ), tr->likelihood );
@@ -1425,7 +1420,7 @@ int main (int argc, char *argv[])
 
     /* the treeEvaluate() function repeatedly iterates over the entire tree to optimize branch lengths until convergence */
 
-    treeEvaluate(tr, 32);
+    treeEvaluate(tr, partitions, 32);
     printBothOpen("tree evaluated: %f\n", tr->likelihood);
     
     /* now start the ML search algorithm */
@@ -1441,7 +1436,14 @@ int main (int argc, char *argv[])
     }
     else
 #endif
-      computeBIGRAPID(tr, adef, TRUE); 	     
+
+    	computeBIGRAPID(tr, partitions, adef, TRUE);
+
+/*partitions->numberOfPartitions=3;
+printModelAndProgramInfo(tr, partitions, adef, argc, argv);
+    computeBIGRAPID(tr, partitions, adef, TRUE);
+
+    computeBIGRAPID(tr, partitions, adef, TRUE);*/
   } 
 
   /* print som more nonsense into the RAxML_info file */
@@ -1463,7 +1465,7 @@ int main (int argc, char *argv[])
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* workers escape from their while loop (could be joined in pthread case )  */
-  masterBarrier(THREAD_EXIT_GRACEFULLY,tr);
+  masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
 #endif
 
   /* return 0 which means that our unix program terminated correctly, the return value is not 1 here */

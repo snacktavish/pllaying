@@ -1,3 +1,4 @@
+#include "mem_alloc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
