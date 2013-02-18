@@ -29,6 +29,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 
 #ifndef WIN32
 #include <sys/times.h>
@@ -1191,7 +1193,7 @@ static void reorderNodes(tree *tr, nodeptr *np, nodeptr p, int *count)
 
 static void nodeRectifierPars(tree *tr)
 {
-  nodeptr *np = (nodeptr *)malloc(2 * tr->mxtips * sizeof(nodeptr));
+  nodeptr *np = (nodeptr *)rax_malloc(2 * tr->mxtips * sizeof(nodeptr));
   int i;
   int count = 0;
   
@@ -1206,7 +1208,7 @@ static void nodeRectifierPars(tree *tr)
   reorderNodes(tr, np, tr->start->back, &count); 
 
  
-  free(np);
+  rax_free(np);
 }
 
 
@@ -1234,8 +1236,8 @@ static void compressDNA(tree *tr, partitionList *pr, int *informative)
 	upper = pr->partitionData[model]->upper;
 
       parsimonyNumber 
-	**compressedTips = (parsimonyNumber **)malloc(states * sizeof(parsimonyNumber*)),
-	*compressedValues = (parsimonyNumber *)malloc(states * sizeof(parsimonyNumber));
+	**compressedTips = (parsimonyNumber **)rax_malloc(states * sizeof(parsimonyNumber*)),
+	*compressedValues = (parsimonyNumber *)rax_malloc(states * sizeof(parsimonyNumber));
       
       for(i = lower; i < upper; i++)    
 	if(informative[i])
@@ -1256,7 +1258,7 @@ static void compressDNA(tree *tr, partitionList *pr, int *informative)
 #endif     
 
       
-      pr->partitionData[model]->parsVect = (parsimonyNumber *)malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
+      pr->partitionData[model]->parsVect = (parsimonyNumber *)rax_malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
      
       for(i = 0; i < compressedEntriesPadded * states * totalNodes; i++)      
 	pr->partitionData[model]->parsVect[i] = 0;
@@ -1328,11 +1330,11 @@ static void compressDNA(tree *tr, partitionList *pr, int *informative)
   
       pr->partitionData[model]->parsimonyLength = compressedEntriesPadded;
 
-      free(compressedTips);
-      free(compressedValues);
+      rax_free(compressedTips);
+      rax_free(compressedValues);
     }
   
-  tr->parsimonyScore = (unsigned int*)malloc_aligned(sizeof(unsigned int) * totalNodes);  
+  tr->parsimonyScore = (unsigned int*)rax_malloc_aligned(sizeof(unsigned int) * totalNodes);  
           
   for(i = 0; i < totalNodes; i++) 
     tr->parsimonyScore[i] = 0;
@@ -1386,7 +1388,7 @@ void allocateParsimonyDataStructures(tree *tr, partitionList *pr)
 {
   int 
     i,
-    *informative = (int *)malloc(sizeof(int) * (size_t)tr->originalCrunchedLength);
+    *informative = (int *)rax_malloc(sizeof(int) * (size_t)tr->originalCrunchedLength);
  
   determineUninformativeSites(tr, pr, informative);
 
@@ -1402,9 +1404,9 @@ void allocateParsimonyDataStructures(tree *tr, partitionList *pr)
       p->next->next->xPars = 0;
     }
 
-  tr->ti = (int*)malloc(sizeof(int) * 4 * (size_t)tr->mxtips);  
+  tr->ti = (int*)rax_malloc(sizeof(int) * 4 * (size_t)tr->mxtips);  
 
-  free(informative); 
+  rax_free(informative); 
 }
 
 void freeParsimonyDataStructures(tree *tr, partitionList *pr)
@@ -1412,12 +1414,12 @@ void freeParsimonyDataStructures(tree *tr, partitionList *pr)
   size_t 
     model;
 
-  free(tr->parsimonyScore);
+  rax_free(tr->parsimonyScore);
   
   for(model = 0; model < (size_t) pr->numberOfPartitions; model++)
-    free(pr->partitionData[model]->parsVect);
+    rax_free(pr->partitionData[model]->parsVect);
   
-  free(tr->ti);
+  rax_free(tr->ti);
 }
 
 
@@ -1430,7 +1432,7 @@ void makeParsimonyTreeFast(tree *tr, partitionList *pr)
   int 
     i, 
     nextsp,
-    *perm        = (int *)malloc((size_t)(tr->mxtips + 1) * sizeof(int));  
+    *perm        = (int *)rax_malloc((size_t)(tr->mxtips + 1) * sizeof(int));  
 
   unsigned int 
     randomMP, 

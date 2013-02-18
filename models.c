@@ -29,6 +29,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <sys/times.h>
 #include <sys/types.h>
@@ -2724,7 +2726,7 @@ static void updateFracChange(tree *tr, partitionList *pr)
   else
     {
       int model;
-      double *modelWeights = (double *)calloc((size_t)numberOfModels, sizeof(double));
+      double *modelWeights = (double *)rax_calloc((size_t)numberOfModels, sizeof(double));
       double wgtsum = 0.0;  
      
       assert(numberOfModels > 1);
@@ -2759,7 +2761,7 @@ static void updateFracChange(tree *tr, partitionList *pr)
 	  tr->fracchange +=  pr->partitionData[model]->partitionContribution * pr->partitionData[model]->fracchange;
 	}	      
     
-      free(modelWeights);
+      rax_free(modelWeights);
     }
 }
 
@@ -2957,22 +2959,22 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
     m, 
     l;  
 
-  r    = (double **)malloc((size_t)n * sizeof(double *));
-  EIGV = (double **)malloc((size_t)n * sizeof(double *));  
-  a    = (double **)malloc((size_t)n * sizeof(double *));	  
+  r    = (double **)rax_malloc((size_t)n * sizeof(double *));
+  EIGV = (double **)rax_malloc((size_t)n * sizeof(double *));  
+  a    = (double **)rax_malloc((size_t)n * sizeof(double *));	  
   
   for(i = 0; i < n; i++)
     {
-      a[i]    = (double*)malloc((size_t)n * sizeof(double));
-      EIGV[i] = (double*)malloc((size_t)n * sizeof(double));
-      r[i]    = (double*)malloc((size_t)n * sizeof(double));
+      a[i]    = (double*)rax_malloc((size_t)n * sizeof(double));
+      EIGV[i] = (double*)rax_malloc((size_t)n * sizeof(double));
+      r[i]    = (double*)rax_malloc((size_t)n * sizeof(double));
     }
 
-  f       = (double*)malloc((size_t)n * sizeof(double));
-  e       = (double*)malloc((size_t)n * sizeof(double));
-  d       = (double*)malloc((size_t)n * sizeof(double));
-  invfreq = (double*)malloc((size_t)n * sizeof(double));
-  EIGN    = (double*)malloc((size_t)n * sizeof(double));
+  f       = (double*)rax_malloc((size_t)n * sizeof(double));
+  e       = (double*)rax_malloc((size_t)n * sizeof(double));
+  d       = (double*)rax_malloc((size_t)n * sizeof(double));
+  invfreq = (double*)rax_malloc((size_t)n * sizeof(double));
+  EIGN    = (double*)rax_malloc((size_t)n * sizeof(double));
   
   for(l = 0; l < n; l++)		 
     f[l] = frequencies[l];	
@@ -3141,20 +3143,20 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
   for(i = 0; i < n; i++)
     {
-      free(EIGV[i]);
-      free(a[i]);
-      free(r[i]);
+      rax_free(EIGV[i]);
+      rax_free(a[i]);
+      rax_free(r[i]);
     }
 
-  free(r);
-  free(a);
-  free(EIGV);
+  rax_free(r);
+  rax_free(a);
+  rax_free(EIGV);
 
-  free(f);
-  free(e);
-  free(d);
-  free(invfreq);
-  free(EIGN);
+  rax_free(f);
+  rax_free(e);
+  rax_free(d);
+  rax_free(invfreq);
+  rax_free(EIGN);
 }
 
 
@@ -3444,7 +3446,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
     lnga1, 
     alfa = alpha, 
     beta = alpha,
-    *gammaProbs = (double *)malloc(K * sizeof(double));
+    *gammaProbs = (double *)rax_malloc(K * sizeof(double));
 
   /* Note that ALPHA_MIN setting is somewhat critical due to   */
   /* numerical instability caused by very small rate[0] values */
@@ -3485,7 +3487,7 @@ void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
     }
   /* assert(gammaRates[0] >= 0.00000000000000000000000000000044136090435925743185910935350715027016962154188875); */
 
-  free(gammaProbs);
+  rax_free(gammaProbs);
 
   return;  
 }

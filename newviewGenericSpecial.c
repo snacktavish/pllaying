@@ -27,6 +27,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -88,10 +90,10 @@ void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int nu
   /* assign some space for pre-computing and later re-using functions */
 
   double 
-    *lz1 = (double*)malloc(sizeof(double) * states),
-    *lz2 = (double*)malloc(sizeof(double) * states),
-    *d1 = (double*)malloc(sizeof(double) * states),
-    *d2 = (double*)malloc(sizeof(double) * states);
+    *lz1 = (double*)rax_malloc(sizeof(double) * states),
+    *lz2 = (double*)rax_malloc(sizeof(double) * states),
+    *d1 = (double*)rax_malloc(sizeof(double) * states),
+    *d2 = (double*)rax_malloc(sizeof(double) * states);
 
   /* multiply branch lengths with eigenvalues */
 
@@ -162,10 +164,10 @@ void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int nu
 
   /* free the temporary buffers */
 
-  free(lz1);
-  free(lz2);
-  free(d1);
-  free(d2);
+  rax_free(lz1);
+  rax_free(lz2);
+  rax_free(d1);
+  rax_free(d2);
 }
 
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
@@ -431,8 +433,8 @@ static void newviewGAMMA_FLEX(int tipCase,
         /* allocate pre-compute memory space */
 
         double 
-          *umpX1 = (double*)malloc(sizeof(double) * precomputeLength),
-          *umpX2 = (double*)malloc(sizeof(double) * precomputeLength);
+          *umpX1 = (double*)rax_malloc(sizeof(double) * precomputeLength),
+          *umpX2 = (double*)rax_malloc(sizeof(double) * precomputeLength);
 
         /* multiply all possible tip state vectors with the respective P-matrices 
         */
@@ -487,8 +489,8 @@ static void newviewGAMMA_FLEX(int tipCase,
 
         /* free precomputed vectors */
 
-        free(umpX1);
-        free(umpX2);
+        rax_free(umpX1);
+        rax_free(umpX2);
       }
       break;
     case TIP_INNER:
@@ -497,8 +499,8 @@ static void newviewGAMMA_FLEX(int tipCase,
            only for one tip vector */
 
         double 
-          *umpX1 = (double*)malloc(sizeof(double) * precomputeLength),
-          *ump_x2 = (double*)malloc(sizeof(double) * states);
+          *umpX1 = (double*)rax_malloc(sizeof(double) * precomputeLength),
+          *ump_x2 = (double*)rax_malloc(sizeof(double) * states);
 
         /* precompute P and left tip vector product */
 
@@ -579,8 +581,8 @@ static void newviewGAMMA_FLEX(int tipCase,
           }
         }
 
-        free(umpX1);
-        free(ump_x2);
+        rax_free(umpX1);
+        rax_free(ump_x2);
       }
       break;
     case INNER_INNER:
@@ -1124,12 +1126,12 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
           /* if there is a vector of incorrect length assigned here i.e., x3 != NULL we must free 
              it first */
           if(x3_start)
-            free(x3_start);
+            rax_free(x3_start);
 
           /* allocate memory: note that here we use a byte-boundary aligned malloc, because we need the vectors
              to be aligned at 16 BYTE (SSE3) or 32 BYTE (AVX) boundaries! */
 
-          x3_start = (double*)malloc_aligned(requiredLength);		 
+          x3_start = (double*)rax_malloc_aligned(requiredLength);		 
 
           /* update the data structures for consistent bookkeeping */
           pr->partitionData[model]->xVector[p_slot] = x3_start;
@@ -1524,7 +1526,7 @@ void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked)
 static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, int *cptr)
 { 
   double 
-    *term = (double*)malloc(sizeof(double) * numStates);
+    *term = (double*)rax_malloc(sizeof(double) * numStates);
 
   int 
     i;
@@ -1560,7 +1562,7 @@ static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable
 	ancestral[l] = term[l] / sum;	
     }
    
-  free(term);
+  rax_free(term);
 }
 
 
@@ -1577,7 +1579,7 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
     statesSquare = numStates * numStates;
 
   double    
-    *term = (double*)malloc(sizeof(double) * numStates);	      	      
+    *term = (double*)rax_malloc(sizeof(double) * numStates);	      	      
   
   for(i = 0; i < n; i++)
     {
@@ -1616,7 +1618,7 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
 	ancestral[l] = term[l] / sum;       
     }
    
-  free(term);
+  rax_free(term);
 }
 
 /* compute dedicated zero branch length P matrix */
@@ -1728,7 +1730,7 @@ void newviewAncestralIterative(tree *tr, partitionList *pr)
 	     the eignevalues. This will allow us to obtain real probabilites from the internal RAxML 
 	     representation */
 
-	  diagptable = (double*)malloc_aligned(categories * states * states * sizeof(double));
+	  diagptable = (double*)rax_malloc_aligned(categories * states * states * sizeof(double));
 	  
 	  requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
 	  
@@ -1750,7 +1752,7 @@ void newviewAncestralIterative(tree *tr, partitionList *pr)
 	  else
 	    ancestralGamma(x3_start, pr->partitionData[model]->ancestralBuffer, diagptable, width, states, categories * states);
 	  
-	  free(diagptable);	  	  	  
+	  rax_free(diagptable);	  	  	  
 	}	
     }
 }
@@ -1868,7 +1870,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
   /* allocate an array of structs for storing ancestral prob vector info/data */
 
   ancestralState 
-    *a = (ancestralState *)malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
+    *a = (ancestralState *)rax_malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
 
   /* loop over partitions */
 
@@ -1913,7 +1915,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
 
 	  /* alloc space for storing marginal ancestral probabilities */
 
-	  a[globalIndex].probs = (double *)malloc(sizeof(double) * states);
+	  a[globalIndex].probs = (double *)rax_malloc(sizeof(double) * states);
 	  
 	  /* loop over states to store probabilities and find the maximum */
 
@@ -1983,9 +1985,9 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tre
   /* free the ancestral state data structure */
           
   for(j = 0; j < tr->originalCrunchedLength; j++)
-    free(a[j].probs);  
+    rax_free(a[j].probs);  
 
-  free(a);
+  rax_free(a);
 }
 
 /* optimized function implementations */

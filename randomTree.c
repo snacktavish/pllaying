@@ -1,3 +1,4 @@
+#include "mem_alloc.h"
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
@@ -105,11 +106,11 @@ void makeRandomTree(tree *tr)
     p, 
     f, 
     randomBranch,
-    *branches = (nodeptr *)malloc(sizeof(nodeptr) * (2 * tr->mxtips));    
+    *branches = (nodeptr *)rax_malloc(sizeof(nodeptr) * (2 * tr->mxtips));    
   
   int 
     nextsp, 
-    *perm = (int *)malloc((tr->mxtips + 1) * sizeof(int)), 
+    *perm = (int *)rax_malloc((tr->mxtips + 1) * sizeof(int)), 
     branchCounter;                      
   
   makePermutation(perm, tr->mxtips, tr);              
@@ -140,7 +141,7 @@ void makeRandomTree(tree *tr)
       insertTaxon(p->back, randomBranch);
     }
   
-  free(perm);            
-  free(branches);
+  rax_free(perm);            
+  rax_free(branches);
 }
 

@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifdef WIN32
 #include <direct.h>
 #endif
@@ -132,13 +134,13 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
      tr->aliaswgt[i] = 1;
    }*/
 
-  tr->rateCategory           =  (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+  tr->rateCategory           =  (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
 
-  tr->patrat                 =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->patratStored           =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->lhs                    =  (double *) malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patrat                 =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->patratStored           =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
+  tr->lhs                    =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
 
-  tr->executeModel   = (boolean *)malloc(sizeof(boolean) * (size_t)pr->numberOfPartitions);
+  tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)pr->numberOfPartitions);
 
 
 
@@ -165,7 +167,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
     addword(tr->nameList[i], tr->nameHash, i);
 
   /* read partition info (boudaries, data type) */
-  empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
+  empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
   for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
   {
     int
@@ -203,7 +205,7 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
   /* Read all characters from tips */
 //  y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
-  tr->yVector = (char **) malloc(sizeof(char*) * (tr->mxtips+1));
+  tr->yVector = (char **) rax_malloc(sizeof(char*) * (tr->mxtips+1));
  for (i=0; i < tr->mxtips; ++i)
         tr->yVector[i+1] = pd->seq[i]; //(unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
   for (i = 1; i <= pd->taxa; ++ i)
@@ -295,13 +297,13 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
     /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
        let's not worry about this right now, because it is indeed RAxML-specific */
 
-    tr->aliaswgt                   = (int *)malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    tr->aliaswgt                   = (int *)rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
     myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);
 
-    tr->rateCategory    = (int *)    malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-    tr->patrat          = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->lhs             = (double*)  malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->rateCategory    = (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
+    tr->patrat          = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->patratStored    = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+    tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
     for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
       pr->partitionData[i]->executeModel = TRUE;
@@ -320,7 +322,7 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
     {
       int len;
       myBinFread(&len, sizeof(int), 1, byteFile);
-      tr->nameList[i] = (char*)malloc(sizeof(char) * (size_t)len);
+      tr->nameList[i] = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
       /*printf("%s \n", tr->nameList[i]);*/
     }
@@ -329,7 +331,7 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
       addword(tr->nameList[i], tr->nameHash, i);
 
     /* read partition info (boudaries, data type) */
-    empiricalFrequencies = (double **)malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
+    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
     for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
     {
       int
@@ -357,16 +359,16 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
          */
 
       myBinFread(&len, sizeof(int), 1, byteFile);
-      p->partitionName = (char*)malloc(sizeof(char) * (size_t)len);
+      p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
       myBinFread(p->partitionName, sizeof(char), len, byteFile);
 
-      empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
+      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
       myBinFread(empiricalFrequencies[model], sizeof(double), pr->partitionData[model]->states, byteFile);
     }
     /* Read all characters from tips */
-    y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
+    y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
 
-    tr->yVector = (unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
+    tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
     for(i = 1; i <= (size_t)tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
@@ -395,7 +397,7 @@ void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
   assert(bytes_read == nmemb);
 }
 
-
+#if 0
 void *malloc_aligned(size_t size) 
 {
   void 
@@ -411,7 +413,7 @@ void *malloc_aligned(size_t size)
      a 16-byte aligned pointer
      */
 
-  ptr = malloc(size);
+  ptr = rax_malloc(size);
 
   if(ptr == (void*)NULL) 
     assert(0);
@@ -419,7 +421,6 @@ void *malloc_aligned(size_t size)
 #ifdef __AVX
   assert(0);
 #endif
-
 
 #else
   res = posix_memalign( &ptr, BYTE_ALIGNMENT, size );
@@ -430,6 +431,7 @@ void *malloc_aligned(size_t size)
 
   return ptr;
 }
+#endif
 
 
 
@@ -867,32 +869,32 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
 
   tr->treeStringLength = tr->mxtips * (nmlngth+128) + 256 + tr->mxtips * 2;
 
-  tr->tree_string  = (char*)calloc((size_t)tr->treeStringLength, sizeof(char)); 
-  tr->tree0 = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
-  tr->tree1 = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
+  tr->tree_string  = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char)); 
+  tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
+  tr->tree1 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
 
 
   /*TODO, must that be so long ?*/
 
   tr->td[0].count = 0;
-  tr->td[0].ti    = (traversalInfo *)malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
-  tr->td[0].executeModel = (boolean *)malloc(sizeof(boolean) * (size_t)NUM_BRANCHES);
-  tr->td[0].parameterValues = (double *)malloc(sizeof(double) * (size_t)NUM_BRANCHES);
+  tr->td[0].ti    = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)tr->mxtips);
+  tr->td[0].executeModel = (boolean *)rax_malloc(sizeof(boolean) * (size_t)NUM_BRANCHES);
+  tr->td[0].parameterValues = (double *)rax_malloc(sizeof(double) * (size_t)NUM_BRANCHES);
 
   tr->fracchange = -1.0;
 
-  tr->constraintVector = (int *)malloc((2 * (size_t)tr->mxtips) * sizeof(int));
+  tr->constraintVector = (int *)rax_malloc((2 * (size_t)tr->mxtips) * sizeof(int));
 
-  tr->nameList = (char **)malloc(sizeof(char *) * (tips + 1));
+  tr->nameList = (char **)rax_malloc(sizeof(char *) * (tips + 1));
 
 
-  p0 = (nodeptr)malloc((tips + 3 * inter) * sizeof(node));
+  p0 = (nodeptr)rax_malloc((tips + 3 * inter) * sizeof(node));
   assert(p0);
 
   tr->nodeBaseAddress = p0;
 
 
-  tr->nodep = (nodeptr *) malloc((2* (size_t)tr->mxtips) * sizeof(nodeptr));
+  tr->nodep = (nodeptr *) rax_malloc((2* (size_t)tr->mxtips) * sizeof(nodeptr));
   assert(tr->nodep);    
 
   tr->nodep[0] = (node *) NULL;    /* Use as 1-based array */
@@ -956,7 +958,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
   tr->nameHash = initStringHashTable(10 * tr->mxtips);
 
   for (i = 0; i < partitions->numberOfPartitions; i++) {
-	partitions->partitionData[i] = (pInfo*)malloc (sizeof(pInfo));
+	partitions->partitionData[i] = (pInfo*)rax_malloc (sizeof(pInfo));
 	partitions->partitionData[i]->partitionContribution = -1.0;
 	partitions->partitionData[i]->partitionLH = 0.0;
 	partitions->partitionData[i]->fracchange = 1.0;
@@ -1180,7 +1182,7 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
   int tid  = localTree->threadID; 
 
   if(tid > 0)
-      localTree->rateCategory    = (int *)    calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
+      localTree->rateCategory    = (int *)    rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
 
   for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
     {
@@ -1196,34 +1198,34 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
 	 to this end, it must also be initialized with zeros -> calloc
       */
 
-      localPartitions->partitionData[model]->globalScaler    = (unsigned int *)calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));
+      localPartitions->partitionData[model]->globalScaler    = (unsigned int *)rax_calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));
 
-      localPartitions->partitionData[model]->left              = (double *)malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
-      localPartitions->partitionData[model]->right             = (double *)malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
-      localPartitions->partitionData[model]->EIGN              = (double*)malloc((size_t)pl->eignLength * sizeof(double));
-      localPartitions->partitionData[model]->EV                = (double*)malloc_aligned((size_t)pl->evLength * sizeof(double));
-      localPartitions->partitionData[model]->EI                = (double*)malloc((size_t)pl->eiLength * sizeof(double));
+      localPartitions->partitionData[model]->left              = (double *)rax_malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
+      localPartitions->partitionData[model]->right             = (double *)rax_malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
+      localPartitions->partitionData[model]->EIGN              = (double*)rax_malloc((size_t)pl->eignLength * sizeof(double));
+      localPartitions->partitionData[model]->EV                = (double*)rax_malloc_aligned((size_t)pl->evLength * sizeof(double));
+      localPartitions->partitionData[model]->EI                = (double*)rax_malloc((size_t)pl->eiLength * sizeof(double));
 
-      localPartitions->partitionData[model]->substRates        = (double *)malloc((size_t)pl->substRatesLength * sizeof(double));
-      localPartitions->partitionData[model]->frequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localPartitions->partitionData[model]->empiricalFrequencies       = (double*)malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localPartitions->partitionData[model]->tipVector         = (double *)malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
-      localPartitions->partitionData[model]->symmetryVector    = (int *)malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
-      localPartitions->partitionData[model]->frequencyGrouping = (int *)malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
+      localPartitions->partitionData[model]->substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
+      localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      localPartitions->partitionData[model]->symmetryVector    = (int *)rax_malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
+      localPartitions->partitionData[model]->frequencyGrouping = (int *)rax_malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
 
-      localPartitions->partitionData[model]->perSiteRates      = (double *)malloc(sizeof(double) * maxCategories);
+      localPartitions->partitionData[model]->perSiteRates      = (double *)rax_malloc(sizeof(double) * maxCategories);
 
       localPartitions->partitionData[model]->nonGTR = FALSE;
 
-      localPartitions->partitionData[model]->gammaRates = (double*)malloc(sizeof(double) * 4);
-      localPartitions->partitionData[model]->yVector = (unsigned char **)malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
+      localPartitions->partitionData[model]->gammaRates = (double*)rax_malloc(sizeof(double) * 4);
+      localPartitions->partitionData[model]->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
 
 
-      localPartitions->partitionData[model]->xVector = (double **)calloc(sizeof(double*), (size_t)localTree->mxtips);
+      localPartitions->partitionData[model]->xVector = (double **)rax_calloc(sizeof(double*), (size_t)localTree->mxtips);
 
-      localPartitions->partitionData[model]->xSpaceVector = (size_t *)calloc((size_t)localTree->mxtips, sizeof(size_t));
+      localPartitions->partitionData[model]->xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));
 
-      localPartitions->partitionData[model]->sumBuffer = (double *)malloc_aligned(width *
+      localPartitions->partitionData[model]->sumBuffer = (double *)rax_malloc_aligned(width *
 									   (size_t)(localPartitions->partitionData[model]->states) *
 									   discreteRateCategories(localTree->rateHetModel) *
 									   sizeof(double));
@@ -1231,7 +1233,7 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
-      localPartitions->partitionData[model]->ancestralBuffer = (double *)malloc_aligned(width *
+      localPartitions->partitionData[model]->ancestralBuffer = (double *)rax_malloc_aligned(width *
 										 (size_t)(localPartitions->partitionData[model]->states) *
 										 sizeof(double));
 
@@ -1240,18 +1242,18 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
       ancestralVectorWidth += ((size_t)(localPartitions->partitionData[model]->upper - localPartitions->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double));
       /* :TODO: do we have to use the original tree for that   */
 
-      localPartitions->partitionData[model]->wgt = (int *)malloc_aligned(width * sizeof(int));
+      localPartitions->partitionData[model]->wgt = (int *)rax_malloc_aligned(width * sizeof(int));
 
       /* rateCategory must be assigned using calloc() at start up there is only one rate category 0 for all sites */
 
-      localPartitions->partitionData[model]->rateCategory = (int *)calloc(width, sizeof(int));
+      localPartitions->partitionData[model]->rateCategory = (int *)rax_calloc(width, sizeof(int));
 
       if(width > 0 && localTree->saveMemory)
 	{
 	  localPartitions->partitionData[model]->gapVectorLength = ((int)width / 32) + 1;
 	  assert(4 == sizeof(unsigned int));
-	  localPartitions->partitionData[model]->gapVector = (unsigned int*)calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
-	  localPartitions->partitionData[model]->gapColumn = (double *)malloc_aligned(((size_t)localTree->mxtips) *
+	  localPartitions->partitionData[model]->gapVector = (unsigned int*)rax_calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
+	  localPartitions->partitionData[model]->gapColumn = (double *)rax_malloc_aligned(((size_t)localTree->mxtips) *
 									       ((size_t)(localPartitions->partitionData[model]->states)) *
 									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
 	}

@@ -29,6 +29,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <unistd.h>
 #endif
@@ -401,10 +403,10 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
 
     /* arrays to store stuff we can pre-compute */
 
-    *d_start = (double *)malloc_aligned(numberOfCategories * states * sizeof(double)),
-    *e =(double *)malloc_aligned(states * sizeof(double)),
-    *s = (double *)malloc_aligned(states * sizeof(double)),
-    *dd = (double *)malloc_aligned(states * sizeof(double)),
+    *d_start = (double *)rax_malloc_aligned(numberOfCategories * states * sizeof(double)),
+    *e =(double *)rax_malloc_aligned(states * sizeof(double)),
+    *s = (double *)rax_malloc_aligned(states * sizeof(double)),
+    *dd = (double *)rax_malloc_aligned(states * sizeof(double)),
     inv_Li, 
     dlnLidlz, 
     d2lnLidlz2,
@@ -494,10 +496,10 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
 
   /* free the temporary arrays */
 
-  free(d_start);
-  free(e);
-  free(s);
-  free(dd);
+  rax_free(d_start);
+  rax_free(e);
+  rax_free(s);
+  rax_free(dd);
 }
 
 static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, 
@@ -1825,7 +1827,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
   e2v[0]= _mm_load_pd(&e2[0]);
   e2v[1]= _mm_load_pd(&e2[2]);
 
-  d = d_start = (double *)malloc_aligned(numberOfCategories * 4 * sizeof(double));
+  d = d_start = (double *)rax_malloc_aligned(numberOfCategories * 4 * sizeof(double));
 
   dd1 = EIGN[1] * lz;
   dd2 = EIGN[2] * lz;
@@ -1873,7 +1875,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
   *d1 = dlnLdlz;
   *d2 = d2lnLdlz2;
 
-  free(d_start);
+  rax_free(d_start);
 }
 
 
@@ -1969,7 +1971,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   double  dlnLdlz = 0.0;
   double  d2lnLdlz2 = 0.0;
 
-  d1 = d_start = (double *)malloc_aligned(numberOfCategories * 20 * sizeof(double));
+  d1 = d_start = (double *)rax_malloc_aligned(numberOfCategories * 20 * sizeof(double));
 
   e[0] = 0.0;
   s[0] = 0.0; 
@@ -2030,7 +2032,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   *ext_dlnLdlz   = dlnLdlz;
   *ext_d2lnLdlz2 = d2lnLdlz2;
 
-  free(d_start);
+  rax_free(d_start);
 }
 
 

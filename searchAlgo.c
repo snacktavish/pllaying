@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifndef WIN32
 #include <sys/times.h>
 #include <sys/types.h>
@@ -276,7 +278,7 @@ static void initInfoList(infoList *iList, size_t n)
 
   iList->n = n;
   iList->valid = 0;
-  iList->list = (bestInfo *)malloc(sizeof(bestInfo) * (size_t)n);
+  iList->list = (bestInfo *)rax_malloc(sizeof(bestInfo) * (size_t)n);
 
   for(i = 0; i < n; i++)
   {
@@ -287,7 +289,7 @@ static void initInfoList(infoList *iList, size_t n)
 
 static void freeInfoList(infoList *iList)
 { 
-  free(iList->list);   
+  rax_free(iList->list);   
 }
 
 
@@ -955,7 +957,7 @@ static double treeOptimizeRapid(tree *tr, partitionList *pr, int mintrav, int ma
   }
 
   if(adef->permuteTreeoptimize)
-    free(perm);
+    rax_free(perm);
 
   return tr->startLH;     
 }
@@ -1589,7 +1591,7 @@ void computeBIGRAPID (tree *tr, partitionList *pr, analdef *adef, boolean estima
     *bt;    
 
   infoList 
-    *iList = (infoList*)malloc(sizeof(infoList));
+    *iList = (infoList*)rax_malloc(sizeof(infoList));
 
   /* now here is the RAxML hill climbing search algorithm */
 
@@ -1597,11 +1599,11 @@ void computeBIGRAPID (tree *tr, partitionList *pr, analdef *adef, boolean estima
   /* initialize two lists of size 1 and size 20 that will keep track of the best 
      and 20 best tree topologies respectively */
 
-  bestT = (bestlist *) malloc(sizeof(bestlist));
+  bestT = (bestlist *) rax_malloc(sizeof(bestlist));
   bestT->ninit = 0;
   initBestTree(bestT, 1, tr->mxtips);
 
-  bt = (bestlist *) malloc(sizeof(bestlist));      
+  bt = (bestlist *) rax_malloc(sizeof(bestlist));      
   bt->ninit = 0;
   initBestTree(bt, 20, tr->mxtips); 
 
@@ -1768,7 +1770,7 @@ START_FAST_SPRS:
 
       {
         char 
-          *buffer = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
+          *buffer = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
 #ifdef _DEBUG_CHECKPOINTING
         printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
@@ -1780,7 +1782,7 @@ START_FAST_SPRS:
         else
           memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
 
-        free(buffer);
+        rax_free(buffer);
       }
 
 
@@ -1993,7 +1995,7 @@ START_SLOW_SPRS:
 
         {
           char 
-            *buffer = (char*)calloc((size_t)tr->treeStringLength, sizeof(char));
+            *buffer = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
 
 #ifdef _DEBUG_CHECKPOINTING		
           printf("Storing tree in slot %d\n", thoroughIterations % 2);
@@ -2006,7 +2008,7 @@ START_SLOW_SPRS:
           else
             memcpy(tr->tree1, buffer, tr->treeStringLength * sizeof(char));	    
 
-          free(buffer);
+          rax_free(buffer);
         }
 
         assert(bCounter == tr->mxtips - 3);
@@ -2100,17 +2102,17 @@ cleanup:
   if(tr->searchConvergenceCriterion)
   {
     freeBitVectors(tr->bitVectors, 2 * tr->mxtips);
-    free(tr->bitVectors);
+    rax_free(tr->bitVectors);
     freeHashTable(tr->h);
-    free(tr->h);
+    rax_free(tr->h);
   }
 
   freeBestTree(bestT);
-  free(bestT);
+  rax_free(bestT);
   freeBestTree(bt);
-  free(bt);
+  rax_free(bt);
   freeInfoList(iList);  
-  free(iList);
+  rax_free(iList);
 
   printLog(tr);
 
