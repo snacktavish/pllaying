@@ -41,6 +41,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
+#include <assert.h>
 #include "axml.h"
 
 #ifdef __SIM_SSE3
@@ -1044,10 +1045,10 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
   int 
     i, 
     model;
-  int nvc = 0;
-  double *last_x3 = 0;
+  //int nvc = 0;
+  //double *last_x3 = 0;
 
-  int last_width = -1;
+  //int last_width = -1;
 
   int p_slot, q_slot, r_slot;
 
@@ -1358,8 +1359,8 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
           const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
           //  printf( "d: %d %d %f %s\n", nvc++, tInfo->tipCase, d2, scaling_text );
           //                 printf( "ticks: %d %f %f%s\n", tInfo->tipCase, d1, d2, scaling_text );
-          last_x3 = x3_start;
-          last_width = width;
+          //last_x3 = x3_start;
+          //last_width = width;
 
         }
 #else
@@ -1800,8 +1801,8 @@ void newviewAncestralIterative(tree *tr, partitionList *pr)
 	{	      
 	  double	 
 	    *x3_start = pr->partitionData[model]->xVector[p_slot],
-	    *left     = (double*)NULL,
-	    *right    = (double*)NULL,		       
+//	    *left     = (double*)NULL,
+//	    *right    = (double*)NULL,		       
 	    *rateCategories = (double*)NULL,
 	    *diagptable = (double*)NULL;
 
@@ -1938,7 +1939,7 @@ void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p)
 static char getStateCharacter(int dataType, int state)
 {
   char 
-    result;  
+    result;
 
   switch(dataType)
     {    
@@ -3027,7 +3028,7 @@ static void newviewGTRGAMMA(int tipCase,
     l,
     addScale = 0;
 
-  int scaling = 0;
+  //int scaling = 0;
 
   double
     *x1,

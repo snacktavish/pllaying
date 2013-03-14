@@ -46,7 +46,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <stdint.h>
-
+#include <assert.h>
 
 
 
@@ -869,7 +869,8 @@ static void makePermutationFast(int *perm, int n, tree *tr)
     }
 }
 
-static nodeptr  removeNodeParsimony (nodeptr p, tree *tr)
+//static nodeptr  removeNodeParsimony (nodeptr p, tree *tr)
+static nodeptr  removeNodeParsimony (nodeptr p)
 { 
   nodeptr  q, r;         
 
@@ -928,7 +929,8 @@ static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintra
       
       if ((p1->number > tr->mxtips) || (p2->number > tr->mxtips)) 
 	{	  	  
-	  removeNodeParsimony(p, tr);	  	 
+	  //removeNodeParsimony(p, tr);	  	 
+	  removeNodeParsimony(p);	  	 
 
 	  if ((p1->number > tr->mxtips)) 
 	    {
@@ -968,7 +970,8 @@ static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintra
 	  )
 	{	   
 
-	  removeNodeParsimony(q, tr);
+	  //removeNodeParsimony(q, tr);
+	  removeNodeParsimony(q);
 	  
 	  mintrav2 = mintrav > 2 ? mintrav : 2;
 	  
@@ -997,7 +1000,8 @@ static int rearrangeParsimony(tree *tr, partitionList *pr, nodeptr p, int mintra
 
 static void restoreTreeRearrangeParsimony(tree *tr, partitionList *pr)
 {    
-  removeNodeParsimony(tr->removeNode, tr);  
+  removeNodeParsimony(tr->removeNode);  
+  //removeNodeParsimony(tr->removeNode, tr);  
   restoreTreeParsimony(tr, pr, tr->removeNode, tr->insertNode);
 }
 
@@ -1524,7 +1528,7 @@ void parsimonySPR(nodeptr p, partitionList *pr, tree *tr)
     p1 = p->next->back,
     p2 = p->next->next->back;
 
-  unsigned int score = evaluateParsimony(tr, pr, p, TRUE);
+  //unsigned int score = evaluateParsimony(tr, pr, p, TRUE);
 
   //printf("parsimonyScore: %u\n", score);
 

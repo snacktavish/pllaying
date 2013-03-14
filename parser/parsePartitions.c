@@ -28,6 +28,7 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
 
 #ifndef WIN32
 #include <sys/times.h>

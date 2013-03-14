@@ -3,38 +3,29 @@
 #include <string.h>
 #include "lexer.h"
 #include "phylip.h"
-#include "xalloc.h"
-#include "msa_sites.h"
+//#include "xalloc.h"
+//#include "msa_sites.h"
 
 int 
 main (int argc, char * argv[])
 {
-  struct phylip_data * pd;
-  int format, i;
-  int * weight;
+  struct phylip_t * phylip;
 
-  if (argc != 3)
+  if (argc != 2)
    {
      usage (argv[0]);
      return (EXIT_FAILURE);
    }
   
-  if (strcmp (argv[2], "PHYLIP_INTERLEAVED") && strcmp (argv[2], "PHYLIP_SEQUENTIAL"))
-   {
-     usage (argv[0]);
-     return (EXIT_FAILURE);
-   }
-
-  format = strcmp (argv[2], "PHYLIP_INTERLEAVED") ? PHYLIP_SEQUENTIAL : PHYLIP_INTERLEAVED;
-
-  pd = pl_phylip_parse (argv[1], format);
-  if (!pd) 
+  phylip = pllPhylipParse (argv[1]);
+  if (!phylip) 
    {
      printf ("Error while parsing\n");
      return (EXIT_FAILURE);
    }
 
-  dump_struct (pd);
+  //dump_struct (pd);
+  printf ("Taxa: %d SeqLen: %d\n", phylip->nTaxa, phylip->seqLen);
   
 //  weight  = pl_phylip_deldups (&pd);
 //  printf ("=> Eliminating dups\n");
@@ -43,7 +34,10 @@ main (int argc, char * argv[])
 //  printf ("%d ", weight[i]);
 //  printf ("\n");
   
-  free_phylip_struct (pd);
+  pllPhylipDump (phylip);
+  //pllPhylipExec (phylip, 1);
+  
+  free_phylip_struct (phylip);
 //  free (weight);
 
   /*

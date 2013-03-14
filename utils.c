@@ -51,6 +51,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <assert.h>
 #include "cycle.h"
 
 
@@ -261,7 +262,7 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
       tr->numBranches = 1;
     */
     pr->perGeneBranchLengths = FALSE;
-    setupTree(tr, TRUE);
+    setupTree(tr, TRUE, pr);
     
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
 
@@ -779,7 +780,7 @@ void hookup (nodeptr p, nodeptr q, double *z, int numBranches)
 /* connects node p with q and assigns the branch lengths z for the whole vector*/
 void hookupFull (nodeptr p, nodeptr q, double *z)
 {
-  int i;
+  //int i;
 
   p->back = q;
   q->back = p;
@@ -845,7 +846,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
     i,
     j;
 
-  size_t
+  int
     tips,
     inter; 
 
@@ -1179,7 +1180,6 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
   for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
     {
       size_t 
-	j,       
 	width = localPartitions->partitionData[model]->width;
 
       const partitionLengths 
@@ -1256,6 +1256,11 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
 	  localPartitions->partitionData[model]->gapColumn = (double*)NULL;
 	}              
     }
+}
+
+int virtual_width( int n ) {
+    const int global_vw = 2;
+    return (n+1) / global_vw * global_vw;
 }
 
 

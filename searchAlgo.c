@@ -43,11 +43,11 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 
 
 #include "axml.h"
-
 
 
 /** @file searchAlgo.c
@@ -337,7 +337,7 @@ static void resetInfoList(infoList *iList)
     @param n
       Number of elements to be created in the \a bestInfo list.
 */
-static void initInfoList(infoList *iList, size_t n)
+static void initInfoList(infoList *iList, int n)
 {
   int 
     i;

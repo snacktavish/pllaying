@@ -49,6 +49,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <assert.h>
 #include "cycle.h"
 
 #define GLOBAL_VARIABLES_DEFINITION
@@ -609,7 +610,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
     optind = 1,
            c,
            nameSet = 0,
-           treeSet = 0,
+           //treeSet = 0,
            modelSet = 0;
 
   boolean
@@ -771,7 +772,7 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
       case 't':
         strcpy(tree_file, optarg);
         tr->startingTree = givenTree;
-        treeSet = 1;
+        //treeSet = 1;
         break;
       case 'm':
         strcpy(model,optarg);
@@ -954,7 +955,8 @@ char getInverseMeaning(int dataType, unsigned char state)
 
 
 
-
+/* not used as it is static? */
+/*
 static unsigned int KISS32(void)
 {
   static unsigned int 
@@ -977,7 +979,7 @@ static unsigned int KISS32(void)
 
   return (x+y+w);
 }
-
+*/
 
 /************************************************************************************/
 
@@ -1081,7 +1083,7 @@ int main (int argc, char *argv[])
   makeFileNames();
 
   {
-    size_t 
+    int
       i,
       model;
 
@@ -1114,7 +1116,7 @@ int main (int argc, char *argv[])
     y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
     tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
 
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
+    for(i = 1; i <= tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
 
         setupTree(tr, FALSE, partitions);
@@ -1130,7 +1132,7 @@ int main (int argc, char *argv[])
       tr->h = initHashTable(tr->mxtips * 4);        
     }
 
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
+    for(i = 1; i <= tr->mxtips; i++)
     {
       int len;
       myBinFread(&len, sizeof(int), 1, byteFile);
@@ -1139,7 +1141,7 @@ int main (int argc, char *argv[])
       /*printf("%s \n", tr->nameList[i]);*/
     }  
 
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
+    for(i = 1; i <= tr->mxtips; i++)
       addword(tr->nameList[i], tr->nameHash, i);
 
     for(model = 0; model < partitions->numberOfPartitions; model++)
@@ -1377,7 +1379,7 @@ int main (int argc, char *argv[])
     /* For this branch we are only interested in testing with -f b  */
     if(adef->mode == GPU_BENCHMARK)
     {
-      double t, masterTime = gettime();
+      // double t, masterTime = gettime();
       ticks t1 = getticks();
       printBothOpen("Eval once LH \n");
       evaluateGeneric(tr, partitions, tr->start, TRUE);

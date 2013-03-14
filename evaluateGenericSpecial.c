@@ -39,6 +39,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 #include "axml.h"
 
 /* the set of functions in here computes the log likelihood at a given branch (the virtual root of a tree) */
@@ -834,16 +835,16 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
 void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 {
   double 
-    likelihood,
+    //likelihood,
     accumulatedPerSiteLikelihood = 0.0;
 
   size_t
     localCount,
     i,
-    globalCounter,
-    model,
+    //globalCounter,
     lower,
     upper;
+  int model;
 
   /* compute the likelihood of the tree with the standard function to:
      1. obtain the current score for error checking
@@ -853,7 +854,7 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 
   evaluateGeneric (tr, pr, tr->start, TRUE);
 
-  likelihood = tr->likelihood;
+  //likelihood = tr->likelihood;
 
   /* now compute per-site log likelihoods using the respective functions */
 

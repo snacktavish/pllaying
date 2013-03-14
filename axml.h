@@ -32,7 +32,8 @@
 /** @file axml.h
   * @brief Data structures for tree and model 
   */
-#include <assert.h>
+#ifndef AXML_H
+#define AXML_H
 #include <stdint.h>
 #include <stdio.h>
 
@@ -914,11 +915,11 @@ typedef struct {
 } pInfo;
 
 typedef struct
-{
-	pInfo **partitionData;
-	size_t numberOfPartitions;
-	boolean perGeneBranchLengths;
-} partitionList;
+ {
+   pInfo **partitionData;
+   int numberOfPartitions;
+   boolean perGeneBranchLengths;
+ }  partitionList;
 
 
 
@@ -1421,6 +1422,7 @@ extern void smooth ( tree *tr, partitionList *pr, nodeptr p );
 extern void smoothTree ( tree *tr, partitionList *pr, int maxtimes );
 extern void localSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(tree *tr, nodeptr p, int maxtimes, int model);
+extern void NNI(tree * tr, nodeptr p, int swap);
 
 extern void smoothRegion ( tree *tr, partitionList *pr, nodeptr p, int region );
 extern void regionalSmooth ( tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region );
@@ -1573,7 +1575,7 @@ extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int nu
 
 
 extern  unsigned int bitcount_32_bit(unsigned int i); 
-/* extern inline unsigned int bitcount_64_bit(unsigned long i); */
+extern inline unsigned int bitcount_64_bit(unsigned long i);
 
 extern FILE *getNumberOfTrees(tree *tr, char *fileName, analdef *adef);
 
@@ -1649,7 +1651,6 @@ void computeFraction(partitionList *localPr, int tid, int n);
 void computeFractionMany(partitionList *localPr, int tid);
 void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 void startPthreads(tree *tr, partitionList *pr);
-
 typedef struct
 {
   tree *tr;
@@ -1664,16 +1665,16 @@ void allocNodex(tree *tr, int tid, int n);
 
 #ifdef __AVX
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
-		       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-		       unsigned char *tipX1, unsigned char *tipX2,
-		       int n,  double *left, double *right, int *wgt, int *scalerIncrement);
+ 	       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+ 	       unsigned char *tipX1, unsigned char *tipX2,
+ 	       int n,  double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGenericCATPROT_AVX(int tipCase, double *extEV,
-			       int *cptr,
-			       double *x1, double *x2, double *x3, double *tipVector,
-			       unsigned char *tipX1, unsigned char *tipX2,
-			       int n, double *left, double *right, int *wgt, int *scalerIncrement);
+ 		       int *cptr,
+ 		       double *x1, double *x2, double *x3, double *tipVector,
+ 		       unsigned char *tipX1, unsigned char *tipX2,
+ 		       int n, double *left, double *right, int *wgt, int *scalerIncrement);
 
 
 void newviewGTRGAMMA_AVX(int tipCase,
@@ -1682,18 +1683,37 @@ void newviewGTRGAMMA_AVX(int tipCase,
 			 unsigned char *tipX1, unsigned char *tipX2,
 			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
 			 );
+void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
+			       int *cptr,
+			       double *x1, double *x2, double *x3, double *tipVector,
+			       unsigned char *tipX1, unsigned char *tipX2,
+			       int n, double *left, double *right, int *wgt, int *scalerIncrement);
+
+void newviewGTRGAMMAPROT_AVX(int tipCase,
+			     double *x1, double *x2, double *x3, double *extEV, double *tipVector,
+			     unsigned char *tipX1, unsigned char *tipX2, int n, 
+			     double *left, double *right, int *wgt, int *scalerIncrement);
 
 #endif
 
 void reorder( double *x, int n, int span );
 void reorder_back( double *x, int n, int span );
 
-static int virtual_width( int n ) {
-    const int global_vw = 2;
-    return (n+1) / global_vw * global_vw;
-}
+void initializePartitionsSequential(tree *tr, partitionList *pr);
+
+int virtual_width( int n );
 
 boolean modelExists(char *model, tree *tr);
+
+/* declarations from utils.c */
+void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile);
+boolean setupTree (tree *tr, boolean doInit, partitionList *partitions);
+void initMemorySavingAndRecom(tree *tr, partitionList *pr);
+void initializePartitionData(tree *localTree, partitionList * localPartitions);
+void computeAllAncestralVectors(nodeptr p, tree *tr, partitionList *pr);
+nodeptr pickRandomSubtree(tree *tr);
+void init_default(tree *tr);
+
 
 #ifdef __cplusplus
 } /* extern "C" */
@@ -1701,4 +1721,4 @@ boolean modelExists(char *model, tree *tr);
 
 #include "mem_alloc.h" /* sneak in mem_alloc.h to increase the chance that the XXX_BIG_FAT_MALLOC_ERRORS_XXX work */
 
-
+#endif

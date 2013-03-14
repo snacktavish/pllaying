@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 #include "axml.h"
 
 static const double MNBRAK_GOLD =    1.618034;
@@ -1953,6 +1954,7 @@ void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
 	  assert(ABS(1.0 - accRat) < 1.0E-5);
 	}
          
+         /*
        for(model = 0; model < pr->numberOfPartitions; model++)
 	{
 	  int 
@@ -1960,7 +1962,7 @@ void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
 	    lower = pr->partitionData[model]->lower,
 	    upper = pr->partitionData[model]->upper;
 
-	}         
+	}  */       
 #if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{   	  	  	 

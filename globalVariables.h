@@ -183,7 +183,6 @@ extern const char * protModels[NUM_PROT_MODELS];
 extern char * secondaryModelList[21];
 extern double masterTime;
 extern char logFileName[1024];
-extern char * secondaryModelList[21];
 //extern const unsigned int * mask32;
 
 #endif

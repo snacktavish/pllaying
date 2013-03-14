@@ -10,6 +10,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
+#include <assert.h>
 #include "axml.h"
 #include <stdint.h>
 #include <xmmintrin.h>
@@ -527,13 +528,13 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
     *le,
     *ri,
     *x1,
-    *x2, 
-    *x3;
+    *x2; 
+    //*x3;
     
   int 
     i, 
-    j, 
-    scale, 
+    //j, 
+    //scale, 
     addScale = 0;
    
   __m256d 
@@ -691,7 +692,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
   double
     *le, *ri, *v, *vl, *vr;
 
-  int i, l, j, scale, addScale = 0;
+  int i, l, scale, addScale = 0;
 
 #ifdef _FMA
   int k;

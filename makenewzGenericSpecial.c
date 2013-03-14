@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 #include "axml.h"
 
 #ifdef __SIM_SSE3
@@ -1102,7 +1103,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
 void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
 {
   int i;
-  boolean originalExecute[NUM_BRANCHES];
+  //boolean originalExecute[NUM_BRANCHES];
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   boolean 
@@ -1117,7 +1118,7 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
 
   for(i = 0; i < numBranches; i++)
   {
-    originalExecute[i] =  pr->partitionData[i]->executeModel;
+    //originalExecute[i] =  pr->partitionData[i]->executeModel;
     tr->td[0].ti[0].qz[i] =  z0[i];
     if(mask)
     {
@@ -1130,8 +1131,8 @@ void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double 
   if (tr->useRecom)
   {
     int
-      slot = -1,
-      count = 0;
+      slot = -1;
+      //count = 0;
 
     /* Ensure p and q get a unpinnable slot in physical memory */
     if(!isTip(q->number, tr->mxtips))

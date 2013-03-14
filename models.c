@@ -44,6 +44,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <assert.h>
 
 #include "axml.h"
 
@@ -3077,7 +3078,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   for(i = 0; i < n; i++)		  
     for(j = 0; j < n; j++)
       {
-	*eptr++ = EIGV[i][j];	             	    	     
+	*eptr++ = EIGV[i][j];	 /* EIGV: Eigenvalues */ 
 	
       }
   
@@ -3087,7 +3088,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 	if(j == 0)
 	  EI[i * n + j] = 1.0;
 	else
-	  EI[i * n + j] = EV[i * n + j] * invfreq[i];  
+	  EI[i * n + j] = EV[i * n + j] * invfreq[i];   /* EV = Eigenvector, EI = Inverse Eigenvector,   $ u_{i,x}^{-1} = \pi_x u_{x,i} */
       }
   
   /* 
@@ -3125,7 +3126,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 		{
 		  int l;
 		  for(l = 0; l < n; l++)
-		    tipVector[i * n + l] += EIGV[j][l];		      		      		     		      
+		    tipVector[i * n + l] += EIGV[j][l];
 		}	     		  
 	    }	    
 	}     

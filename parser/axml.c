@@ -28,6 +28,8 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+#include "mem_alloc.h"
+
 #ifdef WIN32
 #include <direct.h>
 #endif
@@ -92,7 +94,7 @@ void myBinFwrite(const void *ptr, size_t size, size_t nmemb)
 
 
 
-
+/*
 void *rax_malloc_aligned(size_t size) 
 {
   void 
@@ -103,10 +105,10 @@ void *rax_malloc_aligned(size_t size)
   
 
 #if defined (__APPLE__)
-  /* 
-     presumably malloc on MACs always returns 
-     a 16-byte aligned pointer
-  */
+  // 
+  //   presumably malloc on MACs always returns 
+  //   a 16-byte aligned pointer
+  //
 
   ptr = malloc(size);
   
@@ -127,8 +129,7 @@ void *rax_malloc_aligned(size_t size)
    
   return ptr;
 }
-
-
+*/
 
 
 

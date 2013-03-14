@@ -10,11 +10,11 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = axml.o parsePartitions.o
+objs    = axml.o parsePartitions.o mem_alloc.o
 
 all : parser
 
-GLOBAL_DEPS = axml.h globalVariables.h
+GLOBAL_DEPS = axml.h globalVariables.h mem_alloc.h
 
 parser : $(objs)
 	$(CC) -o parser $(objs) $(LIBRARIES) 
