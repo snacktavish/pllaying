@@ -123,10 +123,10 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 #ifndef _OPTIMIZED_FUNCTIONS
 /* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
 
-static double evaluateGAMMA_FLEX(int *wptr,
-    double *x1_start, double *x2_start, 
-    double *tipVector, 
-    unsigned char *tipX1, const int n, double *diagptable, const int states)
+static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+				 double *x1_start, double *x2_start, 
+				 double *tipVector, 
+				 unsigned char *tipX1, const int n, double *diagptable, const int states)
 {
   double   
     sum = 0.0, 
@@ -182,7 +182,10 @@ static double evaluateGAMMA_FLEX(int *wptr,
          Under the GAMMA model the 4 discrete GAMMA rates all have the same probability 
          of 0.25 */
 
-      term = LOG(0.25 * FABS(term));
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
 
       sum += wptr[i] * term;
     }     
@@ -200,7 +203,10 @@ static double evaluateGAMMA_FLEX(int *wptr,
         for(k = 0; k < states; k++)
           term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 
-      term = LOG(0.25 * FABS(term));
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
 
       sum += wptr[i] * term;
     }                      	
@@ -216,9 +222,9 @@ static double evaluateGAMMA_FLEX(int *wptr,
 
 /* a generic and slow implementation of the CAT model of rate heterogeneity */
 
-static double evaluateCAT_FLEX (int *cptr, int *wptr,
-    double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, int n, double *diagptable_start, const int states)
+static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				double *x1, double *x2, double *tipVector,
+				unsigned char *tipX1, int n, double *diagptable_start, const int states)
 {
   double   
     sum = 0.0, 
@@ -258,8 +264,10 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
         term += left[l] * right[l] * diagptable[l];	 	  	   
 
       /* take the log */
-
-      term = LOG(FABS(term));
+       if(!fastScaling)
+	 term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+       else
+	 term = LOG(FABS(term));
 
       /* 
          multiply the log with the pattern weight of this site. 
@@ -283,9 +291,12 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
       diagptable = &diagptable_start[states * cptr[i]];	  	
 
       for(l = 0, term = 0.0; l < states; l++)
-        term += left[l] * right[l] * diagptable[l];	
-
-      term = LOG(FABS(term));	 
+        term += left[l] * right[l] * diagptable[l];
+      
+      if(!fastScaling)
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));	 
 
       sum += wptr[i] * term;      
     }
@@ -315,56 +326,56 @@ static double evaluateCAT_FLEX (int *cptr, int *wptr,
 #ifdef _OPTIMIZED_FUNCTIONS
 /* GAMMA for proteins with memory saving */
 
-static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
-    double *x1, double *x2,  
-    double *tipVector, 
-    unsigned char *tipX1, int n, double *diagptable, 
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+						double *x1, double *x2,  
+						double *tipVector, 
+						unsigned char *tipX1, int n, double *diagptable, 
+						double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
 
 
 /* GAMMA for proteins */
 
-static double evaluateGTRGAMMAPROT (int *wptr,
-    double *x1, double *x2,  
-    double *tipVector, 
-    unsigned char *tipX1, int n, double *diagptable);
+static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+				    double *x1, double *x2,  
+				    double *tipVector, 
+				    unsigned char *tipX1, int n, double *diagptable);
 
 /* CAT for proteins */
 
-static double evaluateGTRCATPROT (int *cptr, int *wptr,
-    double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, int n, double *diagptable_start);
+static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				  double *x1, double *x2, double *tipVector,
+				  unsigned char *tipX1, int n, double *diagptable_start);
 
 
 /* CAT for proteins with memory saving */
 
-static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
-    double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, int n, double *diagptable_start, 
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				       double *x1, double *x2, double *tipVector,
+				       unsigned char *tipX1, int n, double *diagptable_start, 
+				       double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
 
 /* analogous DNA fuctions */
 
-static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
-    double *x1_start, double *x2_start, double *tipVector, 		      
-    unsigned char *tipX1, int n, double *diagptable_start,
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				   double *x1_start, double *x2_start, double *tipVector, 		      
+				   unsigned char *tipX1, int n, double *diagptable_start,
+				   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
 
-static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
-    double *x1_start, double *x2_start, 
-    double *tipVector, 
-    unsigned char *tipX1, const int n, double *diagptable,
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+					   double *x1_start, double *x2_start, 
+					   double *tipVector, 
+					   unsigned char *tipX1, const int n, double *diagptable,
+					   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
 
-static double evaluateGTRGAMMA(int *wptr,
-    double *x1_start, double *x2_start, 
-    double *tipVector, 
-    unsigned char *tipX1, const int n, double *diagptable);
+static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+			       double *x1_start, double *x2_start, 
+			       double *tipVector, 
+			       unsigned char *tipX1, const int n, double *diagptable);
 
 
-static double evaluateGTRCAT (int *cptr, int *wptr,
-    double *x1_start, double *x2_start, double *tipVector, 		      
-    unsigned char *tipX1, int n, double *diagptable_start);
+static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+			      double *x1_start, double *x2_start, double *tipVector, 		      
+			      unsigned char *tipX1, int n, double *diagptable_start);
 
 
 #endif
@@ -385,25 +396,26 @@ void evaluateIterative(tree *tr, partitionList *pr)
 
   int    
     pNumber = tr->td[0].ti[0].pNumber, 
-            qNumber = tr->td[0].ti[0].qNumber, 
-            p_slot,
-            q_slot,
-            model;
+    qNumber = tr->td[0].ti[0].qNumber, 
+    p_slot,
+    q_slot,
+    model;
+  
+  boolean
+    fastScaling = tr->fastScaling;
 
   /* the slots are the entries in xVector where the LH vector is available */
   if(tr->useRecom)
-  {
-    p_slot = tr->td[0].ti[0].slot_p;
-    q_slot = tr->td[0].ti[0].slot_q;
-  }
+    {
+      p_slot = tr->td[0].ti[0].slot_p;
+      q_slot = tr->td[0].ti[0].slot_q;
+    }
   else
-  {
-    p_slot = pNumber - tr->mxtips - 1;
-    q_slot = qNumber - tr->mxtips - 1;
-  }
-
-
-
+    {
+      p_slot = pNumber - tr->mxtips - 1;
+      q_slot = qNumber - tr->mxtips - 1;
+    }
+  
   /* before we can compute the likelihood at the virtual root, we need to do a partial or full tree traversal to compute 
      the conditional likelihoods of the vectors as specified in the traversal descriptor. Maintaining this tarversal descriptor consistent 
      will unfortunately be the responsibility of users. This is tricky, if as planned for here, we use a rooted view (described somewhere in Felsenstein's book)
@@ -421,279 +433,297 @@ void evaluateIterative(tree *tr, partitionList *pr)
   /* we need to loop over all partitions. Note that we may have a mix of DNA, protein binary data etc partitions */
 
   for(model = 0; model < pr->numberOfPartitions; model++)
-  {    
-    /* whats' the number of sites of this partition (at the current thread) */
-    int 	    
-      width = pr->partitionData[model]->width;
-
-    /* 
-       Important part of the tarversal descriptor: 
-       figure out if we need to recalculate the likelihood of this 
-partition: 
-
-The reasons why this is important in terms of performance are given in this paper 
-here which you should actually read:
-
-A. Stamatakis, M. Ott: "Load Balance in the Phylogenetic Likelihood Kernel". Proceedings of ICPP 2009, accepted for publication, Vienna, Austria, September 2009
-
-The width > 0 check is for checking if under the cyclic data distribution of per-partition sites to threads this thread does indeed have a site 
-of the current partition.
-
-*/
-
-    if(tr->td[0].executeModel[model] && width > 0)
-    {	
-      int 
-        rateHet = (int)discreteRateCategories(tr->rateHetModel),
-                categories,
-
-                /* get the number of states in the partition, e.g.: 4 = DNA, 20 = Protein */
-
-                states = pr->partitionData[model]->states;
-
-      double 
-        *rateCategories = (double*)NULL,
-        z, 
-        partitionLikelihood = 0.0, 	   
-        *x1_start   = (double*)NULL, 
-        *x2_start   = (double*)NULL,
-        *diagptable = (double*)NULL,  
-        *x1_gapColumn = (double*)NULL,
-        *x2_gapColumn = (double*)NULL;
-
-      unsigned int
-        *x1_gap = (unsigned int*)NULL,
-        *x2_gap = (unsigned int*)NULL;	 
-
-      unsigned char 
-        *tip = (unsigned char*)NULL;	  
-
+    {    
+      /* whats' the number of sites of this partition (at the current thread) */
+      int 	    
+	width = pr->partitionData[model]->width;
+      
       /* 
-         figure out if we are using the CAT or GAMMA model of rate heterogeneity 
-         and set pointers to the rate heterogeneity rate arrays and also set the 
-         number of distinct rate categories appropriately.
+	 Important part of the tarversal descriptor: 
+	 figure out if we need to recalculate the likelihood of this 
+	 partition: 
+	 
+	 The reasons why this is important in terms of performance are given in this paper 
+	 here which you should actually read:
+	 
+	 A. Stamatakis, M. Ott: "Load Balance in the Phylogenetic Likelihood Kernel". Proceedings of ICPP 2009, accepted for publication, Vienna, Austria, September 2009
+	 
+	 The width > 0 check is for checking if under the cyclic data distribution of per-partition sites to threads this thread does indeed have a site 
+	 of the current partition.
+	 
+      */
 
-         Under GAMMA this is constant and hard-coded as 4, weheras under CAT 
-         the number of site-wise rate categories can vary in the course of computations 
-         up to a user defined maximum value of site categories (default: 25)
-         */
+      if(tr->td[0].executeModel[model] && width > 0)
+	{	
+	  int 
+	    rateHet = (int)discreteRateCategories(tr->rateHetModel),
+	    categories,
+	    
+	    /* get the number of states in the partition, e.g.: 4 = DNA, 20 = Protein */
+	    
+	    states = pr->partitionData[model]->states,
+	    *ex1 = (int*)NULL,
+	    *ex2 = (int*)NULL;
+	  
+	  double 
+	    *rateCategories = (double*)NULL,
+	    z, 
+	    partitionLikelihood = 0.0, 	   
+	    *x1_start   = (double*)NULL, 
+	    *x2_start   = (double*)NULL,
+	    *diagptable = (double*)NULL,  
+	    *x1_gapColumn = (double*)NULL,
+	    *x2_gapColumn = (double*)NULL;
+	  
+	  unsigned int
+	    *x1_gap = (unsigned int*)NULL,
+	    *x2_gap = (unsigned int*)NULL;	 
+	  
+	  unsigned char 
+	    *tip = (unsigned char*)NULL;	  
+	  
+	  /* 
+	     figure out if we are using the CAT or GAMMA model of rate heterogeneity 
+	     and set pointers to the rate heterogeneity rate arrays and also set the 
+	     number of distinct rate categories appropriately.
+	     
+	     Under GAMMA this is constant and hard-coded as 4, weheras under CAT 
+	     the number of site-wise rate categories can vary in the course of computations 
+	     up to a user defined maximum value of site categories (default: 25)
+	  */
 
-      if(tr->rateHetModel == CAT)
-      {	     
-        rateCategories = pr->partitionData[model]->perSiteRates;
-        categories = pr->partitionData[model]->numberOfCategories;
-      }
-      else
-      {	     
-        rateCategories = pr->partitionData[model]->gammaRates;
-        categories = 4;
-      }
+	  if(tr->rateHetModel == CAT)
+	    {	     
+	      rateCategories = pr->partitionData[model]->perSiteRates;
+	      categories = pr->partitionData[model]->numberOfCategories;
+	    }
+	  else
+	    {	     
+	      rateCategories = pr->partitionData[model]->gammaRates;
+	      categories = 4;
+	    }
+	  
+	  /* set this pointer to the memory area where space has been reserved a priori for storing the 
+	     P matrix at the root */
+	  
+	  diagptable = pr->partitionData[model]->left;
+	  
+	  /* figure out if we need to address tip vectors (a char array that indexes into a precomputed tip likelihood 
+	     value array or if we need to address inner vectors */
+	  
+	  /* either node p or node q is a tip */
+	  
+	  if(isTip(pNumber, tr->mxtips) || isTip(qNumber, tr->mxtips))
+	    {	        	    
+	      /* q is a tip */
+	      
+	      if(isTip(qNumber, tr->mxtips))
+		{	
+		  /* get the start address of the inner likelihood vector x2 for partition model,
+		     note that inner nodes are enumerated/indexed starting at 0 to save allocating some 
+		     space for additional pointers */
+		  
+		  x2_start = pr->partitionData[model]->xVector[p_slot];
+		  
+		  /* get the corresponding tip vector */
+		  
+		  tip      = pr->partitionData[model]->yVector[qNumber];
+		  
+		  /* memory saving stuff, let's deal with this later or ask Fernando ;-) */
+		  
+		  if(tr->saveMemory)
+		    {
+		      x2_gap         = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+		      x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]);
+		    }
 
-      /* set this pointer to the memory area where space has been reserved a priori for storing the 
-         P matrix at the root */
+		  /* per site likelihood scaling */
 
-      diagptable = pr->partitionData[model]->left;
+		  if(!fastScaling)		    
+		    ex2 = pr->partitionData[model]->expVector[p_slot];		    
+		}           
+	      else
+		{	
+		  /* p is a tip, same as above */
+		  
+		  x2_start = pr->partitionData[model]->xVector[q_slot];
+		  tip = pr->partitionData[model]->yVector[pNumber];
+		  
+		  if(tr->saveMemory)
+		    {
+		      x2_gap         = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+		      x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]);
+		    }
 
-      /* figure out if we need to address tip vectors (a char array that indexes into a precomputed tip likelihood 
-         value array or if we need to address inner vectors */
+		  /* per site likelihood scaling */
 
-      /* either node p or node q is a tip */
+		  if(!fastScaling)		    
+		    ex2 = pr->partitionData[model]->expVector[q_slot];		   
+		}
+	    }
+	  else
+	    {  
+	      
+	      assert(p_slot != q_slot);
+	      /* neither p nor q are tips, hence we need to get the addresses of two inner vectors */
+	      
+	      x1_start = pr->partitionData[model]->xVector[p_slot];
+	      x2_start = pr->partitionData[model]->xVector[q_slot];
+	      
+	      /* memory saving option */
+	      
+	      if(tr->saveMemory)
+		{
+		  x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
+		  x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
+		  x1_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
+		  x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
+		}
+	     	      
+	      /* per site likelihood scaling */
 
-      if(isTip(pNumber, tr->mxtips) || isTip(qNumber, tr->mxtips))
-      {	        	    
-        /* q is a tip */
-
-        if(isTip(qNumber, tr->mxtips))
-        {	
-          /* get the start address of the inner likelihood vector x2 for partition model,
-             note that inner nodes are enumerated/indexed starting at 0 to save allocating some 
-             space for additional pointers */
-
-          x2_start = pr->partitionData[model]->xVector[p_slot];
-
-          /* get the corresponding tip vector */
-
-          tip      = pr->partitionData[model]->yVector[qNumber];
-
-          /* memory saving stuff, let's deal with this later or ask Fernando ;-) */
-
-          if(tr->saveMemory)
-          {
-            x2_gap         = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
-            x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet]);
-          }
-        }           
-        else
-        {	
-          /* p is a tip, same as above */
-
-          x2_start = pr->partitionData[model]->xVector[q_slot];
-          tip = pr->partitionData[model]->yVector[pNumber];
-
-          if(tr->saveMemory)
-          {
-            x2_gap         = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
-            x2_gapColumn   = &(pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet]);
-          }
-
-        }
-      }
-      else
-      {  
-
-        assert(p_slot != q_slot);
-        /* neither p nor q are tips, hence we need to get the addresses of two inner vectors */
-
-        x1_start = pr->partitionData[model]->xVector[p_slot];
-        x2_start = pr->partitionData[model]->xVector[q_slot];
-
-        /* memory saving option */
-
-        if(tr->saveMemory)
-        {
-          x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
-          x2_gap = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
-          x1_gapColumn   = &pr->partitionData[model]->gapColumn[(pNumber - tr->mxtips - 1) * states * rateHet];
-          x2_gapColumn   = &pr->partitionData[model]->gapColumn[(qNumber - tr->mxtips - 1) * states * rateHet];
-        }
-
-      }
-
-
-      /* if we are using a per-partition branch length estimate, the branch has an index, otherwise, for a joint branch length
-         estimate over all partitions we just use the branch length value with index 0 */
-
-      if(pr->perGeneBranchLengths)
-        z = pz[model];
-      else
-        z = pz[0];
-
-      /* calc P-Matrix at root for branch z connecting nodes p and q */
-
-      calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
-
+	      if(!fastScaling)
+		{
+		  ex1      = pr->partitionData[model]->expVector[p_slot];
+		  ex2      = pr->partitionData[model]->expVector[q_slot];     
+		}
+	    }
+	  
+	  
+	  /* if we are using a per-partition branch length estimate, the branch has an index, otherwise, for a joint branch length
+	     estimate over all partitions we just use the branch length value with index 0 */
+	  
+	  if(pr->perGeneBranchLengths)
+	    z = pz[model];
+	  else
+	    z = pz[0];
+	  
+	  /* calc P-Matrix at root for branch z connecting nodes p and q */
+	  
+	  calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
+	  
 #ifndef _OPTIMIZED_FUNCTIONS
-
-      /* generic slow functions, memory saving option is not implemented for these */
-
-      assert(!tr->saveMemory);
-
-      /* decide wheter CAT or GAMMA is used and compute log like */
-
-      if(tr->rateHetModel == CAT)
-        partitionLikelihood = evaluateCAT_FLEX(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-            x1_start, x2_start, pr->partitionData[model]->tipVector,
-            tip, width, diagptable, states);
-      else
-        partitionLikelihood = evaluateGAMMA_FLEX(pr->partitionData[model]->wgt,
-            x1_start, x2_start, pr->partitionData[model]->tipVector,
-            tip, width, diagptable, states);
+	  
+	  /* generic slow functions, memory saving option is not implemented for these */
+	  
+	  assert(!tr->saveMemory);
+	  
+	  /* decide wheter CAT or GAMMA is used and compute log like */
+	  
+	  if(tr->rateHetModel == CAT)
+	    partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+						   x1_start, x2_start, pr->partitionData[model]->tipVector,
+						   tip, width, diagptable, states);
+	  else
+	    partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+						     x1_start, x2_start, pr->partitionData[model]->tipVector,
+						     tip, width, diagptable, states);
 #else
-
-      /* for the optimized functions we have a dedicated, optimized function implementation 
-         for each rate heterogeneity and data type combination, we switch over the number of states 
-         and the rate heterogeneity model */
-
-      switch(states)
-      { 	  
-        case 4: /* DNA */
-          {
-            if(tr->rateHetModel == CAT)
-            {		  		  
-              if(tr->saveMemory)
-                partitionLikelihood =  evaluateGTRCAT_SAVE(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-              else
-                partitionLikelihood =  evaluateGTRCAT(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable);
-            }
-            else
-            {		
-              if(tr->saveMemory)		   
-                partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable,
-                    x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
-              else
-                partitionLikelihood =  evaluateGTRGAMMA(pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable); 		    		  
-            }
-          }
-          break;	  	   		   
-        case 20: /* proteins */
-          {
-            if(tr->rateHetModel == CAT)
-            {		   		  
-              if(tr->saveMemory)
-                partitionLikelihood = evaluateGTRCATPROT_SAVE(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable,  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-              else
-                partitionLikelihood = evaluateGTRCATPROT(pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable);		  
-            }
-            else
-            {		    		    		      
-              if(tr->saveMemory)
-                partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable,
-                    x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-
-              else
-                partitionLikelihood = evaluateGTRGAMMAPROT(pr->partitionData[model]->wgt,
-                    x1_start, x2_start, pr->partitionData[model]->tipVector,
-                    tip, width, diagptable);		         
-            }
-          }
-          break;	      		    
-        default:
-          assert(0);	    
-      }	
+	  
+	  /* for the optimized functions we have a dedicated, optimized function implementation 
+	     for each rate heterogeneity and data type combination, we switch over the number of states 
+	     and the rate heterogeneity model */
+	  
+	  switch(states)
+	    { 	  
+	    case 4: /* DNA */
+	      {
+		if(tr->rateHetModel == CAT)
+		  {		  		  
+		    if(tr->saveMemory)
+		      partitionLikelihood =  evaluateGTRCAT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								 x1_start, x2_start, pr->partitionData[model]->tipVector,
+								 tip, width, diagptable, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+		    else
+		      partitionLikelihood =  evaluateGTRCAT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+							    x1_start, x2_start, pr->partitionData[model]->tipVector,
+							    tip, width, diagptable);
+		  }
+		else
+		  {		
+		    if(tr->saveMemory)		   
+		      partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+									  x1_start, x2_start, pr->partitionData[model]->tipVector,
+									  tip, width, diagptable,
+									  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
+		    else
+		      partitionLikelihood =  evaluateGTRGAMMA(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+							      x1_start, x2_start, pr->partitionData[model]->tipVector,
+							      tip, width, diagptable); 		    		  
+		  }
+	      }
+	      break;	  	   		   
+	    case 20: /* proteins */
+	      {
+		if(tr->rateHetModel == CAT)
+		  {		   		  
+		    if(tr->saveMemory)
+		      partitionLikelihood = evaluateGTRCATPROT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								    x1_start, x2_start, pr->partitionData[model]->tipVector,
+								    tip, width, diagptable,  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+		    else
+		      partitionLikelihood = evaluateGTRCATPROT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+							       x1_start, x2_start, pr->partitionData[model]->tipVector,
+							       tip, width, diagptable);		  
+		  }
+		else
+		  {		    		    		      
+		    if(tr->saveMemory)
+		      partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+									     x1_start, x2_start, pr->partitionData[model]->tipVector,
+									     tip, width, diagptable,
+									     x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+		    
+		    else
+		      partitionLikelihood = evaluateGTRGAMMAPROT(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+								 x1_start, x2_start, pr->partitionData[model]->tipVector,
+								 tip, width, diagptable);		         
+		  }
+	      }
+	      break;	      		    
+	    default:
+	      assert(0);	    
+	    }	
 #endif
 
-      /* check that there was no major numerical screw-up, the log likelihood should be < 0.0 always */
+	  /* check that there was no major numerical screw-up, the log likelihood should be < 0.0 always */
+	  
+	  assert(partitionLikelihood < 0.0);
+	  
+	  /* now here is a nasty part, for each partition and each node we maintain an integer counter to count how often 
+	     how many entries per node were scaled by a constant factor. Here we use this information generated during Felsenstein's 
+	     pruning algorithm by the newview() functions to undo the preceding scaling multiplications at the root, for mathematical details 
+	     you should actually read:
+	     
+	     A. Stamatakis: "Orchestrating the Phylogenetic Likelihood Function on Emerging Parallel Architectures". 
+	     In B. Schmidt, editor, Bioinformatics: High Performance Parallel Computer Architectures, 85-115, CRC Press, Taylor & Francis, 2010.
+	     
+	     There's a copy of this book in my office 
+	  */
+	  
+	  if(fastScaling)
+	    partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(minlikelihood);
 
-      assert(partitionLikelihood < 0.0);
-
-      /* now here is a nasty part, for each partition and each node we maintain an integer counter to count how often 
-         how many entries per node were scaled by a constant factor. Here we use this information generated during Felsenstein's 
-         pruning algorithm by the newview() functions to undo the preceding scaling multiplications at the root, for mathematical details 
-         you should actually read:
-
-         A. Stamatakis: "Orchestrating the Phylogenetic Likelihood Function on Emerging Parallel Architectures". 
-         In B. Schmidt, editor, Bioinformatics: High Performance Parallel Computer Architectures, 85-115, CRC Press, Taylor & Francis, 2010.
-
-         There's a copy of this book in my office 
-         */
-
-
-      partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(minlikelihood);
-
-      /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
-
-      /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
-         of this partition for example */
-
-      pr->partitionData[model]->partitionLH = partitionLikelihood;
+	  /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
+	  
+	  /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
+	     of this partition for example */
+	  
+	  pr->partitionData[model]->partitionLH = partitionLikelihood;
+	}
+      else
+	{
+	  /* if the current thread does not have a single site of this partition
+	     it is important to set the per partition log like to 0.0 because 
+	     of the reduction operation that will take place later-on.
+	     That is, the values of tr->perPartitionLH across all threads 
+	     need to be in a consistent state, always !
+	  */
+	  
+	  if(width == 0)	    
+	    pr->partitionData[model]->partitionLH = 0.0;
+	}
     }
-    else
-    {
-      /* if the current thread does not have a single site of this partition
-         it is important to set the per partition log like to 0.0 because 
-         of the reduction operation that will take place later-on.
-         That is, the values of tr->perPartitionLH across all threads 
-         need to be in a consistent state, always !
-         */
-
-      if(width == 0)	    
-        pr->partitionData[model]->partitionLH = 0.0;
-    }
-  }
 }
 
 
@@ -939,16 +969,13 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 
 #ifdef _OPTIMIZED_FUNCTIONS
 
-static inline boolean isGap(unsigned int *x, int pos)
-{
-  return (x[pos / 32] & mask32[pos % 32]);
-}
 
-static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
-    double *x1, double *x2,  
-    double *tipVector, 
-    unsigned char *tipX1, int n, double *diagptable, 
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)					   
+
+static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+						double *x1, double *x2,  
+						double *tipVector, 
+						unsigned char *tipX1, int n, double *diagptable, 
+						double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)					   
 {
   double   sum = 0.0, term;        
   int     i, j, l;   
@@ -990,8 +1017,10 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
       _mm_storel_pd(&term, tv);
 
 
-
-      term = LOG(0.25 * FABS(term));	  
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));	  
 
       sum += wptr[i] * term;
     }    	        
@@ -1034,7 +1063,10 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
       _mm_storel_pd(&term, tv);	  
 
 
-      term = LOG(0.25 * FABS(term));
+       if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
 
 
       sum += wptr[i] * term;
@@ -1046,10 +1078,10 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (int *wptr,
 
 
 
-static double evaluateGTRGAMMAPROT (int *wptr,
-    double *x1, double *x2,  
-    double *tipVector, 
-    unsigned char *tipX1, int n, double *diagptable)
+static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+				    double *x1, double *x2,  
+				    double *tipVector, 
+				    unsigned char *tipX1, int n, double *diagptable)
 {
   double   sum = 0.0, term;        
   int     i, j, l;   
@@ -1077,8 +1109,10 @@ static double evaluateGTRGAMMAPROT (int *wptr,
       _mm_storel_pd(&term, tv);
 
 
-
-      term = LOG(0.25 * FABS(term));
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
 
 
       sum += wptr[i] * term;
@@ -1106,7 +1140,10 @@ static double evaluateGTRGAMMAPROT (int *wptr,
       _mm_storel_pd(&term, tv);	  
 
 
-      term = LOG(0.25 * FABS(term));
+       if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
 
 
       sum += wptr[i] * term;
@@ -1117,9 +1154,9 @@ static double evaluateGTRGAMMAPROT (int *wptr,
 }
 
 
-static double evaluateGTRCATPROT (int *cptr, int *wptr,
-    double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, int n, double *diagptable_start)
+static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				  double *x1, double *x2, double *tipVector,
+				  unsigned char *tipX1, int n, double *diagptable_start)
 {
   double   sum = 0.0, term;
   double  *diagptable,  *left, *right;
@@ -1149,8 +1186,10 @@ static double evaluateGTRCATPROT (int *cptr, int *wptr,
       tv = _mm_hadd_pd(tv, tv);
       _mm_storel_pd(&term, tv);
 
-
-      term = LOG(FABS(term));
+      if(!fastScaling)
+	term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));
 
       sum += wptr[i] * term;
     }      
@@ -1180,7 +1219,10 @@ static double evaluateGTRCATPROT (int *cptr, int *wptr,
       tv = _mm_hadd_pd(tv, tv);
       _mm_storel_pd(&term, tv);
 
-      term = LOG(FABS(term));	 
+      if(!fastScaling)
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));	 
 
       sum += wptr[i] * term;      
     }
@@ -1190,10 +1232,10 @@ static double evaluateGTRCATPROT (int *cptr, int *wptr,
 } 
 
 
-static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
-    double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, int n, double *diagptable_start, 
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
+static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				       double *x1, double *x2, double *tipVector,
+				       unsigned char *tipX1, int n, double *diagptable_start, 
+				       double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
 {
   double   
     sum = 0.0, 
@@ -1239,8 +1281,10 @@ static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
       tv = _mm_hadd_pd(tv, tv);
       _mm_storel_pd(&term, tv);
 
-
-      term = LOG(FABS(term));
+      if(!fastScaling)
+	term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));
 
       sum += wptr[i] * term;
     }      
@@ -1283,7 +1327,10 @@ static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
       tv = _mm_hadd_pd(tv, tv);
       _mm_storel_pd(&term, tv);
 
-      term = LOG(FABS(term));	 
+      if(!fastScaling)
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));	 
 
       sum += wptr[i] * term;      
     }
@@ -1293,10 +1340,10 @@ static double evaluateGTRCATPROT_SAVE (int *cptr, int *wptr,
 } 
 
 
-static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
-    double *x1_start, double *x2_start, double *tipVector, 		      
-    unsigned char *tipX1, int n, double *diagptable_start,
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
+static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				   double *x1_start, double *x2_start, double *tipVector, 		      
+				   unsigned char *tipX1, int n, double *diagptable_start,
+				   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
 {
   double  sum = 0.0, term;       
   int     i;
@@ -1343,7 +1390,10 @@ static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
 
       _mm_store_pd(t, x1v1);
 
-      term = LOG(FABS(t[0] + t[1]));
+      if(!fastScaling)
+	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(FABS(t[0] + t[1]));
 
 
 
@@ -1393,7 +1443,10 @@ static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
       _mm_store_pd(t, x1v1);
 
 
-      term = LOG(FABS(t[0] + t[1]));
+       if(!fastScaling)
+	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(t[0] + t[1]));
 
       sum += wptr[i] * term;
     }    
@@ -1403,11 +1456,11 @@ static double evaluateGTRCAT_SAVE (int *cptr, int *wptr,
 } 
 
 
-static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
-    double *x1_start, double *x2_start, 
-    double *tipVector, 
-    unsigned char *tipX1, const int n, double *diagptable,
-    double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
+static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+					   double *x1_start, double *x2_start, 
+					   double *tipVector, 
+					   unsigned char *tipX1, const int n, double *diagptable,
+					   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
 {
   double   sum = 0.0, term;    
   int     i, j;
@@ -1463,8 +1516,10 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
 
       _mm_store_pd(t, termv);	  	 
 
-
-      term = LOG(0.25 * FABS(t[0] + t[1]));
+       if(!fastScaling)
+	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -1520,8 +1575,10 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
 
       _mm_store_pd(t, termv);
 
-
-      term = LOG(0.25 * FABS(t[0] + t[1]));
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -1532,10 +1589,10 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(int *wptr,
 } 
 
 
-static double evaluateGTRGAMMA(int *wptr,
-    double *x1_start, double *x2_start, 
-    double *tipVector, 
-    unsigned char *tipX1, const int n, double *diagptable)
+static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+			       double *x1_start, double *x2_start, 
+			       double *tipVector, 
+			       unsigned char *tipX1, const int n, double *diagptable)
 {
   double   sum = 0.0, term;    
   int     i, j;
@@ -1582,8 +1639,10 @@ static double evaluateGTRGAMMA(int *wptr,
       _mm_store_pd(t, termv);
 
 
-
-      term = LOG(0.25 * FABS(t[0] + t[1]));
+       if(!fastScaling)
+	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(t[0] + t[1]));
 
 
 
@@ -1628,8 +1687,10 @@ static double evaluateGTRGAMMA(int *wptr,
 
       _mm_store_pd(t, termv);
 
-
-      term = LOG(0.25 * FABS(t[0] + t[1]));
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(t[0] + t[1]));
 
 
 
@@ -1641,9 +1702,9 @@ static double evaluateGTRGAMMA(int *wptr,
 } 
 
 
-static double evaluateGTRCAT (int *cptr, int *wptr,
-    double *x1_start, double *x2_start, double *tipVector, 		      
-    unsigned char *tipX1, int n, double *diagptable_start)
+static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+			      double *x1_start, double *x2_start, double *tipVector, 		      
+			      unsigned char *tipX1, int n, double *diagptable_start)
 {
   double  sum = 0.0, term;       
   int     i;
@@ -1681,8 +1742,10 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 
       _mm_store_pd(t, x1v1);
 
-
-      term = LOG(FABS(t[0] + t[1]));
+       if(!fastScaling)
+	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -1719,8 +1782,10 @@ static double evaluateGTRCAT (int *cptr, int *wptr,
 
       _mm_store_pd(t, x1v1);
 
-
-      term = LOG(FABS(t[0] + t[1]));
+      if(!fastScaling)
+	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;

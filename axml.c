@@ -1040,6 +1040,9 @@ int main (int argc, char *argv[])
   _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
 #endif 
 
+  /* TODO initialize this the proper way ! */
+
+  tr->fastScaling = TRUE;
 
   /* get the start time */
 
@@ -1332,7 +1335,8 @@ int main (int argc, char *argv[])
         assert(0);
     }
 
-  printBothOpen("Starting tree available\n");
+    printBothOpen("Starting tree available\n");
+    
     /* 
        here we do an initial full tree traversal on the starting tree using the Felsenstein pruning algorithm 
        This should basically be the first call to the library that actually computes something :-)
@@ -1341,8 +1345,10 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
+    
+
     evaluateGeneric(tr, partitions, tr->start, TRUE);
-  printBothOpen("Starting tree evaluated\n");
+    printBothOpen("Starting tree evaluated\n");
 
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
