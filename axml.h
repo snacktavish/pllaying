@@ -1616,15 +1616,7 @@ extern double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr 
 inline boolean isGap(unsigned int *x, int pos);
 inline boolean noGap(unsigned int *x, int pos);
 
-#ifdef _IPTOL
-extern void writeCheckpoint();
-#endif
 
-#ifdef _WAYNE_MPI
-
-extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *adef, double *pearsonAverage);
-
-#endif
 
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
