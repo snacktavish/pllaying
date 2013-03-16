@@ -233,6 +233,141 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
   return sum;
 } 
 
+static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+				      double *x1_start, double *x2_start, 
+				      double *tipVector, 
+				      unsigned char *tipX1, const int n, double *diagptable, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods,
+				      double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
+{
+  double   
+    sum = 0.0, 
+    term,
+    *x1,
+    *x2,
+    *x1_ptr = x1_start,
+    *x2_ptr = x2_start;
+    
+  int     
+    i, 
+    j,
+    k;
+
+  /* span is the offset within the likelihood array at an inner node that gets us from the values 
+     of site i to the values of site i + 1 */
+
+  const int 
+    span = states * 4;
+
+#if 0
+  int 
+    vn = virtual_width(n);  
+
+  printf( "n: %d %d\n", n, vn );
+
+  if( tipX1 == 0 )     
+    reorder_back( x1_start, vn, span );
+    
+  reorder_back( x2_start, vn, span );
+#endif
+
+  /* we distingusih between two cases here: one node of the two nodes defining the branch at which we put the virtual root is 
+     a tip. Both nodes can not be tips because we do not allow for two-taxon trees ;-) 
+     Nota that, if a node is a tip, this will always be tipX1. This is done for code simplicity and the flipping of the nodes
+     is done before when we compute the traversal descriptor.     
+     */
+
+  /* the left node is a tip */
+  if(tipX1)
+  {          	
+    /* loop over the sites of this partition */
+    for (i = 0; i < n; i++)
+    {
+      /* access pre-computed tip vector values via a lookup table */
+      x1 = &(tipVector[states * tipX1[i]]);	 
+      /* access the other(inner) node at the other end of the branch */
+
+      if(x2_gap[i / 32] & mask32[i % 32])
+        x2 = x2_gapColumn;
+      else
+	{
+	  x2 = x2_ptr;
+	  x2_ptr += span;
+	}
+
+      /* loop over GAMMA rate categories, hard-coded as 4 in RAxML */
+      for(j = 0, term = 0.0; j < 4; j++)
+        /* loop over states and multiply them with the P matrix */
+        for(k = 0; k < states; k++)
+          term += x1[k] * x2[j * states + k] * diagptable[j * states + k];	          	  	  	    	    	  
+
+      /* take the log of the likelihood and multiply the per-gamma rate likelihood by 1/4.
+         Under the GAMMA model the 4 discrete GAMMA rates all have the same probability 
+         of 0.25 */
+
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
+
+      /* if required get the per-site log likelihoods.
+	 note that these are the plain per site log-likes, not 
+	 multiplied with the pattern weight value */
+      
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
+
+      sum += wptr[i] * term;
+    }     
+  }
+  else
+  {        
+    for (i = 0; i < n; i++) 
+    {
+      /* same as before, only that now we access two inner likelihood vectors x1 and x2 */
+      
+      if(x1_gap[i / 32] & mask32[i % 32])
+        x1 = x1_gapColumn;
+      else
+	{
+	  x1 = x1_ptr;
+	  x1_ptr += span;
+	}    
+
+      if(x2_gap[i / 32] & mask32[i % 32])
+        x2 = x2_gapColumn;
+      else
+	{
+	  x2 = x2_ptr;
+	  x2_ptr += span;
+	}     	  	  
+
+      for(j = 0, term = 0.0; j < 4; j++)
+        for(k = 0; k < states; k++)
+          term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
+
+      if(!fastScaling)
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+      else
+	term = LOG(0.25 * FABS(term));
+      
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
+
+      sum += wptr[i] * term;
+    }                      	
+  }
+
+#if 0
+  if( tipX1 == 0 )     
+    reorder( x1_start, vn, span );
+  
+  reorder( x2_start, vn, span );
+#endif
+
+  return sum;
+} 
+
+
 /* a generic and slow implementation of the CAT model of rate heterogeneity */
 
 static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
@@ -307,6 +442,122 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
       /* as before we now access the likelihood arrayes of two inner nodes */
       left  = &x1[states * i];
       right = &x2[states * i];
+
+      diagptable = &diagptable_start[states * cptr[i]];	  	
+
+      for(l = 0, term = 0.0; l < states; l++)
+        term += left[l] * right[l] * diagptable[l];
+      
+      if(!fastScaling)
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+      else
+	term = LOG(FABS(term));	 
+
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
+
+      sum += wptr[i] * term;      
+    }
+  }
+
+  return  sum;         
+} 
+
+static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+				     double *x1, double *x2, double *tipVector,
+				     unsigned char *tipX1, int n, double *diagptable_start, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods,
+				     double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap)
+{
+  double   
+    sum = 0.0, 
+    term,
+    *diagptable,  
+    *left, 
+    *right,
+    *left_ptr = x1,
+    *right_ptr = x2;
+
+  int     
+    i, 
+    l;                           
+
+  /* chosing between tip vectors and non tip vectors is identical in all flavors of this function ,regardless 
+     of whether we are using CAT, GAMMA, DNA or protein data etc */
+
+  if(tipX1)
+  {                 
+    for (i = 0; i < n; i++) 
+    {
+      /* same as in the GAMMA implementation */
+      left = &(tipVector[states * tipX1[i]]);
+   
+      if(isGap(x2_gap, i))
+        right = x2_gapColumn;
+      else
+	{
+	  right = right_ptr;
+	  right_ptr += states;
+	}	  
+      /* important difference here, we do not have, as for GAMMA 
+         4 P matrices assigned to each site, but just one. However those 
+         P-Matrices can be different for the sites.
+         Hence we index into the precalculated P-matrices for individual sites 
+         via the category pointer cptr[i]
+         */
+      diagptable = &diagptable_start[states * cptr[i]];	           	 
+
+      /* similar to gamma, with the only difference that we do not integrate (sum)
+         over the discrete gamma rates, but simply compute the likelihood of the 
+         site and the given P-matrix */
+
+      for(l = 0, term = 0.0; l < states; l++)
+        term += left[l] * right[l] * diagptable[l];	 	  	   
+
+      /* take the log */
+       if(!fastScaling)
+	 term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+       else
+	 term = LOG(FABS(term));
+
+       /* if required get the per-site log likelihoods.
+	  note that these are the plain per site log-likes, not 
+	  multiplied with the pattern weight value */
+
+       if(getPerSiteLikelihoods)
+	 perSiteLikelihoods[i] = term;
+
+      /* 
+         multiply the log with the pattern weight of this site. 
+         The site pattern for which we just computed the likelihood may 
+         represent several alignment columns sites that have been compressed 
+         into one site pattern if they are exactly identical AND evolve under the same model,
+         i.e., form part of the same partition.
+         */	   	     
+
+      sum += wptr[i] * term;
+    }      
+  }    
+  else
+  {    
+    for (i = 0; i < n; i++) 
+    {	
+      /* as before we now access the likelihood arrayes of two inner nodes */     
+
+      if(isGap(x1_gap, i))
+        left = x1_gapColumn;
+      else
+	{
+	  left = left_ptr;
+	  left_ptr += states;
+	}	
+
+      if(isGap(x2_gap, i))
+        right = x2_gapColumn;
+      else
+	{
+	  right = right_ptr;
+	  right_ptr += states;
+	}	
 
       diagptable = &diagptable_start[states * cptr[i]];	  	
 
@@ -648,14 +899,30 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 
 	  if(getPerSiteLikelihoods)
 	    {	      
-	      if(tr->rateHetModel == CAT)		
-		partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-						       x1_start, x2_start, pr->partitionData[model]->tipVector,
-						       tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+	      if(tr->rateHetModel == CAT)
+		{
+		   if(tr->saveMemory)
+		     partitionLikelihood = evaluateCAT_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								 x1_start, x2_start, pr->partitionData[model]->tipVector,
+								 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE,
+								 x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+		   else
+		     partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+							    x1_start, x2_start, pr->partitionData[model]->tipVector,
+							    tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+		}
 	      else
-		partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-							 x1_start, x2_start, pr->partitionData[model]->tipVector,
-							 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);		
+		{
+		  if(tr->saveMemory)
+		    partitionLikelihood = evaluateGAMMA_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+								  x1_start, x2_start, pr->partitionData[model]->tipVector,
+								  tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE, 
+								  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
+		  else
+		    partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+							     x1_start, x2_start, pr->partitionData[model]->tipVector,
+							     tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+		}
 	    }
 	  else
 	    {
@@ -791,14 +1058,11 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
     numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   /* if evaluate shall return the per-site log likelihoods 
-     fastScaling and memory saving need to be disabled, otherwise this will 
+     fastScaling needs to be disabled, otherwise this will 
      not work */
 
-  if(getPerSiteLikelihoods)
-    {
-      assert(!(tr->fastScaling));
-      assert(!(tr->saveMemory));
-    }
+  if(getPerSiteLikelihoods)          
+    assert(!(tr->fastScaling));     
 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
