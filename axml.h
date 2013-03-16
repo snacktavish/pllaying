@@ -1628,22 +1628,23 @@ inline boolean noGap(unsigned int *x, int pos);
 
 /* work tags for parallel regions */
 
-#define THREAD_NEWVIEW                0        
-#define THREAD_EVALUATE               1
-#define THREAD_MAKENEWZ               2 
-#define THREAD_MAKENEWZ_FIRST         3
-#define THREAD_RATE_CATS              4
-#define THREAD_COPY_RATE_CATS         5
-#define THREAD_COPY_INIT_MODEL        6
-#define THREAD_INIT_PARTITION         7
-#define THREAD_OPT_ALPHA              8
-#define THREAD_OPT_RATE               9
-#define THREAD_COPY_ALPHA             10
-#define THREAD_COPY_RATES             11
-#define THREAD_PER_SITE_LIKELIHOODS   12
-#define THREAD_NEWVIEW_ANCESTRAL      13
-#define THREAD_GATHER_ANCESTRAL       14
-#define THREAD_EXIT_GRACEFULLY        15
+#define THREAD_NEWVIEW                  0        
+#define THREAD_EVALUATE                 1
+#define THREAD_MAKENEWZ                 2 
+#define THREAD_MAKENEWZ_FIRST           3
+#define THREAD_RATE_CATS                4
+#define THREAD_COPY_RATE_CATS           5
+#define THREAD_COPY_INIT_MODEL          6
+#define THREAD_INIT_PARTITION           7
+#define THREAD_OPT_ALPHA                8
+#define THREAD_OPT_RATE                 9
+#define THREAD_COPY_ALPHA               10
+#define THREAD_COPY_RATES               11
+#define THREAD_PER_SITE_LIKELIHOODS     12
+#define THREAD_NEWVIEW_ANCESTRAL        13
+#define THREAD_GATHER_ANCESTRAL         14
+#define THREAD_EXIT_GRACEFULLY          15
+#define THREAD_EVALUATE_PER_SITE_LIKES  16
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);

@@ -870,8 +870,11 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* start the parallel region and tell all threads to compute the log likelihood for 
      their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
      */
-
-  masterBarrier(THREAD_EVALUATE, tr, pr);
+  
+  if(getPerSiteLikelihoods)
+    masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+  else
+    masterBarrier(THREAD_EVALUATE, tr, pr);
 
   /* and now here we explicitly do the reduction operation , that is add over the 
      per-thread and per-partition log likelihoods to obtain the overall log like 
