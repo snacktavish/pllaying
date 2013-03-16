@@ -120,19 +120,18 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
   rax_free(lza);
 }
 
-#ifndef _OPTIMIZED_FUNCTIONS
 /* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
 
 static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
 				 double *x1_start, double *x2_start, 
 				 double *tipVector, 
-				 unsigned char *tipX1, const int n, double *diagptable, const int states)
+				 unsigned char *tipX1, const int n, double *diagptable, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods)
 {
   double   
     sum = 0.0, 
-        term,
-        *x1,
-        *x2;
+    term,
+    *x1,
+    *x2;
 
   int     
     i, 
@@ -145,15 +144,17 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
   const int 
     span = states * 4;
 
-
-  int vn = virtual_width(n);  
+#if 0
+  int 
+    vn = virtual_width(n);  
 
   printf( "n: %d %d\n", n, vn );
 
-  if( tipX1 == 0 ) {
+  if( tipX1 == 0 )     
     reorder_back( x1_start, vn, span );
-  }
+    
   reorder_back( x2_start, vn, span );
+#endif
 
   /* we distingusih between two cases here: one node of the two nodes defining the branch at which we put the virtual root is 
      a tip. Both nodes can not be tips because we do not allow for two-taxon trees ;-) 
@@ -187,6 +188,13 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
       else
 	term = LOG(0.25 * FABS(term));
 
+      /* if required get the per-site log likelihoods.
+	 note that these are the plain per site log-likes, not 
+	 multiplied with the pattern weight value */
+      
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
+
       sum += wptr[i] * term;
     }     
   }
@@ -207,15 +215,20 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
 	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
       else
 	term = LOG(0.25 * FABS(term));
+      
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
 
       sum += wptr[i] * term;
     }                      	
   }
-  if( tipX1 == 0 ) {
-    reorder( x1_start, vn, span );
-  }
-  reorder( x2_start, vn, span );
 
+#if 0
+  if( tipX1 == 0 )     
+    reorder( x1_start, vn, span );
+  
+  reorder( x2_start, vn, span );
+#endif
 
   return sum;
 } 
@@ -224,14 +237,14 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
 
 static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
 				double *x1, double *x2, double *tipVector,
-				unsigned char *tipX1, int n, double *diagptable_start, const int states)
+				unsigned char *tipX1, int n, double *diagptable_start, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods)
 {
   double   
     sum = 0.0, 
-        term,
-        *diagptable,  
-        *left, 
-        *right;
+    term,
+    *diagptable,  
+    *left, 
+    *right;
 
   int     
     i, 
@@ -269,6 +282,13 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
        else
 	 term = LOG(FABS(term));
 
+       /* if required get the per-site log likelihoods.
+	  note that these are the plain per site log-likes, not 
+	  multiplied with the pattern weight value */
+
+       if(getPerSiteLikelihoods)
+	 perSiteLikelihoods[i] = term;
+
       /* 
          multiply the log with the pattern weight of this site. 
          The site pattern for which we just computed the likelihood may 
@@ -298,13 +318,16 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
       else
 	term = LOG(FABS(term));	 
 
+      if(getPerSiteLikelihoods)
+	perSiteLikelihoods[i] = term;
+
       sum += wptr[i] * term;      
     }
   }
 
   return  sum;         
 } 
-#endif
+
 
 /* below are the function headers for unreadeble highly optimized versions of the above functions 
    for DNA and protein data that also use SSE3 intrinsics and implement some memory saving tricks.
@@ -383,7 +406,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
 
 /* This is the core function for computing the log likelihood at a branch */
 
-void evaluateIterative(tree *tr, partitionList *pr)
+void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihoods)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
      are stored in the very important traversal array data structure that describes a partial or full tree traversal */
@@ -620,72 +643,89 @@ void evaluateIterative(tree *tr, partitionList *pr)
 						     tip, width, diagptable, states);
 #else
 	  
-	  /* for the optimized functions we have a dedicated, optimized function implementation 
-	     for each rate heterogeneity and data type combination, we switch over the number of states 
-	     and the rate heterogeneity model */
-	  
-	  switch(states)
-	    { 	  
-	    case 4: /* DNA */
-	      {
-		if(tr->rateHetModel == CAT)
-		  {		  		  
-		    if(tr->saveMemory)
-		      partitionLikelihood =  evaluateGTRCAT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-								 x1_start, x2_start, pr->partitionData[model]->tipVector,
-								 tip, width, diagptable, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-		    else
-		      partitionLikelihood =  evaluateGTRCAT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-							    x1_start, x2_start, pr->partitionData[model]->tipVector,
-							    tip, width, diagptable);
-		  }
-		else
-		  {		
-		    if(tr->saveMemory)		   
-		      partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-									  x1_start, x2_start, pr->partitionData[model]->tipVector,
-									  tip, width, diagptable,
-									  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
-		    else
-		      partitionLikelihood =  evaluateGTRGAMMA(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-							      x1_start, x2_start, pr->partitionData[model]->tipVector,
-							      tip, width, diagptable); 		    		  
-		  }
-	      }
-	      break;	  	   		   
-	    case 20: /* proteins */
-	      {
-		if(tr->rateHetModel == CAT)
-		  {		   		  
-		    if(tr->saveMemory)
-		      partitionLikelihood = evaluateGTRCATPROT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-								    x1_start, x2_start, pr->partitionData[model]->tipVector,
-								    tip, width, diagptable,  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-		    else
-		      partitionLikelihood = evaluateGTRCATPROT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-							       x1_start, x2_start, pr->partitionData[model]->tipVector,
-							       tip, width, diagptable);		  
-		  }
-		else
-		  {		    		    		      
-		    if(tr->saveMemory)
-		      partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-									     x1_start, x2_start, pr->partitionData[model]->tipVector,
-									     tip, width, diagptable,
-									     x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-		    
-		    else
-		      partitionLikelihood = evaluateGTRGAMMAPROT(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-								 x1_start, x2_start, pr->partitionData[model]->tipVector,
-								 tip, width, diagptable);		         
-		  }
-	      }
-	      break;	      		    
-	    default:
-	      assert(0);	    
-	    }	
-#endif
+	  /* if we want to compute the per-site likelihoods, we use the generic evaluate function implementations 
+	     for this, because the slowdown is not that dramatic */
 
+	  if(getPerSiteLikelihoods)
+	    {	      
+	      if(tr->rateHetModel == CAT)		
+		partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+						       x1_start, x2_start, pr->partitionData[model]->tipVector,
+						       tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+	      else
+		partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+							 x1_start, x2_start, pr->partitionData[model]->tipVector,
+							 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);		
+	    }
+	  else
+	    {
+	      /* for the optimized functions we have a dedicated, optimized function implementation 
+		 for each rate heterogeneity and data type combination, we switch over the number of states 
+		 and the rate heterogeneity model */
+	      
+	      switch(states)
+		{ 	  
+		case 4: /* DNA */
+		  {
+		    if(tr->rateHetModel == CAT)
+		      {		  		  
+			if(tr->saveMemory)
+			  partitionLikelihood =  evaluateGTRCAT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								     x1_start, x2_start, pr->partitionData[model]->tipVector,
+								     tip, width, diagptable, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+			else
+			  partitionLikelihood =  evaluateGTRCAT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								x1_start, x2_start, pr->partitionData[model]->tipVector,
+								tip, width, diagptable);
+		      }
+		    else
+		      {		
+			if(tr->saveMemory)		   
+			  partitionLikelihood =  evaluateGTRGAMMA_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+									      x1_start, x2_start, pr->partitionData[model]->tipVector,
+									      tip, width, diagptable,
+									      x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
+			else
+			  partitionLikelihood =  evaluateGTRGAMMA(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+								  x1_start, x2_start, pr->partitionData[model]->tipVector,
+								  tip, width, diagptable); 		    		  
+		      }
+		  }
+		  break;	  	   		   
+		case 20: /* proteins */
+		  {
+		    if(tr->rateHetModel == CAT)
+		      {		   		  
+			if(tr->saveMemory)
+			  partitionLikelihood = evaluateGTRCATPROT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+									x1_start, x2_start, pr->partitionData[model]->tipVector,
+									tip, width, diagptable,  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+			else
+			  partitionLikelihood = evaluateGTRCATPROT(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+								   x1_start, x2_start, pr->partitionData[model]->tipVector,
+								   tip, width, diagptable);		  
+		      }
+		    else
+		      {		    		    		      
+			if(tr->saveMemory)
+			  partitionLikelihood = evaluateGTRGAMMAPROT_GAPPED_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+										 x1_start, x2_start, pr->partitionData[model]->tipVector,
+										 tip, width, diagptable,
+										 x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
+			
+			else
+			  partitionLikelihood = evaluateGTRGAMMAPROT(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+								     x1_start, x2_start, pr->partitionData[model]->tipVector,
+								     tip, width, diagptable);		         
+		      }
+		  }
+		  break;	      		    
+		default:
+		  assert(0);	    
+		}
+	    }
+#endif
+	      
 	  /* check that there was no major numerical screw-up, the log likelihood should be < 0.0 always */
 	  
 	  assert(partitionLikelihood < 0.0);
@@ -703,7 +743,7 @@ void evaluateIterative(tree *tr, partitionList *pr)
 	  
 	  if(fastScaling)
 	    partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(minlikelihood);
-
+	  
 	  /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
 	  
 	  /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
@@ -729,7 +769,7 @@ void evaluateIterative(tree *tr, partitionList *pr)
 
 
 
-void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal)
+void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -739,15 +779,26 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
 
   nodeptr 
     q = p->back; 
-  int 
-    i,
-    model;
+  
 
   boolean
         p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
         q_recom = FALSE;
 
-  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  int
+    i,
+    model,
+    numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
+  /* if evaluate shall return the per-site log likelihoods 
+     fastScaling and memory saving need to be disabled, otherwise this will 
+     not work */
+
+  if(getPerSiteLikelihoods)
+    {
+      assert(!(tr->fastScaling));
+      assert(!(tr->saveMemory));
+    }
 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
@@ -841,7 +892,21 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-  evaluateIterative(tr, pr);
+  evaluateIterative(tr, pr, getPerSiteLikelihoods); //TRUE
+
+  /*
+    if we want to obtain per-site rates they have initially been stored 
+     in arrays that are associated to the partition, now we 
+     copy them into the vector tr->lhs[].
+     We may also chose that the user needs to rpovide an array, but this can be decided later-on.
+  */
+
+  if(getPerSiteLikelihoods) //TRUE
+    {
+      for(model = 0; model < pr->numberOfPartitions; model++)
+	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width * sizeof(double));
+    }
+
 #endif
 
   for(model = 0; model < pr->numberOfPartitions; model++)
@@ -849,6 +914,29 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
+
+  /* the code below is mainly for testing if the per-site log 
+     likelihoods we have stored in tr->lhs yield the same 
+     likelihood as the likelihood we computed. 
+     For numerical reasons we need to make a dirt ABS(difference) < epsilon
+     comparison */
+     
+  if(getPerSiteLikelihoods) //TRUE
+    {
+      double 
+	likelihood = 0;
+
+      /* note that in tr->lhs, we just store the likelihood of 
+	 one representative of a potentially compressed pattern,
+	 hence, we need to multiply the elemnts with the pattern 
+	 weight vector */
+
+      for(i = 0; i < tr->originalCrunchedLength; i++)
+	likelihood += (tr->lhs[i] * tr->aliaswgt[i]);
+         
+      assert(ABS(tr->likelihood - likelihood) < 0.00001);
+    }
+
 
   if(tr->useRecom)
   {
@@ -882,7 +970,7 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
      will then be used for calculating per-site log likelihoods 
      for each site individually and independently */
 
-  evaluateGeneric (tr, pr, tr->start, TRUE);
+  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
 
   //likelihood = tr->likelihood;
 

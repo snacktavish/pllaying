@@ -912,6 +912,9 @@ typedef struct {
    */
   double *sumBuffer; 
 
+  /* Buffer to store the per-site log likelihoods */
+  double *perSiteLikelihoods;
+
   /* This buffer of size width is used to store the ancestral state at a node of the tree. */
   double *ancestralBuffer;
 
@@ -1488,7 +1491,7 @@ extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef
 extern boolean bootStop(tree *tr, hashtable *h, int numberOfTrees, double *pearsonAverage, unsigned int **bitVectors, int treeVectorLength, unsigned int vectorLength);
 extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef);
 extern double evaluatePartialGeneric (tree *, partitionList *pr, int i, double ki, int _model);
-extern void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal);
+extern void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
 extern void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked);
 
 extern void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p);
@@ -1524,7 +1527,7 @@ extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
 
 extern void newviewIterative(tree *tr, partitionList *pr, int startIndex);
 
-extern void evaluateIterative(tree *tr, partitionList *pr);
+extern void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihoods);
 
 //extern void *malloc_aligned( size_t size);
 

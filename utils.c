@@ -1236,9 +1236,13 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
       localPartitions->partitionData[model]->xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));
 
       localPartitions->partitionData[model]->sumBuffer = (double *)rax_malloc_aligned(width *
-									   (size_t)(localPartitions->partitionData[model]->states) *
-									   discreteRateCategories(localTree->rateHetModel) *
-									   sizeof(double));
+										      (size_t)(localPartitions->partitionData[model]->states) *
+										      discreteRateCategories(localTree->rateHetModel) *
+										      sizeof(double));
+
+      /* Initialize buffers to store per-site log likelihoods */
+
+      localPartitions->partitionData[model]->perSiteLikelihoods = (double *)rax_malloc_aligned(width * sizeof(double));
 
       /* initialize data structures for per-site likelihood scaling */
 

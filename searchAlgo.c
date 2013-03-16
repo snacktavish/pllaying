@@ -829,7 +829,7 @@ boolean testInsertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
   {     
     if (! insertBIG(tr, pr, p, q))       return FALSE;
 
-    evaluateGeneric(tr, pr, p->next->next, FALSE);
+    evaluateGeneric(tr, pr, p->next->next, FALSE, FALSE);
 
     if(tr->likelihood > tr->bestOfNode)
     {
@@ -1146,7 +1146,7 @@ boolean testInsertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
   {
     if (! insertBIG(tr, pr, p, q))       return FALSE;
 
-    evaluateGeneric(tr, pr, p->next->next, FALSE);
+    evaluateGeneric(tr, pr, p->next->next, FALSE, FALSE);
   }
   else
   {
@@ -1414,7 +1414,7 @@ static void readTree(tree *tr, partitionList *pr, FILE *f)
 
   }
 
-  evaluateGeneric(tr, pr, tr->start, TRUE);
+  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
 
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
@@ -2095,7 +2095,7 @@ cleanup_fast:
   {
     /* RE-TRAVERSE THE ENTIRE TREE */
 
-    evaluateGeneric(tr, pr, tr->start, TRUE);
+    evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
 #endif
@@ -2276,7 +2276,7 @@ cleanup:
   /* do a final full tree traversal, not sure if this is required here */
 
   {
-    evaluateGeneric(tr, pr, tr->start, TRUE);
+    evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
 
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
@@ -2316,7 +2316,7 @@ treeEvaluate (tree *tr, partitionList *pr, int maxSmoothIterations)       /* Eva
 {
   smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
-  evaluateGeneric(tr, pr, tr->start, FALSE);
+  evaluateGeneric(tr, pr, tr->start, FALSE, FALSE);
 
   return TRUE;
 }

@@ -1347,7 +1347,7 @@ int main (int argc, char *argv[])
 
     
 
-    evaluateGeneric(tr, partitions, tr->start, TRUE);
+    evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
     printBothOpen("Starting tree evaluated\n");
 
 
@@ -1388,7 +1388,7 @@ int main (int argc, char *argv[])
       // double t, masterTime = gettime();
       ticks t1 = getticks();
       printBothOpen("Eval once LH \n");
-      evaluateGeneric(tr, partitions, tr->start, TRUE);
+      evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
       printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
       treeEvaluate(tr, partitions, 32);
       printBothOpen("tree evaluated: %f\n", tr->likelihood);
@@ -1404,7 +1404,7 @@ int main (int argc, char *argv[])
           printBothOpen("Random node %d\n", p->number);
           rearrangeBIG(tr, pr, p, 1, 15); 
           printBothOpen("Done rearrangements \n");
-          evaluateGeneric(tr, tr->start, TRUE);	 
+          evaluateGeneric(tr, tr->start, TRUE, FALSE);	 
           printBothOpen("lh: after %d rearrangements: %f \n",i, tr->likelihood);
           modOpt(tr, 15.0);
           if(i>7)
