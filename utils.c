@@ -1000,6 +1000,8 @@ void init_default(tree *tr)
   tr->multiStateModel  = GTR_MULTI_STATE;
   tr->saveMemory = FALSE;
 
+  tr->fastScaling = FALSE;
+
   tr->manyPartitions = FALSE;
 
   tr->startingTree = randomTree;
@@ -1172,7 +1174,9 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
     ancestralVectorWidth = 0,
     model; 
 
-  int tid  = localTree->threadID; 
+  int 
+    tid  = localTree->threadID,
+    innerNodes = localTree->mxtips - 2;
 
   if(tid > 0)
       localTree->rateCategory    = (int *)    rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
@@ -1215,13 +1219,56 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
 
       localPartitions->partitionData[model]->xVector = (double **)rax_calloc(sizeof(double*), (size_t)localTree->mxtips);
 
+
+      /* 
+	 Initializing the xVector array like this is absolutely required !!!!
+	 I don't know which programming genious removed this, but it must absolutely stay in here!!!!
+      */
+      
+      {
+	int k;
+	
+	for(k = 0; k < localTree->mxtips; k++)
+	      localPartitions->partitionData[model]->xVector[k] = (double*)NULL;       
+      }
+
+
       localPartitions->partitionData[model]->xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));
 
       localPartitions->partitionData[model]->sumBuffer = (double *)rax_malloc_aligned(width *
-									   (size_t)(localPartitions->partitionData[model]->states) *
-									   discreteRateCategories(localTree->rateHetModel) *
-									   sizeof(double));
+										      (size_t)(localPartitions->partitionData[model]->states) *
+										      discreteRateCategories(localTree->rateHetModel) *
+										      sizeof(double));
 
+      /* Initialize buffers to store per-site log likelihoods */
+
+      localPartitions->partitionData[model]->perSiteLikelihoods = (double *)rax_malloc_aligned(width * sizeof(double));
+
+      /* initialize data structures for per-site likelihood scaling */
+
+      if(localTree->fastScaling)
+	{
+	   localPartitions->partitionData[model]->expVector      = (int **)NULL;
+	   localPartitions->partitionData[model]->expSpaceVector = (size_t *)NULL;
+	}
+      else
+	{	 
+	  localPartitions->partitionData[model]->expVector      = (int **)rax_malloc(sizeof(int*) * innerNodes);
+	   
+	  /* 
+	     Initializing the expVector array like this is absolutely required !!!!
+	     Not doing this can (and did) cause segmentation faults !!!!
+	  */
+	  
+	  {
+	    int k;
+
+	    for(k = 0; k < innerNodes; k++)
+	      localPartitions->partitionData[model]->expVector[k] = (int*)NULL; 
+	  }
+
+	  localPartitions->partitionData[model]->expSpaceVector = (size_t *)rax_calloc(innerNodes, sizeof(size_t));
+	}
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 

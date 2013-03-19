@@ -862,11 +862,11 @@ static void broadCastRates(tree *localTree, tree *tr, partitionList *localPr, pa
     @param localTree local tree 
     @param tid worker id 
  */ 
-static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int tid)
+static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
 {
   int model;
 
-  evaluateIterative(localTree, localPr);
+  evaluateIterative(localTree, localPr, getPerSiteLikelihoods);
 
   /* when this is done we need to write the per-thread log likelihood to the 
      global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
@@ -875,6 +875,12 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
      the actual sum over the entries in the reduction buffer will then be computed 
      by the master thread which ensures that the sum is determinsitic */
 
+  if(getPerSiteLikelihoods)
+    {
+      /* TODO Andre */
+      assert(0);
+    }
+
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
   /* 
      aberer: I implemented this as a mpi_gather operation into this buffer, 
@@ -882,7 +888,9 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
      master takes care of the reduction; 
   */
 
-  double buf[localPr->numberOfPartitions];
+  double 
+    buf[localPr->numberOfPartitions];
+  
   for(model = 0; model < localPr->numberOfPartitions; ++model)
     buf[model] = localPr->partitionData[model]->partitionLH;
 
@@ -890,17 +898,25 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
   ASSIGN_GATHER(globalResult, buf, localPr->numberOfPartitions, DOUBLE, tid);
 #else 
   /* the efficient mpi version: a proper reduce  */
-  double buf[localPr->numberOfPartitions];
+  double 
+    buf[localPr->numberOfPartitions];
+  
   for(model = 0; model < localPr->numberOfPartitions; ++model)
-      buf[model] = localPr->partitionData[model]->partitionLH;
-  double targetBuf[localPr->numberOfPartitions];
+    buf[model] = localPr->partitionData[model]->partitionLH;
+
+  double 
+    targetBuf[localPr->numberOfPartitions];
+  
   memset(targetBuf, 0, sizeof(double) * localPr->numberOfPartitions);
+  
   MPI_Reduce(buf, targetBuf, localPr->numberOfPartitions, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  if(MASTER_P) {
-	  for(model = 0; model < localPr->numberOfPartitions; ++model) {
-		  localPr->partitionData[model]->partitionLH = targetBuf[model];
-	  }
-  }
+  
+  if(MASTER_P) 
+    {
+      for(model = 0; model < localPr->numberOfPartitions; ++model) {
+	localPr->partitionData[model]->partitionLH = targetBuf[model];
+      }
+    }
 #endif
 }
 
@@ -1016,6 +1032,8 @@ char* getJobName(int type)
       return "THREAD_GATHER_ANCESTRAL";
     case THREAD_EXIT_GRACEFULLY: 
       return "THREAD_EXIT_GRACEFULLY";
+    case THREAD_EVALUATE_PER_SITE_LIKES:
+      return "THREAD_EVALUATE_PER_SITE_LIKES";
     default: assert(0); 
     }
 }
@@ -1078,7 +1096,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
       newviewIterative(localTree, localPr, 0);
       break;     
     case THREAD_EVALUATE: 
-      reduceEvaluateIterative(localTree, localPr, tid);
+      reduceEvaluateIterative(localTree, localPr, tid, FALSE);
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
@@ -1143,7 +1161,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
       if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
-	reduceEvaluateIterative(localTree, localPr, tid);
+	reduceEvaluateIterative(localTree, localPr, tid, FALSE);
 
       break;           
     case THREAD_OPT_RATE:
@@ -1163,7 +1181,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	 to be propagated throughout the entire tree */
 
       if(localTree->td[0].functionType == THREAD_OPT_RATE)
-	reduceEvaluateIterative(localTree, localPr, tid);
+	reduceEvaluateIterative(localTree, localPr, tid, FALSE);
 
       break;                       
     case THREAD_COPY_INIT_MODEL:
@@ -1349,6 +1367,9 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	return FALSE; 
       }
       break; 
+    case THREAD_EVALUATE_PER_SITE_LIKES: 
+      reduceEvaluateIterative(localTree, localPr, tid, TRUE);
+      break;
     default:
       printf("Job %d\n", currentJob);
       assert(0);

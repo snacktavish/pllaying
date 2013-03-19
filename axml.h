@@ -884,10 +884,19 @@ typedef struct {
 
 
   /* LIKELIHOOD VECTORS */
+
   /* partial LH Inner vectors  ancestral vectors, we have 2*tips - 3 inner nodes */
   double          **xVector;          /* Probability entries for inner nodes */
   unsigned char   **yVector;          /* Tip entries (sequence) for tip nodes */
   unsigned int     *globalScaler;     /* Counters for scaling operations done at node i */
+
+  /* data structures for conducting per-site likelihood scaling.
+     this allows to compute the per-site log likelihood scores 
+     needed for RELL-based bootstrapping and all sorts of statistical 
+     tests for comparing trees ! */
+  int              **expVector;
+  size_t           *expSpaceVector;
+
   /* These are for the saveMemory option (tracking gaps to skip computations and memory) */
   size_t           *xSpaceVector;     
   int               gapVectorLength;
@@ -898,8 +907,15 @@ typedef struct {
   size_t parsimonyLength;
   parsimonyNumber *parsVect; 
 
-  /* These buffers of size width are used to pre-compute ?? */
+  /* This buffer of size width is used to store intermediate values for the branch length optimization under 
+     newton-raphson. The data in here can be re-used for all iterations irrespective of the branch length.
+   */
   double *sumBuffer; 
+
+  /* Buffer to store the per-site log likelihoods */
+  double *perSiteLikelihoods;
+
+  /* This buffer of size width is used to store the ancestral state at a node of the tree. */
   double *ancestralBuffer;
 
   /* From tree */
@@ -1038,7 +1054,8 @@ typedef  struct  {
 #endif
   /* E recomp */
 
- 
+  
+  boolean fastScaling;
   boolean saveMemory;
   int              startingTree;
   long             randomNumberSeed;
@@ -1474,7 +1491,7 @@ extern void computeBootStopOnly(tree *tr, char *bootStrapFileName, analdef *adef
 extern boolean bootStop(tree *tr, hashtable *h, int numberOfTrees, double *pearsonAverage, unsigned int **bitVectors, int treeVectorLength, unsigned int vectorLength);
 extern void computeConsensusOnly(tree *tr, char* treeSetFileName, analdef *adef);
 extern double evaluatePartialGeneric (tree *, partitionList *pr, int i, double ki, int _model);
-extern void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal);
+extern void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
 extern void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked);
 
 extern void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p);
@@ -1510,7 +1527,7 @@ extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN,
 
 extern void newviewIterative(tree *tr, partitionList *pr, int startIndex);
 
-extern void evaluateIterative(tree *tr, partitionList *pr);
+extern void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihoods);
 
 //extern void *malloc_aligned( size_t size);
 
@@ -1599,15 +1616,10 @@ extern void restart(tree *tr, partitionList *pr);
 
 extern double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p);
 
-#ifdef _IPTOL
-extern void writeCheckpoint();
-#endif
+inline boolean isGap(unsigned int *x, int pos);
+inline boolean noGap(unsigned int *x, int pos);
 
-#ifdef _WAYNE_MPI
 
-extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *adef, double *pearsonAverage);
-
-#endif
 
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
@@ -1616,22 +1628,23 @@ extern boolean computeBootStopMPI(tree *tr, char *bootStrapFileName, analdef *ad
 
 /* work tags for parallel regions */
 
-#define THREAD_NEWVIEW                0        
-#define THREAD_EVALUATE               1
-#define THREAD_MAKENEWZ               2 
-#define THREAD_MAKENEWZ_FIRST         3
-#define THREAD_RATE_CATS              4
-#define THREAD_COPY_RATE_CATS         5
-#define THREAD_COPY_INIT_MODEL        6
-#define THREAD_INIT_PARTITION         7
-#define THREAD_OPT_ALPHA              8
-#define THREAD_OPT_RATE               9
-#define THREAD_COPY_ALPHA             10
-#define THREAD_COPY_RATES             11
-#define THREAD_PER_SITE_LIKELIHOODS   12
-#define THREAD_NEWVIEW_ANCESTRAL      13
-#define THREAD_GATHER_ANCESTRAL       14
-#define THREAD_EXIT_GRACEFULLY        15
+#define THREAD_NEWVIEW                  0        
+#define THREAD_EVALUATE                 1
+#define THREAD_MAKENEWZ                 2 
+#define THREAD_MAKENEWZ_FIRST           3
+#define THREAD_RATE_CATS                4
+#define THREAD_COPY_RATE_CATS           5
+#define THREAD_COPY_INIT_MODEL          6
+#define THREAD_INIT_PARTITION           7
+#define THREAD_OPT_ALPHA                8
+#define THREAD_OPT_RATE                 9
+#define THREAD_COPY_ALPHA               10
+#define THREAD_COPY_RATES               11
+#define THREAD_PER_SITE_LIKELIHOODS     12
+#define THREAD_NEWVIEW_ANCESTRAL        13
+#define THREAD_GATHER_ANCESTRAL         14
+#define THREAD_EXIT_GRACEFULLY          15
+#define THREAD_EVALUATE_PER_SITE_LIKES  16
 
 void threadMakeVector(tree *tr, int tid);
 void threadComputeAverage(tree *tr, int tid);
@@ -1664,35 +1677,68 @@ void allocNodex(tree *tr, int tid, int n);
 
 
 #ifdef __AVX
+
+
+void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
+				   double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+				   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+				   int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling,
+				   unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
+				   double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
+
+void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
+				       int *cptr,
+				       double *x1, double *x2, double *x3, double *tipVector,
+				       int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+				       int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling,
+				       unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
+				       double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
+
+void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
+				      double *x1_start, double *x2_start, double *x3_start,
+				      double *extEV, double *tipVector,
+				      int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+				      const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling,
+				      unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap, 
+				      double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn
+				      );
+
+void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
+					 double *x1_start, double *x2_start, double *x3_start, double *extEV, double *tipVector,
+					 int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, 
+					 double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling,
+					 unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap, 
+					 double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn); 
+
 void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
- 	       double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
- 	       unsigned char *tipX1, unsigned char *tipX2,
- 	       int n,  double *left, double *right, int *wgt, int *scalerIncrement);
+    double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+    int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 
 
 void newviewGenericCATPROT_AVX(int tipCase, double *extEV,
- 		       int *cptr,
- 		       double *x1, double *x2, double *x3, double *tipVector,
- 		       unsigned char *tipX1, unsigned char *tipX2,
- 		       int n, double *left, double *right, int *wgt, int *scalerIncrement);
+    int *cptr,
+    double *x1, double *x2, double *x3, double *tipVector,
+    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+    int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 
 
 void newviewGTRGAMMA_AVX(int tipCase,
-			 double *x1_start, double *x2_start, double *x3_start,
-			 double *EV, double *tipVector,
-			 unsigned char *tipX1, unsigned char *tipX2,
-			 const int n, double *left, double *right, int *wgt, int *scalerIncrement
-			 );
-void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
-			       int *cptr,
-			       double *x1, double *x2, double *x3, double *tipVector,
-			       unsigned char *tipX1, unsigned char *tipX2,
-			       int n, double *left, double *right, int *wgt, int *scalerIncrement);
+    double *x1_start, double *x2_start, double *x3_start,
+    double *EV, double *tipVector,
+    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+    const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 
 void newviewGTRGAMMAPROT_AVX(int tipCase,
 			     double *x1, double *x2, double *x3, double *extEV, double *tipVector,
-			     unsigned char *tipX1, unsigned char *tipX2, int n, 
-			     double *left, double *right, int *wgt, int *scalerIncrement);
+			     int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, 
+			     double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
+
+void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
+			   int *cptr,
+			   double *x1, double *x2, double *x3, double *tipVector,
+			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			   int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 
 #endif
 
