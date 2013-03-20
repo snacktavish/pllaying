@@ -12,11 +12,11 @@
 
 struct item_t
 {
-  int indent;
+  int depth;
   char * name;
   char * branch;
   int leaf;
-  int children;
+  int rank;
 };
 
 struct stack_t
@@ -60,8 +60,6 @@ stack_clear (struct stack_t ** stack)
   while (*stack) stack_pop (stack);
 }
 
-//struct stack_t * stack = NULL;
-
 static char * 
 readFile (const char * filename, int * n)
 {
@@ -96,13 +94,10 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
   struct ltoken_t token;
   int input;
   struct ltoken_t prev_token;
-  int nop = 0;
-  int indent = 0;
-
-  printf ("%s\n", rawdata);
+  int nop = 0;          /* number of open parentheses */
+  int depth = 0;
 
   prev_token.class = LEX_UNKNOWN;
-
 
   input = *inp;
 
@@ -116,7 +111,7 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
        //printf ("LEX_OPAREN\n");
         ++nop;
         memcpy (&prev_token, &token, sizeof (struct ltoken_t));
-        ++indent;
+        ++depth;
         break;
 
        case LEX_CPAREN:
@@ -135,11 +130,11 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
         if (!item) item = (struct item_t *) calloc (1, sizeof (struct item_t)); // possibly not nec
         if (item->name   == NULL) item->name   = strdup ("INTERNAL_NODE");
         if (item->branch == NULL) item->branch = strdup ("0.000000"); 
-        item->indent = indent;
+        item->depth = depth;
         stack_push (stack, item);
         item_active  = 1;       /* active = 1 */
         item = NULL;
-        --indent;
+        --depth;
         break;
 
        case LEX_STRING:
@@ -151,7 +146,7 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
         if (!item) item = (struct item_t *) calloc (1, sizeof (struct item_t));
         item->name = strndup (token.lexeme, token.len);
         item_active = 1;
-        item->indent = indent;
+        item->depth = depth;
         if (prev_token.class == LEX_COMMA  ||
             prev_token.class == LEX_OPAREN ||
             prev_token.class == LEX_UNKNOWN) item->leaf = 1;
@@ -180,7 +175,7 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
            item->name = strndup (token.lexeme, token.len);
          }
         item_active = 1;
-        item->indent = indent;
+        item->depth = depth;
         memcpy (&prev_token, &token, sizeof (struct ltoken_t));
         break;
 
@@ -240,17 +235,19 @@ parse_newick (char * rawdata, struct stack_t ** stack, int * inp)
 void stack_dump(struct stack_t ** stack)
 {
   struct item_t * item;
+  struct stack_t * head;
   int i;
 
-  while ((item = (struct item_t *)stack_pop(stack)))
+  head = *stack;
+  while (head)
    {
-     for (i = 0; i < item->indent; ++ i)
-       printf ("|\t");
-     printf ("%s:%s %d", item->name, item->branch, item->children);
-     if (item->leaf) printf (" *\n"); else printf ("\n");
-     free (item->name);
-     free (item->branch);
-     free (item);
+     item = (struct item_t *) head->item;
+
+     for (i = 0; i < item->depth; ++ i) printf ("\t");
+
+     printf ("%s:%s\n", item->name, item->branch);
+
+     head = head->next;
    }
 }
 
@@ -259,9 +256,9 @@ assign_ranks (struct stack_t * stack, int * nodes, int * leaves)
 {
   struct stack_t * head;
   struct item_t * item, * tmp;
-  struct stack_t * numbers = NULL;
+  struct stack_t * preorder = NULL;
   int children;
-  int indent;
+  int depth;
 
   *nodes = *leaves = 0;
 
@@ -274,23 +271,23 @@ assign_ranks (struct stack_t * stack, int * nodes, int * leaves)
     
     if (item->leaf)  ++ (*leaves);
 
-    if (numbers)
+    if (preorder)
      {
-       tmp = (struct item_t *)numbers->item;
+       tmp = (struct item_t *) preorder->item;
        children = 0;
-       while (item->indent < tmp->indent)
+       while (item->depth < tmp->depth)
         {
           children = 1;
-          indent = tmp->indent;
-          stack_pop (&numbers);
-          tmp = numbers->item;
-          while (tmp->indent == indent)
+          depth = tmp->depth;
+          stack_pop (&preorder);
+          tmp = preorder->item;
+          while (tmp->depth == depth)
            {
              ++ children;
-             stack_pop (&numbers);
-             tmp = (struct item_t *)numbers->item;
+             stack_pop (&preorder);
+             tmp = (struct item_t *)preorder->item;
            }
-          tmp->children += children;
+          tmp->rank += children;
         }
      }
     
@@ -299,75 +296,176 @@ assign_ranks (struct stack_t * stack, int * nodes, int * leaves)
 
     if (item->leaf)
      {
-       if (!numbers) return;
+       if (!preorder) return;
 
        children = 1;
-       tmp = numbers->item;
-       while (tmp->indent == item->indent)
+       tmp = preorder->item;
+       while (tmp->depth == item->depth)
         {
           ++ children;
-          stack_pop (&numbers);
-          assert (numbers);
-          tmp = (struct item_t *)numbers->item;
+          stack_pop (&preorder);
+          assert (preorder);
+          tmp = (struct item_t *)preorder->item;
         }
-       tmp->children += children;
+       tmp->rank += children;
      }
     else
      {
-       stack_push (&numbers, item);
+       stack_push (&preorder, item);
      }
   }
   
-  while (numbers->item != stack->item)
+  while (preorder->item != stack->item)
   {
-    item = (struct item_t *)stack_pop (&numbers);
-    tmp  = (struct item_t *) numbers->item;
+    item = (struct item_t *)stack_pop (&preorder);
+    tmp  = (struct item_t *) preorder->item;
     children = 1;
 
-    while (tmp->indent == item->indent)
+    while (tmp->depth == item->depth)
      {
        ++ children;
-       item = (struct item_t *)stack_pop (&numbers);
-       tmp  = (struct item_t *) numbers->item;
+       item = (struct item_t *) stack_pop (&preorder);
+       tmp  = (struct item_t *) preorder->item;
      }
-    tmp->children += children;
+    tmp->rank += children;
     children = 0;
   }
- assert (numbers->item == stack->item);
+ assert (preorder->item == stack->item);
  
- stack_clear (&numbers);
+ stack_clear (&preorder);
 }
 
+/** @brief Validate if a newick tree is a valid phylogenetic tree
+
+    A valid tree is one where the root node is binary or ternary
+    and all other internal nodes are binary. In case the root
+    is ternary then the tree must contain at least another internal
+    node and the total number of nodes must be equal to 
+    \f$ 2l - 2\f$, where \f$l\f$ is the number of leaves. If the
+    root is binary, then the total number of nodes must be equal
+    to \f$2l - 1\f$.
+
+    @param tree
+      Stack structure where the tree will be parsed in
+
+    @param nodes
+      Number of nodes will be returned in this variable
+
+    @param leaves
+      Number of leaves will be returned in this variable
+
+    @return
+      Returns \b 1 in case of success, otherwise \b 0
+*/
 int
-pllValidateNewick (struct stack_t * stack, int nodes, int leaves)
+pllValidateNewick (struct stack_t * tree, int nodes, int leaves)
 {
   struct stack_t * head;
   struct item_t * item;
  
- item = stack->item;
- if (item->children != 2 && item->children != 3) return (0);
- head = stack->next;
+ item = tree->item;
+ if (item->rank != 2 && item->rank != 3) return (0);
+ head = tree->next;
  while (head)
  {
    item = head->item;
-   if (item->children != 2 &&  item->children != 0) 
+   if (item->rank != 2 &&  item->rank != 0) 
     {
       return (0);
     }
    head = head->next;
  }
  
- item = stack->item;
+ item = tree->item;
 
- if (item->children == 2) return (nodes == 2 * leaves -1);
+ if (item->rank == 2) return (nodes == 2 * leaves -1);
 
  return ((nodes == 2 * leaves - 2) && nodes != 4);
 }
 
+/** @brief Parse a newick tree string
+  
+    Parse a newick string and create a stack structure which represents the tree
+    in a preorder traversal form. Each element of the stack represents one node
+    and consists of its name, branch length, number of children and depth.
+
+    @param newick
+      String containing the newick tree
+
+    @param tree
+      Stack structure where the tree will be parsed in
+
+    @param nodes
+      Number of nodes will be returned in this variable
+
+    @param leaves
+      Number of leaves will be returned in this variable
+
+    @return
+      Returns \b 1 in case of success, otherwise \b 0
+*/
 int
-pllNewickParse (const char * filename, struct stack_t ** tree, int * nodes, int * leaves)
+pllNewickParseString (char * newick, struct stack_t ** tree, int * nodes, int * leaves)
 {
   int n, input, rc;
+
+  n = strlen (newick);
+
+  init_lexan (newick, n);
+  input = get_next_symbol();
+
+  rc = parse_newick (newick, tree, &input);
+
+  assign_ranks (*tree, nodes, leaves);
+
+  return (rc);
+}
+
+/** @brief Deallocate newick parser stack structure
+
+    Deallocates the newick parser stack structure that represents the parsed tree. It
+    also frees all memory allocated by elements of the stack structure.
+
+    @param tree
+      The tree stack structure
+*/
+void pllNewickParseDestroy (struct stack_t ** tree)
+{
+  struct item_t *  item;
+
+  while ((item = (struct item_t *)stack_pop (tree)))
+   {
+     free (item->name);
+     free (item->branch);
+     free (item);
+   }
+}
+
+/** @brief Parse a newick tree file
+  
+    Parse a newick file and create a stack structure which represents the tree
+    in a preorder traversal form. Each element of the stack represents one node
+    and consists of its name, branch length, number of children (rank) and depth.
+
+    @param filename
+      Filename containing the newick tree
+
+    @param tree
+      Stack structure where the tree will be parsed in
+
+    @param nodes
+      Number of nodes will be returned in this variable
+
+    @param leaves
+      Number of leaves will be returned in this variable
+
+    @return
+      Returns \b 1 in case of success, otherwise \b 0
+*/
+int
+pllNewickParseFile (const char * filename, struct stack_t ** tree, int * nodes, int * leaves)
+{
+  int n, rc;
   char * rawdata;
 
   rawdata = readFile (filename, &n);
@@ -377,19 +475,11 @@ pllNewickParse (const char * filename, struct stack_t ** tree, int * nodes, int 
      return (0);
    }
 
-
-  init_lexan (rawdata, n);
-  input = get_next_symbol();
-
-  rc = parse_newick (rawdata, tree, &input);
-
-//  assign_ranks (stack, nodes, leaves);
-  assign_ranks (*tree, nodes, leaves);
+  rc = pllNewickParseString (rawdata, tree, nodes, leaves);
 
   free (rawdata);
   return (rc);
 }
-
 
 int main (int argc, char * argv[])
 {
@@ -403,7 +493,7 @@ int main (int argc, char * argv[])
    }
 
 
-  if (pllNewickParse (argv[1], &tree, &nodes, &leaves))
+  if (pllNewickParseFile (argv[1], &tree, &nodes, &leaves))
    {
      printf ("Parsing successful...\n\n");
 
@@ -416,6 +506,7 @@ int main (int argc, char * argv[])
        printf ("Not a valid phylogenetic tree\n");
 
      stack_dump(&tree);
+       pllNewickParseDestroy (&tree);
    }
   else
     printf ("Error while parsing newick tree...\n");
