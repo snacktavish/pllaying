@@ -3,9 +3,8 @@
 #include <string.h>
 #include <assert.h>
 #include "lexer.h"
-
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
-#define SWAP(x,y) do{ __typeof__ (x) _t = x; x = y; y = _t; } while(0)
+#include "../../axml.h"
+#include "../../mem_alloc.h"
 
 #define CONSUME(x)         while (token.class & (x)) token = get_token (&input);
 #define NEXT_TOKEN         token = get_token (&input);
@@ -441,6 +440,99 @@ void pllNewickParseDestroy (struct stack_t ** tree)
    }
 }
 
+
+tree *
+pllTreeCreateNewick (struct stack_t * stack, int nodes, int tips)
+{
+  tree * t;
+  nodeptr p0, p, q;
+  int i, j;
+  int inner;
+
+  inner = tips - 1;
+
+  t = (tree *) rax_malloc (sizeof (tree));
+  assert (t);
+  t->mxtips = tips;
+
+
+  p0 = (nodeptr) rax_malloc ((tips + 3 * inner) * sizeof (node));
+  assert (p0);
+
+  t->nodeBaseAddress  = p0;
+
+  t->nameList         = (char **)   rax_malloc ((2 * t->mxtips) * sizeof (int));
+  t->nodep            = (nodeptr *) rax_malloc ((2 * t->mxtips) * sizeof (nodeptr));
+  assert (t->nameList && t->nodep);
+
+  t->nodep[0] = NULL;          /* use as 1-based array */
+
+  for (i = 1; i <= tips; ++ i)
+   {
+     p = p0++;
+
+     //p->hash      = KISS32();      /* hash table stuff */
+     p->x         = 0;
+     p->xBips     = 0;
+     p->number    = i;
+     p->next      = p;
+     p->back      = NULL;
+     p->bInf      = NULL;
+     t->nodep[i]  = p;
+   }
+
+  for (i = tips + 1; i <= tips + inner; ++i)
+   {
+     q = NULL;
+     for (j = 1; j <= 3; ++ j)
+     {
+       p = p0++;
+       if (j == 1)
+        {
+          p->xBips = 1;
+          p->x     = 1;
+        }
+       else
+        {
+          p->xBips = 0;
+          p->x     = 0;
+        }
+       p->number = i;
+       p->next   = q;
+       p->bInf   = NULL;
+       p->back   = NULL;
+       p->hash   = 0;
+       q         = p;
+     }
+    p->next->next->next = p;
+    t->nodep[i]         = p;
+   }
+
+  t->likelihood  = unlikely;
+  t->start       = NULL;
+  t->ntips       = 0;
+  t->nextnode    = 0;
+
+  for (i = 0; i < NUM_BRANCHES; ++ i) t->partitionSmoothed[i] = FALSE;
+
+  t->bitVectors = NULL;
+  t->vLength    = 0;
+  t->h          = NULL;
+  //t->nameHash   = initStringHashTable (10 * t->mxtips);
+
+/*
+  for (i = 0; i < partitions->numberOfPartitions; ++ i)
+   {
+     partitions->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
+     partitions->partitionData[i]->partitionContribution = -1.0;
+     partitions->partitionData[i]->partitionLH           =  0.0;
+     partitions->partitionData[i]->fracchange            =  1.0;
+   }
+*/
+  return (t);
+}
+
+
 /** @brief Parse a newick tree file
   
     Parse a newick file and create a stack structure which represents the tree
@@ -506,7 +598,7 @@ int main (int argc, char * argv[])
        printf ("Not a valid phylogenetic tree\n");
 
      stack_dump(&tree);
-       pllNewickParseDestroy (&tree);
+     pllNewickParseDestroy (&tree);
    }
   else
     printf ("Error while parsing newick tree...\n");

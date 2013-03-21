@@ -4,34 +4,34 @@
 #define  SIZE_ASCII              128
 #define  EOS                     0x00000200
 
-#define  SYMBOL_CR               0x00000001
-#define  SYMBOL_LF               0x00000002
-#define  SYMBOL_LFCR             0x00000004
-#define  SYMBOL_DIGIT            0x00000008
-#define  SYMBOL_CHAR             0x00000010
-#define  SYMBOL_SPACE            0x00000020
-#define  SYMBOL_TAB              0x00000040
-#define  SYMBOL_EOF              0x00000080
-#define  SYMBOL_UNKNOWN          0x00000100
-#define  SYMBOL_DOT              0x00000200
-#define  SYMBOL_COLON            0x00000400
-#define  SYMBOL_OPAREN           0x00000800
-#define  SYMBOL_CPAREN           0x00001000
-#define  SYMBOL_COMMA            0x00002000
-#define  SYMBOL_SEMICOLON        0x00004000
+#define  SYMBOL_CR               1 << 0
+#define  SYMBOL_LF               1 << 1
+#define  SYMBOL_LFCR             1 << 2
+#define  SYMBOL_DIGIT            1 << 3
+#define  SYMBOL_CHAR             1 << 4
+#define  SYMBOL_SPACE            1 << 5
+#define  SYMBOL_TAB              1 << 6
+#define  SYMBOL_EOF              1 << 7
+#define  SYMBOL_UNKNOWN          1 << 8
+#define  SYMBOL_DOT              1 << 9
+#define  SYMBOL_COLON            1 << 10
+#define  SYMBOL_OPAREN           1 << 11
+#define  SYMBOL_CPAREN           1 << 12
+#define  SYMBOL_COMMA            1 << 13
+#define  SYMBOL_SEMICOLON        1 << 14
 
-#define  LEX_NUMBER              0x00000001
-#define  LEX_STRING              0x00000002
-#define  LEX_EOF                 0x00000004
-#define  LEX_WHITESPACE          0x00000008
-#define  LEX_NEWLINE             0x00000010
-#define  LEX_UNKNOWN             0x00000020
-#define  LEX_COLON               0x00000040
-#define  LEX_OPAREN              0x00000080
-#define  LEX_CPAREN              0x00000100
-#define  LEX_FLOAT               0x00000200
-#define  LEX_COMMA               0x00000400
-#define  LEX_SEMICOLON           0x00000800
+#define  LEX_NUMBER              1 << 0
+#define  LEX_STRING              1 << 1
+#define  LEX_EOF                 1 << 2
+#define  LEX_WHITESPACE          1 << 3
+#define  LEX_NEWLINE             1 << 4
+#define  LEX_UNKNOWN             1 << 5
+#define  LEX_COLON               1 << 6
+#define  LEX_OPAREN              1 << 7
+#define  LEX_CPAREN              1 << 8
+#define  LEX_FLOAT               1 << 9
+#define  LEX_COMMA               1 << 10
+#define  LEX_SEMICOLON           1 << 11
 
 struct ltoken_t
  {
