@@ -1,5 +1,5 @@
-#ifndef PHYLIP_H
-#define PHYLIP_H
+#ifndef __pll_PHYLIP__
+#define __pll_PHYLIP__
 
 #define PHYLIP_KEEP_UNIQUE      1 << 0
 #define PHYLIP_LEX_SORT         1 << 1

@@ -14,9 +14,6 @@
 //   unsigned char ** pats;       /* unique site patterns */
 // };
 
-
-int debug = 0;
-
 static char * 
 readFile (const char * filename, int * n)
 {
