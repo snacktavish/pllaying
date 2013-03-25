@@ -40,7 +40,7 @@ int lex_table[SIZE_ASCII] = {
 /* |}~  */    SYMBOL_CHAR, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN
  };
 
-extern int debug ;
+extern int debug;
 
 int 
 get_next_byte (void)
