@@ -183,6 +183,11 @@ parse_partition (char * rawdata, int * inp)
             return (0);
           }
          region->end = atoi (token.lexeme);
+         if (regin->end < region->start)
+          {
+            pllPartitionsDestroy (&partitions);
+            return (0);
+          }
          NEXT_TOKEN
          CONSUME(LEX_WHITESPACE)
          if (token.class == LEX_SLASH)
