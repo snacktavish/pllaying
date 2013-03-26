@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "hash.h"
-#include "queue.h"
 #include "mem_alloc.h"
 
 /** @brief Generate the hash value for a string 
@@ -27,14 +26,29 @@ pllHashString (char * s, unsigned int size)
   return (hash % size);
 }
 
+/** @brief Add a string and its data to a hashtable
+    
+    Add an \a item associated with string \a s to hashtable \a hTable.
+
+    @param hTable
+      Hashtable
+
+    @param s
+      String
+
+    @param item
+      Data associated with \a s
+
+    @return
+      Returns \b 1 if added with success, otherwise \b 0
+*/
 int
 pllHashAdd  (struct pllHashTable * hTable, char * s, void * item)
 {
   unsigned int pos;
   struct pllHashItem * hItem;
 
-  pos = pllHashString (s, hTable->size);
-
+  pos   = pllHashString (s, hTable->size);
   hItem = hTable->Items[pos];
 
   for (; hItem; hItem = hItem->next)
@@ -50,6 +64,8 @@ pllHashAdd  (struct pllHashTable * hTable, char * s, void * item)
 
   hItem->next = hTable->Items[pos];
   hTable->Items[pos] = hItem;
+
+  return (1);
 }
 
        
@@ -78,4 +94,48 @@ pllHashInit (int n)
   hTable->size  = n;
  
   return (hTable);
+}
+
+int
+pllHashSearch (struct pllHashTable * hTable, char * s, void ** item)
+{
+  unsigned int pos;
+  struct pllHashItem * hItem;
+
+  pos   = pllHashString (s, hTable->size);
+  hItem = hTable->Items[pos];
+
+  for (; hItem; hItem = hItem->next)
+   {
+     if (!strcmp (s, hItem->str))
+      {
+        *item = hItem->data;
+        return (1);
+      }
+   }
+
+  return (0);
+}
+
+void 
+pllHashDestroy (struct pllHashTable ** hTable)
+{
+  int i;
+  struct pllHashItem * hItem;
+  struct pllHashItem * tmp;
+
+  for (i = 0; i < (*hTable)->size; ++ i)
+  {
+    hItem = (*hTable)->Items[i];
+    while (hItem)
+     {
+       tmp   = hItem;
+       hItem = hItem->next;
+       rax_free (tmp->str);
+       rax_free (tmp);
+     }
+  }
+  rax_free ((*hTable)->Items);
+  rax_free (*hTable);
+  *hTable = NULL;
 }
