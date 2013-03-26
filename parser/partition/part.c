@@ -2,16 +2,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "lexer.h"
 #include <math.h>
+#include <ctype.h>
+#include "lexer.h"
 #include "../../axml.h"
 #include "../../queue.h"
 #include "../../mem_alloc.h"
+#include "../../hash.h"
 #include "part.h"
+
+#define GLOBAL_VARIABLES_DEFINITION
+#include "../../globalVariables.h"
 
 #define CONSUME(x)         while (token.class & (x)) token = get_token (&input);
 #define NEXT_TOKEN         token = get_token (&input);
 
+static struct pllHashTable * hashTable;
+
+static void destroy_model_names(void)
+{
+  pllHashDestroy (&hashTable);
+}
+
+static void init_model_names (void)
+{
+  int i;
+
+  hashTable = pllHashInit (NUM_PROT_MODELS);
+
+  for (i = 0; i < NUM_PROT_MODELS; ++ i)
+   {
+     pllHashAdd (hashTable, protModels[i], NULL);
+   }
+}
 
 void
 pllPartitionsDestroy (struct pllQueue ** partitions)
@@ -26,8 +49,8 @@ pllPartitionsDestroy (struct pllQueue ** partitions)
         rax_free (region);
       }
      rax_free (pi->regionList);
-     free (pi->partitionName);
-     free (pi->partitionModel);
+     rax_free (pi->partitionName);
+     rax_free (pi->partitionModel);
      rax_free (pi);
    }
   rax_free (*partitions);
@@ -62,12 +85,13 @@ readFile (const char * filename, int * n)
 static struct pllQueue *
 parse_partition (char * rawdata, int * inp)
 {
-  int input;
+  int input, i;
   struct ltoken_t token;
   int lines = 0;
   struct pllQueue * partitions;
   struct pllPartitionInfo * pi;
   struct pllPartitionRegion * region;
+  void * item;
 
   input  = *inp;
 
@@ -77,31 +101,59 @@ parse_partition (char * rawdata, int * inp)
   while (token.class != LEX_EOF)
   {
     ++ lines;
-    pi = (struct pllPartitionInfo *) rax_malloc (sizeof (struct pllPartitionInfo));
+    pi = (struct pllPartitionInfo *) rax_calloc (1, sizeof (struct pllPartitionInfo));
     pllQueueInit (&(pi->regionList));
+    pllQueueAppend (partitions, (void *)pi);
     CONSUME (LEX_WHITESPACE | LEX_NEWLINE)
 
 
     /* read partition type */
-    if (token.class != LEX_STRING) return (0);
-    pi->partitionModel = strndup (token.lexeme, token.len);
+    if (token.class != LEX_STRING) 
+     {
+       pllPartitionsDestroy (&partitions);
+       return (0);
+     }
+    //pi->partitionModel = strndup (token.lexeme, token.len);
+    pi->partitionModel = (char *) rax_malloc ((token.len + 1) * sizeof (char));
+    strncpy (pi->partitionModel, token.lexeme, token.len);
+    pi->partitionModel[token.len] = 0;
+    for (i = 0; i < token.len; ++i) pi->partitionModel[i] = toupper(pi->partitionModel[i]);
+    // check partition model
+    if (strcmp(pi->partitionModel, "DNA") && !pllHashSearch (hashTable, pi->partitionModel, &item))
+     {
+       pllPartitionsDestroy (&partitions);
+       return (0);
+     }
     NEXT_TOKEN
     CONSUME(LEX_WHITESPACE)
 
 
-    if (token.class != LEX_COMMA) return (0);
+    if (token.class != LEX_COMMA) 
+     {
+       pllPartitionsDestroy (&partitions);
+       return (0);
+     }
     NEXT_TOKEN
     CONSUME(LEX_WHITESPACE)
 
     /* read partition name */
-    if (token.class != LEX_STRING) return (0);
-    pi->partitionName = strndup (token.lexeme, token.len);
+    if (token.class != LEX_STRING) 
+     {
+       pllPartitionsDestroy (&partitions);
+       return (0);
+     }
+    //pi->partitionName = strndup (token.lexeme, token.len);
+    pi->partitionName = (char *) rax_malloc ((token.len + 1) * sizeof (char));
+    strncpy (pi->partitionName, token.lexeme, token.len);
+    pi->partitionName[token.len] = 0;
+
     NEXT_TOKEN
     CONSUME(LEX_WHITESPACE)
 
     /* read equal sign */
     if (token.class != LEX_EQUAL)
      {
+       pllPartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
@@ -111,7 +163,11 @@ parse_partition (char * rawdata, int * inp)
     while (1)
     {
       region = (struct pllPartitionRegion *) rax_malloc (sizeof (struct pllPartitionRegion));
-      if (token.class != LEX_NUMBER) return (0);
+      if (token.class != LEX_NUMBER) 
+       {
+         pllPartitionsDestroy (&partitions);
+         return (0);
+       }
       region->start  = region->end = atoi (token.lexeme);  
       region->stride = 1;
       NEXT_TOKEN
@@ -121,7 +177,11 @@ parse_partition (char * rawdata, int * inp)
        {
          NEXT_TOKEN
          CONSUME(LEX_WHITESPACE)
-         if (token.class != LEX_NUMBER) return (0);
+         if (token.class != LEX_NUMBER) 
+          {
+            pllPartitionsDestroy (&partitions);
+            return (0);
+          }
          region->end = atoi (token.lexeme);
          NEXT_TOKEN
          CONSUME(LEX_WHITESPACE)
@@ -129,7 +189,11 @@ parse_partition (char * rawdata, int * inp)
           {
             NEXT_TOKEN
             CONSUME(LEX_WHITESPACE)
-            if (token.class != LEX_NUMBER) return (0);
+            if (token.class != LEX_NUMBER) 
+             {
+               pllPartitionsDestroy (&partitions);
+               return (0);
+             }
             region->stride = atoi (token.lexeme);
             NEXT_TOKEN
           }
@@ -141,7 +205,6 @@ parse_partition (char * rawdata, int * inp)
       NEXT_TOKEN
       CONSUME(LEX_WHITESPACE)
     }
-   pllQueueAppend (partitions, (void *)pi);
    CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
   }
  
@@ -202,6 +265,7 @@ pllPartitionParse (const char * filename)
   init_lexan (rawdata, n);
   input = get_next_symbol();
 
+  init_model_names();
   partitions = parse_partition (rawdata, &input);
   if (partitions)
    {
@@ -213,6 +277,7 @@ pllPartitionParse (const char * filename)
    {
      printf ("Error while parsing...\n");
    }
+  destroy_model_names();
   
   rax_free (rawdata);
   return (1);

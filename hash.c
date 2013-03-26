@@ -17,7 +17,7 @@
       Hash of string \a s, i.e. index at hash table
 */
 unsigned int 
-pllHashString (char * s, unsigned int size)
+pllHashString (const char * s, unsigned int size)
 {
   unsigned int hash = 0;
 
@@ -43,7 +43,7 @@ pllHashString (char * s, unsigned int size)
       Returns \b 1 if added with success, otherwise \b 0
 */
 int
-pllHashAdd  (struct pllHashTable * hTable, char * s, void * item)
+pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item)
 {
   unsigned int pos;
   struct pllHashItem * hItem;
