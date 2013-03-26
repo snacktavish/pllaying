@@ -69,6 +69,17 @@ pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item)
 }
 
        
+/** @brief Initialize hash table
+    
+    Create a hash table of size at least \a n. The size of the hash table will be the first prime
+    number higher or equal to \a n.
+
+    @param n
+      Minimum size of hash table
+
+    @return
+      In case of success, returns a pointer to the created hash table, otherwise returns \b NULL
+*/
 struct pllHashTable *
 pllHashInit (int n)
 { 
@@ -81,6 +92,7 @@ pllHashInit (int n)
                                              50331653, 100663319, 201326611, 402653189, 805306457, 1610612741};
        
   hTable = (struct pllHashTable *) rax_malloc (sizeof (struct pllHashTable));
+  if (!hTable) return (NULL);
   
   primeTableLength = sizeof (initTable) / sizeof(initTable[0]);
 
@@ -91,11 +103,34 @@ pllHashInit (int n)
   n = initTable[i];  
  
   hTable->Items = (struct pllHashItem **) rax_calloc (n, sizeof (struct pllHashItem *));
+  if (!hTable->Items)
+   {
+     rax_free (hTable);
+     return (NULL);
+   }
   hTable->size  = n;
  
   return (hTable);
 }
 
+/** @brief Retrieve the data stored in hash table for a given string
+
+    Retrieve the data stored in hash table \a hTable under a given
+    string \a s. In case the string is found in the hash table, the
+    associated data are stored in \a item.
+
+    @param hTable
+      Hash table to be searched
+
+    @param s
+      String to look for
+
+    @param item
+      Where to store the retrieved data
+
+    @return
+      Returns \b 1 if the string was found, otherwise \b 0
+*/
 int
 pllHashSearch (struct pllHashTable * hTable, char * s, void ** item)
 {
@@ -117,6 +152,17 @@ pllHashSearch (struct pllHashTable * hTable, char * s, void ** item)
   return (0);
 }
 
+/** @brief Deallocate a hash table
+
+    Deallocated the hash table
+
+    @param hTable
+      Hash table to be deallocated
+
+    @notes
+      Deallocates the structure for the hash table. Note that the 
+      data associated with the indexed strings are not deallocated.
+*/
 void 
 pllHashDestroy (struct pllHashTable ** hTable)
 {
