@@ -3,7 +3,7 @@ CFLAGS       = -g -Wall
 
 all: parser
 
-parser: lexer.c phylip.c ssort.c main.c
+parser: phylip.c ssort.c tester.c ../../lexer.c
 	@echo "===> COMPILE $@"
 	$(CC) $(CFLAGS) $+ -o $@
 

@@ -1,5 +1,5 @@
-#ifndef LEXER_H
-#define LEXER_H
+#ifndef __pll_LEXER__
+#define __pll_LEXER__
 
 #define  SIZE_ASCII              128
 #define  EOS                     0x00000200
@@ -39,6 +39,9 @@
 #define  LEX_DASH                1 << 13
 #define  LEX_SLASH               1 << 14
 
+#define CONSUME(x)         while (token.class & (x)) token = get_token (&input);
+#define NEXT_TOKEN         token = get_token (&input);
+
 struct ltoken_t
  {
    int          class;
@@ -50,5 +53,7 @@ int get_next_byte (void);
 int get_next_symbol (void);
 struct ltoken_t get_token (int * input);
 void init_lexan (const char * text, int n);
+void lex_table_amend_phylip (void);
+void lex_table_restore (void);
 
 #endif

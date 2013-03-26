@@ -1,12 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lexer.h"
 #include "phylip.h"
-#include "ssort.h"
-
-#define CONSUME(x)         while (token.class & (x)) token = get_token (&input);
-#define NEXT_TOKEN         token = get_token (&input);
 
 //struct rawdata
 // {
@@ -99,7 +94,7 @@ alloc_phylip_struct (int nTaxa, int seqLen)
     }
    phylip->seq[0] = NULL;
     
-   phylip->label = (char **) malloc ((nTaxa + 1) * sizeof (char *));
+   phylip->label = (char **) calloc ((nTaxa + 1), sizeof (char *));
 
    phylip->nTaxa   = nTaxa;
    phylip->seqLen  = seqLen;
@@ -211,7 +206,7 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
        CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
 
 
-       if (token.class != LEX_STRING && token.class != LEX_NUMBER)
+       if (token.class != LEX_STRING && token.class != LEX_NUMBER && token.class != LEX_FLOAT)
         {
           free (seqLen);
           return (0);
@@ -284,7 +279,7 @@ pllPhylipParse (const char * filename)
      fprintf (stderr, "Error while opening/reading file %s\n", filename);
      return (0);
    }
-
+  
   init_lexan (rawdata, n);
   input = get_next_symbol();
 
@@ -296,18 +291,20 @@ pllPhylipParse (const char * filename)
      return (0);
    }
 
+  lex_table_amend_phylip();
   /* allocate the phylip structure */
   phylip = alloc_phylip_struct (nTaxa, seqLen);
 
   if (! parse_phylip (rawdata, phylip, input))
    {
-     return (0);
      printf ("Finished with error in parsing ...\n");
      pllPhylipDestroy (phylip);
+     lex_table_restore();
      free (rawdata);
      return (0);
    }
   
+  lex_table_restore();
   free (rawdata);
 
   phylip->weights  = (int *) malloc (phylip->seqLen * sizeof (int));

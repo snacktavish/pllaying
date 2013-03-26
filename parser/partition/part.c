@@ -4,18 +4,10 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
-#include "lexer.h"
-#include "../../axml.h"
-#include "../../queue.h"
-#include "../../mem_alloc.h"
-#include "../../hash.h"
 #include "part.h"
 
 #define GLOBAL_VARIABLES_DEFINITION
 #include "../../globalVariables.h"
-
-#define CONSUME(x)         while (token.class & (x)) token = get_token (&input);
-#define NEXT_TOKEN         token = get_token (&input);
 
 static struct pllHashTable * hashTable;
 
@@ -183,7 +175,7 @@ parse_partition (char * rawdata, int * inp)
             return (0);
           }
          region->end = atoi (token.lexeme);
-         if (regin->end < region->start)
+         if (region->end < region->start)
           {
             pllPartitionsDestroy (&partitions);
             return (0);
@@ -216,7 +208,8 @@ parse_partition (char * rawdata, int * inp)
  return (partitions);
 } 
 
-void pllPartitionDump (struct pllQueue * partitions)
+void 
+pllPartitionDump (struct pllQueue * partitions)
 {
    struct pllQueueItem * elm;
    struct pllQueueItem * regionList;
@@ -248,7 +241,7 @@ void pllPartitionDump (struct pllQueue * partitions)
     }
 }
 
-int
+struct pllQueue *
 pllPartitionParse (const char * filename)
 {
   int n;
@@ -272,32 +265,8 @@ pllPartitionParse (const char * filename)
 
   init_model_names();
   partitions = parse_partition (rawdata, &input);
-  if (partitions)
-   {
-     printf ("Parsed successfully...\n");
-     pllPartitionDump (partitions);
-     pllPartitionsDestroy (&partitions);
-   }
-  else
-   {
-     printf ("Error while parsing...\n");
-   }
   destroy_model_names();
   
   rax_free (rawdata);
-  return (1);
-}
-
-
-int main (int argc, char * argv[])
-{
-  if (argc != 2)
-   {
-     fprintf (stderr, "syntax: %s FILENAME\n", argv[0]);
-     return (EXIT_FAILURE);
-   }
-
-  pllPartitionParse (argv[1]);
-
-  return (EXIT_SUCCESS);
+  return (partitions);
 }

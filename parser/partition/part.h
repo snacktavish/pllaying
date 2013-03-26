@@ -1,5 +1,10 @@
 #ifndef __pll_PART__
 #define __pll_PART__
+#include "../../lexer.h"
+#include "../../axml.h"
+#include "../../queue.h"
+#include "../../mem_alloc.h"
+#include "../../hash.h"
 
 struct pllPartitionRegion
 {
@@ -15,4 +20,7 @@ struct pllPartitionInfo
   struct pllQueue * regionList;
 };
 
+void  pllPartitionsDestroy (struct pllQueue ** partitions);
+struct pllQueue * pllPartitionParse (const char * filename);
+void pllPartitionDump (struct pllQueue * partitions);
 #endif
