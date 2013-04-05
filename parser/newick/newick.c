@@ -447,27 +447,58 @@ void pllNewickParseDestroy (struct pllStack ** tree)
    }
 }
 
+/** @brief Deallocate PLL tree structure
+
+    Deallocates the tree structure associated with the library and all
+    its elements. 
+
+    @param tr
+      The tree structure
+*/
 void
-pllTreeDestroy (tree * t)
+pllTreeDestroy (tree * tr)
 {
   int i;
-  for (i = 1; i <= t->mxtips; ++ i)
-    rax_free (t->nameList[i]);
-
-  rax_free (t->nameList);
-  rax_free (t->nodep);
-  rax_free (t->nodeBaseAddress);
-  rax_free (t);
+  for (i = 1; i <= tr->mxtips; ++ i)
+    rax_free (tr->nameList[i]);
+  
+  pllHashDestroy (&(tr->nameHash));
+  if (tr->yVector)
+   {
+     if (tr->yVector[0]) rax_free (tr->yVector[0]);
+     rax_free (tr->yVector);
+   }
+  rax_free (tr->aliaswgt);
+  rax_free (tr->rateCategory);
+  rax_free (tr->patrat);
+  rax_free (tr->patratStored);
+  rax_free (tr->lhs);
+  rax_free (tr->td[0].parameterValues);
+  rax_free (tr->td[0].executeModel);
+  rax_free (tr->td[0].ti);
+  rax_free (tr->nameList);
+  rax_free (tr->nodep);
+  rax_free (tr->nodeBaseAddress);
+  rax_free (tr->tree_string);
+  rax_free (tr->tree0);
+  rax_free (tr->tree1);
+  rax_free (tr);
 }
 
-tree *
-pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
+/** @brief Initialize PLL tree structure with default values
+    
+    Initialize PLL tree structure with default values and allocate 
+    memory for its elements.
+
+    @todo
+      STILL NOT FINISHED
+
+*/
+void pllTreeInitDefaults (tree * t, int nodes, int tips)
 {
-  tree * t;
   nodeptr p0, p, q;
   int i, j, k;
   int inner;
-  struct pllStack * nodeStack = NULL;
 
   
 
@@ -475,9 +506,13 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
 
   inner = tips - 1;
 
-  t = (tree *) rax_malloc (sizeof (tree));
-  assert (t);
   t->mxtips = tips;
+
+  t->bigCutoff = FALSE;
+  t->treeStringLength = t->mxtips * (nmlngth + 128) + 256 + t->mxtips * 2;
+  t->tree_string = (char *) rax_calloc ( t->treeStringLength, sizeof(char));
+  t->tree0 = (char*)rax_calloc((size_t)t->treeStringLength, sizeof(char));
+  t->tree1 = (char*)rax_calloc((size_t)t->treeStringLength, sizeof(char));
 
   
   p0 = (nodeptr) rax_malloc ((tips + 3 * inner) * sizeof (node));
@@ -493,7 +528,7 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
 
 
   /* TODO: FIX THIS! */
-  t->fracchange = 1;
+  t->fracchange = -1;
 
   for (i = 1; i <= tips; ++ i)
    {
@@ -518,7 +553,7 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
        if (j == 1)
         {
           p->xBips = 1;
-          p->x = 0; //p->x     = 1;
+          p->x = 1; //p->x     = 1;
         }
        else
         {
@@ -546,8 +581,45 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
   t->bitVectors = NULL;
   t->vLength    = 0;
   t->h          = NULL;
-  //t->nameHash   = initStringHashTable (10 * t->mxtips);
 
+  /* TODO: Fix hash type */
+  t->nameHash   = pllHashInit (10 * t->mxtips);
+
+  
+}
+
+/** @brief Construct a PLL tree structure from a parsed newick tree
+
+    Allocate and initialize a PLL tree structure from a parsed newick
+    tree. 
+
+    @param stack
+      A stack structure containing the parsed newick tree
+
+    @param nodes
+      Total number of nodes of the parsed tree
+
+    @param tips
+      Number of tips of the parsed tree
+
+    @todo
+      Construct a new data structure called pllNewickTree which will
+      consist of three elements: stack, nodes, tips. Also code a proper
+      SetupTree function.
+
+    @return
+      In case of success returns a pointer to the constructed PLL tree,
+      otherwise \b NULL.
+*/
+tree *
+pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
+{
+  tree * t;
+  struct pllStack * nodeStack = NULL;
+  struct pllStack * head;
+  struct item_t * item;
+  int i, j, k;
+  
 /*
   for (i = 0; i < partitions->numberOfPartitions; ++ i)
    {
@@ -558,9 +630,11 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
    }
 */
   
-  struct pllStack * head;
-  struct item_t * item;
-  
+  t = (tree *) rax_calloc (1, sizeof (tree));
+  assert (t);
+
+  pllTreeInitDefaults (t, nodes, tips);
+
   i = tips + 1;
   j = 1;
   nodeptr v;
@@ -585,7 +659,6 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
           t->nodep[i]->back = v; //t->nodep[v->number]
           pllStackPush (&nodeStack, t->nodep[i]->next);
           pllStackPush (&nodeStack, t->nodep[i]->next->next);
-
           double z = exp((-1 * atof(item->branch))/t->fracchange);
           if(z < zmin) z = zmin;
           if(z > zmax) z = zmax;
@@ -608,15 +681,13 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
           //t->nameList[j] = strdup (item->name);
           t->nameList[j] = (char *) rax_malloc ((strlen (item->name) + 1) * sizeof (char));
           strcpy (t->nameList[j], item->name);
+          pllHashAdd (t->nameHash, t->nameList[j], (void *) (t->nodep[j]));
           ++ j;
         }
      }
   }
   
   t->start = t->nodep[1];
-  
-  printf ("Stack size: %d\n", pllStackSize (&nodeStack));
-  printf ("Stack size: %d\n", pllStackSize (&stack));
   
   pllStackClear (&nodeStack);
   return (t);
