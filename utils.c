@@ -1414,3 +1414,44 @@ void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitio
 #endif
 }
 
+void pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
+{
+  int i, j;
+  partitionList * pl = *partitions;
+
+  for (i = 0; i < models; ++ i)
+   {
+     rax_free (pl->partitionData[i]->gammaRates);
+     rax_free (pl->partitionData[i]->perSiteRates);
+     rax_free (pl->partitionData[i]->globalScaler);
+     rax_free (pl->partitionData[i]->left);
+     rax_free (pl->partitionData[i]->right);
+     rax_free (pl->partitionData[i]->EIGN);
+     rax_free (pl->partitionData[i]->EV);
+     rax_free (pl->partitionData[i]->EI);
+     rax_free (pl->partitionData[i]->substRates);
+     rax_free (pl->partitionData[i]->frequencies);
+     rax_free (pl->partitionData[i]->empiricalFrequencies);
+     rax_free (pl->partitionData[i]->tipVector);
+     rax_free (pl->partitionData[i]->symmetryVector);
+     rax_free (pl->partitionData[i]->frequencyGrouping);
+     for (j = 0; j < tips; ++ j)
+       rax_free (pl->partitionData[i]->xVector[j]);
+     rax_free (pl->partitionData[i]->xVector);
+     rax_free (pl->partitionData[i]->yVector);
+     rax_free (pl->partitionData[i]->xSpaceVector);
+     rax_free (pl->partitionData[i]->sumBuffer);
+     rax_free (pl->partitionData[i]->ancestralBuffer);
+     rax_free (pl->partitionData[i]->wgt);
+     rax_free (pl->partitionData[i]->rateCategory);
+     rax_free (pl->partitionData[i]->gapVector);
+     rax_free (pl->partitionData[i]->gapColumn);
+     rax_free (pl->partitionData[i]->perSiteLikelihoods);
+     rax_free (pl->partitionData[i]->partitionName);
+     rax_free (pl->partitionData[i]);
+   }
+  rax_free (pl->partitionData);
+  rax_free (pl);
+
+  *partitions = NULL;
+}
