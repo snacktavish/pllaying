@@ -10,7 +10,7 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o
+objs    = queue.o utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o
 
 all : raxmlLight-MPI
 
@@ -36,6 +36,7 @@ makenewzGenericSpecial.o : makenewzGenericSpecial.c $(GLOBAL_DEPS)
 mesh.o : mesh.c $(GLOBAL_DEPS)
 fineGrainMpi.o :  fineGrainMpi.c  $(GLOBAL_DEPS)
 restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
+queue.o : queue.c $(GLOBAL_DEPS)
 
 clean : 
 	$(RM) *.o raxmlLight-MPI

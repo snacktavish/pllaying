@@ -10,7 +10,7 @@ LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o mem_alloc.o
+objs    = queue.o utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o mem_alloc.o
 
 all : raxmlLight
 
@@ -36,6 +36,7 @@ restartHashTable.o : restartHashTable.c $(GLOBAL_DEPS)
 randomTree.o : randomTree.c $(GLOBAL_DEPS)
 fastDNAparsimony.o : fastDNAparsimony.c  $(GLOBAL_DEPS)
 recom.o : recom.c  $(GLOBAL_DEPS)
+queue.o : queue.c $(GLOBAL_DEPS)
 
 clean : 
 	$(RM) *.o raxmlLight
