@@ -68,14 +68,17 @@
 #endif
 
 #include "axml.h"
-#include "phylip_parser/lexer.h"
-#include "phylip_parser/phylip.h"
-#include "phylip_parser/xalloc.h"
-#include "phylip_parser/msa_sites.h"
+//#include "phylip_parser/lexer.h"
+//#include "phylip_parser/phylip.h"
+//#include "phylip_parser/xalloc.h"
+//#include "phylip_parser/msa_sites.h"
 
 
 #include "globalVariables.h"
 #include "mem_alloc.h"
+#include "queue.h"
+#include "parser/partition/part.h"
+#include "parser/phylip/phylip.h"
 
 
 extern unsigned int mask32[32];
@@ -1414,7 +1417,8 @@ void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitio
 #endif
 }
 
-void pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
+void 
+pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
 {
   int i, j;
   partitionList * pl = *partitions;
@@ -1454,4 +1458,73 @@ void pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
   rax_free (pl);
 
   *partitions = NULL;
+}
+
+/** @brief Correspondance check between partitions and alignment
+
+    This function checks whether the partitions to be created and the given
+    alignment correspond, that is, whether each site of the alignment is
+    assigned to exactly one partition.
+
+    @param parts
+      A list of partitions suggested by the caller
+
+    @param phylip
+      The multiple sequence alignment
+    
+    @return
+      Returns \a 1 in case of success, otherwise \a 0
+*/
+int
+pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
+{
+  int nparts;
+  char * used;
+  struct pllQueueItem * elm;
+  struct pllQueueItem * regionItem;
+  struct pllPartitionRegion * region;
+  struct pllPartitionInfo * pi;
+  int i, j;
+
+  partitionList * pl;
+
+  /* check if the list contains at least one partition */
+  nparts = pllQueueSize (parts);
+  if (!nparts) return (0);
+
+
+  /* boolean array for marking that a site was assigned a partition */
+  used = (char *) rax_calloc (phylip->seqLen, sizeof (char));
+
+  /* traverse all partitions and their respective regions and mark sites */
+  for (elm = parts->head; elm; elm = elm->next)
+   {
+     pi = (struct pllPartitionInfo *) elm->item;
+     
+     for (regionItem = pi->regionList->head; regionItem; regionItem = regionItem->next)
+      {
+        region = (struct pllPartitionRegion *) regionItem->item;
+
+        for (i = region->start - 1; i < region->end; i += region->stride)
+         {
+           if (used[i])
+            {
+              rax_free (used);
+              return (0);
+            }
+           used[i] = 1; 
+         }
+      }
+   }
+
+  /* check whether all sites were assigned a partition */
+  for (i = 0; i < phylip->seqLen; ++ i)
+    if (used[i] != 1)
+     {
+       rax_free (used);
+       return (0);
+     }
+
+  rax_free (used);
+  return (1);
 }
