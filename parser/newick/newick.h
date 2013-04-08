@@ -5,10 +5,17 @@
 #include "../../stack.h"
 #include "../../lexer.h"
 
-int pllNewickParseString (char * newick, struct pllStack ** tree, int * nodes, int * leaves);
-int pllNewickParseFile (const char * filename, struct pllStack ** tree, int * nodes, int * leaves);
-int pllValidateNewick (struct pllStack * tree, int nodes, int leaves);
-tree * pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips);
-void pllNewickParseDestroy (struct pllStack ** tree);
+struct pllNewickTree
+{
+  int nodes;
+  int tips;
+  struct pllStack * tree;
+};
+
+struct pllNewickTree * pllNewickParseString (char * newick);
+struct pllNewickTree * pllNewickParseFile (const char * filename);
+int pllValidateNewick (struct pllNewickTree *);
+tree * pllTreeCreateNewick (struct pllNewickTree * stack);
+void pllNewickParseDestroy (struct pllNewickTree ** tree);
 void  pllTreeDestroy (tree * t);
 #endif

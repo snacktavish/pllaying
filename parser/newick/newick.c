@@ -352,26 +352,20 @@ assign_ranks (struct pllStack * stack, int * nodes, int * leaves)
     to \f$2l - 1\f$.
 
     @param tree
-      Stack structure where the tree will be parsed in
-
-    @param nodes
-      Number of nodes will be returned in this variable
-
-    @param leaves
-      Number of leaves will be returned in this variable
+      Newick tree wrapper structure which contains the stack representation of the parsed newick tree
 
     @return
       Returns \b 1 in case of success, otherwise \b 0
 */
 int
-pllValidateNewick (struct pllStack * tree, int nodes, int leaves)
+pllValidateNewick (struct pllNewickTree * t)
 {
   struct pllStack * head;
   struct item_t * item;
  
- item = tree->item;
+ item = t->tree->item;
  if (item->rank != 2 && item->rank != 3) return (0);
- head = tree->next;
+ head = t->tree->next;
  while (head)
  {
    item = head->item;
@@ -382,49 +376,56 @@ pllValidateNewick (struct pllStack * tree, int nodes, int leaves)
    head = head->next;
  }
  
- item = tree->item;
+ item = t->tree->item;
 
- if (item->rank == 2) return (nodes == 2 * leaves -1);
+ if (item->rank == 2) return (t->nodes == 2 * t->tips -1);
 
- return ((nodes == 2 * leaves - 2) && nodes != 4);
+ return ((t->nodes == 2 * t->tips - 2) && t->nodes != 4);
 }
 
 /** @brief Parse a newick tree string
   
     Parse a newick string and create a stack structure which represents the tree
     in a preorder traversal form. Each element of the stack represents one node
-    and consists of its name, branch length, number of children and depth.
+    and consists of its name, branch length, number of children and depth. The
+    stack structure is finally wrapped in a \a pllNewickTree structure which
+    also contains the number of nodes and leaves.
 
     @param newick
       String containing the newick tree
 
-    @param tree
-      Stack structure where the tree will be parsed in
-
-    @param nodes
-      Number of nodes will be returned in this variable
-
-    @param leaves
-      Number of leaves will be returned in this variable
-
     @return
-      Returns \b 1 in case of success, otherwise \b 0
+      Returns a pointer to the created \a pllNewickTree structure in case of success, otherwise \b NULL
 */
-int
-pllNewickParseString (char * newick, struct pllStack ** tree, int * nodes, int * leaves)
+struct pllNewickTree *
+pllNewickParseString (char * newick)
 {
   int n, input, rc;
+  struct pllNewickTree * t;
+  int nodes, leaves;
+  
+  t = (struct pllNewickTree *) calloc (1, sizeof (struct pllNewickTree));
 
   n = strlen (newick);
 
   init_lexan (newick, n);
   input = get_next_symbol();
 
-  rc = parse_newick (newick, tree, &input);
-  
-  assign_ranks (*tree, nodes, leaves);
+  rc = parse_newick (newick, &(t->tree), &input);
+  if (!rc)
+   {
+     /* TODO: properly clean t->tree */
+     rax_free (t);
+     t = NULL;
+   }
+  else
+   {
+     assign_ranks (t->tree, &nodes, &leaves);
+     t->nodes = nodes;
+     t->tips  = leaves;
+   }
 
-  return (rc);
+  return (t);
 }
 
 /** @brief Deallocate newick parser stack structure
@@ -435,16 +436,18 @@ pllNewickParseString (char * newick, struct pllStack ** tree, int * nodes, int *
     @param tree
       The tree stack structure
 */
-void pllNewickParseDestroy (struct pllStack ** tree)
+void pllNewickParseDestroy (struct pllNewickTree ** t)
 {
   struct item_t *  item;
 
-  while ((item = (struct item_t *)pllStackPop (tree)))
+  while ((item = (struct item_t *)pllStackPop (&((*t)->tree))))
    {
      rax_free (item->name);
      rax_free (item->branch);
      rax_free (item);
    }
+  rax_free (*t);
+  (*t) = NULL;
 }
 
 /** @brief Deallocate PLL tree structure
@@ -593,26 +596,15 @@ void pllTreeInitDefaults (tree * t, int nodes, int tips)
     Allocate and initialize a PLL tree structure from a parsed newick
     tree. 
 
-    @param stack
-      A stack structure containing the parsed newick tree
-
-    @param nodes
-      Total number of nodes of the parsed tree
-
-    @param tips
-      Number of tips of the parsed tree
-
-    @todo
-      Construct a new data structure called pllNewickTree which will
-      consist of three elements: stack, nodes, tips. Also code a proper
-      SetupTree function.
+    @param nt
+      The \a pllNewickTree wrapper structure that contains the parsed newick tree
 
     @return
       In case of success returns a pointer to the constructed PLL tree,
       otherwise \b NULL.
 */
 tree *
-pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
+pllTreeCreateNewick (struct pllNewickTree * nt)
 {
   tree * t;
   struct pllStack * nodeStack = NULL;
@@ -633,14 +625,14 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
   t = (tree *) rax_calloc (1, sizeof (tree));
   assert (t);
 
-  pllTreeInitDefaults (t, nodes, tips);
+  pllTreeInitDefaults (t, nt->nodes, nt->tips);
 
-  i = tips + 1;
+  i = nt->tips + 1;
   j = 1;
   nodeptr v;
   
   
-  for (head = stack; head; head = head->next)
+  for (head = nt->tree; head; head = head->next)
   {
     item = (struct item_t *) head->item;
     if (!nodeStack)
@@ -698,28 +690,22 @@ pllTreeCreateNewick (struct pllStack * stack, int nodes, int tips)
   
     Parse a newick file and create a stack structure which represents the tree
     in a preorder traversal form. Each element of the stack represents one node
-    and consists of its name, branch length, number of children (rank) and depth.
+    and consists of its name, branch length, number of children (rank) and depth. The
+    stack structure is finally wrapped in a \a pllNewickTree structure which
+    also contains the number of nodes and leaves.
 
     @param filename
       Filename containing the newick tree
 
-    @param tree
-      Stack structure where the tree will be parsed in
-
-    @param nodes
-      Number of nodes will be returned in this variable
-
-    @param leaves
-      Number of leaves will be returned in this variable
-
     @return
-      Returns \b 1 in case of success, otherwise \b 0
+      Returns a pointer to the created \a pllNewickTree structure in case of success, otherwise \b NULL
 */
-int
-pllNewickParseFile (const char * filename, struct pllStack ** tree, int * nodes, int * leaves)
+struct pllNewickTree *
+pllNewickParseFile (const char * filename)
 {
-  int n, rc;
+  int n;
   char * rawdata;
+  struct pllNewickTree * t;
 
   rawdata = readFile (filename, &n);
   if (!rawdata)
@@ -730,9 +716,10 @@ pllNewickParseFile (const char * filename, struct pllStack ** tree, int * nodes,
 
   printf ("%s\n\n", rawdata);
 
-  rc = pllNewickParseString (rawdata, tree, nodes, leaves);
+  t = pllNewickParseString (rawdata);
 
   rax_free (rawdata);
-  return (rc);
+
+  return (t);
 }
 
