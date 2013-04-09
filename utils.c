@@ -1484,9 +1484,7 @@ pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
   struct pllQueueItem * regionItem;
   struct pllPartitionRegion * region;
   struct pllPartitionInfo * pi;
-  int i, j;
-
-  partitionList * pl;
+  int i;
 
   /* check if the list contains at least one partition */
   nparts = pllQueueSize (parts);
@@ -1528,3 +1526,204 @@ pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
   rax_free (used);
   return (1);
 }
+
+/** @brief Swap two sites in a buffer
+    
+    Swaps sites \a s1 and \a s2 in buffer \a buf which consists of \a nTaxa + 1
+    taxa (i.e. rows), and the first row contains no information, i.e. it is not
+    accessed.
+
+    @param buffer
+      Memory buffer
+
+    @param s1
+      First site
+
+    @param s2
+      Second site
+
+    @param nTaxa
+      Number of taxa, i.e. size of site
+*/
+static inline void
+swapSite (unsigned char ** buf, int s1, int s2, int nTaxa)
+{
+  int i;
+  int x;
+
+  for (i = 1; i <= nTaxa; ++ i)
+  {
+    x = buf[i][s1];
+    buf[i][s1] = buf[i][s2];
+    buf[i][s2] = x;
+  }
+}
+
+/** @brief Constructs the list of partitions according to the proposed partition scheme
+    
+    A static function that construcs the \a partitionList structure according to
+    the partition scheme \b AFTER the sites have been repositioned in contiguous
+    regions according to the partition scheme.
+
+    @param bounds
+      An array of the new starting and ending posititons of sites in the alignment for each partition.
+      This array is of size 2 * \a nparts. The elements are always couples (lower,upper). The upper
+      bounds is a site that is not included in the partition
+
+    @param nparts
+      The number of partitions to be created
+      
+*/
+static partitionList *
+createPartitions (int * bounds, int nparts)
+{
+  partitionList * pl;
+  int i;
+
+  pl = (partitionList *) rax_malloc (sizeof (partitionList));
+  
+  pl->numberOfPartitions   = nparts;
+  pl->perGeneBranchLengths =      0;
+
+  /* TODO: change NUM_BRANCHES to nparts I guess */
+  pl->partitionData = (pInfo **) rax_malloc (NUM_BRANCHES * sizeof (pInfo *));
+  
+  for (i = 0; i < nparts; ++ i)
+   {
+     pl->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
+
+     pl->partitionData[i]->lower = bounds[i << 1];
+     pl->partitionData[i]->upper = bounds[(i << 1) + 1];
+     pl->partitionData[i]->width = bounds[(i << 1) + 1] - bounds[i << 1];
+     
+     /* TODO: get the model parameters, currently some defaults */
+     pl->partitionData[i]->states                =        4; 
+     pl->partitionData[i]->maxTipStates          =       16;
+     pl->partitionData[i]->dataType              = DNA_DATA;
+     pl->partitionData[i]->protModels            =        0;
+     pl->partitionData[i]->numberOfCategories    =        1;
+     pl->partitionData[i]->protModels            =        2;
+     pl->partitionData[i]->autoProtModels        =        0;
+     pl->partitionData[i]->nonGTR                =        0;
+     pl->partitionData[i]->protFreqs             =        0;
+     pl->partitionData[i]->partitionContribution =     -1.0;
+     pl->partitionData[i]->partitionLH           =      0.0;
+     pl->partitionData[i]->fracchange            =      1.0;
+     pl->partitionData[i]->executeModel          =     TRUE;
+
+
+     pl->partitionData[i]->partitionName      = (char *) rax_malloc (10 * sizeof (char));
+     strcpy (pl->partitionData[i]->partitionName, "PART1");
+   }
+
+  return (pl);
+}
+
+
+/** @brief Constructs the proposed partition scheme 
+
+    This function constructs the proposed partition scheme. It assumes
+    that the partition scheme is correct.
+
+    @note This function \b does \b not validate the partition scheme.
+    The user must manually call the \fn pllPartitionsValidate function
+    for validation
+    
+    @param parts
+      A list of partitions suggested by the caller
+
+    @param phylip
+      The multiple sequence alignment
+
+    @return
+      Returns a pointer to \a partitionList structure of partitions in case of success, \b NULL otherwise
+*/
+partitionList *
+pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
+{
+  int * oi;
+  int i, j, dst;
+  struct pllQueueItem * elm;
+  struct pllQueueItem * regionItem;
+  struct pllPartitionRegion * region;
+  struct pllPartitionInfo * pi;
+  partitionList * pl;
+  int * newBounds;
+  int k, nparts;
+
+  dst = k = 0;
+  oi  = (int *) rax_malloc (phylip->seqLen * sizeof (int));
+  for (i = 0; i < phylip->seqLen; ++ i) oi[i] = i;
+
+  nparts = pllQueueSize (parts);
+  newBounds = (int *) rax_malloc (2 * nparts * sizeof (int));
+
+  /* reposition the sites in the alignment */
+  for (elm = parts->head; elm; elm = elm->next, ++ k)
+   {
+     pi = (struct pllPartitionInfo *) elm->item;
+     
+     newBounds[k << 1] = dst;   /* set the lower column for this partition */
+     for (regionItem = pi->regionList->head; regionItem; regionItem = regionItem->next)
+      {
+        region = (struct pllPartitionRegion *) regionItem->item;
+
+        for (i = region->start - 1; i < region->end; i += region->stride)
+         {
+           if (oi[i] == i)
+            {
+              swapSite (phylip->seq, dst, i, phylip->nTaxa);
+              oi[dst++] = i;
+            }
+           else if (oi[i] < i)
+            {
+              j = oi[i];
+              while (j < i) j = oi[j];
+
+              swapSite (phylip->seq, dst, j, phylip->nTaxa);
+              oi[dst++] = j;
+            }
+         }
+      }
+     newBounds[(k << 1) + 1] = dst;    /* set the uppwer limit for this partition */
+   }
+  pl = createPartitions (newBounds, nparts);
+
+  rax_free (newBounds);
+  rax_free (oi);
+
+  return (pl);
+}
+
+/** @brief Copy a site to another buffer
+
+    Copies site \a from from buffer \a src to \a to in buffer \a dst. Both buffers
+    must consist of \a nTaxa + 1 taxa and the first row contains no information, i.e.
+    it is not accessed.
+
+    @param dst
+      Destination buffer
+
+    @param src
+      Source buffer
+
+    @param to
+      At which position in \a dst to copy the site to
+
+    @param from
+      Which site from \a src to copy
+
+    @param nTaxa
+      Number of taxa, i.e. size of site
+*/
+static inline void
+copySite (unsigned char ** dst, unsigned char ** src, int to, int from, int nTaxa)
+{
+  int i;
+
+  for (i = 1; i <= nTaxa; ++ i)
+   {
+     dst[i][to] = src[i][from];
+   }
+}
+
