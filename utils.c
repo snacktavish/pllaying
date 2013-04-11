@@ -1727,3 +1727,116 @@ copySite (unsigned char ** dst, unsigned char ** src, int to, int from, int nTax
    }
 }
 
+/** @brief Remove duplicate sites from alignment and update weights vector
+
+    Removes duplicate sites from the alignment given the partitions list
+    and updates the weight vector of the alignment and the boundaries
+    (upper, lower, width) for each partition.
+
+    @param phylip
+      The phylip alignment
+    
+    @param pl
+      List of partitions
+
+*/
+void 
+pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
+{
+  int i, j, k, p;
+  char *** sites;
+  void ** memptr;
+  int ** oi;
+  int dups = 0;
+  int lower;
+
+  /* allocate space for the transposed alignments (sites) for every partition */
+  sites  = (char ***) rax_malloc (pl->numberOfPartitions * sizeof (char **));
+  memptr = (void **)  rax_malloc (pl->numberOfPartitions * sizeof (void *));
+  oi     = (int **)   rax_malloc (pl->numberOfPartitions * sizeof (int *));
+
+  /* transpose the sites by partition */
+  for (p = 0; p < pl->numberOfPartitions; ++ p)
+   {
+     sites[p]  = (char **) rax_malloc (pl->partitionData[p]->width * sizeof (char *));
+     memptr[p] = rax_malloc ((phylip->nTaxa + 1) * pl->partitionData[p]->width * sizeof (char));
+
+     for (i = 0; i < pl->partitionData[p]->width; ++ i)
+      {
+        sites[p][i] = (char *) (memptr[p] + i * (phylip->nTaxa + 1) * sizeof (char));
+      }
+
+     for (i = 0; i < pl->partitionData[p]->width; ++ i)
+      {
+        for (j = 0; j < phylip->nTaxa; ++ j)
+         {
+           sites[p][i][j] = phylip->seq[j + 1][pl->partitionData[p]->lower + i]; 
+         }
+        sites[p][i][j] = 0;
+      }
+
+     oi[p] = ssort1main (sites[p], pl->partitionData[p]->width);
+
+     for (i = 0; i < pl->partitionData[p]->width; ++ i) oi[p][i] = 1;
+
+     for (i = 1; i < pl->partitionData[p]->width; ++ i)
+      {
+        if (! strcmp (sites[p][i], sites[p][i - 1]))
+         {
+           ++ dups;
+           oi[p][i] = 0;
+         }
+      }
+   }
+
+  /* allocate memory for the alignment without duplicates*/
+  rax_free (phylip->seq[1]);
+  rax_free (phylip->weights);
+
+  phylip->seqLen = phylip->seqLen - dups;
+  phylip->seq[0] = (unsigned char *) rax_malloc ((phylip->seqLen + 1) * sizeof (unsigned char) * phylip->nTaxa);
+  for (i = 0; i < phylip->nTaxa; ++ i)
+   {
+     phylip->seq[i + 1] = (unsigned char *) (phylip->seq[0] + i * (phylip->seqLen + 1) * sizeof (unsigned char));
+     phylip->seq[i + 1][phylip->seqLen] = 0;
+   }
+
+  phylip->weights    = (int *) rax_malloc ((phylip->seqLen) * sizeof (int));
+  phylip->weights[0] = 1;
+
+  /* transpose sites back to alignment */
+  for (p = 0, k = 0; p < pl->numberOfPartitions; ++ p)
+   {
+     lower = k;
+     for (i = 0; i < pl->partitionData[p]->width; ++ i)
+      {
+        if (!oi[p][i])
+         {
+           ++ phylip->weights[k - 1];
+         }
+        else
+         {
+           phylip->weights[k] = 1;
+           for (j = 0; j < phylip->nTaxa; ++ j)
+            {
+              phylip->seq[j + 1][k] = sites[p][i][j];
+            }
+           ++ k;
+         }
+      }
+     pl->partitionData[p]->lower = lower;
+     pl->partitionData[p]->upper = k;
+     pl->partitionData[p]->width = k - lower;
+   }
+
+  /* deallocate storage for transposed alignment (sites) */
+  for (p = 0; p < pl->numberOfPartitions; ++ p)
+   {
+     rax_free (oi[p]);
+     rax_free (memptr[p]);
+     rax_free (sites[p]);
+   }
+  rax_free (oi);
+  rax_free (sites);
+  rax_free (memptr);
+}
