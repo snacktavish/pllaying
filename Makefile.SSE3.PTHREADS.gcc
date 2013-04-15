@@ -10,7 +10,7 @@ LIBRARIES = -lm -pthread
 
 RM = rm -f
 
-objs    = queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o
+objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o
 
 all : raxmlLight-PTHREADS
 
@@ -44,6 +44,10 @@ fastDNAparsimony.o : fastDNAparsimony.c  $(GLOBAL_DEPS)
 lockless_allocator/ll_alloc.o: lockless_allocator/ll_alloc.c lockless_allocator/compiler.h lockless_allocator/gcc.h
 recom.o : recom.c  $(GLOBAL_DEPS)
 queue.o : queue.c $(GLOBAL_DEPS)
+stack.o : stack.c $(GLOBAL_DEPS)
+hash.o : hash.c $(GLOBAL_DEPS)
+ssort.o : parser/phylip/ssort.c
+	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
 
 clean : 
 	$(RM) *.o lockless_allocator/*.o raxmlLight-PTHREADS
