@@ -26,7 +26,7 @@ readFile (const char * filename, int * n)
   if (*n == -1) return (NULL);
   rewind (fp);
 
-  rawdata = (char *) malloc ((*n) * sizeof (char));
+  rawdata = (char *) rax_malloc ((*n) * sizeof (char));
   if (!rawdata) return (NULL);
 
   if (fread (rawdata, sizeof (char), *n, fp) != *n) return (NULL);
@@ -86,9 +86,9 @@ alloc_phylip_struct (int nTaxa, int seqLen)
    void * mem;
    
    /** TODO */
-   phylip = (struct pllPhylip *) malloc (sizeof (struct pllPhylip));
-   phylip->seq = (unsigned char **) malloc ((nTaxa + 1) * sizeof (unsigned char *));
-   mem = malloc (sizeof (unsigned char) * (seqLen + 1) * nTaxa);
+   phylip = (struct pllPhylip *) rax_malloc (sizeof (struct pllPhylip));
+   phylip->seq = (unsigned char **) rax_malloc ((nTaxa + 1) * sizeof (unsigned char *));
+   mem = rax_malloc (sizeof (unsigned char) * (seqLen + 1) * nTaxa);
    for (i = 1; i <= nTaxa; ++i)
     {
       phylip->seq[i] = (unsigned char *) (mem + (i - 1) * (seqLen + 1) * sizeof (unsigned char));
@@ -96,7 +96,7 @@ alloc_phylip_struct (int nTaxa, int seqLen)
     }
    phylip->seq[0] = NULL;
     
-   phylip->label = (char **) calloc ((nTaxa + 1), sizeof (char *));
+   phylip->label = (char **) rax_calloc ((nTaxa + 1), sizeof (char *));
 
    phylip->nTaxa   = nTaxa;
    phylip->seqLen  = seqLen;
@@ -112,13 +112,13 @@ pllPhylipDestroy (struct pllPhylip * phylip)
 
   for (i = 1; i <= phylip->nTaxa; ++ i)
    {
-     free (phylip->label[i]);
+     rax_free (phylip->label[i]);
    }
-  free (phylip->label);
-  free (phylip->seq[1]);
-  free (phylip->seq);
-  free (phylip->weights);
-  free (phylip);
+  rax_free (phylip->label);
+  rax_free (phylip->seq[1]);
+  rax_free (phylip->seq);
+  rax_free (phylip->weights);
+  rax_free (phylip);
 }
 
 
@@ -184,7 +184,7 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
   int * seqLen;
   int rc;
 
-  seqLen = (int *) calloc (phylip->nTaxa + 1, sizeof (int));
+  seqLen = (int *) rax_calloc (phylip->nTaxa + 1, sizeof (int));
 
   NEXT_TOKEN
   for (i = 0; ; ++i)
@@ -195,13 +195,13 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
        if (token.class == LEX_EOF)
         {
           rc = parsedOk (seqLen, phylip->nTaxa, phylip->seqLen);
-          free (seqLen);
+          rax_free (seqLen);
           return (rc);
         }
 
        if (token.class == LEX_UNKNOWN)
         {
-          free (seqLen);
+          rax_free (seqLen);
           return (0);
         }
 
@@ -210,7 +210,7 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
 
        if (token.class != LEX_STRING && token.class != LEX_NUMBER && token.class != LEX_FLOAT)
         {
-          free (seqLen);
+          rax_free (seqLen);
           return (0);
         }
        phylip->label[i + 1] = strndup (token.lexeme, token.len);
@@ -223,13 +223,13 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
        if (token.class == LEX_EOF)
         {
           rc = parsedOk (seqLen, phylip->nTaxa, phylip->seqLen);
-          free (seqLen);
+          rax_free (seqLen);
           return (rc);
         }
 
        if (token.class == LEX_UNKNOWN)
         {
-         free (seqLen);
+         rax_free (seqLen);
          return (0);
         }
        
@@ -237,14 +237,14 @@ parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
 
        if (token.class != LEX_STRING)
         {
-          free (seqLen);
+          rax_free (seqLen);
           return (0);
         }
 
        if (seqLen[j + 1] + token.len > phylip->seqLen) 
         {
           fprintf (stderr, "Sequence %d is larger than specified\n", j + 1);
-          free (seqLen);
+          rax_free (seqLen);
           return (0);
         }
        memmove (phylip->seq[j + 1] + seqLen[j + 1], token.lexeme, token.len);
@@ -288,7 +288,7 @@ pllPhylipParse (const char * filename)
   /* parse the header to obtain the number of taxa and sequence length */
   if (!read_phylip_header (rawdata, &input, &nTaxa, &seqLen))
    {
-     free (rawdata);
+     rax_free (rawdata);
      fprintf (stderr, "Error while parsing PHYLIP header (number of taxa and sequence length)\n");
      return (0);
    }
@@ -302,14 +302,14 @@ pllPhylipParse (const char * filename)
      printf ("Finished with error in parsing ...\n");
      pllPhylipDestroy (phylip);
      lex_table_restore();
-     free (rawdata);
+     rax_free (rawdata);
      return (0);
    }
   
   lex_table_restore();
-  free (rawdata);
+  rax_free (rawdata);
 
-  phylip->weights  = (int *) malloc (phylip->seqLen * sizeof (int));
+  phylip->weights  = (int *) rax_malloc (phylip->seqLen * sizeof (int));
   for (i = 0; i < phylip->seqLen; ++ i) phylip->weights[i] = 1;
   return (phylip);
 }
