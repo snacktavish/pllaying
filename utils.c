@@ -355,8 +355,6 @@ void read_msa(tree *tr, partitionList *pr, const char *filename)
     initializePartitionsSequential(tr, pr);
     //printf("Here 2!\n");
     initModel(tr, empiricalFrequencies, pr);
-
-
     fclose(byteFile);
   }
 
@@ -1840,3 +1838,222 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
   rax_free (sites);
   rax_free (memptr);
 }
+
+
+static genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
+{
+  double 
+    wj, 
+    acc,
+    sumf[64],   
+    temp[64];
+ 
+  int     
+    i, 
+    j, 
+    k, 
+    l;
+
+  unsigned char  *yptr;  
+
+  for(l = 0; l < numFreqs; l++)	    
+    pfreqs[l] = 1.0 / ((double)numFreqs);
+	  
+  for (k = 1; k <= 8; k++) 
+    {	     	   	    	      			
+      for(l = 0; l < numFreqs; l++)
+	sumf[l] = 0.0;
+	      
+      for (i = 1; i <= phylip->nTaxa; i++) 
+	{		 
+          yptr = phylip->seq[i];
+	  
+	  for(j = lower; j < upper; j++) 
+	    {
+	      unsigned int code = bitMask[yptr[j]];
+	      assert(code >= 1);
+	      
+	      for(l = 0; l < numFreqs; l++)
+		{
+		  if((code >> l) & 1)
+		    temp[l] = pfreqs[l];
+		  else
+		    temp[l] = 0.0;
+		}		      	      
+	      
+	      for(l = 0, acc = 0.0; l < numFreqs; l++)
+		{
+		  if(temp[l] != 0.0)
+		    acc += temp[l];
+		}
+	      
+	      wj = phylip->weights[j] / acc;
+	      
+	      for(l = 0; l < numFreqs; l++)
+		{
+		  if(temp[l] != 0.0)		    
+		    sumf[l] += wj * temp[l];			     				   			     		   
+		}
+	    }
+	}	    	      
+      
+      for(l = 0, acc = 0.0; l < numFreqs; l++)
+	{
+	  if(sumf[l] != 0.0)
+	    acc += sumf[l];
+	}
+	      
+      for(l = 0; l < numFreqs; l++)
+	pfreqs[l] = sumf[l] / acc;	     
+    }
+
+   for (l = 0; l < numFreqs; ++ l)
+    {
+      printf ("\tnumFreqs[%d]: %f\n", l, pfreqs[l]);
+    }
+
+   /* TODO: What is that?
+/*
+  if(smoothFrequencies)         
+   {;
+    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));	   
+   }
+  else    
+    {
+      boolean 
+	zeroFreq = FALSE;
+
+      char 
+	typeOfData[1024];
+
+      getDataTypeString(tr, model, typeOfData);  
+
+      for(l = 0; l < numFreqs; l++)
+	{
+	  if(pfreqs[l] == 0.0)
+	    {
+	      printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
+	      printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
+	      zeroFreq = TRUE;
+	    }
+	}
+
+      if(zeroFreq)
+	exit(-1);
+
+      for(l = 0; l < numFreqs; l++)
+	{
+	  assert(pfreqs[l] > 0.0);
+	  tr->partitionData[model].frequencies[l] = pfreqs[l];
+	}     
+    }  
+*/
+
+  
+}
+
+double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
+{
+  int
+    model,
+    lower,
+    upper,
+    states, i, l;
+
+  double ** freqs;
+
+  freqs = (double **) rax_malloc (pl->numberOfPartitions * sizeof (double *));
+
+  for (model = 0; model < pl->numberOfPartitions; ++ model)
+   {
+     lower    = pl->partitionData[model]->lower;
+     upper    = pl->partitionData[model]->upper;
+     states   = pl->partitionData[model]->states;
+     printf ("states %d lower: %d upper: %d:\n", states, lower, upper);
+     freqs[model] = (double *) rax_malloc (states * sizeof (double));
+
+        printf ("Datatype: %d\n", pl->partitionData[model]->dataType);
+     switch  (pl->partitionData[model]->dataType)
+      {
+        case AA_DATA:
+        case DNA_DATA:
+          genericBaseFrequencies (states, 
+                                  phylip, 
+                                  lower, 
+                                  upper, 
+                                  pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
+                                  pLengths[pl->partitionData[model]->dataType].bitVector,
+                                  freqs[model]
+                                 );
+          break;
+      }
+   }
+
+  return (freqs);
+}
+/*
+double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, tree *tr)
+{  
+  int 
+    model,
+    lower,
+    upper,
+    states;
+
+  for(model = 0; model < tr->NumberOfModels; model++)
+    {      
+      lower = tr->partitionData[model].lower;
+      upper = tr->partitionData[model].upper;	  	 
+      states = tr->partitionData[model].states;
+	
+      switch(tr->partitionData[model].dataType)
+	{
+	case GENERIC_32:
+	  switch(tr->multiStateModel)
+	    {
+	    case ORDERED_MULTI_STATE:
+	    case MK_MULTI_STATE:	   
+	      {	       
+		int i;
+		double 
+		  freq = 1.0 / (double)states,
+		  acc = 0.0;
+
+		for(i = 0; i < states; i++)
+		  {
+		    acc += freq;
+		    tr->partitionData[model].frequencies[i] = freq;
+		    // printf("%f \n", freq);
+		  }
+		// printf("Frequency Deviation: %1.60f\n", acc);
+	      }
+	      break;
+	     case GTR_MULTI_STATE:
+	      genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, TRUE,
+				     bitVector32);
+	      break;
+	    default:
+	      assert(0);
+	    }
+	  break;
+	case GENERIC_64:	 
+	  assert(0);
+	  break;
+	case SECONDARY_DATA_6:
+	case SECONDARY_DATA_7:
+	case SECONDARY_DATA:
+	case AA_DATA:
+	case DNA_DATA:
+	case BINARY_DATA:	  
+	  genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, 
+				 getSmoothFreqs(tr->partitionData[model].dataType),
+				 getBitVector(tr->partitionData[model].dataType));	  	 
+	  break;	
+	default:
+	  assert(0);     
+	}      
+    }
+  
+  return;
+}
+*/
