@@ -1,7 +1,6 @@
 #ifndef __pll_PHYLIP__
 #define __pll_PHYLIP__
 #include "../../lexer.h"
-#include "ssort.h"
 
 #define PHYLIP_KEEP_UNIQUE      1 << 0
 #define PHYLIP_LEX_SORT         1 << 1
@@ -20,9 +19,9 @@ struct pllPhylip
  };
 
 struct pllPhylip * pllPhylipParse (const char *);
-void pllPhylipRemoveDuplicate (struct pllPhylip *);
 void pllPhylipDestroy (struct pllPhylip *);
 void usage (const char * cmd_name);
 void pllPhylipDump (struct pllPhylip *);
+void pllPhylipEF (struct pllPhylip * phylip, double **);
 
 #endif

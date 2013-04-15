@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "phylip.h"
+#include "ssort.h"
 
 //struct rawdata
 // {
@@ -312,98 +314,67 @@ pllPhylipParse (const char * filename)
   return (phylip);
 }
 
-void
-pllPhylipRemoveDuplicate (struct pllPhylip * phylip)
+void pllPhylipEF (struct pllPhylip * phylip, double ** ef)
 {
-  void * mem;
-  char ** sites;
-  int i, j, k;
-  int * oi;
-  int dups = 0;
+  int i, j;
+  int a, c, g, t, und;
+  int pa, pc, pg, pt, pund;
+  double total;
+  a = c = g = t = und = 0;
+
+  total = 0;
 
 
-  /* transpose the alignment matrix to sites */
-  sites = (char **) malloc (phylip->seqLen * sizeof (char *));
-  
-  mem = malloc ((phylip->nTaxa + 1) * phylip->seqLen * sizeof (char));
-  for (i = 0; i < phylip->seqLen; ++ i)
-   {
-     sites[i] = (char *) (mem + i * (phylip->nTaxa + 1) * sizeof (char));
-   }
 
   for (i = 0; i < phylip->seqLen; ++ i)
-   {
-     for (j = 0; j < phylip->nTaxa; ++ j)
-      {
-        sites[i][j] = phylip->seq[j + 1][i];
-      }
-     sites[i][j] = 0;
-   }
+  {
+    for (j = 1; j <= phylip->nTaxa; ++ j)
+    {
+      //assert (phylip->seq[i][j] == 'A' || phylip->seq[i][j] == 'C' || phylip->seq[i][j] == 'G' || phylip->seq[i][j] == 'T' || phylip->seq[i][j] == '-');
+      pa = pc = pg = pt = pund = 0;
 
-  //printf ("Original sequences:\n");
-  //for (i = 1; i <= phylip->nTaxa; ++ i)
-  // {
-  //   printf ("%s\n", phylip->seq[i]);
-  // }
+      switch (phylip->seq[j][i])
+       {
+         case 'a':
+         case 'A':
+           ++ pa;
+           break;
 
-  /* sort the sites */
-  oi = ssort1main (sites, phylip->seqLen);
+         case 'c':
+         case 'C':
+           ++ pc;
+           break;
 
-  /* find duplicates */
-  for (i = 0; i < phylip->seqLen; ++ i) oi[i] = 1;
+         case 'g':
+         case 'G':
+           ++ pg;
+           break;
 
-  for (i = 1; i < phylip->seqLen; ++ i)
-   {
-     if (! strcmp (sites[i], sites[i - 1]))
-      {
-        ++dups;
-        oi[i] = 0;
-      }
-   }
-
-  free (phylip->seq[1]);
-  free (phylip->weights);
-
-  phylip->seqLen = phylip->seqLen - dups;
-  phylip->seq[0] = (unsigned char *) malloc ((phylip->seqLen + 1) * sizeof (unsigned char) * phylip->nTaxa);
-  for (i = 0; i < phylip->nTaxa; ++ i)
-   {
-     phylip->seq[i + 1] = (unsigned char *) (phylip->seq[0] + i * (phylip->seqLen + 1) * sizeof (unsigned char));
-     phylip->seq[i + 1][phylip->seqLen] = 0;
-   }
-
-  phylip->weights = (int *) malloc (phylip->seqLen * sizeof (int));
-  phylip->weights[0] = 1;
-  for (i = 0, k = 0; i < phylip->seqLen + dups; ++ i)
-   {
-     if (!oi[i]) 
-      {
-        ++ k;
-        ++ phylip->weights[i - k];
-        continue;
-      }
-     phylip->weights[i - k] = 1;
-     for (j = 0; j < phylip->nTaxa; ++ j)
-      {
-        phylip->seq[j + 1][i - k] = sites[i][j];
-      }
-   }
-  //printf ("Total: %d k: %d\n", phylip->seqLen + k, k);
-
-  //printf ("\nUnique sequences:\n");
-  //for (i = 1; i <= phylip->nTaxa; ++ i)
-  // {
-  //   printf ("%s\n", phylip->seq[i]);
-  // }
-  //for (i = 0; i < phylip->seqLen; ++ i)
-  //  printf ("%d + ", phylip->weights[i]);
-  //printf ("\n");
-
-
-  //printf ("\nTaxa: %d SeqLen: %d\n", phylip->nTaxa, phylip->seqLen);
-  free (oi);
-  free (mem);
-  free (sites);
+         case 't':
+         case 'T':
+           ++ pt;
+           break;
+         
+         case '-':
+         case '?':
+         case 'n':
+         case 'N':
+           ++ pund;
+           break;
+         
+         default:
+           fprintf (stderr, "Error, unidentified base %c\n", phylip->seq[j][i]);
+           exit(1);
+       }
+      a += pa * phylip->weights[i];
+      c += pc * phylip->weights[i];
+      g += pg * phylip->weights[i];
+      t += pt * phylip->weights[i];
+      und += pund * phylip->weights[i];
+    }
+  }
+  total = a + c + g + t;
+  ef[0][0] = a / total; ef[0][1] = c / total; ef[0][2] = g / total; ef[0][3] = t / total;
 }
 
 

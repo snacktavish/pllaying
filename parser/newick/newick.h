@@ -1,9 +1,9 @@
 #ifndef __pll_NEWICK__
 #define __pll_NEWICK__
 #include "../../mem_alloc.h"
-#include "../../axml.h"
 #include "../../stack.h"
 #include "../../lexer.h"
+#include "../../axml.h"
 
 struct pllNewickTree
 {
@@ -11,6 +11,16 @@ struct pllNewickTree
   int tips;
   struct pllStack * tree;
 };
+
+struct item_t
+{
+  int depth;
+  char * name;
+  char * branch;
+  int leaf;
+  int rank;
+};
+
 
 struct pllNewickTree * pllNewickParseString (char * newick);
 struct pllNewickTree * pllNewickParseFile (const char * filename);

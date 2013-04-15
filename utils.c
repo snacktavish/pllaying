@@ -79,6 +79,7 @@
 #include "queue.h"
 #include "parser/partition/part.h"
 #include "parser/phylip/phylip.h"
+#include "parser/newick/newick.h"
 
 
 extern unsigned int mask32[32];
@@ -1450,6 +1451,14 @@ pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
      rax_free (pl->partitionData[i]->gapColumn);
      rax_free (pl->partitionData[i]->perSiteLikelihoods);
      rax_free (pl->partitionData[i]->partitionName);
+     rax_free (pl->partitionData[i]->expSpaceVector);
+     /*TODO: Deallocate all entries of expVector */
+     if (pl->partitionData[i]->expVector)
+      {
+        for (j = 0; j < tips - 2; ++ j)
+          rax_free (pl->partitionData[i]->expVector[j]);
+      }
+     rax_free (pl->partitionData[i]->expVector);
      rax_free (pl->partitionData[i]);
    }
   rax_free (pl->partitionData);
@@ -1584,7 +1593,7 @@ createPartitions (int * bounds, int nparts)
   pl->perGeneBranchLengths =      0;
 
   /* TODO: change NUM_BRANCHES to nparts I guess */
-  pl->partitionData = (pInfo **) rax_malloc (NUM_BRANCHES * sizeof (pInfo *));
+  pl->partitionData = (pInfo **) rax_calloc (NUM_BRANCHES, sizeof (pInfo *));
   
   for (i = 0; i < nparts; ++ i)
    {
@@ -1840,7 +1849,8 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
 }
 
 
-static genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
+static void
+genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
 {
   double 
     wj, 
@@ -1912,7 +1922,7 @@ static genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, in
       printf ("\tnumFreqs[%d]: %f\n", l, pfreqs[l]);
     }
 
-   /* TODO: What is that?
+   /* TODO: What is that? */
 /*
   if(smoothFrequencies)         
    {;
@@ -1952,13 +1962,14 @@ static genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, in
   
 }
 
-double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
+double **
+pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
 {
   int
     model,
     lower,
     upper,
-    states, i, l;
+    states;
 
   double ** freqs;
 
@@ -2057,3 +2068,288 @@ double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, tree *tr)
   return;
 }
 */
+
+void
+pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
+{
+  int i;
+
+  for (i = 0; i < models; ++ i)
+   {
+     rax_free ((*empiricalFrequencies)[i]);
+   }
+  rax_free (*empiricalFrequencies);
+
+  *empiricalFrequencies = NULL;
+}
+
+int
+pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip)
+{
+  int i;
+  nodeptr node;
+
+  if (tr->mxtips != phylip->nTaxa) return (0);
+
+  tr->aliaswgt = (int *) rax_malloc (phylip->seqLen * sizeof (int));
+  memcpy (tr->aliaswgt, phylip->weights, phylip->seqLen * sizeof (int));
+
+  tr->originalCrunchedLength = phylip->seqLen;
+  tr->rateCategory           = (int *)   rax_calloc (tr->originalCrunchedLength, sizeof (int));
+  tr->patrat                 = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+  tr->patratStored           = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+  tr->lhs                    = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
+
+  /* allocate memory for the alignment */
+  tr->yVector    = (unsigned char **) rax_malloc ((phylip->nTaxa + 1) * sizeof (unsigned char *));                                                                                                                                                                      
+  tr->yVector[0] = (unsigned char *)  rax_malloc (sizeof (unsigned char) * (phylip->seqLen + 1) * phylip->nTaxa);
+  for (i = 1; i <= phylip->nTaxa; ++ i)                      
+   {                     
+     tr->yVector[i] = (unsigned char *) (tr->yVector[0] + (i - 1) * (phylip->seqLen + 1) * sizeof (unsigned char));
+     tr->yVector[i][phylip->seqLen] = 0;                     
+   }                     
+                         
+  /* place sequences to tips */                              
+  for (i = 1; i <= phylip->nTaxa; ++ i)                      
+   {                     
+     if (!pllHashSearch (tr->nameHash, phylip->label[i],(void **)&node)) 
+      {
+        //rax_free (tr->originalCrunchedLength);
+        rax_free (tr->rateCategory);
+        rax_free (tr->patrat);
+        rax_free (tr->patratStored);
+        rax_free (tr->lhs);
+        rax_free (tr->yVector[0]);
+        rax_free (tr->yVector);
+        return (0);
+      }
+     memcpy (tr->yVector[node->number], phylip->seq[i], phylip->seqLen );
+   }
+
+  return (1);
+}
+
+tree *
+pllCreateTree (int rateHetModel, int fastScaling, int saveMemory, int useRecom)
+{
+  tree * tr;
+
+  if (rateHetModel != GAMMA && rateHetModel != CAT) return NULL;
+
+  tr = (tree *) rax_calloc (1, sizeof (tree));
+
+  tr->threadID     = 0;
+  tr->rateHetModel = rateHetModel;
+  tr->fastScaling  = fastScaling;
+  tr->saveMemory   = saveMemory;
+  tr->useRecom     = useRecom;
+
+  /* remove it from the library */
+  tr->useMedian    = FALSE;
+
+  tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
+  
+  return (tr);
+}
+
+/** @brief Initialize PLL tree structure with default values
+    
+    Initialize PLL tree structure with default values and allocate 
+    memory for its elements.
+
+    @todo
+      STILL NOT FINISHED
+*/
+void pllTreeInitDefaults (tree * tr, int nodes, int tips)
+{
+  nodeptr p0, p, q;
+  int i, j;
+  int inner;
+
+  
+
+  /* TODO: make a proper static setupTree function */
+
+  inner = tips - 1;
+
+  tr->mxtips = tips;
+
+  tr->bigCutoff = FALSE;
+  tr->treeStringLength = tr->mxtips * (nmlngth + 128) + 256 + tr->mxtips * 2;
+  tr->tree_string = (char *) rax_calloc ( tr->treeStringLength, sizeof(char));
+  tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
+  tr->tree1 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
+
+  
+  p0 = (nodeptr) rax_malloc ((tips + 3 * inner) * sizeof (node));
+  assert (p0);
+
+  tr->nodeBaseAddress  = p0;
+
+  tr->nameList         = (char **)   rax_malloc ((tips + 1) * sizeof (char *));
+  tr->nodep            = (nodeptr *) rax_malloc ((2 * tips) * sizeof (nodeptr));
+  assert (tr->nameList && tr->nodep);
+
+  tr->nodep[0] = NULL;          
+
+
+  /* TODO: FIX THIS! */
+  tr->fracchange = -1;
+
+  for (i = 1; i <= tips; ++ i)
+   {
+     p = p0++;
+
+     //p->hash      = KISS32();     
+     p->x         = 0;
+     p->xBips     = 0;
+     p->number    = i;
+     p->next      = p;
+     p->back      = NULL;
+     p->bInf      = NULL;
+     tr->nodep[i]  = p;
+   }
+
+  for (i = tips + 1; i <= tips + inner; ++i)
+   {
+     q = NULL;
+     for (j = 1; j <= 3; ++ j)
+     {
+       p = p0++;
+       if (j == 1)
+        {
+          p->xBips = 1;
+          p->x = 1; //p->x     = 1;
+        }
+       else
+        {
+          p->xBips = 0;
+          p->x     = 0;
+        }
+       p->number = i;
+       p->next   = q;
+       p->bInf   = NULL;
+       p->back   = NULL;
+       p->hash   = 0;
+       q         = p;
+     }
+    p->next->next->next = p;
+    tr->nodep[i]         = p;
+   }
+
+  tr->likelihood  = unlikely;
+  tr->start       = NULL;
+  tr->ntips       = 0;
+  tr->nextnode    = 0;
+
+  for (i = 0; i < NUM_BRANCHES; ++ i) tr->partitionSmoothed[i] = FALSE;
+
+  tr->bitVectors = NULL;
+  tr->vLength    = 0;
+  tr->h          = NULL;
+
+  /* TODO: Fix hash type */
+  tr->nameHash   = pllHashInit (10 * tr->mxtips);
+
+  /* TODO: do these options really fit here or should they be put elsewhere? */
+  tr->td[0].count            = 0;
+  tr->td[0].ti               = (traversalInfo *) rax_malloc (sizeof(traversalInfo) * (size_t)tr->mxtips);
+  tr->td[0].parameterValues  = (double *) rax_malloc(sizeof(double) * (size_t)NUM_BRANCHES);
+  tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
+  tr->td[0].executeModel[0]  = TRUE;                                                                                                                                                                                                                                    
+  for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = TRUE;
+
+
+  
+}
+
+
+/** @brief Set the tree topology according to a parsed newick tree
+
+    Set the tree topology based on a parsed and validated newick tree
+
+    @param tree
+      The PLL tree
+
+    @param nt
+      The \a pllNewickTree wrapper structure that contains the parsed newick tree
+
+*/
+void
+pllTreeSetTopologyNewick (tree * tr, struct pllNewickTree * nt)
+{
+  struct pllStack * nodeStack = NULL;
+  struct pllStack * head;
+  struct item_t * item;
+  int i, j, k;
+  
+/*
+  for (i = 0; i < partitions->numberOfPartitions; ++ i)
+   {
+     partitions->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
+     partitions->partitionData[i]->partitionContribution = -1.0;
+     partitions->partitionData[i]->partitionLH           =  0.0;
+     partitions->partitionData[i]->fracchange            =  1.0;
+   }
+*/
+  
+  pllTreeInitDefaults (tr, nt->nodes, nt->tips);
+
+  i = nt->tips + 1;
+  j = 1;
+  nodeptr v;
+  
+  
+  for (head = nt->tree; head; head = head->next)
+  {
+    item = (struct item_t *) head->item;
+    if (!nodeStack)
+     {
+       pllStackPush (&nodeStack, tr->nodep[i]);
+       pllStackPush (&nodeStack, tr->nodep[i]->next);
+       pllStackPush (&nodeStack, tr->nodep[i]->next->next);
+       ++i;
+     }
+    else
+     {
+       v = (nodeptr) pllStackPop (&nodeStack);
+       if (item->rank)  /* internal node */
+        {
+          v->back           = tr->nodep[i];
+          tr->nodep[i]->back = v; //t->nodep[v->number]
+          pllStackPush (&nodeStack, tr->nodep[i]->next);
+          pllStackPush (&nodeStack, tr->nodep[i]->next->next);
+          double z = exp((-1 * atof(item->branch))/tr->fracchange);
+          if(z < zmin) z = zmin;
+          if(z > zmax) z = zmax;
+          for (k = 0; k < NUM_BRANCHES; ++ k)
+             v->z[k] = tr->nodep[i]->z[k] = z;
+
+          ++ i;
+        }
+       else             /* leaf */
+        {
+          v->back           = tr->nodep[j];
+          tr->nodep[j]->back = v; //t->nodep[v->number];
+
+          double z = exp((-1 * atof(item->branch))/tr->fracchange);
+          if(z < zmin) z = zmin;
+          if(z > zmax) z = zmax;
+          for (k = 0; k < NUM_BRANCHES; ++ k)
+            v->z[k] = tr->nodep[j]->z[k] = z;
+            
+          //t->nameList[j] = strdup (item->name);
+          tr->nameList[j] = (char *) rax_malloc ((strlen (item->name) + 1) * sizeof (char));
+          strcpy (tr->nameList[j], item->name);
+          pllHashAdd (tr->nameHash, tr->nameList[j], (void *) (tr->nodep[j]));
+          ++ j;
+        }
+     }
+  }
+  
+  tr->start = tr->nodep[1];
+  
+  pllStackClear (&nodeStack);
+}
+
+
