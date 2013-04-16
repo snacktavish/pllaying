@@ -66,8 +66,6 @@ extern "C" {
 
 #include "genericParallelization.h"
 #include "mem_alloc.h"
-#include "parser/phylip/phylip.h"
-#include "queue.h"
 
 #define MAX_TIP_EV     0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define MAX_LOCAL_SMOOTHING_ITERATIONS     32          /** @brief maximum iterations of smoothings per insert in the */
@@ -1761,15 +1759,6 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions);
 void computeAllAncestralVectors(nodeptr p, tree *tr, partitionList *pr);
 nodeptr pickRandomSubtree(tree *tr);
 void init_default(tree *tr);
-
-void pllPartitionsDestroy (partitionList **, int, int);
-int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
-partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip);
-void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
-double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
-//void pllTreeSetTopologyNewick (tree * tr, struct pllNewickTree * nt);
-int pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip);
-void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 
 #ifdef __cplusplus
 } /* extern "C" */

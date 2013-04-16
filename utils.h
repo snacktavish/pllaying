@@ -1,23 +1,22 @@
-/*
- * utils.h
- *
- *  Created on: Nov 22, 2012
- *      Author: tung
- */
-
-/*
-I just put some declarations of the functions that I need here.
-Please extend this file. It's important to have a header file.
-It make things much easier for the integration with other software.
-*/
-
-#ifndef UTILS_H_
-#define UTILS_H_
+#ifndef __pll_UTILS__
+#define __pll_UTILS__
 
 #include "axml.h"
+#include "parser/phylip/phylip.h"
+#include "parser/newick/newick.h"
+#include "queue.h"
+
 
 void read_msa(tree *tr, const char *filename);
-
 void makeParsimonyTree(tree *tr);
+void pllPartitionsDestroy (partitionList **, int, int);
+int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
+partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip);
+void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
+double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
+void pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt);
+int pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip);
+void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
+void pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList);
 
 #endif /* UTILS_H_ */
