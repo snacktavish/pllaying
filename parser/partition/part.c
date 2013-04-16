@@ -29,7 +29,7 @@ static void init_model_names (void)
 }
 
 void
-pllPartitionsDestroy (struct pllQueue ** partitions)
+pllQueuePartitionsDestroy (struct pllQueue ** partitions)
 {
   struct pllPartitionInfo * pi;
   struct pllPartitionRegion * region;
@@ -102,7 +102,7 @@ parse_partition (char * rawdata, int * inp)
     /* read partition type */
     if (token.class != LEX_STRING) 
      {
-       pllPartitionsDestroy (&partitions);
+       pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     //pi->partitionModel = strndup (token.lexeme, token.len);
@@ -113,7 +113,7 @@ parse_partition (char * rawdata, int * inp)
     // check partition model
     if (strcmp(pi->partitionModel, "DNA") && !pllHashSearch (hashTable, pi->partitionModel, &item))
      {
-       pllPartitionsDestroy (&partitions);
+       pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
@@ -122,7 +122,7 @@ parse_partition (char * rawdata, int * inp)
 
     if (token.class != LEX_COMMA) 
      {
-       pllPartitionsDestroy (&partitions);
+       pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
@@ -131,7 +131,7 @@ parse_partition (char * rawdata, int * inp)
     /* read partition name */
     if (token.class != LEX_STRING) 
      {
-       pllPartitionsDestroy (&partitions);
+       pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     //pi->partitionName = strndup (token.lexeme, token.len);
@@ -145,7 +145,7 @@ parse_partition (char * rawdata, int * inp)
     /* read equal sign */
     if (token.class != LEX_EQUAL)
      {
-       pllPartitionsDestroy (&partitions);
+       pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
@@ -157,7 +157,7 @@ parse_partition (char * rawdata, int * inp)
       region = (struct pllPartitionRegion *) rax_malloc (sizeof (struct pllPartitionRegion));
       if (token.class != LEX_NUMBER) 
        {
-         pllPartitionsDestroy (&partitions);
+         pllQueuePartitionsDestroy (&partitions);
          return (0);
        }
       region->start  = region->end = atoi (token.lexeme);  
@@ -171,13 +171,13 @@ parse_partition (char * rawdata, int * inp)
          CONSUME(LEX_WHITESPACE)
          if (token.class != LEX_NUMBER) 
           {
-            pllPartitionsDestroy (&partitions);
+            pllQueuePartitionsDestroy (&partitions);
             return (0);
           }
          region->end = atoi (token.lexeme);
          if (region->end < region->start)
           {
-            pllPartitionsDestroy (&partitions);
+            pllQueuePartitionsDestroy (&partitions);
             return (0);
           }
          NEXT_TOKEN
@@ -188,7 +188,7 @@ parse_partition (char * rawdata, int * inp)
             CONSUME(LEX_WHITESPACE)
             if (token.class != LEX_NUMBER) 
              {
-               pllPartitionsDestroy (&partitions);
+               pllQueuePartitionsDestroy (&partitions);
                return (0);
              }
             region->stride = atoi (token.lexeme);

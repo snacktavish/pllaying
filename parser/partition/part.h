@@ -20,7 +20,7 @@ struct pllPartitionInfo
   struct pllQueue * regionList;
 };
 
-void  pllPartitionsDestroy (struct pllQueue ** partitions);
+void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);
 struct pllQueue * pllPartitionParse (const char * filename);
 void pllPartitionDump (struct pllQueue * partitions);
 #endif
