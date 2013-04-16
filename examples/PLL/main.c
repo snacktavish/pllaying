@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include "../../axml.h"
+#include "../../utils.h"
 #include "../../lexer.h"
 #include "../../hash.h"
 #include "../../parser/phylip/phylip.h"
@@ -74,7 +75,10 @@ int main (int argc, char * argv[])
   tr = pllCreateTree (GAMMA, FALSE, FALSE, FALSE);
 
   /* Set the topology of the PLL tree from a parsed newick tree */
-  pllTreeSetTopologyNewick (tr, newick);
+  pllTreeInitTopologyNewick (tr, newick);
+  /* Or instead of the previous function use the next commented line to create
+     a random tree topology 
+  pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
 
   /* Connect the alignment with the tree structure */
   if (!pllTreeConnectAlignment (tr, phylip))
