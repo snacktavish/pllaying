@@ -1917,11 +1917,6 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 	pfreqs[l] = sumf[l] / acc;	     
     }
 
-   for (l = 0; l < numFreqs; ++ l)
-    {
-      printf ("\tnumFreqs[%d]: %f\n", l, pfreqs[l]);
-    }
-
    /* TODO: What is that? */
 /*
   if(smoothFrequencies)         
@@ -1980,10 +1975,8 @@ pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
      lower    = pl->partitionData[model]->lower;
      upper    = pl->partitionData[model]->upper;
      states   = pl->partitionData[model]->states;
-     printf ("states %d lower: %d upper: %d:\n", states, lower, upper);
      freqs[model] = (double *) rax_malloc (states * sizeof (double));
 
-        printf ("Datatype: %d\n", pl->partitionData[model]->dataType);
      switch  (pl->partitionData[model]->dataType)
       {
         case AA_DATA:
@@ -2264,7 +2257,7 @@ void pllTreeInitDefaults (tree * tr, int nodes, int tips)
 }
 
 
-/** @brief Set the tree topology according to a parsed newick tree
+/** @brief Initializes the PLL tree topology according to a parsed newick tree
 
     Set the tree topology based on a parsed and validated newick tree
 
@@ -2276,7 +2269,7 @@ void pllTreeInitDefaults (tree * tr, int nodes, int tips)
 
 */
 void
-pllTreeSetTopologyNewick (tree * tr, struct pllNewickTree * nt)
+pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt)
 {
   struct pllStack * nodeStack = NULL;
   struct pllStack * head;
@@ -2352,4 +2345,35 @@ pllTreeSetTopologyNewick (tree * tr, struct pllNewickTree * nt)
   pllStackClear (&nodeStack);
 }
 
+/** @brief Initialize PLL tree with a random topology
+
+    Initializes the PLL tree with a randomly created topology
+
+    @todo
+      Perhaps pass a seed?
+
+    @param tr
+      The PLL tree
+
+    @param tips
+      Number of tips
+
+    @param nameList
+      A set of \a tips names representing the taxa labels
+*/
+void 
+pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList)
+{
+  int i;
+  pllTreeInitDefaults (tr, 2 * tips - 1, tips);
+
+  for (i = 1; i <= tips; ++ i)
+   {
+     tr->nameList[i] = (char *) rax_malloc ((strlen (nameList[i]) + 1) * sizeof (char));
+     strcpy (tr->nameList[i], nameList[i]);
+     pllHashAdd (tr->nameHash, tr->nameList[i], (void *) (tr->nodep[i]));
+   }
+
+  makeRandomTree (tr);
+}
 
