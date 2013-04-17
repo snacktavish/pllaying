@@ -1577,39 +1577,55 @@ swapSite (unsigned char ** buf, int s1, int s2, int nTaxa)
       This array is of size 2 * \a nparts. The elements are always couples (lower,upper). The upper
       bounds is a site that is not included in the partition
 
+    @todo
+      Fix the bug in PLL 
+
     @param nparts
       The number of partitions to be created
       
 */
 static partitionList *
-createPartitions (int * bounds, int nparts)
+createPartitions (struct pllQueue * parts, int * bounds)
 {
   partitionList * pl;
+  struct pllPartitionInfo * pi;
+  struct pllQueueItem * elm;
   int i;
 
   pl = (partitionList *) rax_malloc (sizeof (partitionList));
   
-  pl->numberOfPartitions   = nparts;
+  // TODO: fix this
   pl->perGeneBranchLengths =      0;
 
-  /* TODO: change NUM_BRANCHES to nparts I guess */
+  // TODO: change NUM_BRANCHES to number of partitions I guess
   pl->partitionData = (pInfo **) rax_calloc (NUM_BRANCHES, sizeof (pInfo *));
   
-  for (i = 0; i < nparts; ++ i)
+  for (i = 0, elm = parts->head; elm; elm = elm->next, ++ i)
    {
+     pi = (struct pllPartitionInfo *) elm->item;
      pl->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
 
      pl->partitionData[i]->lower = bounds[i << 1];
      pl->partitionData[i]->upper = bounds[(i << 1) + 1];
      pl->partitionData[i]->width = bounds[(i << 1) + 1] - bounds[i << 1];
      
-     /* TODO: get the model parameters, currently some defaults */
-     pl->partitionData[i]->states                =        4; 
-     pl->partitionData[i]->maxTipStates          =       16;
-     pl->partitionData[i]->dataType              = DNA_DATA;
-     pl->partitionData[i]->protModels            =        0;
+     // TODO: get the model parameters, currently some defaults
+     if (!strcmp (pi->partitionModel, "DNA"))  /* DNA */
+      {
+        pl->partitionData[i]->dataType           = DNA_DATA;
+        pl->partitionData[i]->maxTipStates       = 16;
+      }
+     else  /* AA */
+      {
+        pl->partitionData[i]->dataType           = AA_DATA; 
+        pl->partitionData[i]->protModels         = pi->protModels;
+        pl->partitionData[i]->maxTipStates       = 23;
+      }
+     pl->partitionData[i]->states                = pLengths[pl->partitionData[i]->dataType].states;
+     //pl->partitionData[i]->dataType              = DNA_DATA;
+     //pl->partitionData[i]->protModels            =        0;
      pl->partitionData[i]->numberOfCategories    =        1;
-     pl->partitionData[i]->protModels            =        2;
+     //pl->partitionData[i]->protModels            =        2;
      pl->partitionData[i]->autoProtModels        =        0;
      pl->partitionData[i]->nonGTR                =        0;
      pl->partitionData[i]->protFreqs             =        0;
@@ -1619,8 +1635,8 @@ createPartitions (int * bounds, int nparts)
      pl->partitionData[i]->executeModel          =     TRUE;
 
 
-     pl->partitionData[i]->partitionName      = (char *) rax_malloc (10 * sizeof (char));
-     strcpy (pl->partitionData[i]->partitionName, "PART1");
+     pl->partitionData[i]->partitionName         = (char *) rax_malloc ((strlen (pi->partitionName) + 1) * sizeof (char));
+     strcpy (pl->partitionData[i]->partitionName, pi->partitionName);
    }
 
   return (pl);
@@ -1694,7 +1710,8 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
       }
      newBounds[(k << 1) + 1] = dst;    /* set the uppwer limit for this partition */
    }
-  pl = createPartitions (newBounds, nparts);
+  pl = createPartitions (parts, newBounds);
+  pl->numberOfPartitions = nparts;
 
   rax_free (newBounds);
   rax_free (oi);
@@ -1881,6 +1898,7 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 	  for(j = lower; j < upper; j++) 
 	    {
 	      unsigned int code = bitMask[yptr[j]];
+              if (code <1) printf ("code: %d\n");
 	      assert(code >= 1);
 	      
 	      for(l = 0; l < numFreqs; l++)
@@ -2334,6 +2352,7 @@ pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt)
           //t->nameList[j] = strdup (item->name);
           tr->nameList[j] = (char *) rax_malloc ((strlen (item->name) + 1) * sizeof (char));
           strcpy (tr->nameList[j], item->name);
+          
           pllHashAdd (tr->nameHash, tr->nameList[j], (void *) (tr->nodep[j]));
           ++ j;
         }
@@ -2377,3 +2396,125 @@ pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList)
   makeRandomTree (tr);
 }
 
+void
+pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)
+{
+  char meaningDNA[256];
+  char  meaningAA[256];
+  char * d;
+  int i, j, k;
+
+  for (i = 0; i < 256; ++ i)
+   {
+     meaningDNA[i] = -1;
+     meaningAA[i]  = -1;
+   }
+
+  /* DNA data */
+
+  meaningDNA['A'] =  1;
+  meaningDNA['B'] = 14;
+  meaningDNA['C'] =  2;
+  meaningDNA['D'] = 13;
+  meaningDNA['G'] =  4;
+  meaningDNA['H'] = 11;
+  meaningDNA['K'] = 12;
+  meaningDNA['M'] =  3;
+  meaningDNA['R'] =  5;
+  meaningDNA['S'] =  6;
+  meaningDNA['T'] =  8;
+  meaningDNA['U'] =  8;
+  meaningDNA['V'] =  7;
+  meaningDNA['W'] =  9;
+  meaningDNA['Y'] = 10;
+  meaningDNA['a'] =  1;
+  meaningDNA['b'] = 14;
+  meaningDNA['c'] =  2;
+  meaningDNA['d'] = 13;
+  meaningDNA['g'] =  4;
+  meaningDNA['h'] = 11;
+  meaningDNA['k'] = 12;
+  meaningDNA['m'] =  3;
+  meaningDNA['r'] =  5;
+  meaningDNA['s'] =  6;
+  meaningDNA['t'] =  8;
+  meaningDNA['u'] =  8;
+  meaningDNA['v'] =  7;
+  meaningDNA['w'] =  9;
+  meaningDNA['y'] = 10;
+
+  meaningDNA['N'] =
+  meaningDNA['n'] =
+  meaningDNA['O'] =
+  meaningDNA['o'] =
+  meaningDNA['X'] =
+  meaningDNA['x'] =
+  meaningDNA['-'] =
+  meaningDNA['?'] = 15;
+ 
+  /* AA data */
+
+  meaningAA['A'] =  0;  /* alanine */
+  meaningAA['R'] =  1;  /* arginine */
+  meaningAA['N'] =  2;  /*  asparagine*/
+  meaningAA['D'] =  3;  /* aspartic */
+  meaningAA['C'] =  4;  /* cysteine */
+  meaningAA['Q'] =  5;  /* glutamine */
+  meaningAA['E'] =  6;  /* glutamic */
+  meaningAA['G'] =  7;  /* glycine */
+  meaningAA['H'] =  8;  /* histidine */
+  meaningAA['I'] =  9;  /* isoleucine */
+  meaningAA['L'] =  10; /* leucine */
+  meaningAA['K'] =  11; /* lysine */
+  meaningAA['M'] =  12; /* methionine */
+  meaningAA['F'] =  13; /* phenylalanine */
+  meaningAA['P'] =  14; /* proline */
+  meaningAA['S'] =  15; /* serine */
+  meaningAA['T'] =  16; /* threonine */
+  meaningAA['W'] =  17; /* tryptophan */
+  meaningAA['Y'] =  18; /* tyrosine */
+  meaningAA['V'] =  19; /* valine */
+  meaningAA['B'] =  20; /* asparagine, aspartic 2 and 3*/
+  meaningAA['Z'] =  21; /*21 glutamine glutamic 5 and 6*/
+  meaningAA['a'] =  0;  /* alanine */
+  meaningAA['r'] =  1;  /* arginine */
+  meaningAA['n'] =  2;  /*  asparagine*/
+  meaningAA['d'] =  3;  /* aspartic */
+  meaningAA['c'] =  4;  /* cysteine */
+  meaningAA['q'] =  5;  /* glutamine */
+  meaningAA['e'] =  6;  /* glutamic */
+  meaningAA['g'] =  7;  /* glycine */
+  meaningAA['h'] =  8;  /* histidine */
+  meaningAA['i'] =  9;  /* isoleucine */
+  meaningAA['l'] =  10; /* leucine */
+  meaningAA['k'] =  11; /* lysine */
+  meaningAA['m'] =  12; /* methionine */
+  meaningAA['f'] =  13; /* phenylalanine */
+  meaningAA['p'] =  14; /* proline */
+  meaningAA['s'] =  15; /* serine */
+  meaningAA['t'] =  16; /* threonine */
+  meaningAA['w'] =  17; /* tryptophan */
+  meaningAA['y'] =  18; /* tyrosine */
+  meaningAA['v'] =  19; /* valine */
+  meaningAA['b'] =  20; /* asparagine, aspartic 2 and 3*/
+  meaningAA['z'] =  21; /*21 glutamine glutamic 5 and 6*/
+
+  meaningAA['X'] = 
+  meaningAA['x'] = 
+  meaningAA['?'] = 
+  meaningAA['*'] = 
+  meaningAA['-'] = 22;
+
+  for (i = 0; i < partitions->numberOfPartitions; ++ i)
+   {
+     d = (partitions->partitionData[i]->dataType == DNA_DATA) ? meaningDNA : meaningAA;
+     
+     for (j = 1; j <= phylip->nTaxa; ++ j)
+      {
+        for (k = partitions->partitionData[i]->lower; k < partitions->partitionData[i]->upper; ++ k)
+         {
+           phylip->seq[j][k] = d[phylip->seq[j][k]];
+         }
+      }
+   }
+}

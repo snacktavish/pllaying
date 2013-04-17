@@ -18,5 +18,6 @@ void pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt);
 int pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList);
+void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
 
 #endif /* UTILS_H_ */
