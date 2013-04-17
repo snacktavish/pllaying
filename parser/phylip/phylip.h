@@ -22,6 +22,5 @@ struct pllPhylip * pllPhylipParse (const char *);
 void pllPhylipDestroy (struct pllPhylip *);
 void usage (const char * cmd_name);
 void pllPhylipDump (struct pllPhylip *);
-void pllPhylipEF (struct pllPhylip * phylip, double **);
 
 #endif
