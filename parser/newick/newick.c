@@ -456,7 +456,7 @@ pllTreeDestroy (tree * tr)
   for (i = 1; i <= tr->mxtips; ++ i)
     rax_free (tr->nameList[i]);
   
-  pllHashDestroy (&(tr->nameHash));
+  pllHashDestroy (&(tr->nameHash), FALSE);
   if (tr->yVector)
    {
      if (tr->yVector[0]) rax_free (tr->yVector[0]);
