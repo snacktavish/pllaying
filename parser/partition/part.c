@@ -13,18 +13,21 @@ static struct pllHashTable * hashTable;
 
 static void destroy_model_names(void)
 {
-  pllHashDestroy (&hashTable);
+  pllHashDestroy (&hashTable, TRUE);
 }
 
 static void init_model_names (void)
 {
   int i;
+  int * item;
 
   hashTable = pllHashInit (NUM_PROT_MODELS);
 
   for (i = 0; i < NUM_PROT_MODELS; ++ i)
    {
-     pllHashAdd (hashTable, protModels[i], NULL);
+     item  = (int *) rax_malloc (sizeof (int));
+     *item = i;
+     pllHashAdd (hashTable, protModels[i], (void *) item);
    }
 }
 
@@ -83,7 +86,7 @@ parse_partition (char * rawdata, int * inp)
   struct pllQueue * partitions;
   struct pllPartitionInfo * pi;
   struct pllPartitionRegion * region;
-  void * item;
+  int * item;
 
   input  = *inp;
 
@@ -111,14 +114,18 @@ parse_partition (char * rawdata, int * inp)
     pi->partitionModel[token.len] = 0;
     for (i = 0; i < token.len; ++i) pi->partitionModel[i] = toupper(pi->partitionModel[i]);
     // check partition model
-    if (strcmp(pi->partitionModel, "DNA") && !pllHashSearch (hashTable, pi->partitionModel, &item))
+    pi->protModels = 0;
+    if (strcmp (pi->partitionModel, "DNA"))
      {
-       pllQueuePartitionsDestroy (&partitions);
-       return (0);
+       if (! pllHashSearch (hashTable, pi->partitionModel, (void **)&item))
+        {
+          pllQueuePartitionsDestroy (&partitions);
+          return (0);
+        }
+       pi->protModels = *item;
      }
     NEXT_TOKEN
     CONSUME(LEX_WHITESPACE)
-
 
     if (token.class != LEX_COMMA) 
      {

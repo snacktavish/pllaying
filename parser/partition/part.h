@@ -17,6 +17,7 @@ struct pllPartitionInfo
 {
   char * partitionName;
   char * partitionModel;
+  int protModels;
   struct pllQueue * regionList;
 };
 
