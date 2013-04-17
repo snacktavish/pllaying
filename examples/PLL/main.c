@@ -18,6 +18,7 @@ int main (int argc, char * argv[])
   struct pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
+  int i;
 
   if (argc != 4)
    {
@@ -58,15 +59,15 @@ int main (int argc, char * argv[])
 
   /* commit the partitions and build a partitions structure */
   partitions = pllPartitionsCommit (parts, phylip);
-
+  
   /* destroy the  intermedia partition queue structure */
   pllQueuePartitionsDestroy (&parts);
 
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (phylip, partitions);
 
-  /* TODO: do the base substitution */
-  pllPhylipSubst (phylip, PHYLIP_DNA_DATA);
+  /* Do the base substitution (from A,C,G....  ->   0,1,2,3....)*/
+  pllBaseSubstitute (phylip, partitions);
 
   /* Compute the empirical frequencies */
   empiricalFrequencies = pllBaseFrequenciesGTR (partitions, phylip);
