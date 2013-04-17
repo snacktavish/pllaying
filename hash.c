@@ -159,12 +159,15 @@ pllHashSearch (struct pllHashTable * hTable, char * s, void ** item)
     @param hTable
       Hash table to be deallocated
 
+    @pram freeData
+      Boolean value on whether to deallocate assigned data
+
     @notes
       Deallocates the structure for the hash table. Note that the 
       data associated with the indexed strings are not deallocated.
 */
 void 
-pllHashDestroy (struct pllHashTable ** hTable)
+pllHashDestroy (struct pllHashTable ** hTable, int freeData)
 {
   int i;
   struct pllHashItem * hItem;
@@ -178,6 +181,7 @@ pllHashDestroy (struct pllHashTable ** hTable)
        tmp   = hItem;
        hItem = hItem->next;
        rax_free (tmp->str);
+       if (freeData)  rax_free (tmp->data);
        rax_free (tmp);
      }
   }

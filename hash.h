@@ -18,5 +18,5 @@ unsigned int pllHashString (const char * s, unsigned int size);
 int pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item);
 struct pllHashTable * pllHashInit (int n);
 int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
-void pllHashDestroy (struct pllHashTable ** hTable);
+void pllHashDestroy (struct pllHashTable ** hTable, int);
 #endif
