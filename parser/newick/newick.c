@@ -441,44 +441,6 @@ void pllNewickParseDestroy (struct pllNewickTree ** t)
   (*t) = NULL;
 }
 
-/** @brief Deallocate PLL tree structure
-
-    Deallocates the tree structure associated with the library and all
-    its elements. 
-
-    @param tr
-      The tree structure
-*/
-void
-pllTreeDestroy (tree * tr)
-{
-  int i;
-  for (i = 1; i <= tr->mxtips; ++ i)
-    rax_free (tr->nameList[i]);
-  
-  pllHashDestroy (&(tr->nameHash), FALSE);
-  if (tr->yVector)
-   {
-     if (tr->yVector[0]) rax_free (tr->yVector[0]);
-     rax_free (tr->yVector);
-   }
-  rax_free (tr->aliaswgt);
-  rax_free (tr->rateCategory);
-  rax_free (tr->patrat);
-  rax_free (tr->patratStored);
-  rax_free (tr->lhs);
-  rax_free (tr->td[0].parameterValues);
-  rax_free (tr->td[0].executeModel);
-  rax_free (tr->td[0].ti);
-  rax_free (tr->nameList);
-  rax_free (tr->nodep);
-  rax_free (tr->nodeBaseAddress);
-  rax_free (tr->tree_string);
-  rax_free (tr->tree0);
-  rax_free (tr->tree1);
-  rax_free (tr);
-}
-
 /** @brief Parse a newick tree file
   
     Parse a newick file and create a stack structure which represents the tree
