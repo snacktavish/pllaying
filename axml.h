@@ -924,7 +924,7 @@ typedef struct {
   double partitionContribution;
   double partitionLH;
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
   int partitionAssignment;
 #endif
 
@@ -1072,7 +1072,7 @@ typedef  struct  {
   int threadID;
   volatile int numberOfThreads;
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
  
   unsigned char *y_ptr; 
   
@@ -1347,11 +1347,8 @@ typedef struct
 
 /****************************** FUNCTIONS ****************************************************/
 
-#ifdef _BAYESIAN 
-extern void mcmc(tree *tr, analdef *adef);
-#endif
 
-#if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 boolean isThisMyPartition(partitionList *pr, int tid, int model);
 void printParallelTimePerRegion(); 
 #endif
@@ -1654,7 +1651,7 @@ extern void masterBarrier(int jobType, tree *tr, partitionList *pr);
 
 #endif
 
-#if (defined(_FINE_GRAIN_MPI) || (_USE_PTHREADS))
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
 boolean workerTrap(tree *tr, partitionList *pr);
 void initMPI(int argc, char *argv[]); 

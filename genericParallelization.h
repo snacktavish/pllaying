@@ -11,7 +11,7 @@ extern double *globalResult;
 
 /* #define MEASURE_TIME_PARALLEL */
 #define _PORTABLE_PTHREADS
-/* #define DEBUG_PARALLEL  */
+/* #define DEBUG_PARALLEL */ 
 /* #define DEBUG_MPI_EACH_SEND */
 /* #define _REPRODUCIBLE_MPI_OR_PTHREADS */
 
@@ -74,8 +74,8 @@ typedef struct  _jobDef
 
 extern int processes; 
 extern int processID; 
-char* addBytes(char *buf, void *toAdd, int numBytes); 
-char* popBytes(char *buf, void *result, int numBytes); 
+char* addBytes(char *buf, void *toAdd, size_t numBytes); 
+char* popBytes(char *buf, void *result, size_t numBytes); 
 #endif 
 
 /*********************/

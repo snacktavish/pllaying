@@ -1022,11 +1022,20 @@ static nodeptr pickRandomSubtree(tree *tr)
  * */
 int main (int argc, char *argv[])
 { 
-  tree  *tr = (tree*)rax_malloc(sizeof(tree));
-  partitionList *partitions = (partitionList*)rax_malloc(sizeof(partitionList));
-  partitions->partitionData = (pInfo**)rax_malloc(NUM_BRANCHES*sizeof(pInfo*));
+#ifdef _FINE_GRAIN_MPI
+    /* 
+     once mpi workers are signalled to finish, it is impontant that
+     they immediately terminate! (to avoid undefined behavior)
+   */
+  
+  initMPI(argc, argv);
+#endif
 
-  analdef *adef = (analdef*)rax_malloc(sizeof(analdef));
+  tree  *tr = (tree*)rax_calloc(1,sizeof(tree));
+  partitionList *partitions = (partitionList*)rax_calloc(1,sizeof(partitionList));
+  partitions->partitionData = (pInfo**)rax_calloc(NUM_BRANCHES,sizeof(pInfo*));
+
+  analdef *adef = (analdef*)rax_calloc(1,sizeof(analdef));
 
   double **empiricalFrequencies;
 
@@ -1051,16 +1060,12 @@ int main (int argc, char *argv[])
   /* 
      initialize the workers for mpi or pthreads
    */
-#ifdef _FINE_GRAIN_MPI
-  /* 
-     once mpi workers are signalled to finish, it is impontant that
-     they immediately terminate! (to avoid undefined behavior)
-   */
-#ifdef MEASURE_TIME_PARALLEL
-  masterTimePerPhase = gettime();
-#endif
-  initMPI(argc, argv);
-  if(workerTrap(tr, partitions))
+#ifdef _FINE_GRAIN_MPI  
+
+  /* NOTICE after the worker trap finishes, worker processes return to
+     the main method. From there, they should immediately return,
+     since they already finalized their MPI */
+  if(workerTrap(tr, partitions)) 
     return 0; 
 #endif
 #ifdef _USE_PTHREADS
@@ -1473,6 +1478,11 @@ printModelAndProgramInfo(tr, partitions, adef, argc, argv);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* workers escape from their while loop (could be joined in pthread case )  */
+
+  /* NOTICE: this call MUST be the last call your program executes. It
+     will clean up the trees (and local trees of workers) and the MPI
+     environment is terminated. The next call your program executes
+     should be the return value of the main method. */
   masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
 #endif
 

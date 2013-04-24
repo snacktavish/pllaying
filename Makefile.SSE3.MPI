@@ -1,16 +1,20 @@
 # Makefile August 2006 by Alexandros Stamatakis
 # Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
 
+
 CC = mpicc
 
-CFLAGS = -g -D_OPTIMIZED_FUNCTIONS -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -O2 -fomit-frame-pointer -funroll-loops 
-#-D_USE_MPI2
+CFLAGS =   -O2 -D_OPTIMIZED_FUNCTIONS -DRAXML_USE_LLALLOC -D_FINE_GRAIN_MPI -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -fomit-frame-pointer -funroll-loops -Wall  #  -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
 
 LIBRARIES = -lm
 
 RM = rm -f
 
-objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o
+
+# not needed by mpi stuff 
+# 
+
+objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o  lockless_allocator/ll_alloc.o mem_alloc.o
 
 all : raxmlLight-MPI
 
@@ -41,6 +45,7 @@ stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
 ssort.o : parser/phylip/ssort.c
 	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
+lockless_allocator/ll_alloc.o: lockless_allocator/ll_alloc.c lockless_allocator/compiler.h lockless_allocator/gcc.h
 
 clean : 
 	$(RM) *.o raxmlLight-MPI

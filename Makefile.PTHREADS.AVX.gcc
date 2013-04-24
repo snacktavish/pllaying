@@ -5,19 +5,23 @@ CC = gcc
 
 CFLAGS = -DRAXML_USE_LLALLOC -D_USE_PTHREADS -D__SIM_SSE3 -msse3 -D_OPTIMIZED_FUNCTIONS -D_GNU_SOURCE -O2 -fomit-frame-pointer -funroll-loops -D__AVX -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast
 
-
 LIBRARIES = -lm -mavx -pthread 
 
 RM = rm -f
 
 objs    = hash.o stack.o ssort.o queue.o utils.o axml.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o
 
-all : raxmlLight-AVX-Pthreads
+
+TARGET=raxmlLight-AVX-Pthreads
+
+all : $(TARGET)
+
+
 
 GLOBAL_DEPS = axml.h globalVariables.h
 
-raxmlLight-AVX-Pthreads : $(objs)
-	$(CC) -o raxmlLight-AVX-Pthreads $(objs) $(LIBRARIES) 
+$(TARGET) : $(objs)
+	$(CC) -o $@ $(objs) $(LIBRARIES) 
 
 avxLikelihood.o : avxLikelihood.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -mavx -c -o avxLikelihood.o avxLikelihood.c
@@ -48,4 +52,4 @@ ssort.o : parser/phylip/ssort.c
 	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
 
 clean : 
-	$(RM) *.o lockless_allocator/*.o raxmlLight-AVX-Pthreads
+	$(RM) *.o lockless_allocator/*.o $(TARGET)
