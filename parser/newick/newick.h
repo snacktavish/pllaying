@@ -27,5 +27,4 @@ struct pllNewickTree * pllNewickParseFile (const char * filename);
 int pllValidateNewick (struct pllNewickTree *);
 tree * pllTreeCreateNewick (struct pllNewickTree * stack);
 void pllNewickParseDestroy (struct pllNewickTree ** tree);
-void  pllTreeDestroy (tree * t);
 #endif
