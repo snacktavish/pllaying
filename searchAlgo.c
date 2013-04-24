@@ -1339,6 +1339,23 @@ static void writeCheckpoint(tree *tr, partitionList *pr, int state)
     myfwrite(pr->partitionData[model]->tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);
     myfwrite(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
     myfwrite(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
+    
+    if(pr->partitionData[model]->protModels == LG4)
+	{
+	  int 
+	    k;
+	  
+	  for(k = 0; k < 4; k++)
+	    {
+	      myfwrite(pr->partitionData[model]->EIGN_LG4[k], sizeof(double), pLengths[dataType].eignLength, f);
+	      myfwrite(pr->partitionData[model]->EV_LG4[k], sizeof(double),  pLengths[dataType].evLength, f);
+	      myfwrite(pr->partitionData[model]->EI_LG4[k], sizeof(double),  pLengths[dataType].eiLength, f);    
+	      myfwrite(pr->partitionData[model]->frequencies_LG4[k], sizeof(double),  pLengths[dataType].frequenciesLength, f);
+	      myfwrite(pr->partitionData[model]->tipVector_LG4[k], sizeof(double),  pLengths[dataType].tipVectorLength, f);  
+	      myfwrite(pr->partitionData[model]->substRates_LG4[k], sizeof(double),  pLengths[dataType].substRatesLength, f);    
+	    }
+	}
+	
   }
 
 
@@ -1590,6 +1607,22 @@ static void readCheckpoint(tree *tr, partitionList *pr)
     myfread(pr->partitionData[model]->tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);
     myfread(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
     myfread(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
+    
+    if(pr->partitionData[model]->protModels == LG4)
+	{
+	  int 
+	    k;
+	  
+	  for(k = 0; k < 4; k++)
+	    {
+	      myfread(pr->partitionData[model]->EIGN_LG4[k], sizeof(double), pLengths[dataType].eignLength, f);
+	      myfread(pr->partitionData[model]->EV_LG4[k], sizeof(double),  pLengths[dataType].evLength, f);
+	      myfread(pr->partitionData[model]->EI_LG4[k], sizeof(double),  pLengths[dataType].eiLength, f);    
+	      myfread(pr->partitionData[model]->frequencies_LG4[k], sizeof(double),  pLengths[dataType].frequenciesLength, f);
+	      myfread(pr->partitionData[model]->tipVector_LG4[k], sizeof(double),  pLengths[dataType].tipVectorLength, f);  
+	      myfread(pr->partitionData[model]->substRates_LG4[k], sizeof(double),  pLengths[dataType].substRatesLength, f);    
+	    }
+	}
 
     makeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
   }

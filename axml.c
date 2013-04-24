@@ -1285,6 +1285,36 @@ int main (int argc, char *argv[])
   printBothOpen("Model initialized\n");
   
 
+  
+  
+      /* do some error checks for the LG4 model *///TODO check if this is correct place for this llpqr
+
+    {
+      int 
+	countLG4 = 0,
+	model;
+	
+      for(model = 0; model < partitions->numberOfPartitions; model++)
+	if(partitions->partitionData[model]->protModels == LG4)
+	  countLG4++;
+
+      if(countLG4 > 0)
+	{
+	  if(tr->saveMemory == TRUE)
+	    {
+	      printBothOpen("Error: the LG4 substitution model does not work in combination with the \"-U\" memory saving flag!\n\n");	  
+	      assert(0);
+	      
+	    }
+
+	  if(tr->rateHetModel == CAT)
+	    {
+	      printBothOpen("Error: the LG4 substitution model does not work for proportion of invariavble sites estimates!\n\n");
+	      assert(0);
+	    }
+	}
+    }
+  
 
 
 
