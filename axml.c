@@ -1051,7 +1051,7 @@ int main (int argc, char *argv[])
 
   /* TODO initialize this the proper way ! */
 
-  tr->fastScaling = TRUE;
+  tr->fastScaling = FALSE;
 
   /* get the start time */
 
@@ -1065,6 +1065,9 @@ int main (int argc, char *argv[])
   /* NOTICE after the worker trap finishes, worker processes return to
      the main method. From there, they should immediately return,
      since they already finalized their MPI */
+
+  /* we should call the worker trap here, since each worker process
+     also needs his own "tr" and "partitions" (set up by the code above) */
   if(workerTrap(tr, partitions)) 
     return 0; 
 #endif
@@ -1350,10 +1353,28 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
-    
-
     evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
     printBothOpen("Starting tree evaluated\n");
+
+
+    /* testing the log likelihood evaluation using the switch */
+    if(0)
+      {	
+	printf("trying to evaluate with per-site-lnls\n"); 
+
+	evaluateGeneric(tr, partitions, tr->start, TRUE, TRUE);
+	printBothOpen("Starting tree evaluated with per-site lnls\n");
+
+	 
+	int i ; 
+	printf("per-site lnls: "); 
+	for( i = 0; i < tr->originalCrunchedLength; ++i)
+	  printf("%f,", tr->lhs[i]);
+	printf("\n"); 
+
+	masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
+      }
+
 
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
@@ -1380,7 +1401,7 @@ int main (int argc, char *argv[])
 	*/
 	
 	perSiteLogLikelihoods(tr, partitions, logLikelihoods);
-	
+
         rax_free(logLikelihoods);
 	
 	exit(0);

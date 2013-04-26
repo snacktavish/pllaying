@@ -19,8 +19,8 @@ ERRLOGFILE=RAxML_ERR_log.txt
 
 
 # detect, if we can do mpi tests 
-# VERSIONS="SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC"
-VERSIONS=""
+VERSIONS="SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC"
+
 if [  "`which mpicc`"  != "" ] && [ "`which mpirun`"  != "" ]; then
     VERSIONS="$VERSIONS SSE3_MPI_GCC AVX_MPI_GCC"
 else 

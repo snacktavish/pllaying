@@ -1031,6 +1031,24 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 	    pr->partitionData[model]->partitionLH = 0.0;
 	}
     }
+
+
+/* #define DEBUG_PERSITE_LNL */
+#ifdef DEBUG_PERSITE_LNL
+  /* per persite-stuff */
+  {
+    int model = 0; 
+    for(model = 0; model < pr->numberOfPartitions ; ++model)
+      {
+	int j= 0; 
+	pInfo *partition  =  pr->partitionData[model]; 
+	for(j = 0;  j < partition->width; ++j)
+	  printf("[%d] lnl[%d]=%f\n", tr->threadID, j, partition->perSiteLikelihoods[j]); 
+
+      }
+  }
+
+#endif
 }
 
 
@@ -1134,9 +1152,12 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* start the parallel region and tell all threads to compute the log likelihood for 
      their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
      */
-  
+
   if(getPerSiteLikelihoods)
-    masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+    {
+      memset(tr->lhs, 0, sizeof(double) * tr->originalCrunchedLength); 
+      masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+    }
   else
     masterBarrier(THREAD_EVALUATE, tr, pr);
 
@@ -1144,7 +1165,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
      per-thread and per-partition log likelihoods to obtain the overall log like 
      over all sites and partitions */
 
-
+ 
   /* 
      for unpartitioned data that's easy, we just sum over the log likes computed 
      by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
@@ -1171,13 +1192,14 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   if(getPerSiteLikelihoods) //TRUE
     {
       for(model = 0; model < pr->numberOfPartitions; model++)
-	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width * sizeof(double));
+	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width  * sizeof(double));
     }
 
 #endif
 
   for(model = 0; model < pr->numberOfPartitions; model++)
     result += pr->partitionData[model]->partitionLH;
+
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
@@ -1192,16 +1214,26 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
     {
       double 
 	likelihood = 0;
+      int i,j ; 
 
       /* note that in tr->lhs, we just store the likelihood of 
 	 one representative of a potentially compressed pattern,
 	 hence, we need to multiply the elemnts with the pattern 
 	 weight vector */
 
+
       for(i = 0; i < tr->originalCrunchedLength; i++)
-	likelihood += (tr->lhs[i] * tr->aliaswgt[i]);
+	{
+	  printf("lhs[%d]=%f * %d\n", i, tr->lhs[i], tr->aliaswgt[i]); 
+	  likelihood += (tr->lhs[i]   * tr->aliaswgt[i] );
+	}
          
-      assert(ABS(tr->likelihood - likelihood) < 0.00001);
+      if( ABS(tr->likelihood - likelihood) > 0.00001)
+	{
+	  printf("likelihood was %f\t summed/weighted per-site-lnl was %f\n", tr->likelihood, likelihood); 
+	}
+
+	assert(ABS(tr->likelihood - likelihood) < 0.00001);
     }
 
 

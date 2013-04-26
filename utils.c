@@ -1244,7 +1244,7 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
 
       /* Initialize buffers to store per-site log likelihoods */
 
-      localPartitions->partitionData[model]->perSiteLikelihoods = (double *)rax_malloc_aligned(width * sizeof(double));
+      localPartitions->partitionData[model]->perSiteLikelihoods = (double *)rax_malloc_aligned(  width * sizeof(double));
 
       /* initialize data structures for per-site likelihood scaling */
 

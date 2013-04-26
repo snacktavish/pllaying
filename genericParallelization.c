@@ -27,7 +27,7 @@
 
 
 
-extern unsigned int* mask32; 
+/* extern unsigned int* mask32;  */
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
 extern boolean treeIsInitialized; 
@@ -449,7 +449,8 @@ static int partCompare(const void *p1, const void *p2)
 }
 
 
-/** @brief Top-level function for the multi processor scheduling scheme (assigns full partitions to workers). 
+/** @brief Top-level function for the multi processor scheduling
+    scheme (assigns full partitions to workers).
     
    tr->manyPartitions is set to TRUE if the user has indicated via -Q
    that there are substantially more partitions than threads/cores
@@ -659,8 +660,7 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, partitionList 
 		  }
 		buf++;
 	      }	  
-	}
-      
+	}      
       else
 	{
 	  for(i = pr->partitionData[model]->lower; i < pr->partitionData[model]->upper; i++)
@@ -680,6 +680,8 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, partitionList 
   
   return buf - initPtr; 
 }
+
+
 
 
 /** @brief broadcast rates after rate optimization. 
@@ -747,7 +749,7 @@ void broadcastAfterRateOpt(tree *tr, tree *localTree, partitionList *pr, int n, 
 
 
 /** @brief Collect doubles from workers to master.
-    
+
     @param dst destination array
     @param src source array
     @param tr tree 
@@ -767,7 +769,6 @@ static void collectDouble(double *dst, double *src, tree *tr, partitionList *pr,
     double 
       resultBuf[tr->originalCrunchedLength]; 
 #endif
-
 
   /* gather own values into buffer  */
   int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,TRUE, FALSE);
@@ -806,6 +807,8 @@ static void collectDouble(double *dst, double *src, tree *tr, partitionList *pr,
   assert(assertNum == numberCollected); 
 #endif
 }
+
+
 
 /** @brief broadcast a new alpha (for the GAMMA model)
     @param localTree local tree 
@@ -881,16 +884,19 @@ static void broadCastRates(tree *localTree, tree *tr, partitionList *localPr, pa
 }
 
 
+
 /** @brief likelihood evaluation call with subsequent reduce operation. 
 
     @param localTree local tree 
     @param tid worker id 
  */ 
-static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
+static void reduceEvaluateIterative(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
 {
   int model;
 
   evaluateIterative(localTree, localPr, getPerSiteLikelihoods);
+
+  /* printf("evaluation succeeded\n");  */
 
   /* when this is done we need to write the per-thread log likelihood to the 
      global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
@@ -900,11 +906,35 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
      by the master thread which ensures that the sum is determinsitic */
 
   if(getPerSiteLikelihoods)
-    {
-      /* TODO Andre */
-      assert(0);
+    {    
+#ifdef _FINE_GRAIN_MPI
+      int n = processes; 
+#else 
+      int n = tr->numberOfThreads; 
+#endif
+
+      /* rearrange per site likelihoods into single local array for gathering */
+      int i ; 
+      for(model = 0; model < localPr->numberOfPartitions; ++model)
+	{
+	  pInfo *partition = localPr->partitionData[model]; 
+	  boolean isMyPartition  = isThisMyPartition(localPr, tid, model);
+
+	  int ctr = 0; 
+	  for(i = partition->lower; i < partition->upper; ++i)
+	    {
+	      if(tr->manyPartitions && isMyPartition)
+		localTree->lhs[i] = partition->perSiteLikelihoods[ ctr++]; 
+	      else if(NOT tr->manyPartitions && (i % n) == tid)
+		localTree->lhs[i] = partition->perSiteLikelihoods[ctr++];
+	    }
+	}
+      
+      /* gather all the double into the global array */
+      collectDouble(tr->lhs, localTree->lhs, localTree, localPr,  n, tid); 
     }
 
+  /* printf("collecting done\n" ); */
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
   /* 
      aberer: I implemented this as a mpi_gather operation into this buffer, 
@@ -914,12 +944,14 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
 
   double 
     buf[localPr->numberOfPartitions];
-  
+
   for(model = 0; model < localPr->numberOfPartitions; ++model)
     buf[model] = localPr->partitionData[model]->partitionLH;
 
   /* either make reproducible or efficient */
   ASSIGN_GATHER(globalResult, buf, localPr->numberOfPartitions, DOUBLE, tid);
+
+  /* printf("gather worked\n"); */
 #else 
   /* the efficient mpi version: a proper reduce  */
   double 
@@ -932,7 +964,7 @@ static void reduceEvaluateIterative(tree *localTree, partitionList *localPr, int
     targetBuf[localPr->numberOfPartitions];
   
   memset(targetBuf, 0, sizeof(double) * localPr->numberOfPartitions);
-  
+
   MPI_Reduce(buf, targetBuf, localPr->numberOfPartitions, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
   
   if(MASTER_P) 
@@ -1121,7 +1153,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
       newviewIterative(localTree, localPr, 0);
       break;     
     case THREAD_EVALUATE: 
-      reduceEvaluateIterative(localTree, localPr, tid, FALSE);
+      reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
@@ -1186,7 +1218,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
       if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
-	reduceEvaluateIterative(localTree, localPr, tid, FALSE);
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
 
       break;           
     case THREAD_OPT_RATE:
@@ -1206,7 +1238,7 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	 to be propagated throughout the entire tree */
 
       if(localTree->td[0].functionType == THREAD_OPT_RATE)
-	reduceEvaluateIterative(localTree, localPr, tid, FALSE);
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
 
       break;                       
     case THREAD_COPY_INIT_MODEL:
@@ -1390,6 +1422,9 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 	int numPart = pr->numberOfPartitions; 
 
 #ifdef _USE_PTHREADS
+	/* TODO destroying the tree does not work yet in a highly
+	   generic manner. */
+
 	if(NOT MASTER_P)
 	  {
 	    pllPartitionsDestroy (&localPr, numPart, numTaxa);
@@ -1411,7 +1446,10 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
       }
       break; 
     case THREAD_EVALUATE_PER_SITE_LIKES: 
-      reduceEvaluateIterative(localTree, localPr, tid, TRUE);
+      {
+	int i ; 
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, TRUE);
+      }
       break;
     default:
       printf("Job %d\n", currentJob);
@@ -1504,6 +1542,7 @@ void masterPostBarrier(int jobType, tree *tr, partitionList *pr)
     case THREAD_EVALUATE: 
     case THREAD_OPT_RATE: 
     case THREAD_OPT_ALPHA: 
+    case THREAD_EVALUATE_PER_SITE_LIKES: 
       {
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 	int i,j;
@@ -1517,6 +1556,7 @@ void masterPostBarrier(int jobType, tree *tr, partitionList *pr)
 	    pr->partitionData[j]->partitionLH = partitionResult;
 	  }
 #endif      
+
 	break; 
       } 
     case THREAD_PER_SITE_LIKELIHOODS:
@@ -1531,6 +1571,9 @@ void masterPostBarrier(int jobType, tree *tr, partitionList *pr)
 	assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
       }
       break;
+    default: 
+      ; 			/* dont do anything on default,
+				   mostly, we can skip that */
     } 
 }
 
@@ -1637,7 +1680,7 @@ static void assignAndInitPart1(tree *localTree, tree *tr, partitionList *localPr
 
   if(NOT MASTER_P)
     {
-      localTree->lhs                     = (double*)rax_malloc(sizeof(double)   * (size_t)localTree->originalCrunchedLength);     
+      localTree->lhs                     = (double*)rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(double));     
       localPr->partitionData           = (pInfo**)rax_malloc(NUM_BRANCHES*sizeof(pInfo*));
       for(model = 0; model < (size_t)localPr->numberOfPartitions; model++) {
     	localPr->partitionData[model] = (pInfo*)rax_malloc(sizeof(pInfo));
