@@ -260,9 +260,10 @@ extern double exp_approx (double x);
 #define JTTDCMUT   16
 #define FLU        17 
 #define AUTO       18
-#define GTR        19  /* GTR always needs to be the last one */
+#define LG4        19
+#define GTR        20  /* GTR always needs to be the last one */
 
-#define NUM_PROT_MODELS 20
+#define NUM_PROT_MODELS 21
 
 /* bipartition stuff */
 
@@ -870,6 +871,19 @@ typedef struct {
   double *left;  
   double *right;
   double *tipVector; 
+  
+     /* LG4 */
+
+  double *EIGN_LG4[4];
+  double *EV_LG4[4];
+  double *EI_LG4[4];   
+
+  double *frequencies_LG4[4];
+  double *tipVector_LG4[4];
+  double *substRates_LG4[4];
+  
+  /* LG4 */
+  
   /* Protein specific ?? */
   int     protModels;
   int     autoProtModels;
@@ -1666,6 +1680,11 @@ void allocNodex(tree *tr, int tid, int n);
 
 
 #ifdef __AVX
+
+void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
+					double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
+					int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, 
+					double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 
 
 void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,

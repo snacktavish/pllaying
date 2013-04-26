@@ -1208,6 +1208,23 @@ void initializePartitionData(tree *localTree, partitionList * localPartitions)
       localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      
+       if(localPartitions->partitionData[model]->protModels == LG4)      
+	{	  	  
+	  int 
+	    k;
+	  
+	  for(k = 0; k < 4; k++)
+	    {	    
+	      localPartitions->partitionData[model]->EIGN_LG4[k]              = (double*)rax_malloc(pl->eignLength * sizeof(double));
+	      localPartitions->partitionData[model]->EV_LG4[k]                = (double*)rax_malloc_aligned(pl->evLength * sizeof(double));
+	      localPartitions->partitionData[model]->EI_LG4[k]                = (double*)rax_malloc(pl->eiLength * sizeof(double));
+	      localPartitions->partitionData[model]->substRates_LG4[k]        = (double *)rax_malloc(pl->substRatesLength * sizeof(double));
+	      localPartitions->partitionData[model]->frequencies_LG4[k]       = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
+	      localPartitions->partitionData[model]->tipVector_LG4[k]         = (double *)rax_malloc_aligned(pl->tipVectorLength * sizeof(double));
+	    }
+	}
+
       localPartitions->partitionData[model]->symmetryVector    = (int *)rax_malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
       localPartitions->partitionData[model]->frequencyGrouping = (int *)rax_malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
 
