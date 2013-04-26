@@ -499,9 +499,6 @@ typedef  struct noderec
  
   branchInfo      *bInf;
   double           z[NUM_BRANCHES];
-#ifdef _BAYESIAN 
-  double           z_tmp[NUM_BRANCHES];
-#endif 
   struct noderec  *next;
   struct noderec  *back;
   hashNumberType   hash;
@@ -1023,9 +1020,6 @@ typedef  struct {
   int           slidingWindowSize;
   boolean       writeBinaryFile;
   boolean       readBinaryFile;
-#ifdef _BAYESIAN 
-  boolean       bayesian;
-#endif
 } analdef;
 
 typedef struct 
@@ -1056,10 +1050,6 @@ typedef struct
 } partitionLengths;
 
 /****************************** FUNCTIONS ****************************************************/
-
-#ifdef _BAYESIAN 
-extern void mcmc(tree *tr, analdef *adef);
-#endif
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model);

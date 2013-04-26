@@ -1835,10 +1835,6 @@ static void initAdef(analdef *adef)
   adef->useCheckpoint          = FALSE;
   adef->leaveDropMode          = FALSE;
   adef->slidingWindowSize      = 100;
-#ifdef _BAYESIAN 
-  adef->bayesian               = FALSE;
-#endif
-
 }
 
 

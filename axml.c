@@ -786,30 +786,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
         else
           modelSet = 1;
         break;
-      case 'b':
-#ifdef _BAYESIAN
-        adef->bayesian = TRUE;
-        printf("EXPERIMENTAL BAYESIAN ANALYSIS\n");
-        break;
-#else
-        printf("recompile with Bayesian Makefile to use the \"-b\" option \n");
-        exit(-1);
-        break;
-#endif
-      case 'g':
-#ifdef _BAYESIAN
-        sscanf(optarg,"%d", &(adef->num_generations));
-        if(adef->num_generations <= 0)
-        {
-          printf("-g generations must be larger than 0 \n");
-          exit(-1);
-        }
-        break;
-#else
-        printf("recompile with Bayesian Makefile to use the \"-g\" option \n");
-        exit(-1);
-        break;
-#endif
       default:
         exit(-1);
     }
@@ -901,12 +877,6 @@ static void initAdef(analdef *adef)
   adef->perGeneBranchLengths   = FALSE;
 
   adef->useCheckpoint          = FALSE;
-
-#ifdef _BAYESIAN
-  adef->bayesian               = FALSE;
-  adef->num_generations        = 10000;
-#endif
-
 }
 
 
@@ -1303,10 +1273,6 @@ int main (int argc, char *argv[])
 
   if(adef->useCheckpoint)
   {
-#ifdef _BAYESIAN
-    assert(0);
-#endif
-
     /* read checkpoint file */
     restart(tr, partitions);
 
@@ -1459,19 +1425,7 @@ int main (int argc, char *argv[])
     
     /* now start the ML search algorithm */
 
-#ifdef _BAYESIAN 
-    if(adef->bayesian)
-    {
-      /* allocate parsimony data structures for parsimony-biased SPRs */
-
-      allocateParsimonyDataStructures(tr);
-      mcmc(tr, adef);
-      freeParsimonyDataStructures(tr);
-    }
-    else
-#endif
-
-    	computeBIGRAPID(tr, partitions, adef, TRUE);
+    computeBIGRAPID(tr, partitions, adef, TRUE);
 
 /*partitions->numberOfPartitions=3;
 printModelAndProgramInfo(tr, partitions, adef, argc, argv);
