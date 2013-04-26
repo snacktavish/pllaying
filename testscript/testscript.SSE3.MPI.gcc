@@ -66,7 +66,7 @@ if [ ! -f ${LOCALVER}/$raxml ] ; then
         exit 1
 fi
 
-if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/$raxml ] ; then
+if [ ! -f ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/$raxml_orig ] ; then
         cd ${WORKINGDIR}
         echo " Building ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/$raxml ...";
         ${WGET} ${LIBPHYLOLIKEURL}/libphylolike-${LIBPHYLOLIKEVER}.tar.bz2
@@ -104,7 +104,7 @@ find . -type f -iname "RAxML_*.${OUTPUTID2}*" -exec rm {} \;
 #Run the two versions from the working dir you chose
 cd ${WORKINGDIR}
 mpirun -np 2 ${LOCALVER}/$raxml $@ -n ${OUTPUTID1}
-mpirun -np 2 ${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/$raxml_orig $@ -n ${OUTPUTID2}
+${WORKINGDIR}/libphylolike-${LIBPHYLOLIKEVER}/$raxml_orig $@ -n ${OUTPUTID2}
 echo "\n"
 echo " Testscript finished. Check the messages below."
 echo "\n"
