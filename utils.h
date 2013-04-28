@@ -20,5 +20,6 @@ void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models
 void pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
 void  pllTreeDestroy (tree * t);
+tree * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom);
 
 #endif /* UTILS_H_ */

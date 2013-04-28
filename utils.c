@@ -2140,8 +2140,30 @@ pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip)
   return (1);
 }
 
+/** @brief Create the main instance of PLL
+    
+    Create an instance of the phylogenetic likelihood library
+
+    @param rateHetModel
+      Rate heterogeneity model
+
+    @param fastScaling
+      explain fastScaling here
+
+    @param saveMemory
+      explain saveMemory here
+
+    @param useRecom
+      explain useRecom
+    
+    @todo
+      Document fastScaling, rate heterogeneity and saveMemory and useRecom
+
+    @return
+      On success returns an instance to PLL, otherwise \b NULL
+*/
 tree *
-pllCreateTree (int rateHetModel, int fastScaling, int saveMemory, int useRecom)
+pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom)
 {
   tree * tr;
 

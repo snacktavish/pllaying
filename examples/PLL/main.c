@@ -73,7 +73,7 @@ int main (int argc, char * argv[])
   empiricalFrequencies = pllBaseFrequenciesGTR (partitions, phylip);
 
   /* Create a PLL tree */
-  tr = pllCreateTree (GAMMA, FALSE, FALSE, FALSE);
+  tr = pllCreateInstance (GAMMA, FALSE, FALSE, FALSE);
 
   /* Set the topology of the PLL tree from a parsed newick tree */
   pllTreeInitTopologyNewick (tr, newick);
