@@ -241,9 +241,10 @@ extern double exp_approx (double x);
 #define JTTDCMUT   16
 #define FLU        17 
 #define AUTO       18
-#define GTR        19  /* GTR always needs to be the last one */
+#define LG4        19
+#define GTR        20  /* GTR always needs to be the last one */
 
-#define NUM_PROT_MODELS 20
+#define NUM_PROT_MODELS 21
 
 /* bipartition stuff */
 
@@ -499,9 +500,6 @@ typedef  struct noderec
  
   branchInfo      *bInf;
   double           z[NUM_BRANCHES];
-#ifdef _BAYESIAN 
-  double           z_tmp[NUM_BRANCHES];
-#endif 
   struct noderec  *next;
   struct noderec  *back;
   hashNumberType   hash;
@@ -1023,9 +1021,6 @@ typedef  struct {
   int           slidingWindowSize;
   boolean       writeBinaryFile;
   boolean       readBinaryFile;
-#ifdef _BAYESIAN 
-  boolean       bayesian;
-#endif
 } analdef;
 
 typedef struct 
@@ -1056,10 +1051,6 @@ typedef struct
 } partitionLengths;
 
 /****************************** FUNCTIONS ****************************************************/
-
-#ifdef _BAYESIAN 
-extern void mcmc(tree *tr, analdef *adef);
-#endif
 
 #if (defined(_USE_PTHREADS) || (_FINE_GRAIN_MPI))
 boolean isThisMyPartition(tree *localTree, int tid, int model);

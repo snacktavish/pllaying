@@ -48,7 +48,7 @@ char run_id[128] = "",
   byteFileName[1024] = "";
 
 const char *protModels[NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
-					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO","GTR"};
+					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO", "LG4", "GTR"};
 
 const char dnaStateNames[4]      = {'A', 'C', 'G', 'T'};
 

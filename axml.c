@@ -786,30 +786,6 @@ static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
         else
           modelSet = 1;
         break;
-      case 'b':
-#ifdef _BAYESIAN
-        adef->bayesian = TRUE;
-        printf("EXPERIMENTAL BAYESIAN ANALYSIS\n");
-        break;
-#else
-        printf("recompile with Bayesian Makefile to use the \"-b\" option \n");
-        exit(-1);
-        break;
-#endif
-      case 'g':
-#ifdef _BAYESIAN
-        sscanf(optarg,"%d", &(adef->num_generations));
-        if(adef->num_generations <= 0)
-        {
-          printf("-g generations must be larger than 0 \n");
-          exit(-1);
-        }
-        break;
-#else
-        printf("recompile with Bayesian Makefile to use the \"-g\" option \n");
-        exit(-1);
-        break;
-#endif
       default:
         exit(-1);
     }
@@ -901,12 +877,6 @@ static void initAdef(analdef *adef)
   adef->perGeneBranchLengths   = FALSE;
 
   adef->useCheckpoint          = FALSE;
-
-#ifdef _BAYESIAN
-  adef->bayesian               = FALSE;
-  adef->num_generations        = 10000;
-#endif
-
 }
 
 
@@ -1022,11 +992,20 @@ static nodeptr pickRandomSubtree(tree *tr)
  * */
 int main (int argc, char *argv[])
 { 
-  tree  *tr = (tree*)rax_malloc(sizeof(tree));
-  partitionList *partitions = (partitionList*)rax_malloc(sizeof(partitionList));
-  partitions->partitionData = (pInfo**)rax_malloc(NUM_BRANCHES*sizeof(pInfo*));
+#ifdef _FINE_GRAIN_MPI
+    /* 
+     once mpi workers are signalled to finish, it is impontant that
+     they immediately terminate! (to avoid undefined behavior)
+   */
+  
+  initMPI(argc, argv);
+#endif
 
-  analdef *adef = (analdef*)rax_malloc(sizeof(analdef));
+  tree  *tr = (tree*)rax_calloc(1,sizeof(tree));
+  partitionList *partitions = (partitionList*)rax_calloc(1,sizeof(partitionList));
+  partitions->partitionData = (pInfo**)rax_calloc(NUM_BRANCHES,sizeof(pInfo*));
+
+  analdef *adef = (analdef*)rax_calloc(1,sizeof(analdef));
 
   double **empiricalFrequencies;
 
@@ -1042,7 +1021,7 @@ int main (int argc, char *argv[])
 
   /* TODO initialize this the proper way ! */
 
-  tr->fastScaling = TRUE;
+  tr->fastScaling = FALSE;
 
   /* get the start time */
 
@@ -1051,16 +1030,15 @@ int main (int argc, char *argv[])
   /* 
      initialize the workers for mpi or pthreads
    */
-#ifdef _FINE_GRAIN_MPI
-  /* 
-     once mpi workers are signalled to finish, it is impontant that
-     they immediately terminate! (to avoid undefined behavior)
-   */
-#ifdef MEASURE_TIME_PARALLEL
-  masterTimePerPhase = gettime();
-#endif
-  initMPI(argc, argv);
-  if(workerTrap(tr, partitions))
+#ifdef _FINE_GRAIN_MPI  
+
+  /* NOTICE after the worker trap finishes, worker processes return to
+     the main method. From there, they should immediately return,
+     since they already finalized their MPI */
+
+  /* we should call the worker trap here, since each worker process
+     also needs his own "tr" and "partitions" (set up by the code above) */
+  if(workerTrap(tr, partitions)) 
     return 0; 
 #endif
 #ifdef _USE_PTHREADS
@@ -1285,6 +1263,36 @@ int main (int argc, char *argv[])
   printBothOpen("Model initialized\n");
   
 
+  
+  
+      /* do some error checks for the LG4 model *///TODO check if this is correct place for this llpqr
+
+    {
+      int 
+	countLG4 = 0,
+	model;
+	
+      for(model = 0; model < partitions->numberOfPartitions; model++)
+	if(partitions->partitionData[model]->protModels == LG4)
+	  countLG4++;
+
+      if(countLG4 > 0)
+	{
+	  if(tr->saveMemory == TRUE)
+	    {
+	      printBothOpen("Error: the LG4 substitution model does not work in combination with the \"-U\" memory saving flag!\n\n");	  
+	      assert(0);
+	      
+	    }
+
+	  if(tr->rateHetModel == CAT)
+	    {
+	      printBothOpen("Error: the LG4 substitution model does not work for proportion of invariavble sites estimates!\n\n");
+	      assert(0);
+	    }
+	}
+    }
+  
 
 
 
@@ -1295,10 +1303,6 @@ int main (int argc, char *argv[])
 
   if(adef->useCheckpoint)
   {
-#ifdef _BAYESIAN
-    assert(0);
-#endif
-
     /* read checkpoint file */
     restart(tr, partitions);
 
@@ -1345,10 +1349,28 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
-    
-
     evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
     printBothOpen("Starting tree evaluated\n");
+
+
+    /* testing the log likelihood evaluation using the switch */
+    if(0)
+      {	
+	printf("trying to evaluate with per-site-lnls\n"); 
+
+	evaluateGeneric(tr, partitions, tr->start, TRUE, TRUE);
+	printBothOpen("Starting tree evaluated with per-site lnls\n");
+
+	 
+	int i ; 
+	printf("per-site lnls: "); 
+	for( i = 0; i < tr->originalCrunchedLength; ++i)
+	  printf("%f,", tr->lhs[i]);
+	printf("\n"); 
+
+	masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
+      }
+
 
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
@@ -1375,7 +1397,7 @@ int main (int argc, char *argv[])
 	*/
 	
 	perSiteLogLikelihoods(tr, partitions, logLikelihoods);
-	
+
         rax_free(logLikelihoods);
 	
 	exit(0);
@@ -1433,19 +1455,7 @@ int main (int argc, char *argv[])
     
     /* now start the ML search algorithm */
 
-#ifdef _BAYESIAN 
-    if(adef->bayesian)
-    {
-      /* allocate parsimony data structures for parsimony-biased SPRs */
-
-      allocateParsimonyDataStructures(tr);
-      mcmc(tr, adef);
-      freeParsimonyDataStructures(tr);
-    }
-    else
-#endif
-
-    	computeBIGRAPID(tr, partitions, adef, TRUE);
+    computeBIGRAPID(tr, partitions, adef, TRUE);
 
 /*partitions->numberOfPartitions=3;
 printModelAndProgramInfo(tr, partitions, adef, argc, argv);
@@ -1473,6 +1483,11 @@ printModelAndProgramInfo(tr, partitions, adef, argc, argv);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* workers escape from their while loop (could be joined in pthread case )  */
+
+  /* NOTICE: this call MUST be the last call your program executes. It
+     will clean up the trees (and local trees of workers) and the MPI
+     environment is terminated. The next call your program executes
+     should be the return value of the main method. */
   masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
 #endif
 

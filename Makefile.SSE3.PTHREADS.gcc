@@ -3,7 +3,7 @@
 
 CC = gcc 
 
-CFLAGS =  -DRAXML_USE_LLALLOC -D_USE_PTHREADS -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -O2 -D_GNU_SOURCE -msse3 -fomit-frame-pointer -funroll-loops -Wall -pedantic -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wdeclaration-after-statement -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast #-D_DEBUG_RECOMPUTATION 
+CFLAGS = -O2  -DRAXML_USE_LLALLOC -D_USE_PTHREADS -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -fomit-frame-pointer -funroll-loops -Wall #  -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wdeclaration-after-statement -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast #-D_DEBUG_RECOMPUTATION   -pedantic
 
 
 LIBRARIES = -lm -pthread
@@ -49,6 +49,5 @@ hash.o : hash.c $(GLOBAL_DEPS)
 ssort.o : parser/phylip/ssort.c
 	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
 
-clean : 
+clean:
 	$(RM) *.o lockless_allocator/*.o raxmlLight-PTHREADS
-	

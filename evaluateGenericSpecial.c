@@ -120,6 +120,33 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
   rax_free(lza);
 }
 
+static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rptr, double *EIGN[4], double *diagptable, const int numStates)
+{
+  int 
+    i, 
+    l;
+  
+  double 
+    lz;
+  
+  assert(numStates <= 64);
+  
+  if (z < zmin) 
+    lz = log(zmin);
+  else
+    lz = log(z);
+
+  for(i = 0; i <  numberOfCategories; i++)
+    {	      	       
+      diagptable[i * numStates + 0] = 1.0;
+
+      for(l = 1; l < numStates; l++)
+	diagptable[i * numStates + l] = EXP(rptr[i] * EIGN[i][l] * lz);     	          
+    }        
+}
+
+
+
 /* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
 
 static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
@@ -598,6 +625,12 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 
 
 #ifdef _OPTIMIZED_FUNCTIONS
+
+static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
+				       double *x1, double *x2,  
+				       double *tipVector[4], 
+				       unsigned char *tipX1, int n, double *diagptable, const boolean fastScaling);
+
 /* GAMMA for proteins with memory saving */
 
 static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
@@ -874,6 +907,9 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 	  
 	  /* calc P-Matrix at root for branch z connecting nodes p and q */
 	  
+	  if(pr->partitionData[model]->protModels == LG4)					  
+	    calcDiagptableFlex_LG4(z, 4, pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN_LG4, diagptable, 20);
+	  else
 	  calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
 	  
 #ifndef _OPTIMIZED_FUNCTIONS
@@ -979,11 +1015,17 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 										 x1_start, x2_start, pr->partitionData[model]->tipVector,
 										 tip, width, diagptable,
 										 x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
-			
+			else
+		      {
+			if(pr->partitionData[model]->protModels == LG4)
+			  partitionLikelihood =  evaluateGTRGAMMAPROT_LG4((int *)NULL, (int *)NULL, pr->partitionData[model]->wgt,
+									  x1_start, x2_start, pr->partitionData[model]->tipVector_LG4,
+									  tip, width, diagptable, TRUE);
 			else
 			  partitionLikelihood = evaluateGTRGAMMAPROT(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
 								     x1_start, x2_start, pr->partitionData[model]->tipVector,
-								     tip, width, diagptable);		         
+								     tip, width, diagptable);		
+		      }
 		      }
 		  }
 		  break;	      		    
@@ -1031,6 +1073,24 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 	    pr->partitionData[model]->partitionLH = 0.0;
 	}
     }
+
+
+/* #define DEBUG_PERSITE_LNL */
+#ifdef DEBUG_PERSITE_LNL
+  /* per persite-stuff */
+  {
+    int model = 0; 
+    for(model = 0; model < pr->numberOfPartitions ; ++model)
+      {
+	int j= 0; 
+	pInfo *partition  =  pr->partitionData[model]; 
+	for(j = 0;  j < partition->width; ++j)
+	  printf("[%d] lnl[%d]=%f\n", tr->threadID, j, partition->perSiteLikelihoods[j]); 
+
+      }
+  }
+
+#endif
 }
 
 
@@ -1134,9 +1194,12 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   /* start the parallel region and tell all threads to compute the log likelihood for 
      their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
      */
-  
+
   if(getPerSiteLikelihoods)
-    masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+    {
+      memset(tr->lhs, 0, sizeof(double) * tr->originalCrunchedLength); 
+      masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+    }
   else
     masterBarrier(THREAD_EVALUATE, tr, pr);
 
@@ -1144,7 +1207,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
      per-thread and per-partition log likelihoods to obtain the overall log like 
      over all sites and partitions */
 
-
+ 
   /* 
      for unpartitioned data that's easy, we just sum over the log likes computed 
      by each thread, thread 0 stores his results in reductionBuffer[0] thread 1 in 
@@ -1171,13 +1234,14 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
   if(getPerSiteLikelihoods) //TRUE
     {
       for(model = 0; model < pr->numberOfPartitions; model++)
-	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width * sizeof(double));
+	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width  * sizeof(double));
     }
 
 #endif
 
   for(model = 0; model < pr->numberOfPartitions; model++)
     result += pr->partitionData[model]->partitionLH;
+
   /* set the tree data structure likelihood value to the total likelihood */
 
   tr->likelihood = result;    
@@ -1192,16 +1256,26 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
     {
       double 
 	likelihood = 0;
+      int i,j ; 
 
       /* note that in tr->lhs, we just store the likelihood of 
 	 one representative of a potentially compressed pattern,
 	 hence, we need to multiply the elemnts with the pattern 
 	 weight vector */
 
+
       for(i = 0; i < tr->originalCrunchedLength; i++)
-	likelihood += (tr->lhs[i] * tr->aliaswgt[i]);
+	{
+	  printf("lhs[%d]=%f * %d\n", i, tr->lhs[i], tr->aliaswgt[i]); 
+	  likelihood += (tr->lhs[i]   * tr->aliaswgt[i] );
+	}
          
-      assert(ABS(tr->likelihood - likelihood) < 0.00001);
+      if( ABS(tr->likelihood - likelihood) > 0.00001)
+	{
+	  printf("likelihood was %f\t summed/weighted per-site-lnl was %f\n", tr->likelihood, likelihood); 
+	}
+
+	assert(ABS(tr->likelihood - likelihood) < 0.00001);
     }
 
 
@@ -1324,7 +1398,97 @@ void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
 
 #ifdef _OPTIMIZED_FUNCTIONS
 
-
+static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
+				       double *x1, double *x2,  
+				       double *tipVector[4], 
+				       unsigned char *tipX1, int n, double *diagptable, const boolean fastScaling)
+{
+  double   sum = 0.0, term;        
+  int     i, j, l;   
+  double  *left, *right;              
+  
+  if(tipX1)
+    {               
+      for (i = 0; i < n; i++) 
+	{
+#ifdef __SIM_SSE3
+	  __m128d tv = _mm_setzero_pd();
+	 	  	  	  
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      double *d = &diagptable[j * 20];
+	      left = &(tipVector[j][20 * tipX1[i]]);
+	      right = &(x2[80 * i + 20 * j]);
+	      for(l = 0; l < 20; l+=2)
+		{
+		  __m128d mul = _mm_mul_pd(_mm_load_pd(&left[l]), _mm_load_pd(&right[l]));
+		  tv = _mm_add_pd(tv, _mm_mul_pd(mul, _mm_load_pd(&d[l])));		   
+		}		 		
+	    }
+	  tv = _mm_hadd_pd(tv, tv);
+	  _mm_storel_pd(&term, tv);
+	  
+#else	  	  	  	  
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      left = &(tipVector[j][20 * tipX1[i]]);
+	      right = &(x2[80 * i + 20 * j]);
+	      for(l = 0; l < 20; l++)
+		term += left[l] * right[l] * diagptable[j * 20 + l];	      
+	    }	  
+#endif
+	  
+	  if(fastScaling)
+	    term = LOG(0.25 * FABS(term));
+	  else
+	    term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));	   
+	  
+	  sum += wptr[i] * term;
+	}    	        
+    }              
+  else
+    {
+      for (i = 0; i < n; i++) 
+	{	  	 	             
+#ifdef __SIM_SSE3
+	  __m128d tv = _mm_setzero_pd();	 	  	  
+	      
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      double *d = &diagptable[j * 20];
+	      left  = &(x1[80 * i + 20 * j]);
+	      right = &(x2[80 * i + 20 * j]);
+	      
+	      for(l = 0; l < 20; l+=2)
+		{
+		  __m128d mul = _mm_mul_pd(_mm_load_pd(&left[l]), _mm_load_pd(&right[l]));
+		  tv = _mm_add_pd(tv, _mm_mul_pd(mul, _mm_load_pd(&d[l])));		   
+		}		 		
+	    }
+	  tv = _mm_hadd_pd(tv, tv);
+	  _mm_storel_pd(&term, tv);	  
+#else
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      left  = &(x1[80 * i + 20 * j]);
+	      right = &(x2[80 * i + 20 * j]);	    
+	      
+	      for(l = 0; l < 20; l++)
+		term += left[l] * right[l] * diagptable[j * 20 + l];	
+	    }
+#endif
+	  
+	  if(fastScaling)
+	    term = LOG(0.25 * FABS(term));
+	  else
+	    term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+	  
+	  sum += wptr[i] * term;
+	}         
+    }
+       
+  return  sum;
+}
 
 static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
 						double *x1, double *x2,  

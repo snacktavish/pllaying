@@ -9,10 +9,25 @@ SSE3_GCC="testscript.SSE3.gcc"
 SSE3_PTHREADS_GCC="testscript.SSE3.PTHREADS.gcc"
 AVX_GCC="testscript.AVX.gcc"
 AVX_PTHREADS_GCC="testscript.PTHREADS.AVX.gcc"
+SSE3_MPI_GCC="testscript.SSE3.MPI.gcc"
+AVX_MPI_GCC="testscript.AVX.MPI.gcc"
+
 
 # KEEP A LOG OF STDOUT OF RAxML
 LOGFILE=RAxML_log.txt
 ERRLOGFILE=RAxML_ERR_log.txt
+
+
+# detect, if we can do mpi tests 
+VERSIONS="SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC"
+
+if [  "`which mpicc`"  != "" ] && [ "`which mpirun`"  != "" ]; then
+    VERSIONS="$VERSIONS SSE3_MPI_GCC AVX_MPI_GCC"
+else 
+    echo "Could NOT detect MPI on your system, skipping MPI tests."
+fi  
+
+# echo " checking versions $VERSIONS" 
 
 run_SSE3_GCC()
 {
@@ -41,6 +56,8 @@ run_SSE3_PTHREADS_GCC()
   fi
   echo "\n"
 }
+
+
 
 run_AVX_GCC()
 {
@@ -71,6 +88,37 @@ run_AVX_PTHREADS_GCC()
 }
 
 
+run_AVX_MPI_GCC()
+{
+  sh ${WORKINGDIR}/${AVX_MPI_GCC} ${OPTIONS}
+  RETVAL=$?
+  if [ $RETVAL -ne 0 ] ; then
+    echo " Error: testscript.AVX.MPI.gcc failed. Check the messages above, but also keep in mind that the support testing support for MPI versions of the library is limited at the moment.";
+    echo "\n"
+    echo " Supertestscript did not finish successfully."
+    echo "\n"
+    exit 1
+  fi
+  echo "\n"
+}
+
+
+run_SSE3_MPI_GCC()
+{
+  sh ${WORKINGDIR}/${SSE3_MPI_GCC} ${OPTIONS}
+  RETVAL=$?
+  if [ $RETVAL -ne 0 ] ; then
+    echo " Error: testscript.SSE3.MPI.gcc failed. Check the messages above, but also keep in mind that the support testing support for MPI versions of the library is limited at the moment.";
+    echo "\n"
+    echo " Supertestscript did not finish successfully."
+    echo "\n"
+    exit 1
+  fi
+  echo "\n"
+}
+
+
+
 if [ ! -f ${WORKINGDIR}/${SSE3_GCC} ] ; then
   echo " Error: file ${SSE3_GCC} is missing from ${WORKINGDIR}, exiting ...";
   exit 1
@@ -87,6 +135,16 @@ if [ ! -f ${WORKINGDIR}/${AVX_PTHREADS_GCC} ] ; then
   echo " Error: file ${AVX_PTHREADS_GCC} is missing from ${WORKINGDIR}, exiting ...";
   exit 1
 fi
+if [ ! -f ${WORKINGDIR}/${SSE3_MPI_GCC} ] ; then
+  echo " Error: file ${SSE3_MPI_GCC} is missing from ${WORKINGDIR}, exiting ...";
+  exit 1
+fi
+if [ ! -f ${WORKINGDIR}/${AVX_MPI_GCC} ] ; then
+  echo " Error: file ${AVX_MPI_GCC} is missing from ${WORKINGDIR}, exiting ...";
+  exit 1
+fi
+
+
 
 if [ $# -eq 0 ] ; then
   echo "\n"
@@ -155,7 +213,7 @@ if [ $# -eq 1 ] ; then
     BL_PARTITION_GAPPY="-M -S" # NOTE: this will be taken as 2 arguments
     echo "Starting superscript `date`, Errors" > $ERRLOGFILE 
     echo "Starting superscript `date`, Log" > $LOGFILE 
-    for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+    for VERSION in $VERSIONS #  SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
     do 
       for MODEL in PSR GAMMA 
       do
@@ -193,7 +251,8 @@ if [ $# -eq 1 ] ; then
   echo "Starting superscript `date`, Log" > $LOGFILE 
 
 
-  for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+
+  for VERSION in $VERSIONS #   SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC  SSE3_MPI_GCC AVX_MPI_GCC
   do 
     for MODEL in PSR GAMMA 
     do
@@ -219,7 +278,7 @@ if [ $# -eq 1 ] ; then
   done
 else
   OPTIONS="$@"
-  for VERSION in SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
+  for VERSION in $VERSIONS #  SSE3_GCC SSE3_PTHREADS_GCC AVX_GCC AVX_PTHREADS_GCC
   do 
     run_${VERSION}
   done
