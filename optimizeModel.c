@@ -1162,7 +1162,7 @@ static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, li
     {
       if(ll->ld[i].valid)
 	{
-	  endLH[pos] = unlikely;
+	  endLH[pos] = PLL_UNLIKELY;
 	  startLH[pos] = 0.0;
 
 	  /* loop over all partitions that are linked via the corresponding GTR matrx, i.e., that share the same GTR matrix */
@@ -2157,7 +2157,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
 
 /* reset all branche lengths in tree to default values */
 
-void resetBranches(pllInstnace *tr)
+void resetBranches(pllInstance *tr)
 {
   nodeptr  p, q;
   int  nodes, i;
@@ -2282,7 +2282,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{
 	  bestIndex[model] = -1;
-	  bestScores[model] = unlikely;
+	  bestScores[model] = PLL_UNLIKELY;
 	}
 
       for(i = 0; i < numProteinModels; i++)

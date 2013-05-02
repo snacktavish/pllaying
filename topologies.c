@@ -140,7 +140,7 @@ void initTL(topolRELL_LIST *rl, pllInstance *tr, int n)
     {
       rl->t[i] = (topolRELL *)rax_malloc(sizeof(topolRELL));
       rl->t[i]->connect = (connectRELL *)rax_malloc((2 * tr->mxtips - 3) * sizeof(connectRELL));
-      rl->t[i]->likelihood = unlikely;     
+      rl->t[i]->likelihood = PLL_UNLIKELY;     
     }
 }
 
@@ -172,7 +172,7 @@ void resetTL(topolRELL_LIST *rl)
   int i;
 
   for(i = 0; i < rl->max; i++)    
-    rl->t[i]->likelihood = unlikely;          
+    rl->t[i]->likelihood = PLL_UNLIKELY;          
 }
 
 
@@ -217,7 +217,7 @@ static topol  *setupTopol (int maxtips)
     }
   else 
     {
-      tpl->likelihood  = unlikely;
+      tpl->likelihood  = PLL_UNLIKELY;
       tpl->start       = (node *) NULL;
       tpl->nextlink    = 0;
       tpl->ntips       = 0;
@@ -379,13 +379,13 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
   if (bt->ninit <= 0) 
     {
       if (! (bt->start = setupTopol(numsp)))  return  0;
-      bt->ninit = -1;
-      bt->nvalid = 0;
+      bt->ninit    = -1;
+      bt->nvalid   = 0;
       bt->numtrees = 0;
-      bt->best = unlikely;
+      bt->best     = PLL_UNLIKELY;
       bt->improved = FALSE;
-      bt->byScore = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
-      bt->byTopol = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
+      bt->byScore  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
+      bt->byTopol  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
       if (! bt->byScore || ! bt->byTopol) {
         printf( "initBestTree: malloc failure\n");
         return 0;
@@ -400,7 +400,7 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
     newkeep = -newkeep;
     if (newkeep < 1) newkeep = 1;
     bt->nvalid = 0;
-    bt->best = unlikely;
+    bt->best = PLL_UNLIKELY;
   }
   
   if (bt->nvalid >= newkeep) {
@@ -409,7 +409,7 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
   }
   else 
     {
-      bt->worst = unlikely;
+      bt->worst = PLL_UNLIKELY;
     }
   
   for (i = bt->ninit + 1; i <= newkeep; i++) 
@@ -426,8 +426,8 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
 
 void resetBestTree (bestlist *bt)
 { /* resetBestTree */
-  bt->best     = unlikely;
-  bt->worst    = unlikely;
+  bt->best     = PLL_UNLIKELY;
+  bt->worst    = PLL_UNLIKELY;
   bt->nvalid   = 0;
   bt->improved = FALSE;
 } /* resetBestTree */

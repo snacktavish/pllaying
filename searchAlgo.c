@@ -305,7 +305,7 @@ void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
 
     Resets an \a infoList by setting elements \a node and \a likelihood
     of each element of the \a bestInfo list structure to \b NULL and
-    \a unlikely, respectively.
+    \a PLL_UNLIKELY, respectively.
 
     @param iList
       The given \a infoList.
@@ -320,7 +320,7 @@ static void resetInfoList(infoList *iList)
   for(i = 0; i < iList->n; i++)    
   {
     iList->list[i].node = (nodeptr)NULL;
-    iList->list[i].likelihood = unlikely;
+    iList->list[i].likelihood = PLL_UNLIKELY;
   }    
 }
 
@@ -329,7 +329,7 @@ static void resetInfoList(infoList *iList)
     Initialize an \a infoList by creating a \a bestInfo list structure
     of \a n elements and setting the attributes \a node and \a likelihood
     of each element of the \a bestInfo list structure to \b NULL and
-    \a unlikely, respectively.
+    \a PLL_UNLIKELY, respectively.
 
     @param iList
       The given \a infoList.
@@ -349,7 +349,7 @@ static void initInfoList(infoList *iList, int n)
   for(i = 0; i < n; i++)
   {
     iList->list[i].node = (nodeptr)NULL;
-    iList->list[i].likelihood = unlikely;
+    iList->list[i].likelihood = PLL_UNLIKELY;
   }
 }
 
@@ -1066,7 +1066,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
 
   for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
   {           
-    tr->bestOfNode = unlikely;          
+    tr->bestOfNode = PLL_UNLIKELY;          
 
     if(adef->permuteTreeoptimize)
       index = perm[i];
@@ -1085,7 +1085,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
         }
         else
         { 		  
-          if(tr->bestOfNode != unlikely)
+          if(tr->bestOfNode != PLL_UNLIKELY)
             restoreTopologyOnly(tr, bt, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
         }	   
       }
@@ -1107,7 +1107,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
 
     for(i = 0; i < iList->valid; i++)
     { 	  
-      tr->bestOfNode = unlikely;
+      tr->bestOfNode = PLL_UNLIKELY;
 
       if(rearrangeBIG(tr, pr, iList->list[i].node, mintrav, maxtrav))
       {	  
@@ -1120,7 +1120,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
         else
         { 
 
-          if(tr->bestOfNode != unlikely)
+          if(tr->bestOfNode != PLL_UNLIKELY)
           {	     
             restoreTopologyOnly(tr, bt, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
           }	
@@ -1728,7 +1728,7 @@ int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *a
 
     for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
     {                	         
-      tr->bestOfNode = unlikely;
+      tr->bestOfNode = PLL_UNLIKELY;
 
       if(rearrangeBIG(tr, pr, tr->nodep[i], 1, maxtrav))
       {	     
@@ -1800,8 +1800,8 @@ void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean
     fastIterations = 0;
 
   double 
-    lh = unlikely, 
-       previousLh = unlikely, 
+    lh = PLL_UNLIKELY, 
+       previousLh = PLL_UNLIKELY, 
        difference, 
        epsilon;              
 

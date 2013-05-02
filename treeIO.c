@@ -1030,7 +1030,7 @@ void getStartingTree(pllInstance *tr)
 {
   FILE *treeFile = myfopen(tree_file, "rb");
 
-  tr->likelihood = unlikely;
+  tr->likelihood = PLL_UNLIKELY;
    
   treeReadLen(treeFile, tr, FALSE, FALSE, FALSE);
                
