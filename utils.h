@@ -7,19 +7,19 @@
 #include "queue.h"
 
 
-void read_msa(tree *tr, const char *filename);
-void makeParsimonyTree(tree *tr);
+void read_msa(pllInstance *tr, const char *filename);
+void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int, int);
 int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
 partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip);
 void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
-void pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt);
-int pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip);
+void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt);
+int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
-void pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList);
+void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
-void  pllTreeDestroy (tree * t);
-tree * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom);
+void  pllTreeDestroy (pllInstance * t);
+pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom);
 
 #endif /* UTILS_H_ */

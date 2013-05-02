@@ -87,7 +87,7 @@ extern unsigned int mask32[32];
 
 /***************** UTILITY FUNCTIONS **************************/
 
-void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr)
+void storeExecuteMaskInTraversalDescriptor(pllInstance *tr, partitionList *pr)
 {
   int model;
 
@@ -96,7 +96,7 @@ void storeExecuteMaskInTraversalDescriptor(tree *tr, partitionList *pr)
 
 }
 
-void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value)
+void storeValuesInTraversalDescriptor(pllInstance *tr, partitionList *pr, double *value)
 {
   int model;
 
@@ -105,7 +105,7 @@ void storeValuesInTraversalDescriptor(tree *tr, partitionList *pr, double *value
 }
 
 #ifdef EXPERIMENTAL
-void read_phylip_msa(tree * tr, const char * filename, int format, int type)
+void read_phylip_msa(pllInstance * tr, const char * filename, int format, int type)
 {
     size_t
       i, j,
@@ -226,19 +226,19 @@ void read_phylip_msa(tree * tr, const char * filename, int format, int type)
 
 /** @brief Read MSA from a file and setup the tree
  *
- *  Reads the MSA from \a filename and constructs the
+ *  Reads the MSA from \a filename and constructs
  *  the tree \a tr and sets up partition and model data
  *
  *  @todo This will be soon replaced by \a read_phylip_msa
  *
  *  @param tr
- *    Pointer to the tree to be set up
+ *    Pointer to the tree instance to be set up
  *
  *  @param filename
  *    Filename containing the MSA
  *
  */
-void read_msa(tree *tr, partitionList *pr, const char *filename)
+void read_msa(pllInstance *tr, partitionList *pr, const char *filename)
   {
     size_t
       i,
@@ -441,7 +441,7 @@ void printBothOpen(const char* format, ... )
   fclose(f);
 }
 
-void printResult(tree *tr, partitionList *pr, analdef *adef, boolean finalPrint)
+void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean finalPrint)
 {
   FILE *logFile;
   char temporaryFileName[1024] = "";
@@ -841,7 +841,7 @@ static unsigned int KISS32(void)
 }
 
 /* removed the static keyword for using this function in the examples */
-boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
+boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
 {
   nodeptr  p0, p, q;
   int
@@ -935,7 +935,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
     tr->nodep[i] = p;
   }
 
-  tr->likelihood  = unlikely;
+  tr->likelihood  = PLL_UNLIKELY;
   tr->start       = (node *) NULL;  
 
   tr->ntips       = 0;
@@ -963,7 +963,7 @@ boolean setupTree (tree *tr, boolean doInit, partitionList *partitions)
 }
 
 
-boolean modelExists(char *model, tree *tr)
+boolean modelExists(char *model, pllInstance *tr)
 {
   /********** BINARY ********************/
 
@@ -988,7 +988,7 @@ boolean modelExists(char *model, tree *tr)
 /*********************************** *********************************************************/
 
 
-void init_default(tree *tr)
+void init_default(pllInstance *tr)
 {
 
   /*********** tr inits **************/
@@ -1040,7 +1040,7 @@ void init_default(tree *tr)
 
 
 /* Delete it at some point */
-void printLog(tree *tr)
+void printLog(pllInstance *tr)
 {
   FILE *logFile;
   double t;
@@ -1058,7 +1058,7 @@ void printLog(tree *tr)
 }
 
 
-void getDataTypeString(tree *tr, pInfo *partitionInfo, char typeOfData[1024])
+void getDataTypeString(pllInstance *tr, pInfo *partitionInfo, char typeOfData[1024])
 {
   switch(partitionInfo->dataType)
   {
@@ -1101,7 +1101,7 @@ void getDataTypeString(tree *tr, pInfo *partitionInfo, char typeOfData[1024])
 /************************************************************************************/
 
 
-nodeptr pickRandomSubtree(tree *tr)
+nodeptr pickRandomSubtree(pllInstance *tr)
 {
   nodeptr p;
   do
@@ -1133,7 +1133,7 @@ nodeptr pickRandomSubtree(tree *tr)
 */
 
   
-void computeAllAncestralVectors(nodeptr p, tree *tr, partitionList *pr)
+void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr)
 {
   /* if this is not a tip, for which evidently it does not make sense 
      to compute the ancestral sequence because we have the real one ....
@@ -1161,7 +1161,7 @@ void computeAllAncestralVectors(nodeptr p, tree *tr, partitionList *pr)
 
 
 
-void initializePartitionData(tree *localTree, partitionList * localPartitions)
+void initializePartitionData(pllInstance *localTree, partitionList * localPartitions)
 {
   /* in ancestralVectorWidth we store the total length in bytes (!) of 
      one conditional likelihood array !
@@ -1330,9 +1330,9 @@ int virtual_width( int n ) {
 }
 
 
-void initMemorySavingAndRecom(tree *tr, partitionList *pr)
+void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
 {
-  tree
+  pllInstance  
     *localTree = tr; 
   partitionList
     *localPartitions = pr;
@@ -1369,7 +1369,7 @@ void initMemorySavingAndRecom(tree *tr, partitionList *pr)
   /* E recom */
 }
 
-double get_branch_length(tree *tr, nodeptr p, int partition_id)
+double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < NUM_BRANCHES);
@@ -1380,7 +1380,7 @@ double get_branch_length(tree *tr, nodeptr p, int partition_id)
   if(z > zmax) z = zmax;
   return (-log(z) * tr->fracchange);
 }
-void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl)
+void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < NUM_BRANCHES);
@@ -1393,7 +1393,7 @@ void set_branch_length(tree *tr, nodeptr p, int partition_id, double bl)
   p->z[partition_id] = z;
 }
 
-void initializePartitionsSequential(tree *tr, partitionList *pr)
+void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
 { 
   size_t
     model;
@@ -1424,7 +1424,7 @@ void initializePartitionsSequential(tree *tr, partitionList *pr)
 
 
 /* interface to outside  */
-void initializePartitions(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 {
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   initializePartitionsMaster(tr,localTree,pr,localPr,tid,n);
@@ -2031,7 +2031,7 @@ pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
   return (freqs);
 }
 /*
-double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, tree *tr)
+double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, pllInstance *tr)
 {  
   int 
     model,
@@ -2112,7 +2112,7 @@ pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
 }
 
 int
-pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip)
+pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip)
 {
   int i;
   nodeptr node;
@@ -2179,14 +2179,14 @@ pllTreeConnectAlignment (tree * tr, struct pllPhylip * phylip)
     @return
       On success returns an instance to PLL, otherwise \b NULL
 */
-tree *
+pllInstance *
 pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom)
 {
-  tree * tr;
+  pllInstance * tr;
 
   if (rateHetModel != GAMMA && rateHetModel != CAT) return NULL;
 
-  tr = (tree *) rax_calloc (1, sizeof (tree));
+  tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
   tr->threadID     = 0;
   tr->rateHetModel = rateHetModel;
@@ -2210,7 +2210,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
     @todo
       STILL NOT FINISHED
 */
-void pllTreeInitDefaults (tree * tr, int nodes, int tips)
+void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 {
   nodeptr p0, p, q;
   int i, j;
@@ -2287,7 +2287,7 @@ void pllTreeInitDefaults (tree * tr, int nodes, int tips)
     tr->nodep[i]         = p;
    }
 
-  tr->likelihood  = unlikely;
+  tr->likelihood  = PLL_UNLIKELY;
   tr->start       = NULL;
   tr->ntips       = 0;
   tr->nextnode    = 0;
@@ -2319,14 +2319,14 @@ void pllTreeInitDefaults (tree * tr, int nodes, int tips)
     Set the tree topology based on a parsed and validated newick tree
 
     @param tree
-      The PLL tree
+      The PLL instance
 
     @param nt
       The \a pllNewickTree wrapper structure that contains the parsed newick tree
 
 */
 void
-pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt)
+pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt)
 {
   struct pllStack * nodeStack = NULL;
   struct pllStack * head;
@@ -2411,7 +2411,7 @@ pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt)
       Perhaps pass a seed?
 
     @param tr
-      The PLL tree
+      The PLL instance
 
     @param tips
       Number of tips
@@ -2420,7 +2420,7 @@ pllTreeInitTopologyNewick (tree * tr, struct pllNewickTree * nt)
       A set of \a tips names representing the taxa labels
 */
 void 
-pllTreeInitTopologyRandom (tree * tr, int tips, char ** nameList)
+pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
 {
   int i;
   pllTreeInitDefaults (tr, 2 * tips - 1, tips);
@@ -2558,16 +2558,15 @@ pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)
    }
 }
 
-/** @brief Deallocate PLL tree structure
+/** @brief Deallocate the PLL instance
 
-    Deallocates the tree structure associated with the library and all
-    its elements. 
+    Deallocates the library instance and all its elements.
 
     @param tr
-      The tree structure
+      The PLL instance
 */
 void
-pllTreeDestroy (tree * tr)
+pllTreeDestroy (pllInstance * tr)
 {
   int i;
   for (i = 1; i <= tr->mxtips; ++ i)

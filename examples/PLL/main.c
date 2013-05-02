@@ -26,6 +26,9 @@ int main (int argc, char * argv[])
      return (EXIT_FAILURE);
    }
 
+  /* Create a PLL tree */
+  tr = pllCreateInstance (GAMMA, FALSE, FALSE, FALSE);
+
   /* Parse a PHYLIP file */
   phylip = pllPhylipParse (argv[1]);
   if (!phylip)
@@ -72,9 +75,6 @@ int main (int argc, char * argv[])
   /* Compute the empirical frequencies */
   empiricalFrequencies = pllBaseFrequenciesGTR (partitions, phylip);
 
-  /* Create a PLL tree */
-  tr = pllCreateInstance (GAMMA, FALSE, FALSE, FALSE);
-
   /* Set the topology of the PLL tree from a parsed newick tree */
   pllTreeInitTopologyNewick (tr, newick);
   /* Or instead of the previous function use the next commented line to create
@@ -82,7 +82,7 @@ int main (int argc, char * argv[])
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
 
   /* Connect the alignment with the tree structure */
-  if (!pllTreeConnectAlignment (tr, phylip))
+  if (!pllLoadAlignment (tr, phylip))
    {
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);

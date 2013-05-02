@@ -24,10 +24,17 @@ main (int argc, char * argv[])
 //  printf ("Taxa: %d SeqLen: %d\n", phylip->nTaxa, phylip->seqLen);
   
   
+  printf ("Taxa: %d SeqLen: %d\n", phylip->nTaxa, phylip->seqLen);
   pllPhylipDump (phylip);
   pllPhylipRemoveDuplicate (phylip);
   
   printf ("Taxa: %d SeqLen: %d\n", phylip->nTaxa, phylip->seqLen);
+  int i;
+  for (i = 0; i < phylip->seqLen; ++ i)
+   {
+     printf ("(%d,%d) ", i, phylip->weights[i]);
+   }
+  printf ("\n");
   pllPhylipDestroy (phylip);
 
 
