@@ -321,7 +321,7 @@ static void freeLinkageList( linkageList* ll)
 
 /* function that evaluates the change to a parameter */
 
-static void evaluateChange(tree *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
+static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
 { 
   int i, k, pos;
 
@@ -464,7 +464,7 @@ static void evaluateChange(tree *tr, partitionList *pr, int rateNumber, double *
 /* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
 
 static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double tol, double *xmin, double *result, int numberOfModels, 
-			 int whichFunction, int rateNumber, tree *tr, partitionList *pr, linkageList *ll, double lim_inf, double lim_sup)
+			 int whichFunction, int rateNumber, pllInstance *tr, partitionList *pr, linkageList *ll, double lim_inf, double lim_sup)
 {
   int iter, i;
   double 
@@ -683,7 +683,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
 		       double *fc, double lim_inf, double lim_sup, 
-		       int numberOfModels, int rateNumber, int whichFunction, tree *tr, partitionList *pr, linkageList *ll)
+		       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll)
 {
   double 
     *ulim = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -1003,7 +1003,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 /* function for optimizing alpha parameter */
 
 
-static void optAlpha(tree *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
+static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i, 
@@ -1115,7 +1115,7 @@ static void optAlpha(tree *tr, partitionList *pr, double modelEpsilon, linkageLi
 
 /* optimize rates in the Q matrix */
 
-static void optRates(tree *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 {
   int 
     i, 
@@ -1298,7 +1298,7 @@ static boolean AAisGTR(partitionList *pr)
 
 /* generic substitiution matrix (Q matrix) optimization */
 
-static void optRatesGeneric(tree *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
+static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -1517,7 +1517,7 @@ static int catCompare(const void *p1, const void *p2)
 }
 
 
-static void categorizePartition(tree *tr, partitionList *pr, rateCategorize *rc, int model, int lower, int upper)
+static void categorizePartition(pllInstance *tr, partitionList *pr, rateCategorize *rc, int model, int lower, int upper)
 {
   int
     zeroCounter,
@@ -1571,7 +1571,7 @@ static void categorizePartition(tree *tr, partitionList *pr, rateCategorize *rc,
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
-void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
+void optRateCatPthreads(pllInstance *tr, partitionList *pr, double lower_spacing, double upper_spacing, double *lhs, int n, int tid)
 {
   int 
     model, 
@@ -1665,7 +1665,7 @@ void optRateCatPthreads(tree *tr, partitionList *pr, double lower_spacing, doubl
 #else
 
 
-static void optRateCatModel(tree *tr, partitionList *pr, int model, double lower_spacing, double upper_spacing, double *lhs)
+static void optRateCatModel(pllInstance *tr, partitionList *pr, int model, double lower_spacing, double upper_spacing, double *lhs)
 {
   int lower = pr->partitionData[model]->lower;
   int upper = pr->partitionData[model]->upper;
@@ -1749,7 +1749,7 @@ static void optRateCatModel(tree *tr, partitionList *pr, int model, double lower
    of 1.0
 */
 
-void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
+void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
 {
   int 
     i,
@@ -1982,7 +1982,7 @@ void updatePerSiteRates(tree *tr, partitionList *pr, boolean scaleRates)
 #endif               
 }
 
-static void optimizeRateCategories(tree *tr, partitionList *pr, int _maxCategories)
+static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxCategories)
 {
   assert(_maxCategories > 0);
 
@@ -2157,7 +2157,7 @@ static void optimizeRateCategories(tree *tr, partitionList *pr, int _maxCategori
 
 /* reset all branche lengths in tree to default values */
 
-void resetBranches(tree *tr)
+void resetBranches(pllInstnace *tr)
 {
   nodeptr  p, q;
   int  nodes, i;
@@ -2257,7 +2257,7 @@ static void printAAmatrix(partitionList *pr, double epsilon)
    automatically compute the best protein substitution model for the dataset at hand.
  */
 
-static void autoProtein(tree *tr, partitionList *pr)
+static void autoProtein(pllInstance *tr, partitionList *pr)
 {
   int 
     countAutos = 0,
@@ -2352,7 +2352,7 @@ static void autoProtein(tree *tr, partitionList *pr)
 
 /* iterative procedure for optimizing all model parameters */
 
-void modOpt(tree *tr, partitionList *pr, double likelihoodEpsilon)
+void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 { 
   int i, catOpt = 0; 
   double 

@@ -38,7 +38,7 @@ double timeBuffer[NUM_PAR_JOBS];
 double timePerRegion[NUM_PAR_JOBS]; 
 #endif
 
-extern void initializePartitionData(tree *localTree, partitionList *localPr);
+extern void initializePartitionData(pllInstance *localTree, partitionList *localPr);
 extern char* getJobName(int tmp); 
 
 extern double *globalResult; 
@@ -100,7 +100,7 @@ void initMPI(int argc, char *argv[])
 
    @param tr the tree 
  */ 
-boolean workerTrap(tree *tr, partitionList *pr)
+boolean workerTrap(pllInstance *tr, partitionList *pr)
 {
   /// @note for the broadcasting, we need to, if the tree structure has already been initialized 
   treeIsInitialized = FALSE; 
@@ -191,7 +191,7 @@ void pinToCore(int tid)
 /**  @brief Starts the worker threads. 
      @param tr
  */ 
-void startPthreads(tree *tr, partitionList *pr)
+void startPthreads(pllInstance *tr, partitionList *pr)
 {
   pthread_t *threads;
   pthread_attr_t attr;
@@ -235,7 +235,7 @@ void startPthreads(tree *tr, partitionList *pr)
 #endif
 
 #ifdef MEASURE_TIME_PARALLEL
-static void reduceTimesWorkerRegions(tree *tr, double *mins, double *maxs)
+static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs)
 {
   int tid = tr->threadID; 
   int i,j ; 
@@ -296,12 +296,12 @@ static void printParallelTimePerRegion(double *mins, double *maxs)
 /* function that computes per-site log likelihoods in pthreads */
 
 /** @brief worker threads evaluate the likelihood on their sites. 
-    @param tr the tree
+    @param tr the tree instance
     @param likelihood array (?)  
     @param n number of threads
     @param tid thread id 
  */ 
-void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid)
+void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid)
 {
   size_t 
     model, 
@@ -361,7 +361,7 @@ void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int
 }
 
 /** @brief Check, if partition is assign to this worker.
-    @param localTree the local tree 
+    @param localTree the local tree instance
     @param tid the thread id
     @param model the partition id
  */ 
@@ -375,7 +375,7 @@ boolean isThisMyPartition(partitionList *localPr, int tid, int model)
 
 /** @brief Computes partition size for all partitions (in case full partitions are assigns to workers). 
 
-    @param localTree the local tree 
+    @param localPr the local partitions instance
     
     @param tid thread id    
  */ 
@@ -404,7 +404,7 @@ void computeFractionMany(partitionList *localPr, int tid)
 
 /** @brief Computes partition size for all partitions (for cyclic distribution of sites)
     
-    @param localTree the local tree 
+    @param localPr the local partitions instance
     @param tid thread id
     @param n number of workers
  */ 
@@ -463,11 +463,12 @@ static int partCompare(const void *p1, const void *p2)
    multiprocessor scheduling problem that turn out to work very well
    and are cheap to compute.
    
-   @param tr tree 
+   @param tr the library instance
+   @param pr the partitions list
    @param worker id 
 */
 
-void multiprocessorScheduling(tree *tr, partitionList *pr, int tid)
+void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid)
 {
   int 
     s,
@@ -596,7 +597,7 @@ void multiprocessorScheduling(tree *tr, partitionList *pr, int tid)
    @param dlnLdlz first derivative
    @param d2lnLdlz2 second derivative
 */
-void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches )
+void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches )
 {
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 
@@ -629,14 +630,14 @@ void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, 
     
    @param buf the buffer
    @param srcTar pointer to either source or destination array  
-   @param tr tree 
+   @param tr Library instance 
    @param n number of workers 
    @param tid process id 
    @param read TRUE, if read-mode  
    @param countOnly  if TRUE, simply return the number of elements 
 
 */
-static int doublesToBuffer(double *buf, double *srcTar, tree *tr, partitionList *pr, int n, int tid, boolean read, boolean countOnly)
+static int doublesToBuffer(double *buf, double *srcTar, pllInstance *tr, partitionList *pr, int n, int tid, boolean read, boolean countOnly)
 {
   int 
     model,
@@ -686,14 +687,14 @@ static int doublesToBuffer(double *buf, double *srcTar, tree *tr, partitionList 
 
 /** @brief broadcast rates after rate optimization. 
     
-    @param tr tree 
-    @param localTree local tree 
+    @param tre Library instance
+    @param localTree local library instance 
     @param n number of workers 
     @param tid worker id 
     
     @todo mpi_alltoallv/w may be more efficient, but it is a hell to set up
  */ 
-void broadcastAfterRateOpt(tree *tr, tree *localTree, partitionList *pr, int n, int tid)
+void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionList *pr, int n, int tid)
 {				  
   int
     num1 = 0,
@@ -752,11 +753,11 @@ void broadcastAfterRateOpt(tree *tr, tree *localTree, partitionList *pr, int n, 
 
     @param dst destination array
     @param src source array
-    @param tr tree 
+    @param tr library instance 
     @param n number of workers 
     @param tid worker id 
  */
-static void collectDouble(double *dst, double *src, tree *tr, partitionList *pr, int n, int tid)
+static void collectDouble(double *dst, double *src, pllInstance *tr, partitionList *pr, int n, int tid)
 {
   double 
     buf[tr->originalCrunchedLength]; 
@@ -811,11 +812,11 @@ static void collectDouble(double *dst, double *src, tree *tr, partitionList *pr,
 
 
 /** @brief broadcast a new alpha (for the GAMMA model)
-    @param localTree local tree 
-    @param tr tree 
+    @param localTree local library instance
+    @param tr library instance
     @param tid worker id 
  */
-static void broadCastAlpha(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr, int tid)
+static void broadCastAlpha(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int tid)
 {
   int  i, 
     model; 
@@ -838,11 +839,11 @@ static void broadCastAlpha(tree *localTree, tree *tr, partitionList *localPr, pa
 
 /** @brief Master broadcasts rates.
     
-    @param localTree local tree 
-    @param tr tree 
+    @param localTree local library instance
+    @param tr library instance
     @param tid worker id     
  */ 
-static void broadCastRates(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr, int tid)
+static void broadCastRates(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int tid)
 {
   int 
     model;
@@ -887,10 +888,11 @@ static void broadCastRates(tree *localTree, tree *tr, partitionList *localPr, pa
 
 /** @brief likelihood evaluation call with subsequent reduce operation. 
 
-    @param localTree local tree 
+    @param localTree local library instance 
     @param tid worker id 
+    @todo Please comment remaining parameters
  */ 
-static void reduceEvaluateIterative(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
+static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
 {
   int model;
 
@@ -984,11 +986,11 @@ static void reduceEvaluateIterative(tree *tr, tree *localTree, partitionList *pr
   the global one the memcpy version below is just for testing and
   preparing the fine-grained MPI BlueGene version
 
-  @param localTree local tree 
-  @param tr tree 
+  @param localTree local library instance
+  @param tr library instance
 */
 /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
-inline static void broadcastTraversalInfo(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr)
+inline static void broadcastTraversalInfo(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
 {
   /* @todo these two regions could be joined */
 #ifdef _USE_PTHREADS
@@ -1102,18 +1104,18 @@ char* getJobName(int type)
    This function here handles all parallel regions in the Pthreads
    version, when we enter this function masterBarrier() has been called
    by the master thread from within the sequential part of the
-   program, tr is the tree at the master thread, localTree the tree at
-   the worker threads
+   program, tr is the library instance (tree) at the master thread, 
+   localTree is the library instance (tree) at the worker threads
 
    While this is not necessary, adress spaces of threads are indeed
    separated for easier transition to a distributed memory paradigm
    
-   @param tr tree 
-   @param localTree local tree 
+   @param tr library instance
+   @param localTree local library instance 
    @param tid worker id 
    @param n number of workers 
 */
-boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 {
   int
     i,
@@ -1470,12 +1472,12 @@ boolean execFunction(tree *tr, tree *localTree, partitionList *pr, partitionList
 void *likelihoodThread(void *tData)
 {
   threadData *td = (threadData*)tData;
-  tree
+  pllInstance 
     *tr = td->tr;
   partitionList *pr = td->pr;
 
 #ifdef _USE_PTHREADS
-  tree *localTree = rax_calloc(1,sizeof(tree )); 
+  pllInstance *localTree = rax_calloc(1,sizeof(pllInstance )); 
   partitionList *localPr = rax_calloc(1,sizeof(partitionList));
 
   int
@@ -1531,9 +1533,9 @@ void *likelihoodThread(void *tData)
    code.
    
    @param jobType type of parallel region
-   @param tr tree 
+   @param tr library instance
 */
-void masterPostBarrier(int jobType, tree *tr, partitionList *pr)
+void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr)
 {
   assert(tr->threadID == 0); 
   
@@ -1582,9 +1584,9 @@ void masterPostBarrier(int jobType, tree *tr, partitionList *pr)
    @brief a generic master barrier that serves as an entry point for parallel parts of the code.
 
    @param jobType type of parallel region 
-   @param tr tree 
+   @param tr library instance
  */ 
-void masterBarrier(int jobType, tree *tr, partitionList *pr)
+void masterBarrier(int jobType, pllInstance *tr, partitionList *pr)
 {
 #ifdef MEASURE_TIME_PARALLEL
   assert(jobType < NUM_PAR_JOBS); 
@@ -1636,12 +1638,12 @@ void masterBarrier(int jobType, tree *tr, partitionList *pr)
 /**
    @brief Tree  initialization function  for workers.
 
-   @param tr tree 
-   @param localTree local tree 
+   @param tr library instance
+   @param localTree local library instance
    @param tid worker id 
  */ 
 /* encapsulated this, s.t. it becomes more clear, that the pthread-master must not execute this */
-static void assignAndInitPart1(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr, int *tid)
+static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int *tid)
 {
   size_t
     model; 
@@ -1720,10 +1722,10 @@ static void assignAndInitPart1(tree *localTree, tree *tr, partitionList *localPr
 /**
    @brief Distribute y-vectors during initialization. 
 
-   @param tr tree 
-   @param localTree local tree 
+   @param tr library instance
+   @param localTree local library instance
  */ 
-void distributeYVectors(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr)
+void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
 {
   size_t 
     i,
@@ -1788,10 +1790,10 @@ void distributeYVectors(tree *localTree, tree *tr, partitionList *localPr, parti
 /**
    @brief Distribute the weights in the alignment ot workers. 
 
-   @param tr tree 
-   @param localTree local tree 
+   @param tr library instance
+   @param localTree local library instance
  */ 
-void distributeWeights(tree *localTree, tree *tr, partitionList *localPr, partitionList *pr)
+void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
 {
   int tid = localTree->threadID; 
   int n = localTree->numberOfThreads; 
@@ -1837,12 +1839,12 @@ void distributeWeights(tree *localTree, tree *tr, partitionList *localPr, partit
 
 /**
    @brief Initialize the partitioning scheme (master function).
-   @param tr tree 
-   @param localTree local tree 
+   @param tr library instance
+   @param localTree local library instance
    @param tid worker id    
    @param n number of workers 
  */ 
-void initializePartitionsMaster(tree *tr, tree *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 { 
   size_t
     model;

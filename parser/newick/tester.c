@@ -6,7 +6,7 @@ int main (int argc, char * argv[])
 {
   int nodes, leaves;
   struct pllStack * stack = NULL;
-  tree * t;
+  //pllInstance * t;
 
   if (argc != 2)
    {
@@ -29,9 +29,9 @@ int main (int argc, char * argv[])
 
      stack_dump(&stack);
 
-     t = pllTreeCreateNewick (stack, nodes, leaves);
+     //t = pllTreeCreateNewick (stack, nodes, leaves);
      pllNewickParseDestroy (&stack);
-     pllTreeDestroy (t);
+     //pllTreeDestroy (t);
    }
   else
     printf ("Error while parsing newick tree...\n");

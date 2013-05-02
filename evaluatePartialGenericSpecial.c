@@ -354,7 +354,7 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
    to calling the function below.
 */
 
-double evaluatePartialGeneric (tree *tr, partitionList *pr, int i, double ki, int _model)
+double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double ki, int _model)
 {
   double 
     result;

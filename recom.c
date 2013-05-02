@@ -100,7 +100,7 @@ boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtip
  *    true if recomputation is currently applied 
  *
  */
-void allocRecompVectorsInfo(tree *tr)
+void allocRecompVectorsInfo(pllInstance *tr)
 {
   recompVectors 
     *v = (recompVectors *) rax_malloc(sizeof(recompVectors));
@@ -556,7 +556,7 @@ void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec)
 
 #ifdef _DEBUG_RECOMPUTATION
 
-void allocTraversalCounter(tree *tr)
+void allocTraversalCounter(pllInstance *tr)
 {
   traversalCounter 
     *tc;
@@ -581,7 +581,7 @@ void allocTraversalCounter(tree *tr)
 /* recomp */
 /* code to track traversal descriptor stats */
 
-void countTraversal(tree *tr)
+void countTraversal(pllInstance *tr)
 {
   traversalInfo 
     *ti   = tr->td[0].ti;
@@ -627,7 +627,7 @@ void countTraversal(tree *tr)
 
 
 
-void printTraversalInfo(tree *tr)
+void printTraversalInfo(pllInstance *tr)
 {
   int 
     k, 

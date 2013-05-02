@@ -53,7 +53,7 @@
 #endif
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-void perSiteLogLikelihoodsPthreads(tree *tr, partitionList *pr, double *lhs, int n, int tid);
+void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
 #endif
 
 
@@ -690,7 +690,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
 
 /* This is the core function for computing the log likelihood at a branch */
 
-void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihoods)
+void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
      are stored in the very important traversal array data structure that describes a partial or full tree traversal */
@@ -1096,7 +1096,7 @@ void evaluateIterative(tree *tr, partitionList *pr, boolean getPerSiteLikelihood
 
 
 
-void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
+void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -1291,7 +1291,7 @@ void evaluateGeneric (tree *tr, partitionList *pr, nodeptr p, boolean fullTraver
 }
 
 
-void perSiteLogLikelihoods(tree *tr, partitionList *pr, double *logLikelihoods)
+void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikelihoods)
 {
   double 
     //likelihood,

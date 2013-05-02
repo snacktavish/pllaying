@@ -53,7 +53,7 @@
 
 
 
-static void saveTopolRELLRec(tree *tr, nodeptr p, topolRELL *tpl, int *i, int numsp)
+static void saveTopolRELLRec(pllInstance *tr, nodeptr p, topolRELL *tpl, int *i, int numsp)
 {
   int k;
   if(isTip(p->number, numsp))
@@ -82,7 +82,7 @@ static void saveTopolRELLRec(tree *tr, nodeptr p, topolRELL *tpl, int *i, int nu
     }
 }
 
-static void saveTopolRELL(tree *tr, topolRELL *tpl)
+static void saveTopolRELL(pllInstance *tr, topolRELL *tpl)
 {
   nodeptr p = tr->start;
   int k, i = 0;
@@ -109,7 +109,7 @@ static void saveTopolRELL(tree *tr, topolRELL *tpl)
 }
 
 
-static void restoreTopolRELL(tree *tr, topolRELL *tpl, int numBranches)
+static void restoreTopolRELL(pllInstance *tr, topolRELL *tpl, int numBranches)
 {
   int i;
   
@@ -129,7 +129,7 @@ static void restoreTopolRELL(tree *tr, topolRELL *tpl, int numBranches)
 
 
 
-void initTL(topolRELL_LIST *rl, tree *tr, int n)
+void initTL(topolRELL_LIST *rl, pllInstance *tr, int n)
 {
   int i;
 
@@ -157,7 +157,7 @@ void freeTL(topolRELL_LIST *rl)
 }
 
 
-void restoreTL(topolRELL_LIST *rl, tree *tr, int n, int numBranches)
+void restoreTL(topolRELL_LIST *rl, pllInstance *tr, int n, int numBranches)
 {
   assert(n >= 0 && n < rl->max);    
 
@@ -178,7 +178,7 @@ void resetTL(topolRELL_LIST *rl)
 
 
 
-void saveTL(topolRELL_LIST *rl, tree *tr, int index)
+void saveTL(topolRELL_LIST *rl, pllInstance *tr, int index)
 { 
   assert(index >= 0 && index < rl->max);    
     
@@ -314,7 +314,7 @@ static nodeptr  minTreeTip (nodeptr  p, int numsp)
 }
 
 
-static void saveTree (tree *tr, topol *tpl, int numBranches)
+static void saveTree (pllInstance *tr, topol *tpl, int numBranches)
 /*  Save a tree topology in a standard order so that first branches
  *  from a node contain lower value tips than do second branches from
  *  the node.  The root tip should have the lowest value of all.
@@ -334,7 +334,7 @@ static void saveTree (tree *tr, topol *tpl, int numBranches)
 } /* saveTree */
 
 
-static boolean restoreTree (topol *tpl, tree *tr, partitionList *pr)
+static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
 { 
   connptr  r;
   nodeptr  p, p0;    
@@ -541,7 +541,7 @@ static int  findInList (void *item, void *list[], int n, int (* cmpFunc)(void *,
 
 
 
-static int  findTreeInList (bestlist *bt, tree *tr, int numBranches)
+static int  findTreeInList (bestlist *bt, pllInstance *tr, int numBranches)
 {
   topol  *tpl;
   
@@ -552,7 +552,7 @@ static int  findTreeInList (bestlist *bt, tree *tr, int numBranches)
 } 
 
 
-int  saveBestTree (bestlist *bt, tree *tr, int numBranches)
+int  saveBestTree (bestlist *bt, pllInstance *tr, int numBranches)
 {    
   topol  *tpl, *reuse;
   int  tplNum, scrNum, reuseScrNum, reuseTplNum, i, oldValid, newValid;
@@ -616,7 +616,7 @@ int  saveBestTree (bestlist *bt, tree *tr, int numBranches)
 } 
 
 
-int  recallBestTree (bestlist *bt, int rank, tree *tr, partitionList *pr)
+int  recallBestTree (bestlist *bt, int rank, pllInstance *tr, partitionList *pr)
 { 
   if (rank < 1)  rank = 1;
   if (rank > bt->nvalid)  rank = bt->nvalid;

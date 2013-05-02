@@ -178,7 +178,7 @@ int countTips(nodeptr p, int numsp)
 }
 
 
-double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
+double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr p)
 {
   double 
     z = 0.0,
@@ -238,7 +238,7 @@ double getBranchLength(tree *tr, partitionList *pr, int perGene, nodeptr p)
 
 
   
-static char *TreeInner2StringREC(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
+static char *TreeInner2StringREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport, boolean printInnerNodes)
 {
   /* TODOFER simplify this, should be used just to print inner nodes for testing */
@@ -321,7 +321,7 @@ static char *TreeInner2StringREC(char *treestr, tree *tr, partitionList *pr, nod
 }
 
 
-static char *Tree2StringREC(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
+static char *Tree2StringREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 {
   char  *nameptr;            
@@ -402,7 +402,7 @@ static char *Tree2StringREC(char *treestr, tree *tr, partitionList *pr, nodeptr 
 
 
 
-void printTopology(tree *tr, partitionList *pr, boolean printInner)
+void printTopology(pllInstance *tr, partitionList *pr, boolean printInner)
 {
   if(!printInner)
   {
@@ -427,7 +427,7 @@ void printTopology(tree *tr, partitionList *pr, boolean printInner)
 
 
 
-char *Tree2String(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
+char *Tree2String(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
 		  boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 { 
 
@@ -451,7 +451,7 @@ char *Tree2String(char *treestr, tree *tr, partitionList *pr, nodeptr p, boolean
 }
 
 
-void printTreePerGene(tree *tr, partitionList *pr, analdef *adef, char *fileName, char *permission)
+void printTreePerGene(pllInstance *tr, partitionList *pr, analdef *adef, char *fileName, char *permission)
 {  
   FILE *treeFile;
   char extendedTreeFileName[1024];
@@ -599,7 +599,7 @@ static boolean  treeFlushLabel (FILE *fp)
 
 
 
-static int treeFindTipByLabelString(char  *str, tree *tr)                    
+static int treeFindTipByLabelString(char  *str, pllInstance *tr)                    
 {
   int lookup = lookupWord(str, tr->nameHash);
 
@@ -616,7 +616,7 @@ static int treeFindTipByLabelString(char  *str, tree *tr)
 }
 
 
-static int treeFindTipName(FILE *fp, tree *tr)
+static int treeFindTipName(FILE *fp, pllInstance *tr)
 {
   char    str[nmlngth+2];
   int      n;
@@ -723,7 +723,7 @@ static boolean treeNeedCh (FILE *fp, int c1, char *where)
 
 
 
-static boolean addElementLen (FILE *fp, tree *tr, nodeptr p, boolean readBranchLengths, boolean readNodeLabels, int *lcount)
+static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean readBranchLengths, boolean readNodeLabels, int *lcount)
 {   
   nodeptr  q;
   int      n, ch, fres;
@@ -812,7 +812,7 @@ static boolean addElementLen (FILE *fp, tree *tr, nodeptr p, boolean readBranchL
 
 
 
-static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boolean readConstraint, int numBranches)
+static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths, boolean readConstraint, int numBranches)
 {
   nodeptr  q, r, s, start;
   int      n, i;              
@@ -901,7 +901,7 @@ static nodeptr uprootTree (tree *tr, nodeptr p, boolean readBranchLengths, boole
 }
 
 
-int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly)
+int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly)
 {
   nodeptr  
     p;
@@ -1026,7 +1026,7 @@ int treeReadLen (FILE *fp, tree *tr, boolean readBranches, boolean readNodeLabel
 
 
 
-void getStartingTree(tree *tr)
+void getStartingTree(pllInstance *tr)
 {
   FILE *treeFile = myfopen(tree_file, "rb");
 

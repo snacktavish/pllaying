@@ -71,7 +71,7 @@ extern partitionLengths pLengths[MAX_MODEL];
 extern char binaryCheckpointName[1024];
 extern char binaryCheckpointInputName[1024];
 
-boolean initrav (tree *tr, partitionList *pr, nodeptr p)
+boolean initrav (pllInstance *tr, partitionList *pr, nodeptr p)
 { 
   nodeptr  q;
 
@@ -96,10 +96,10 @@ boolean initrav (tree *tr, partitionList *pr, nodeptr p)
 /** @brief Optimize the length of a specific branch
 
     Optimize the length of the branch connecting \a p and \a p->back
-    for each partition (\a tr->numBranches) in tree \a tr.
+    for each partition (\a tr->numBranches) in library instance \a tr.
  
     @param tr
-      The tree structure
+      The library instance
 
     @param pr
       Partition list
@@ -107,7 +107,7 @@ boolean initrav (tree *tr, partitionList *pr, nodeptr p)
     @param p
       Endpoints of branch to be optimized 
 */
-void update(tree *tr, partitionList *pr, nodeptr p)
+void update(pllInstance *tr, partitionList *pr, nodeptr p)
 {       
   nodeptr  q; 
   int i;
@@ -142,7 +142,7 @@ void update(tree *tr, partitionList *pr, nodeptr p)
     Optimize the length of branches that have \a p as an endpoint 
 
     @param tr
-      The tree structure
+      The library instance
 
     @param pr
       Partition list
@@ -150,7 +150,7 @@ void update(tree *tr, partitionList *pr, nodeptr p)
     @param p
       Endpoint of branches to be optimized
 */
-void smooth (tree *tr, partitionList *pr, nodeptr p)
+void smooth (pllInstance *tr, partitionList *pr, nodeptr p)
 {
   nodeptr  q;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
@@ -179,14 +179,14 @@ void smooth (tree *tr, partitionList *pr, nodeptr p)
      optimization. If at least one branch can be optimized further return \b FALSE.
 
      @param tr
-       The tree structure
+       The library instance 
 
      @return
        If at least one branch can be further optimized return \b FALSE,
        otherwise \b TRUE.
              
 */
-static boolean allSmoothed(tree *tr, int numBranches)
+static boolean allSmoothed(pllInstance *tr, int numBranches)
 {
   int i;
   boolean result = TRUE;
@@ -209,13 +209,13 @@ static boolean allSmoothed(tree *tr, int numBranches)
     on all neighbour nodes of node \a tr->start.
 
     @param tr
-      The tree structure
+      The library instance
 
     @param maxtimes
       Number of optimization rounds to perform
 */
 /* do maxtimes rounds of branch length optimization */
-void smoothTree (tree *tr, partitionList *pr, int maxtimes)
+void smoothTree (pllInstance *tr, partitionList *pr, int maxtimes)
 {
 	nodeptr  p, q;
 	int i, count = 0;
@@ -253,10 +253,10 @@ void smoothTree (tree *tr, partitionList *pr, int maxtimes)
 /** @brief Optimize the branch length of edges around a specific node
     
     Optimize \a maxtimes the branch length of all (3) edges around a given node 
-    \a p of a tree \a tr.
+    \a p of the tree of library instance \a tr.
 
     @param tr
-      The tree structure
+      The library instance
 
     @param p
       The node around which to optimize the edges
@@ -264,7 +264,7 @@ void smoothTree (tree *tr, partitionList *pr, int maxtimes)
     @param maxtimes
       Number of optimization rounds to perform
 */
-void localSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes)
+void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
 { 
   nodeptr  q;
   int i;
@@ -420,7 +420,7 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
     at a node \a p and is carried out in all nodes with distance upto \a region from \a p.
 
     @param tr
-      The tree structure.
+      The library instance.
     
     @param p
       Node to start branch optimization from.
@@ -428,7 +428,7 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
     @param region
       The allowed node distance from \p for which to still perform branch optimization.
 */
-void smoothRegion (tree *tr, partitionList *pr, nodeptr p, int region)
+void smoothRegion (pllInstance *tr, partitionList *pr, nodeptr p, int region)
 { 
   nodeptr  q;
 
@@ -457,7 +457,7 @@ void smoothRegion (tree *tr, partitionList *pr, nodeptr p, int region)
     from \a p.
 
     @param tr
-      The tree structure.
+      The library instance.
 
     @param p
       Node to start branch optimization from.
@@ -472,7 +472,7 @@ void smoothRegion (tree *tr, partitionList *pr, nodeptr p, int region)
       In the previous version (before the model-sep merge) the loops were controlled by tr->numBranches,
       and now they are controlled by a constant NUM_BRANCHES. What is right?
 */
-void regionalSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes, int region)
+void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes, int region)
 {
   nodeptr  q;
   int i;
@@ -518,7 +518,7 @@ void regionalSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes, int r
    and \a p->next->back to \b NULL.
 
    @param tr
-     The tree structure
+     The library instance
 
    @param p
      The node at which the tree should be decomposed into two components.
@@ -532,7 +532,7 @@ void regionalSmooth (tree *tr, partitionList *pr, nodeptr p, int maxtimes, int r
    @todo
      Why do we return this node?
 */
-nodeptr  removeNodeBIG (tree *tr, partitionList *pr, nodeptr p, int numBranches)
+nodeptr  removeNodeBIG (pllInstance *tr, partitionList *pr, nodeptr p, int numBranches)
 {  
   double   zqr[numBranches], result[numBranches];
   nodeptr  q, r;
@@ -565,7 +565,7 @@ nodeptr  removeNodeBIG (tree *tr, partitionList *pr, nodeptr p, int numBranches)
     to \b NULL.
 
     @param tr
-      The tree structure
+      The library instance
 
     @param p
       The node at which the tree should be decomposed into two components.
@@ -577,7 +577,7 @@ nodeptr  removeNodeBIG (tree *tr, partitionList *pr, nodeptr p, int numBranches)
       Why do we return this node? Why do we set to tr->currentZQR and not compute
       new optimized length? What is tr->currentZQR? 
 */
-nodeptr  removeNodeRestoreBIG (tree *tr, partitionList *pr, nodeptr p)
+nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
 {
   nodeptr  q, r;
 
@@ -599,7 +599,7 @@ nodeptr  removeNodeRestoreBIG (tree *tr, partitionList *pr, nodeptr p)
    @todo
      What is tr->lzi ? What is thorough insertion?
 */
-boolean insertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
+boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   nodeptr  r, s;
   int i;
@@ -691,7 +691,7 @@ boolean insertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
   return  TRUE;
 }
 
-boolean insertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
+boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   nodeptr  r, s;
 
@@ -732,7 +732,7 @@ boolean insertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 }
 
 
-static void restoreTopologyOnly(tree *tr, bestlist *bt, int numBranches)
+static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
 { 
   nodeptr p = tr->removeNode;
   nodeptr q = tr->insertNode;
@@ -805,7 +805,7 @@ static void restoreTopologyOnly(tree *tr, bestlist *bt, int numBranches)
 }
 
 
-boolean testInsertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
+boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
 
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
@@ -883,7 +883,7 @@ boolean testInsertBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
 
 
 
-void addTraverseBIG(tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
+void addTraverseBIG(pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 {  
   if (--mintrav <= 0) 
   {              
@@ -902,7 +902,7 @@ void addTraverseBIG(tree *tr, partitionList *pr, nodeptr p, nodeptr q, int mintr
 
 
 
-int rearrangeBIG(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav)
+int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav)
 {  
   double   p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
   nodeptr  p1, p2, q, q1, q2;
@@ -1015,7 +1015,7 @@ int rearrangeBIG(tree *tr, partitionList *pr, nodeptr p, int mintrav, int maxtra
 
 
 
-static double treeOptimizeRapid(tree *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
+static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
 {
   int i, index,
       *perm = (int*)NULL;   
@@ -1140,7 +1140,7 @@ static double treeOptimizeRapid(tree *tr, partitionList *pr, int mintrav, int ma
 
 
 
-boolean testInsertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
+boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {    
   if(tr->thoroughInsertion)
   {
@@ -1194,7 +1194,7 @@ boolean testInsertRestoreBIG (tree *tr, partitionList *pr, nodeptr p, nodeptr q)
   return TRUE;
 } 
 
-void restoreTreeFast(tree *tr, partitionList *pr)
+void restoreTreeFast(pllInstance *tr, partitionList *pr)
 {
   removeNodeRestoreBIG(tr, pr, tr->removeNode);
   testInsertRestoreBIG(tr, pr, tr->removeNode, tr->insertNode);
@@ -1226,7 +1226,7 @@ static void myfread(void *ptr, size_t size, size_t nmemb, FILE *stream)
 
     @todo Document this
 */
-static void writeTree(tree *tr, FILE *f)
+static void writeTree(pllInstance *tr, FILE *f)
 {
   int 
     x = tr->mxtips + 3 * (tr->mxtips - 1);
@@ -1248,7 +1248,7 @@ int ckpCount = 0;
 
     @todo fill this up
 */
-static void writeCheckpoint(tree *tr, partitionList *pr, int state)
+static void writeCheckpoint(pllInstance *tr, partitionList *pr, int state)
 {
   int   
     model; 
@@ -1367,7 +1367,7 @@ static void writeCheckpoint(tree *tr, partitionList *pr, int state)
   printBothOpen("\nCheckpoint written to: %s likelihood: %f\n", extendedName, tr->likelihood);
 }
 
-static void readTree(tree *tr, partitionList *pr, FILE *f)
+static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
 {
   int 
     nodeNumber,   
@@ -1437,7 +1437,7 @@ static void readTree(tree *tr, partitionList *pr, FILE *f)
 }
 
 
-static void readCheckpoint(tree *tr, partitionList *pr)
+static void readCheckpoint(pllInstance *tr, partitionList *pr)
 {
   int  
     restartErrors = 0,
@@ -1639,7 +1639,7 @@ static void readCheckpoint(tree *tr, partitionList *pr)
 
 }
 
-static void restoreTreeDataValuesFromCheckpoint(tree *tr)
+static void restoreTreeDataValuesFromCheckpoint(pllInstance *tr)
 {
   tr->optimizeRateCategoryInvocations = tr->ckp.tr_optimizeRateCategoryInvocations;  
   tr->thoroughInsertion = tr->ckp.tr_thoroughInsertion;
@@ -1651,7 +1651,7 @@ static void restoreTreeDataValuesFromCheckpoint(tree *tr)
   tr->doCutoff = tr->ckp.tr_doCutoff;
 }
 
-void restart(tree *tr, partitionList *pr)
+void restart(pllInstance *tr, partitionList *pr)
 {  
   readCheckpoint(tr, pr);
 
@@ -1668,7 +1668,7 @@ void restart(tree *tr, partitionList *pr)
   }
 }
 
-int determineRearrangementSetting(tree *tr, partitionList *pr, analdef *adef, bestlist *bestT, bestlist *bt)
+int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *adef, bestlist *bestT, bestlist *bt)
 {
   const 
     int MaxFast = 26;
@@ -1788,7 +1788,7 @@ int determineRearrangementSetting(tree *tr, partitionList *pr, analdef *adef, be
 
 
 
-void computeBIGRAPID (tree *tr, partitionList *pr, analdef *adef, boolean estimateModel)
+void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean estimateModel)
 {   
   int
     i,
@@ -2345,7 +2345,7 @@ cleanup:
 
 /* The number of maximum smoothing iterations is given explicitely */
 boolean 
-treeEvaluate (tree *tr, partitionList *pr, int maxSmoothIterations)       /* Evaluate a user tree */
+treeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
@@ -2356,11 +2356,11 @@ treeEvaluate (tree *tr, partitionList *pr, int maxSmoothIterations)       /* Eva
 
 /** @brief Perform an NNI move
 
-    Modify the topology of tree \a tr by performing an NNI (Neighbour Neighbor
+    Modify the tree topology of instance \a tr by performing an NNI (Neighbour Neighbor
     Interchange) move at node \a p. Perform one of the two possible NNI moves
     based on whether \a swap is set to 1 or 2.
 */
-void NNI(tree * tr, nodeptr p, int swap)
+void NNI(pllInstance * tr, nodeptr p, int swap)
 {
   nodeptr       q, tmp;
 

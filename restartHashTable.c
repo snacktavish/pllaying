@@ -181,7 +181,7 @@ static int treeFlushLenString (const char *fp, int *position)
   return 1;
 } 
 
-static int treeFindTipByLabelString(char  *str, tree *tr)                    
+static int treeFindTipByLabelString(char  *str, pllInstance *tr)                    
 {
   int lookup = lookupWord(str, tr->nameHash);
 
@@ -197,7 +197,7 @@ static int treeFindTipByLabelString(char  *str, tree *tr)
     }
 }
 
-static int treeFindTipNameString (const char *fp, tree *tr, int *position)
+static int treeFindTipNameString (const char *fp, pllInstance *tr, int *position)
 {
   char    str[nmlngth+2];
   int      n;
@@ -210,7 +210,7 @@ static int treeFindTipNameString (const char *fp, tree *tr, int *position)
   return  n;
 } 
 
-static boolean addElementLenString(const char *fp, tree *tr, nodeptr p, int *position)
+static boolean addElementLenString(const char *fp, pllInstance *tr, nodeptr p, int *position)
 {
   nodeptr  
     q;
@@ -279,7 +279,7 @@ static boolean addElementLenString(const char *fp, tree *tr, nodeptr p, int *pos
 
 
 
-void treeReadTopologyString(char *treeString, tree *tr)
+void treeReadTopologyString(char *treeString, pllInstance *tr)
 { 
   char 
     *fp = treeString;

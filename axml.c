@@ -74,7 +74,7 @@
 #include "axml.h"
 #include "globalVariables.h"
 
-static void finalizeInfoFile(tree *tr, analdef *adef)
+static void finalizeInfoFile(pllInstance *tr, analdef *adef)
 {
   double t;
 
@@ -126,7 +126,7 @@ static void printBoth(FILE *f, const char* format, ... )
 }
 
 /* TODO: Modify this to our needs */
-static void printModelAndProgramInfo(tree *tr, partitionList *pr, analdef *adef, int argc, char *argv[])
+static void printModelAndProgramInfo(pllInstance *tr, partitionList *pr, analdef *adef, int argc, char *argv[])
 {
 
   int i, model;
@@ -591,7 +591,7 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 }
 
 
-static void get_args(int argc, char *argv[], analdef *adef, tree *tr)
+static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
 {
   boolean
     bad_opt    =FALSE,
@@ -956,7 +956,7 @@ static unsigned int KISS32(void)
 
 #ifdef _DEBUG_RECOMPUTATION
 /* TEST CODE, this is used to do a random SPR */
-static nodeptr pickRandomSubtree(tree *tr)
+static nodeptr pickRandomSubtree(pllInstance *tr)
 {
   nodeptr p;
   do
@@ -1001,7 +1001,7 @@ int main (int argc, char *argv[])
   initMPI(argc, argv);
 #endif
 
-  tree  *tr = (tree*)rax_calloc(1,sizeof(tree));
+  pllInstance *tr = (pllInstance *)rax_calloc(1,sizeof(pllInstance));
   partitionList *partitions = (partitionList*)rax_calloc(1,sizeof(partitionList));
   partitions->partitionData = (pInfo**)rax_calloc(NUM_BRANCHES,sizeof(pInfo*));
 

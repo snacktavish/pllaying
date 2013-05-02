@@ -1098,7 +1098,7 @@ void newviewGAMMA_FLEX_reorder(int tipCase, double *x1, double *x2, double *x3, 
  * 
  */
 
-void newviewIterative (tree *tr, partitionList *pr, int startIndex)
+void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 {
   traversalInfo 
     *ti   = tr->td[0].ti;
@@ -1712,7 +1712,7 @@ void newviewIterative (tree *tr, partitionList *pr, int startIndex)
     @todo Describe also the usage of tr->useRecom (ancestral state reconstruction flag) and also
     rename this flag to something more meaningful, i.e. tr->bAncestral
 */
-void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal, int numBranches)
+void computeTraversal(pllInstance *tr, nodeptr p, boolean partialTraversal, int numBranches)
 {
   /* Only if we apply recomputations we need the additional step of updating the subtree lengths */
   if(tr->useRecom)
@@ -1736,7 +1736,7 @@ void computeTraversal(tree *tr, nodeptr p, boolean partialTraversal, int numBran
  *
  *
  */
-void newviewGeneric (tree *tr, partitionList *pr, nodeptr p, boolean masked)
+void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
 {  
   /* if it's a tip there is nothing to do */
 
@@ -1974,7 +1974,7 @@ static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int nu
  *
  *
  */
-void newviewAncestralIterative(tree *tr, partitionList *pr)
+void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
 {
   traversalInfo 
     *ti    = tr->td[0].ti,
@@ -2076,7 +2076,7 @@ void newviewAncestralIterative(tree *tr, partitionList *pr)
 
    Note that the marginal ancestral probability vector summarizes the subtree rooted at p! */
 
-void newviewGenericAncestral(tree *tr, partitionList *pr, nodeptr p)
+void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 {
   /* error check, we don't need to compute anything for tips */
   
@@ -2169,7 +2169,7 @@ static char getStateCharacter(int dataType, int state)
  *
  * @note  Here one can see how to store the ancestral probabilities in a dedicated data structure
  */
-void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, tree *tr, partitionList *pr)
+void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pllInstance *tr, partitionList *pr)
 {
 #ifdef _USE_PTHREADS
   size_t 

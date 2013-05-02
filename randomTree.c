@@ -17,7 +17,7 @@ static void insertTaxon (nodeptr p, nodeptr q)
   hookupDefault(p->next->next, r);
 } 
 
-static nodeptr buildNewTip (tree *tr, nodeptr p)
+static nodeptr buildNewTip (pllInstance *tr, nodeptr p)
 { 
   nodeptr  q;
 
@@ -29,7 +29,7 @@ static nodeptr buildNewTip (tree *tr, nodeptr p)
   return  q;
 } 
 
-static void buildSimpleTreeRandom (tree *tr, int ip, int iq, int ir)
+static void buildSimpleTreeRandom (pllInstance *tr, int ip, int iq, int ir)
 {    
   nodeptr  
     p, 
@@ -51,7 +51,7 @@ static void buildSimpleTreeRandom (tree *tr, int ip, int iq, int ir)
   insertTaxon(s, p);
 }
 
-static int randomInt(int n, tree *tr)
+static int randomInt(int n, pllInstance *tr)
 {
   int 
     res = (int)((double)(n) * randum(&tr->randomNumberSeed));
@@ -61,7 +61,7 @@ static int randomInt(int n, tree *tr)
   return res;
 }
 
-static void makePermutation(int *perm, int n, tree *tr)
+static void makePermutation(int *perm, int n, pllInstance *tr)
 {    
   int  
     i, 
@@ -101,7 +101,7 @@ static int markBranches(nodeptr *branches, nodeptr p, int *counter, int numsp)
 
 
 
-void makeRandomTree(tree *tr)
+void makeRandomTree(pllInstance *tr)
 {  
   nodeptr 
     p, 

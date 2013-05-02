@@ -2832,7 +2832,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 }
 
           
-static void updateFracChange(tree *tr, partitionList *pr)
+static void updateFracChange(pllInstance *tr, partitionList *pr)
 {   
   int numberOfModels = pr->numberOfPartitions;
   if(numberOfModels == 1)
@@ -3282,7 +3282,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
 
 
-void initReversibleGTR(tree * tr, partitionList * pr, int model)
+void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 { 
  double   
    *ext_EIGN         = pr->partitionData[model]->EIGN,
@@ -3673,7 +3673,7 @@ static void setRates(double *r, int rates)
   r[rates - 1] = 1.0;
 }
 
-void initRateMatrix(tree *tr, partitionList *pr)
+void initRateMatrix(pllInstance *tr, partitionList *pr)
 {
   int model;
 
@@ -3761,7 +3761,7 @@ static void setSymmetry(int *s, int *sDest, const int sCount, int *f, int *fDest
     fDest[i] = f[i];
 }
 
-static void setupSecondaryStructureSymmetries(tree *tr, partitionList *partitions)
+static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *partitions)
 {
   int model;
   int numberOfModels = partitions->numberOfPartitions;
@@ -3959,7 +3959,7 @@ static void initializeBaseFreqs(partitionList *pr, double **empiricalFrequencies
     }
 }
 
-void initModel(tree *tr, double **empiricalFrequencies, partitionList * partitions)
+void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * partitions)
 {  
   int model, j;
   double  temp;  

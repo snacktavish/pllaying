@@ -64,7 +64,7 @@
    of the likelihood in Pthreads and MPI */
 
 #if IS_PARALLEL
-void branchLength_parallelReduce(tree *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches ) ;
+void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches ) ;
 extern double *globalResult;
 #endif
 
@@ -76,7 +76,7 @@ extern const unsigned int mask32[32];
 
 /* generic function to get the required pointers to the data associated with the left and right node that define a branch */
 
-static void getVects(tree *tr, partitionList *pr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
+static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
     double **x1_gapColumn, double **x2_gapColumn, unsigned int **x1_gap, unsigned int **x2_gap)
 {
   int    
@@ -617,7 +617,7 @@ void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2
  * @warning These precomputations are stored in \a tr->partitionData[model].sumBuffer, which is used by function \a execCore
  *
  * @param tr
- *   Tree structure
+ *   Library instance
  *
  * @warning the given branch is implicitly defined in \a tr by these nodes:
  * pNumber = tr->td[0].ti[0].pNumber;
@@ -628,7 +628,7 @@ void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2
  *
  *
  */
-void makenewzIterative(tree *tr, partitionList * pr)
+void makenewzIterative(pllInstance *tr, partitionList * pr)
 {
   int 
     model, 
@@ -746,7 +746,7 @@ void makenewzIterative(tree *tr, partitionList * pr)
 /** @brief Compute first and second derivatives of the likelihood with respect to a given branch length 
  *
  * @param tr
- *   Tree structure
+ *   library instance
  *
  * @param _dlnLdlz 
  *   First derivative dl/dlz
@@ -759,7 +759,7 @@ void makenewzIterative(tree *tr, partitionList * pr)
  * @note  this function actually computes the first and second derivatives of the likelihood for a given branch stored in tr->coreLZ[model] Note that in the parallel case coreLZ must always be broadcasted together with the traversal descriptor, at least for optimizing branch lengths 
  *
  */
-void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
+void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, volatile double *_d2lnLdlz2)
 {
   int model, branchIndex;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
@@ -898,7 +898,7 @@ void execCore(tree *tr, partitionList *pr, volatile double *_dlnLdlz, volatile d
 
 */
 
-static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxiter, double *result)
+static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, int _maxiter, double *result)
 {
   double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
@@ -1095,7 +1095,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
  * @warning A given branch may have one or several branch length values (up to NUM_BRANCHES), usually the later refers to partition-specific branch length values. Thus z0 and result represent collections rather than double values. The number of branch length values is given by \a tr->numBranches 
  *
  * @param tr
- *   Tree structure
+ *   Library instance
  *
  * @param p
  *   One node that defines the branch (p->z)
@@ -1119,7 +1119,7 @@ static void topLevelMakenewz(tree *tr, partitionList * pr, double *z0, int _maxi
  * @sa typical values for \a maxiter are constants \a iterations and \a newzpercycle
  * @note Requirement: q->z == p->z
  */
-void makenewzGeneric(tree *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
+void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
 {
   int i;
   //boolean originalExecute[NUM_BRANCHES];
