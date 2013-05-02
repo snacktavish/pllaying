@@ -119,15 +119,15 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
     z0[i] = q->z[i];    
 
   if(numBranches > 1)
-    makenewzGeneric(tr, pr, p, q, z0, newzpercycle, z, TRUE);
+    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, TRUE);
   else
-    makenewzGeneric(tr, pr, p, q, z0, newzpercycle, z, FALSE);
+    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, FALSE);
 
   for(i = 0; i < numBranches; i++)
   {         
     if(!tr->partitionConverged[i])
     {	  
-      if(ABS(z[i] - z0[i]) > deltaz)  
+      if(ABS(z[i] - z0[i]) > PLL_DELTAZ)  
       {	      
         tr->partitionSmoothed[i] = FALSE;
       }	 
@@ -621,7 +621,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     qz = q->z;
 
     for(i = 0; i < numBranches; i++)
-      defaultArray[i] = defaultz;
+      defaultArray[i] = PLL_DEFAULTZ;
 
     makenewzGeneric(tr, pr, q, r, qz, iterations, zqr, FALSE);
     /* the branch lengths values will be estimated using q, r and s

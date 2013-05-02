@@ -2167,13 +2167,13 @@ void resetBranches(pllInstance *tr)
   while (nodes-- > 0) 
     {   
       for(i = 0; i < NUM_BRANCHES; i++)
-	p->z[i] = defaultz;
+	p->z[i] = PLL_DEFAULTZ;
 	
       q = p->next;
       while(q != p)
 	{	
 	  for(i = 0; i < NUM_BRANCHES; i++)
-	    q->z[i] = defaultz;	    
+	    q->z[i] = PLL_DEFAULTZ;	    
 	  q = q->next;
 	}
       p++;

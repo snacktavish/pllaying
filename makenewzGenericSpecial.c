@@ -1116,7 +1116,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
  * @param mask 
  *   Specifies if a mask to track partition convergence (\a tr->partitionConverged) is being used.
  *
- * @sa typical values for \a maxiter are constants \a iterations and \a newzpercycle
+ * @sa typical values for \a maxiter are constants \a iterations and \a PLL_NEWZPERCYCLE
  * @note Requirement: q->z == p->z
  */
 void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)

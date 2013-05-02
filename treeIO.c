@@ -618,10 +618,10 @@ static int treeFindTipByLabelString(char  *str, pllInstance *tr)
 
 static int treeFindTipName(FILE *fp, pllInstance *tr)
 {
-  char    str[nmlngth+2];
+  char    str[PLL_NMLNGTH + 2];
   int      n;
 
-  if(treeGetLabel(fp, str, nmlngth+2))
+  if(treeGetLabel(fp, str, PLL_NMLNGTH + 2))
     n = treeFindTipByLabelString(str, tr);
   else
     n = 0;

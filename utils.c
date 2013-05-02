@@ -803,7 +803,7 @@ void hookupDefault (nodeptr p, nodeptr q)
   q->back = p;
 
   for(i = 0; i < NUM_BRANCHES; i++)
-    p->z[i] = q->z[i] = defaultz;
+    p->z[i] = q->z[i] = PLL_DEFAULTZ;
 
 }
 
@@ -862,7 +862,7 @@ boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
   tips  = (size_t)tr->mxtips;
   inter = (size_t)(tr->mxtips - 1);
 
-  tr->treeStringLength = tr->mxtips * (nmlngth+128) + 256 + tr->mxtips * 2;
+  tr->treeStringLength = tr->mxtips * (PLL_NMLNGTH + 128) + 256 + tr->mxtips * 2;
 
   tr->tree_string  = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char)); 
   tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
@@ -2225,7 +2225,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->mxtips = tips;
 
   tr->bigCutoff = FALSE;
-  tr->treeStringLength = tr->mxtips * (nmlngth + 128) + 256 + tr->mxtips * 2;
+  tr->treeStringLength = tr->mxtips * (PLL_NMLNGTH + 128) + 256 + tr->mxtips * 2;
   tr->tree_string = (char *) rax_calloc ( tr->treeStringLength, sizeof(char));
   tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
   tr->tree1 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
