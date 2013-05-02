@@ -1354,6 +1354,9 @@ int main (int argc, char *argv[])
 
 
     /* testing the log likelihood evaluation using the switch */
+    /* TODO: Commented this as THREAD_EXIT_GRACEFULLY is not defined
+       in sequential versions */
+    /*
     if(0)
       {	
 	printf("trying to evaluate with per-site-lnls\n"); 
@@ -1370,7 +1373,7 @@ int main (int argc, char *argv[])
 
 	masterBarrier(THREAD_EXIT_GRACEFULLY,tr, partitions);
       }
-
+     */
 
 
     /**** test code for testing per-site log likelihood calculations as implemented in evaluatePartialGenericSpecial.c for Kassian's work*/
