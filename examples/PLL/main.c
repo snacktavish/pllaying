@@ -13,7 +13,7 @@
 static nodeptr pickMyRandomSubtree(pllInstance *tr)
 {
   nodeptr p;
-  do
+  //do
   {
     /* select a random inner node */
     p = tr->nodep[(rand() % (tr->mxtips - 2)) + 1 + tr->mxtips];
@@ -34,8 +34,7 @@ static nodeptr pickMyRandomSubtree(pllInstance *tr)
         assert(0);
     }
   }
-  while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
-  /* ensure the current orientation is not a tip, eg. we return a subtree which is not a single tip */
+  //while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
   assert(!isTip(p->number, tr->mxtips));
   return p;
 }
@@ -148,21 +147,37 @@ int main (int argc, char * argv[])
   /* do some simple SPR to improve your topology */
   {
     int i;
-    int max_traversal_radius = 15;
-    for(i=0; i<200; i++)
+    int max_radius = 15;
+    int min_radius = 1;
+    int num_iterations = 200;
+    tr->startLH = tr->endLH = tr->likelihood;
+    for(i=0; i<num_iterations; i++)
     {
       nodeptr p = pickMyRandomSubtree(tr);
-      rearrangeBIG(tr, partitions, p, 1, max_traversal_radius);
+      /* make sure starting and end likelihood are the same */
+      tr->startLH = tr->endLH = tr->likelihood;
+      /* explore a neighbourhood of possible re-insertions */
+      rearrangeBIG(tr, partitions, p, min_radius, max_radius);
+      /* if one of the insertions was better, keep it as a best tree */
+      if(tr->startLH < tr->endLH)
+      {
+        restoreTreeFast(tr, partitions);
+        printf ("new Tree at iter %d: %s\n", i,  tr->tree_string);
+      }
+      /* show the tree we have right now (most of the time did not change)*/
+      Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
       evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
-      if(i % 10 == 0)
+      if(i % num_iterations/10 == 0)
       {
         modOpt(tr, partitions, 5.0);
-        printf("lh: after %d rearrangements: %f   (random inner node pruned %d)\n",i, tr->likelihood, p->number);
+        printf("log lh: after %d iterations: %f \n",i, tr->likelihood);
       }
     }
   }
   /* Print resulting tree */
   Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  printf ("Tree: %s\n", tr->tree_string);
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
   printf ("Tree: %s\n", tr->tree_string);
 
 
