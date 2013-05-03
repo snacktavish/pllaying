@@ -10,6 +10,37 @@
 #include "../../parser/partition/part.h"
 #include "../../globalVariables.h"
 
+static nodeptr pickMyRandomSubtree(pllInstance *tr)
+{
+  nodeptr p;
+  do
+  {
+    /* select a random inner node */
+    p = tr->nodep[(rand() % (tr->mxtips - 2)) + 1 + tr->mxtips];
+
+    /* select a random orientation */
+    int exitDirection = rand() % 3;
+    switch(exitDirection)
+    {
+      case 0:
+        break;
+      case 1:
+        p = p->next;
+        break;
+      case 2:
+        p = p->next->next;
+        break;
+      default:
+        assert(0);
+    }
+  }
+  while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
+  /* ensure the current orientation is not a tip, eg. we return a subtree which is not a single tip */
+  assert(!isTip(p->number, tr->mxtips));
+  return p;
+}
+
+
 int main (int argc, char * argv[])
 {
   struct pllPhylip * phylip;
@@ -98,6 +129,42 @@ int main (int argc, char * argv[])
   printf ("Likelihood: %f\n", tr->likelihood);
   Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
   printf ("Tree: %s\n", tr->tree_string);
+
+  /* another eval*/
+  double computed_lh = tr->likelihood;
+  evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+  assert(computed_lh == tr->likelihood);
+  //printf ("Likelihood: %f\n", tr->likelihood);
+  
+  /* optimize BL */
+  {
+    double computed_lh = tr->likelihood;
+    treeEvaluate(tr, partitions, 32);
+    evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+    assert(computed_lh < tr->likelihood);
+    printf ("Likelihood after BL opt: %f\n", tr->likelihood);
+  }
+
+  /* do some simple SPR to improve your topology */
+  {
+    int i;
+    int max_traversal_radius = 15;
+    for(i=0; i<200; i++)
+    {
+      nodeptr p = pickMyRandomSubtree(tr);
+      rearrangeBIG(tr, partitions, p, 1, max_traversal_radius);
+      evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+      if(i % 10 == 0)
+      {
+        modOpt(tr, partitions, 5.0);
+        printf("lh: after %d rearrangements: %f   (random inner node pruned %d)\n",i, tr->likelihood, p->number);
+      }
+    }
+  }
+  /* Print resulting tree */
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  printf ("Tree: %s\n", tr->tree_string);
+
 
   /* Do some cleanup */
   pllPhylipDestroy (phylip);
