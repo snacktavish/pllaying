@@ -544,7 +544,7 @@ nodeptr  removeNodeBIG (pllInstance *tr, partitionList *pr, nodeptr p, int numBr
   for(i = 0; i < numBranches; i++)
     zqr[i] = q->z[i] * r->z[i];        
 
-  makenewzGeneric(tr, pr, q, r, zqr, iterations, result, FALSE);
+  makenewzGeneric(tr, pr, q, r, zqr, PLL_ITERATIONS, result, FALSE);
 
   for(i = 0; i < numBranches; i++)        
     tr->zqr[i] = result[i];
@@ -623,14 +623,14 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     for(i = 0; i < numBranches; i++)
       defaultArray[i] = PLL_DEFAULTZ;
 
-    makenewzGeneric(tr, pr, q, r, qz, iterations, zqr, FALSE);
+    makenewzGeneric(tr, pr, q, r, qz, PLL_ITERATIONS, zqr, FALSE);
     /* the branch lengths values will be estimated using q, r and s
      * q-s are not connected, but both q and s have a valid LH vector , so we can call makenewzGeneric  to get a value for
      * lzsum, which is then use to generate reasonable starting values e1, e2, e3 for the new branches we create after the       insertion
      */
 
-    makenewzGeneric(tr, pr, q, s, defaultArray, iterations, zqs, FALSE);
-    makenewzGeneric(tr, pr, r, s, defaultArray, iterations, zrs, FALSE);
+    makenewzGeneric(tr, pr, q, s, defaultArray, PLL_ITERATIONS, zqs, FALSE);
+    makenewzGeneric(tr, pr, r, s, defaultArray, PLL_ITERATIONS, zrs, FALSE);
 
 
     for(i = 0; i < numBranches; i++)
