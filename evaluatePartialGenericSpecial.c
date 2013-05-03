@@ -213,7 +213,7 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
   if(scale)
     {
       for(j = 0; j < states; j++)
-	x3[j] *= twotothe256;       
+	x3[j] *= PLL_TWOTOTHE256;       
       *eVector = *eVector + 1;
     }	              
 
@@ -597,7 +597,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
     
     if(scale)
       {	      
-	__m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+	__m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
 	for(l = 0; l < 80; l+=2)
 	  {
@@ -747,7 +747,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
     
     if(scale)
       {	      
-	__m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+	__m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 	
 	for(l = 0; l < 16; l+=2)
 	  {
@@ -985,10 +985,10 @@ static inline void computeVectorGTRCAT(double *lVector, int *eVector, double ki,
       x3[2] < minlikelihood && x3[2] > minusminlikelihood &&
       x3[3] < minlikelihood && x3[3] > minusminlikelihood)
     {	     
-      x3[0]   *= twotothe256;
-      x3[1]   *= twotothe256;
-      x3[2]   *= twotothe256;     
-      x3[3]   *= twotothe256;     
+      x3[0]   *= PLL_TWOTOTHE256;
+      x3[1]   *= PLL_TWOTOTHE256;
+      x3[2]   *= PLL_TWOTOTHE256;     
+      x3[3]   *= PLL_TWOTOTHE256;     
       *eVector = *eVector + 1;
     }	              
 
@@ -1137,7 +1137,7 @@ static inline void computeVectorGTRCATPROT(double *lVector, int *eVector, double
     {	        
 
       for(k = 0; k < 20; k++)
-	x3[k]   *= twotothe256;
+	x3[k]   *= PLL_TWOTOTHE256;
          
       *eVector = *eVector + 1;
     }	              

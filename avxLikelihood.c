@@ -78,7 +78,7 @@ void  newviewGTRGAMMA_AVX(int tipCase,
  
   __m256d 
     minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
-    twoto = _mm256_set1_pd(twotothe256);
+    twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
  
 
   switch(tipCase)
@@ -348,7 +348,7 @@ void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
  
   __m256d 
     minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
-    twoto = _mm256_set1_pd(twotothe256);
+    twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
  
   double
     *x1,
@@ -848,7 +848,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
    
   __m256d 
     minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
-    twoto = _mm256_set1_pd(twotothe256);
+    twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
   
   switch(tipCase)
     {
@@ -1025,7 +1025,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
    
   __m256d 
     minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
-    twoto = _mm256_set1_pd(twotothe256);
+    twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
   
 
   {
@@ -1501,7 +1501,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	  if(scale)
 	    {
 	      __m256d 
-		twoto = _mm256_set1_pd(twotothe256);
+		twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
 	      
 	      for(l = 0; l < 20; l += 4)
 		vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
@@ -1603,7 +1603,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	  if(scale)
 	    {
 	      __m256d 
-		twoto = _mm256_set1_pd(twotothe256);
+		twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
 	      
 	      for(l = 0; l < 20; l += 4)
 		vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
@@ -1743,7 +1743,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 	 if(scale)
 	   {
 	      __m256d 
-		twoto = _mm256_set1_pd(twotothe256);
+		twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
 	      
 	      for(l = 0; l < 20; l += 4)
 		vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 	      	     	      
@@ -1982,7 +1982,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 	      if(scale)
 		{
 		  __m256d 
-		    twoto = _mm256_set1_pd(twotothe256);
+		    twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
 		  
 		  for(l = 0; l < 20; l += 4)
 		    vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
@@ -2119,7 +2119,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 		if(scale)
 		  {
 		    __m256d 
-		      twoto = _mm256_set1_pd(twotothe256);
+		      twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
 		    
 		    for(l = 0; l < 20; l += 4)
 		      vv[l / 4] = _mm256_mul_pd(vv[l / 4] , twoto);		    		 
@@ -2458,11 +2458,11 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 	    
 	    if(scale) 
 	      {		
-		__m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+		__m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 		for(l = 0; l < 80; l += 4) 
 		  {
 		    __m256d vv = _mm256_load_pd(&v[l]);
-		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		  }
 		if(useFastScaling)
 		  addScale += wgt[i];				
@@ -2625,11 +2625,11 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 
 	  if(scale) 
 	    {		     	      
-	      __m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+	      __m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 	      for(l = 0; l < 80; l += 4) 
 		{
 		  __m256d vv = _mm256_load_pd(&v[l]);
-		  _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		  _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		}
 	      if(useFastScaling)
 		addScale += wgt[i];					
@@ -2953,11 +2953,11 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 	    
 	    if(scale) 
 	      {		
-		__m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+		__m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 		for(l = 0; l < 80; l += 4) 
 		  {
 		    __m256d vv = _mm256_load_pd(&v[l]);
-		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		  }
 		if(useFastScaling)
 		  addScale += wgt[i];				
@@ -3120,11 +3120,11 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 
 	  if(scale) 
 	    {		     	      
-	      __m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+	      __m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 	      for(l = 0; l < 80; l += 4) 
 		{
 		  __m256d vv = _mm256_load_pd(&v[l]);
-		  _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		  _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		}
 	      if(useFastScaling)
 		addScale += wgt[i];					
@@ -3528,13 +3528,13 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	    
 	    if(scale) 
 	      {		
-		__m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+		__m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 		gapScaling = 1;
 
 		for(l = 0; l < 80; l += 4) 
 		  {
 		    __m256d vv = _mm256_load_pd(&v[l]);
-		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		    _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		  }	
 	      } 
 	}       
@@ -3689,11 +3689,11 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	    
 		if(scale) 
 		  {		
-		    __m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+		    __m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 		    for(l = 0; l < 80; l += 4) 
 		      {
 			__m256d vv = _mm256_load_pd(&v[l]);
-			_mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+			_mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		      }
 		    if(useFastScaling)
 		      addScale += wgt[i];				
@@ -3855,13 +3855,13 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 
       if(scale) 
 	{		     	      
-	  __m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+	  __m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 	  gapScaling = 1;
 
 	  for(l = 0; l < 80; l += 4) 
 	    {
 	      __m256d vv = _mm256_load_pd(&v[l]);
-	      _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+	      _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 	    }
 	  
 	} 
@@ -4049,11 +4049,11 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	      
 	      if(scale) 
 		{		     	      
-		  __m256d twotothe256v = _mm256_set_pd(twotothe256,twotothe256,twotothe256,twotothe256);
+		  __m256d PLL_TWOTOTHE256v = _mm256_set_pd(PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256,PLL_TWOTOTHE256);
 		  for(l = 0; l < 80; l += 4) 
 		    {
 		      __m256d vv = _mm256_load_pd(&v[l]);
-		      _mm256_store_pd(&v[l],_mm256_mul_pd(vv,twotothe256v));
+		      _mm256_store_pd(&v[l],_mm256_mul_pd(vv,PLL_TWOTOTHE256v));
 		    }
 		  if(useFastScaling)
 		    addScale += wgt[i];					

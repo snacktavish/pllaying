@@ -399,7 +399,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
            in the conditional likelihood vectors can become negative.
            Below we check if all absolute values stored at position i of v are smaller 
            than a pre-defined value in axml.h. If they are all smaller we can then safely 
-           multiply them by a large, constant number twotothe256 (without numerical overflow) 
+           multiply them by a large, constant number PLL_TWOTOTHE256 (without numerical overflow) 
            that is also speced in axml.h */
 
         scale = 1;
@@ -409,7 +409,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
         if(scale)
         {
           for(l = 0; l < states; l++)
-            v[l] *= twotothe256;
+            v[l] *= PLL_TWOTOTHE256;
 
           /* if we have scaled the entries to prevent underflow, we need to keep track of how many scaling 
              multiplications we did per node such as to undo them at the virtual root, e.g., in 
@@ -467,7 +467,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
         if(scale)
         {
           for(l = 0; l < states; l++)
-            v[l] *= twotothe256;
+            v[l] *= PLL_TWOTOTHE256;
 	  
 	  if(!fastScaling)
 	    ex3[i] += 1;
@@ -680,7 +680,7 @@ static void newviewGAMMA_FLEX(int tipCase,
           if (scale)
           {
             for(l = 0; l < span; l++)
-              v[l] *= twotothe256;
+              v[l] *= PLL_TWOTOTHE256;
 	    
 	    if(!fastScaling)
 	      ex3[i] += 1;
@@ -738,7 +738,7 @@ static void newviewGAMMA_FLEX(int tipCase,
         if(scale)
         {  
           for(l = 0; l < span; l++)
-            v[l] *= twotothe256;
+            v[l] *= PLL_TWOTOTHE256;
 	  
 	  if(!fastScaling)
 	    ex3[i] += 1;
@@ -2650,7 +2650,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
           {
             scaleGap = 1;
 
-            __m128d sv = _mm_set1_pd(twotothe256);
+            __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
             _mm_store_pd(&x3[0], _mm_mul_pd(values[0], sv));	   
             _mm_store_pd(&x3[2], _mm_mul_pd(values[1], sv));
@@ -2811,7 +2811,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
             if(max < minlikelihood)
             {
-              __m128d sv = _mm_set1_pd(twotothe256);
+              __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
               _mm_store_pd(&x3[0], _mm_mul_pd(values[0], sv));	   
               _mm_store_pd(&x3[2], _mm_mul_pd(values[1], sv));
@@ -2980,7 +2980,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
         if(max < minlikelihood)
         {
-          __m128d sv = _mm_set1_pd(twotothe256);
+          __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
           scaleGap = 1;
 
@@ -3183,7 +3183,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
           if(max < minlikelihood)
           {
-            __m128d sv = _mm_set1_pd(twotothe256);
+            __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
             _mm_store_pd(&x3[0], _mm_mul_pd(values[0], sv));	   
             _mm_store_pd(&x3[2], _mm_mul_pd(values[1], sv));
@@ -3525,7 +3525,7 @@ static void newviewGTRGAMMA(int tipCase,
 
           if(max < minlikelihood)
           {
-            __m128d sv = _mm_set1_pd(twotothe256);
+            __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
             _mm_store_pd(&x3[0], _mm_mul_pd(values[0], sv));	   
             _mm_store_pd(&x3[2], _mm_mul_pd(values[1], sv));
@@ -3708,7 +3708,7 @@ static void newviewGTRGAMMA(int tipCase,
 
         if(max < minlikelihood)
         {
-          __m128d sv = _mm_set1_pd(twotothe256);
+          __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
           _mm_store_pd(&x3[0], _mm_mul_pd(values[0], sv));	   
           _mm_store_pd(&x3[2], _mm_mul_pd(values[1], sv));
@@ -3772,7 +3772,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
   __m128d
     minlikelihood_sse = _mm_set1_pd( minlikelihood ),
-                      sc = _mm_set1_pd(twotothe256),
+                      sc = _mm_set1_pd(PLL_TWOTOTHE256),
                       EVV[8];  
 
   for(i = 0; i < 4; i++)
@@ -4219,7 +4219,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 
   __m128d
     minlikelihood_sse = _mm_set1_pd( minlikelihood ),
-                      sc = _mm_set1_pd(twotothe256),
+                      sc = _mm_set1_pd(PLL_TWOTOTHE256),
                       EVV[8];  
 
   for(i = 0; i < 4; i++)
@@ -5062,7 +5062,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
           if (scale)
           {
             gapScaling = 1;
-            __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+            __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
             for(l = 0; l < 80; l+=2)
             {
@@ -5161,7 +5161,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
             if (scale)
             {
-              __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+              __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
               for(l = 0; l < 80; l+=2)
               {
@@ -5251,7 +5251,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
         if (scale)
         {
           gapScaling = 1;
-          __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+          __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
           for(l = 0; l < 80; l+=2)
           {
@@ -5363,7 +5363,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
           if (scale)
           {
-            __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+            __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
             for(l = 0; l < 80; l+=2)
             {
@@ -5570,7 +5570,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
           if (scale)
           {
 
-            __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+            __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
             for(l = 0; l < 80; l+=2)
             {
@@ -5665,7 +5665,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
         if (scale)
         {
 
-          __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+          __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
           for(l = 0; l < 80; l+=2)
           {
@@ -5814,7 +5814,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
           if(scale)
           {
 
-            __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+            __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
             for(l = 0; l < 20; l+=2)
             {
@@ -5894,7 +5894,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
         if(scale)
         {
 
-          __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+          __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
           for(l = 0; l < 20; l+=2)
           {
@@ -6000,7 +6000,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
       if(scale)
       {
-        __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+        __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
         for(l = 0; l < 20; l+=2)
         {
@@ -6158,7 +6158,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
             if(scale)
             {
-              __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+              __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
               for(l = 0; l < 20; l+=2)
               {
@@ -6265,7 +6265,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
           if(scale)
           {
-            __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+            __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 
             for(l = 0; l < 20; l+=2)
             {
@@ -6530,7 +6530,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 	    if (scale)
 	      {
 #ifdef __SIM_SSE3
-	       __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+	       __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 	       
 	       for(l = 0; l < 80; l+=2)
 		 {
@@ -6539,7 +6539,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 		 }		   		  
 #else
 		for(l = 0; l < 80; l++)
-		  v[l] *= twotothe256;
+		  v[l] *= PLL_TWOTOTHE256;
 #endif
 
 		if(useFastScaling)
@@ -6649,7 +6649,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 	 if (scale)
 	   {
 #ifdef __SIM_SSE3
-	       __m128d twoto = _mm_set_pd(twotothe256, twotothe256);
+	       __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
 	       
 	       for(l = 0; l < 80; l+=2)
 		 {
@@ -6658,7 +6658,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 		 }		   		  
 #else	     
 	     for(l = 0; l < 80; l++)
-	       v[l] *= twotothe256;
+	       v[l] *= PLL_TWOTOTHE256;
 #endif
 
 	     if(useFastScaling)
