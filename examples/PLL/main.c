@@ -167,7 +167,7 @@ int main (int argc, char * argv[])
       /* show the tree we have right now (most of the time did not change)*/
       Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
       evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
-      if(i % num_iterations/10 == 0)
+      if(i % (num_iterations/10) == 0)
       {
         modOpt(tr, partitions, 5.0);
         printf("log lh: after %d iterations: %f \n",i, tr->likelihood);
@@ -179,6 +179,7 @@ int main (int argc, char * argv[])
   printf ("Tree: %s\n", tr->tree_string);
   Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
   printf ("Tree: %s\n", tr->tree_string);
+  printf("Final log lh: %f \n", tr->likelihood);
 
 
   /* Do some cleanup */
