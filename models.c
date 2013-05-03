@@ -3254,8 +3254,8 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   for(i = 0; i < valueVectorLength; i++)
     {
        for(j = 0; j < n; j++)
-	 if(tipVector[i * n + j] > MAX_TIP_EV)
-	   tipVector[i * n + j] = MAX_TIP_EV;
+	 if(tipVector[i * n + j] > PLL_MAX_TIP_EV)
+	   tipVector[i * n + j] = PLL_MAX_TIP_EV;
     }
 
 
