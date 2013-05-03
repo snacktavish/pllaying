@@ -14,7 +14,7 @@ int main (int argc, char * argv[])
 {
   struct pllPhylip * phylip;
   double ** empiricalFrequencies;
-  tree * tr;
+  pllInstance * tr;
   struct pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
@@ -98,7 +98,6 @@ int main (int argc, char * argv[])
   printf ("Likelihood: %f\n", tr->likelihood);
   Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
   printf ("Tree: %s\n", tr->tree_string);
-
 
   /* Do some cleanup */
   pllPhylipDestroy (phylip);
