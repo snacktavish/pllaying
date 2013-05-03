@@ -679,7 +679,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   if(tr->thoroughInsertion)
   {     
-    localSmooth(tr, pr, p, MAX_LOCAL_SMOOTHING_ITERATIONS);
+    localSmooth(tr, pr, p, PLL_MAX_LOCAL_SMOOTHING_ITERATIONS);
     for(i = 0; i < numBranches; i++)
     {
       tr->lzq[i] = p->next->z[i];
