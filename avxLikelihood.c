@@ -77,7 +77,7 @@ void  newviewGTRGAMMA_AVX(int tipCase,
     addScale = 0;
  
   __m256d 
-    minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
+    minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD),
     twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
  
 
@@ -347,7 +347,7 @@ void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
     addScale = 0;
  
   __m256d 
-    minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
+    minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD ),
     twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
  
   double
@@ -847,7 +847,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
     addScale = 0;
    
   __m256d 
-    minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
+    minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD ),
     twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
   
   switch(tipCase)
@@ -1024,7 +1024,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
     addScale = 0;
    
   __m256d 
-    minlikelihood_avx = _mm256_set1_pd( minlikelihood ),
+    minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD ),
     twoto = _mm256_set1_pd(PLL_TWOTOTHE256);
   
 
@@ -1483,7 +1483,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	    }	  
 
 	   	     
-	  __m256d minlikelihood_avx = _mm256_set1_pd( minlikelihood );
+	  __m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 	  
 	  scale = 1;
 	  
@@ -1586,7 +1586,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	    }	  
 
 	   	     
-	  __m256d minlikelihood_avx = _mm256_set1_pd( minlikelihood );
+	  __m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 	  
 	  scale = 1;
 	  
@@ -1726,7 +1726,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 
      if(tipCase != TIP_TIP)
        {
-	 __m256d minlikelihood_avx = _mm256_set1_pd( minlikelihood );
+	 __m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 	  
 	 scale = 1;
 	  
@@ -1965,7 +1965,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 		}	  
 
 	   	     
-	      __m256d minlikelihood_avx = _mm256_set1_pd( minlikelihood );
+	      __m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 	  
 	      scale = 1;
 	      
@@ -2102,7 +2102,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 		  }	  
 
 	   	     
-		__m256d minlikelihood_avx = _mm256_set1_pd( minlikelihood );
+		__m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 		
 		scale = 1;
 		
@@ -2445,7 +2445,7 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 	      }
 	   
 	    v = &x3[80 * i];
-	    __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);
+	    __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);
 	    scale = 1;
 	    for(l = 0; scale && (l < 80); l += 4) 
 	      {
@@ -2612,7 +2612,7 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 	    }
 	  v = &(x3[80 * i]);
 	  scale = 1;
-	  __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);	 
+	  __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);	 
 
 	  for(l = 0; scale && (l < 80); l += 4) 
 	    {
@@ -2940,7 +2940,7 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 	      }
 	   
 	    v = &x3[80 * i];
-	    __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);
+	    __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);
 	    scale = 1;
 	    for(l = 0; scale && (l < 80); l += 4) 
 	      {
@@ -3107,7 +3107,7 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 	    }
 	  v = &(x3[80 * i]);
 	  scale = 1;
-	  __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);	 
+	  __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);	 
 
 	  for(l = 0; scale && (l < 80); l += 4) 
 	    {
@@ -3515,7 +3515,7 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	      }
 	   
 	    v = x3_gapColumn;
-	    __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);
+	    __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);
 	    scale = 1;
 	    for(l = 0; scale && (l < 80); l += 4) 
 	      {
@@ -3676,7 +3676,7 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 		  }
 		
 		v = x3_ptr;
-		__m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);
+		__m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);
 		scale = 1;
 		for(l = 0; scale && (l < 80); l += 4) 
 		  {
@@ -3842,7 +3842,7 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	
       v = x3_gapColumn;
       scale = 1;
-      __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);	 
+      __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);	 
       
       for(l = 0; scale && (l < 80); l += 4) 
 	{
@@ -4036,7 +4036,7 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	      v = x3_ptr;
 	      scale = 1;
 	      
-	      __m256d minlikelihood_avx = _mm256_set1_pd(minlikelihood);	 
+	      __m256d minlikelihood_avx = _mm256_set1_pd(PLL_MINLIKELIHOOD);	 
 	      
 	      for(l = 0; scale && (l < 80); l += 4) 
 		{

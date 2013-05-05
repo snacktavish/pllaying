@@ -643,7 +643,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
       lzq = lzsum - lzrs;
       lzr = lzsum - lzqs;
       lzs = lzsum - lzqr;
-      lzmax = log(zmax);
+      lzmax = log(PLL_ZMAX);
 
       if      (lzq > lzmax) {lzq = lzmax; lzr = lzqr; lzs = lzqs;} 
       else if (lzr > lzmax) {lzr = lzmax; lzq = lzqr; lzs = lzrs;}
@@ -667,8 +667,8 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
       if(z[i] < PLL_ZMIN) 
         z[i] = PLL_ZMIN;
-      if(z[i] > zmax)
-        z[i] = zmax;
+      if(z[i] > PLL_ZMAX)
+        z[i] = PLL_ZMAX;
     }
 
     hookup(p->next,       q, z, numBranches);
@@ -717,8 +717,8 @@ boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr
       zz = sqrt(q->z[i]);     
       if(zz < PLL_ZMIN) 
         zz = PLL_ZMIN;
-      if(zz > zmax)
-        zz = zmax;
+      if(zz > PLL_ZMAX)
+        zz = PLL_ZMAX;
       z[i] = zz;
     }
 
@@ -780,8 +780,8 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
       z[i] = sqrt(q->z[i]);      
       if(z[i] < PLL_ZMIN)
         z[i] = PLL_ZMIN;
-      if(z[i] > zmax)
-        z[i] = zmax;
+      if(z[i] > PLL_ZMAX)
+        z[i] = PLL_ZMAX;
     }
     hookup(p->next,       q, z, numBranches);
     hookup(p->next->next, r, z, numBranches);

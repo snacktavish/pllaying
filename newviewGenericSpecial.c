@@ -404,7 +404,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
 
         scale = 1;
         for(l = 0; scale && (l < states); l++)
-          scale = ((v[l] < minlikelihood) && (v[l] > minusminlikelihood));	   
+          scale = ((v[l] < PLL_MINLIKELIHOOD) && (v[l] > PLL_MINUSMINLIKELIHOOD));	   
 
         if(scale)
         {
@@ -462,7 +462,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
 
         scale = 1;
         for(l = 0; scale && (l < states); l++)
-          scale = ((v[l] < minlikelihood) && (v[l] > minusminlikelihood));
+          scale = ((v[l] < PLL_MINLIKELIHOOD) && (v[l] > PLL_MINUSMINLIKELIHOOD));
 
         if(scale)
         {
@@ -674,7 +674,7 @@ static void newviewGAMMA_FLEX(int tipCase,
           v = &x3[span * i];
           scale = 1;
           for(l = 0; scale && (l < span); l++)
-            scale = (ABS(v[l]) <  minlikelihood);
+            scale = (ABS(v[l]) <  PLL_MINLIKELIHOOD);
 
 
           if (scale)
@@ -733,7 +733,7 @@ static void newviewGAMMA_FLEX(int tipCase,
         v = &(x3[span * i]);
         scale = 1;
         for(l = 0; scale && (l < span); l++)
-          scale = ((ABS(v[l]) <  minlikelihood));
+          scale = ((ABS(v[l]) <  PLL_MINLIKELIHOOD));
 
         if(scale)
         {  
@@ -1430,8 +1430,8 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           rz = tInfo->rz[0];
         }
 
-        qz = (qz > zmin) ? log(qz) : log(zmin);		  	       
-        rz = (rz > zmin) ? log(rz) : log(zmin);	          	      
+        qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);		  	       
+        rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);	          	      
 
         /* compute the left and right P matrices */
 
@@ -2646,7 +2646,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
           max = MAX(maxima[0], maxima[1]);
 
-          if(max < minlikelihood)
+          if(max < PLL_MINLIKELIHOOD)
           {
             scaleGap = 1;
 
@@ -2809,7 +2809,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
             max = MAX(maxima[0], maxima[1]);
 
-            if(max < minlikelihood)
+            if(max < PLL_MINLIKELIHOOD)
             {
               __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
@@ -2978,7 +2978,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
         max = MAX(maxima[0], maxima[1]);
 
-        if(max < minlikelihood)
+        if(max < PLL_MINLIKELIHOOD)
         {
           __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
@@ -3181,7 +3181,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
           max = MAX(maxima[0], maxima[1]);
 
-          if(max < minlikelihood)
+          if(max < PLL_MINLIKELIHOOD)
           {
             __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
@@ -3523,7 +3523,7 @@ static void newviewGTRGAMMA(int tipCase,
 
           max = MAX(maxima[0], maxima[1]);
 
-          if(max < minlikelihood)
+          if(max < PLL_MINLIKELIHOOD)
           {
             __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
@@ -3706,7 +3706,7 @@ static void newviewGTRGAMMA(int tipCase,
 
         max = MAX(maxima[0], maxima[1]);
 
-        if(max < minlikelihood)
+        if(max < PLL_MINLIKELIHOOD)
         {
           __m128d sv = _mm_set1_pd(PLL_TWOTOTHE256);
 
@@ -3771,7 +3771,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     addScale = 0;
 
   __m128d
-    minlikelihood_sse = _mm_set1_pd( minlikelihood ),
+    minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD ),
                       sc = _mm_set1_pd(PLL_TWOTOTHE256),
                       EVV[8];  
 
@@ -4218,7 +4218,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
     addScale = 0;
 
   __m128d
-    minlikelihood_sse = _mm_set1_pd( minlikelihood ),
+    minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD ),
                       sc = _mm_set1_pd(PLL_TWOTOTHE256),
                       EVV[8];  
 
@@ -5045,7 +5045,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
           { 
             v = x3_gapColumn;
-            __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
             scale = 1;
             for(l = 0; scale && (l < 80); l += 2)
@@ -5145,7 +5145,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
             { 
               v = x3_ptr;
-              __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+              __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
               scale = 1;
               for(l = 0; scale && (l < 80); l += 2)
@@ -5235,7 +5235,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
         { 
           v = x3_gapColumn;
-          __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+          __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
           scale = 1;
           for(l = 0; scale && (l < 80); l += 2)
@@ -5347,7 +5347,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
           { 
             v = x3_ptr;
-            __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
             scale = 1;
             for(l = 0; scale && (l < 80); l += 2)
@@ -5553,7 +5553,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
 
           { 
             v = &(x3[80 * i]);
-            __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
             scale = 1;
             for(l = 0; scale && (l < 80); l += 2)
@@ -5648,7 +5648,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
 
         { 
           v = &(x3[80 * i]);
-          __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+          __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
           scale = 1;
           for(l = 0; scale && (l < 80); l += 2)
@@ -5797,7 +5797,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
           }
 
           { 	    
-            __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
             scale = 1;
             for(l = 0; scale && (l < 20); l += 2)
@@ -5877,7 +5877,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
         }
 
         { 	    
-          __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+          __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
           scale = 1;
           for(l = 0; scale && (l < 20); l += 2)
@@ -5986,7 +5986,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
     if(tipCase != TIP_TIP)
     { 	    
-      __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+      __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
       scale = 1;
       for(l = 0; scale && (l < 20); l += 2)
@@ -6142,7 +6142,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
             }
 
             { 	    
-              __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+              __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
               scale = 1;
               for(l = 0; scale && (l < 20); l += 2)
@@ -6250,7 +6250,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
           }
 
           { 	    
-            __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
             scale = 1;
             for(l = 0; scale && (l < 20); l += 2)
@@ -6508,7 +6508,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 #ifdef __SIM_SSE3
 	    { 
 	      v = &(x3[80 * i]);
-	      __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+	      __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 	      
 	      scale = 1;
 	      for(l = 0; scale && (l < 80); l += 2)
@@ -6524,7 +6524,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 	    v = &x3[80 * i];
 	    scale = 1;
 	    for(l = 0; scale && (l < 80); l++)
-	      scale = (ABS(v[l]) <  minlikelihood);
+	      scale = (ABS(v[l]) <  PLL_MINLIKELIHOOD );
 #endif
 
 	    if (scale)
@@ -6627,7 +6627,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 #ifdef __SIM_SSE3
 	 { 
 	   v = &(x3[80 * i]);
-	   __m128d minlikelihood_sse = _mm_set1_pd( minlikelihood );
+	   __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 	   
 	   scale = 1;
 	   for(l = 0; scale && (l < 80); l += 2)
@@ -6643,7 +6643,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 	 v = &(x3[80 * i]);
 	 scale = 1;
 	 for(l = 0; scale && (l < 80); l++)
-	   scale = ((ABS(v[l]) <  minlikelihood));
+	   scale = ((ABS(v[l]) <  PLL_MINLIKELIHOOD ));
 #endif
 
 	 if (scale)

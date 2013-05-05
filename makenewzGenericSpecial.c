@@ -940,7 +940,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
         zprev[i] = z[i];
 
-        zstep[i] = (1.0 - zmax) * z[i] + PLL_ZMIN;
+        zstep[i] = (1.0 - PLL_ZMAX) * z[i] + PLL_ZMIN;
       }
     }
 
@@ -954,7 +954,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
         double lz;
 
         if (z[i] < PLL_ZMIN) z[i] = PLL_ZMIN;
-        else if (z[i] > zmax) z[i] = zmax;
+        else if (z[i] > PLL_ZMAX) z[i] = PLL_ZMAX;
         lz    = log(z[i]);
 
         tr->coreLZ[i] = lz;
@@ -1024,7 +1024,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
     {
       if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
       {
-        if ((d2lnLdlz2[i] >= 0.0) && (z[i] < zmax))
+        if ((d2lnLdlz2[i] >= 0.0) && (z[i] < PLL_ZMAX))
           zprev[i] = z[i] = 0.37 * z[i] + 0.63;  /*  Bad curvature, shorten branch */
         else
           tr->curvatOK[i] = TRUE;
@@ -1052,7 +1052,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
           else
             z[i] = 0.25 * zprev[i] + 0.75;
         }
-        if (z[i] > zmax) z[i] = zmax;
+        if (z[i] > PLL_ZMAX) z[i] = PLL_ZMAX;
 
         /* decrement the maximum number of itarations */
 

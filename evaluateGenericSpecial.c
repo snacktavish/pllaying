@@ -211,7 +211,7 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
          of 0.25 */
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
 
@@ -239,7 +239,7 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
           term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
       
@@ -332,7 +332,7 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
          of 0.25 */
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
 
@@ -373,7 +373,7 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
           term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
       
@@ -440,7 +440,7 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
 
       /* take the log */
        if(!fastScaling)
-	 term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	 term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
        else
 	 term = LOG(FABS(term));
 
@@ -476,7 +476,7 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
         term += left[l] * right[l] * diagptable[l];
       
       if(!fastScaling)
-	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));	 
 
@@ -542,7 +542,7 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 
       /* take the log */
        if(!fastScaling)
-	 term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	 term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
        else
 	 term = LOG(FABS(term));
 
@@ -592,7 +592,7 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
         term += left[l] * right[l] * diagptable[l];
       
       if(!fastScaling)
-	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));	 
 
@@ -1051,7 +1051,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 	  */
 	  
 	  if(fastScaling)
-	    partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(minlikelihood);
+	    partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(PLL_MINLIKELIHOOD);
 	  
 	  /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */	  	 
 	  
@@ -1441,7 +1441,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 	  if(fastScaling)
 	    term = LOG(0.25 * FABS(term));
 	  else
-	    term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));	   
+	    term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));	   
 	  
 	  sum += wptr[i] * term;
 	}    	        
@@ -1481,7 +1481,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 	  if(fastScaling)
 	    term = LOG(0.25 * FABS(term));
 	  else
-	    term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(minlikelihood));
+	    term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
 	  
 	  sum += wptr[i] * term;
 	}         
@@ -1537,7 +1537,7 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));	  
 
@@ -1583,7 +1583,7 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
        if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
 
@@ -1629,7 +1629,7 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
 
@@ -1660,7 +1660,7 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 
 
        if(!fastScaling)
-	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(term));
 
@@ -1706,7 +1706,7 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-	term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));
 
@@ -1739,7 +1739,7 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));	 
 
@@ -1801,7 +1801,7 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-	term = LOG(FABS(term)) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));
 
@@ -1847,7 +1847,7 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(term));	 
 
@@ -1910,7 +1910,7 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
       _mm_store_pd(t, x1v1);
 
       if(!fastScaling)
-	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(t[0] + t[1]));
 
@@ -1963,7 +1963,7 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
 
 
        if(!fastScaling)
-	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(t[0] + t[1]));
 
@@ -2036,7 +2036,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
       _mm_store_pd(t, termv);	  	 
 
        if(!fastScaling)
-	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(t[0] + t[1]));
 
@@ -2095,7 +2095,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
       _mm_store_pd(t, termv);
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(t[0] + t[1]));
 
@@ -2159,7 +2159,7 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
 
 
        if(!fastScaling)
-	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(t[0] + t[1]));
 
@@ -2207,7 +2207,7 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
       _mm_store_pd(t, termv);
 
       if(!fastScaling)
-	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(0.25 * FABS(t[0] + t[1]));
 
@@ -2262,7 +2262,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
       _mm_store_pd(t, x1v1);
 
        if(!fastScaling)
-	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(minlikelihood));
+	term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(t[0] + t[1]));
 
@@ -2302,7 +2302,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
       _mm_store_pd(t, x1v1);
 
       if(!fastScaling)
-	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(minlikelihood));
+	term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
       else
 	term = LOG(FABS(t[0] + t[1]));
 

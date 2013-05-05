@@ -201,7 +201,7 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
 
   scale = 1;
   for(j = 0; scale && (j < states); j++)
-    scale = ((x3[j] < minlikelihood) && (x3[j] > minusminlikelihood));
+    scale = ((x3[j] < PLL_MINLIKELIHOOD) && (x3[j] > PLL_MINUSMINLIKELIHOOD));
   
   /* if we need to scale, we multiply all probabilities of the site with 2^256 
      and increment the scaling counter by 1. 
@@ -323,11 +323,11 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
   for(k = 0; k < states; k++) 
     term += x1[k] * x2[k] * d[k];       
 
-  /* note the "scale * LOG(minlikelihood)" term here which we use to undo/revert the scaling multiplications 
+  /* note the "scale * LOG(PLL_MINLIKELIHOOD)" term here which we use to undo/revert the scaling multiplications 
      such that we obtain a correct log likelihood score. The integer variable scale, contains the number of times 
      we had to scale (multiply by 2^256) for site i only during a full tree traversal using Felsenstein's algorithm */
 
-  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
 
   /* multiply with the site pattern weight (site pattern compression factor */
 
@@ -593,7 +593,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
     
     scale = 1;
     for(l = 0; scale && (l < 80); l++)
-      scale = ((x3[l] < minlikelihood) && (x3[l] > minusminlikelihood));	       	      	      	       	       
+      scale = ((x3[l] < PLL_MINLIKELIHOOD) && (x3[l] > PLL_MINUSMINLIKELIHOOD));	       	      	      	       	       
     
     if(scale)
       {	      
@@ -743,7 +743,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
   
     scale = 1;
     for(l = 0; scale && (l < 16); l++)
-      scale = (ABS(x3[l]) < minlikelihood);	       	      	      	       	       
+      scale = (ABS(x3[l]) < PLL_MINLIKELIHOOD);	       	      	      	       	       
     
     if(scale)
       {	      
@@ -830,7 +830,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
 	term += x1[l] * x2[20 * j + l] * d[j * 20 + l];	      
     }
   
-  term = LOG(0.25 * FABS(term)) + (scale * LOG(minlikelihood));   
+  term = LOG(0.25 * FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -903,7 +903,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 	term += x1[l] * x2[4 * j + l] * d[j * 4 + l];	      
     }
 
-  term = LOG(0.25 * FABS(term)) + (scale * LOG(minlikelihood));   
+  term = LOG(0.25 * FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -980,10 +980,10 @@ static inline void computeVectorGTRCAT(double *lVector, int *eVector, double ki,
       x3[k] +=  x1px2[j] *  EV[4 * j + k];	   
       
   
-  if (x3[0] < minlikelihood && x3[0] > minusminlikelihood &&
-      x3[1] < minlikelihood && x3[1] > minusminlikelihood &&
-      x3[2] < minlikelihood && x3[2] > minusminlikelihood &&
-      x3[3] < minlikelihood && x3[3] > minusminlikelihood)
+  if (x3[0] < PLL_MINLIKELIHOOD && x3[0] > PLL_MINUSMINLIKELIHOOD &&
+      x3[1] < PLL_MINLIKELIHOOD && x3[1] > PLL_MINUSMINLIKELIHOOD &&
+      x3[2] < PLL_MINLIKELIHOOD && x3[2] > PLL_MINUSMINLIKELIHOOD &&
+      x3[3] < PLL_MINLIKELIHOOD && x3[3] > PLL_MINUSMINLIKELIHOOD)
     {	     
       x3[0]   *= PLL_TWOTOTHE256;
       x3[1]   *= PLL_TWOTOTHE256;
@@ -1051,7 +1051,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
   term += x1[2] * x2[2] * d[1];
   term += x1[3] * x2[3] * d[2];     
 
-  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -1131,7 +1131,7 @@ static inline void computeVectorGTRCATPROT(double *lVector, int *eVector, double
       
   scale = 1;
   for(k = 0; (k < 20) && scale; k++)    
-    scale = ((x3[k] < minlikelihood) && (x3[k] > minusminlikelihood));    
+    scale = ((x3[k] < PLL_MINLIKELIHOOD) && (x3[k] > PLL_MINUSMINLIKELIHOOD));    
 
   if(scale)
     {	        
@@ -1202,7 +1202,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
   for(k = 0; k < 20; k++)
     term += x1[k] * x2[k] * d[k];     
 
-  term = LOG(FABS(term)) + (scale * LOG(minlikelihood));   
+  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
