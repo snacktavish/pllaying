@@ -273,16 +273,16 @@ unsigned int **initBitVector(int mxtips, unsigned int *vectorLength)
   int 
     i;
 
-  if(mxtips % MASK_LENGTH == 0)
-    *vectorLength = mxtips / MASK_LENGTH;
+  if(mxtips % PLL_MASK_LENGTH == 0)
+    *vectorLength = mxtips / PLL_MASK_LENGTH;
   else
-    *vectorLength = 1 + (mxtips / MASK_LENGTH); 
+    *vectorLength = 1 + (mxtips / PLL_MASK_LENGTH); 
   
   for(i = 1; i <= mxtips; i++)
     {
       bitVectors[i] = (unsigned int *)rax_calloc((size_t)(*vectorLength), sizeof(unsigned int));
       assert(bitVectors[i]);
-      bitVectors[i][(i - 1) / MASK_LENGTH] |= mask32[(i - 1) % MASK_LENGTH];
+      bitVectors[i][(i - 1) / PLL_MASK_LENGTH] |= mask32[(i - 1) % PLL_MASK_LENGTH];
     }
   
   for(i = mxtips + 1; i < 2 * mxtips; i++) 
@@ -399,12 +399,12 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
 	  
 	  if(i == vectorLength)
 	    {
-	      e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
+	      e->treeVector[treeNumber / PLL_MASK_LENGTH] |= mask32[treeNumber % PLL_MASK_LENGTH];
 	      if(computeWRF)
 		{
 		  e->supportVector[treeNumber] = support;
 		 
-		  assert(0 <= treeNumber && treeNumber < treeVectorLength * MASK_LENGTH);
+		  assert(0 <= treeNumber && treeNumber < treeVectorLength * PLL_MASK_LENGTH);
 		}
 	      return;
 	    }
@@ -422,14 +422,14 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
 
       e->treeVector = (unsigned int*)rax_calloc((size_t)treeVectorLength, sizeof(unsigned int));
       if(computeWRF)
-	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * PLL_MASK_LENGTH, sizeof(int));
 
-      e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
+      e->treeVector[treeNumber / PLL_MASK_LENGTH] |= mask32[treeNumber % PLL_MASK_LENGTH];
       if(computeWRF)
 	{
 	  e->supportVector[treeNumber] = support;
 	 
-	  assert(0 <= treeNumber && treeNumber < treeVectorLength * MASK_LENGTH);
+	  assert(0 <= treeNumber && treeNumber < treeVectorLength * PLL_MASK_LENGTH);
 	}
 
       memcpy(e->bitVector, bitVector, sizeof(unsigned int) * vectorLength);
@@ -448,15 +448,15 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
 
       e->treeVector = (unsigned int*)rax_calloc((size_t)treeVectorLength, sizeof(unsigned int));
       if(computeWRF)	
-	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * MASK_LENGTH, sizeof(int));
+	e->supportVector = (int*)rax_calloc((size_t)treeVectorLength * PLL_MASK_LENGTH, sizeof(int));
 
 
-      e->treeVector[treeNumber / MASK_LENGTH] |= mask32[treeNumber % MASK_LENGTH];
+      e->treeVector[treeNumber / PLL_MASK_LENGTH] |= mask32[treeNumber % PLL_MASK_LENGTH];
       if(computeWRF)
 	{
 	  e->supportVector[treeNumber] = support;
 	 
-	  assert(0 <= treeNumber && treeNumber < treeVectorLength * MASK_LENGTH);
+	  assert(0 <= treeNumber && treeNumber < treeVectorLength * PLL_MASK_LENGTH);
 	}
 
       memcpy(e->bitVector, bitVector, sizeof(unsigned int) * vectorLength);     

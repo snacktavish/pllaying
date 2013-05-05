@@ -635,9 +635,9 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
     for(i = 0; i < numBranches; i++)
     {
-      lzqr = (zqr[i] > zmin) ? log(zqr[i]) : log(zmin); 
-      lzqs = (zqs[i] > zmin) ? log(zqs[i]) : log(zmin);
-      lzrs = (zrs[i] > zmin) ? log(zrs[i]) : log(zmin);
+      lzqr = (zqr[i] > PLL_ZMIN) ? log(zqr[i]) : log(PLL_ZMIN); 
+      lzqs = (zqs[i] > PLL_ZMIN) ? log(zqs[i]) : log(PLL_ZMIN);
+      lzrs = (zrs[i] > PLL_ZMIN) ? log(zrs[i]) : log(PLL_ZMIN);
       lzsum = 0.5 * (lzqr + lzqs + lzrs);
 
       lzq = lzsum - lzrs;
@@ -665,8 +665,8 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     {
       z[i] = sqrt(q->z[i]);      
 
-      if(z[i] < zmin) 
-        z[i] = zmin;
+      if(z[i] < PLL_ZMIN) 
+        z[i] = PLL_ZMIN;
       if(z[i] > zmax)
         z[i] = zmax;
     }
@@ -715,8 +715,8 @@ boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr
     {
       double zz;
       zz = sqrt(q->z[i]);     
-      if(zz < zmin) 
-        zz = zmin;
+      if(zz < PLL_ZMIN) 
+        zz = PLL_ZMIN;
       if(zz > zmax)
         zz = zmax;
       z[i] = zz;
@@ -778,8 +778,8 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
     for(i = 0; i < numBranches; i++)
     {
       z[i] = sqrt(q->z[i]);      
-      if(z[i] < zmin)
-        z[i] = zmin;
+      if(z[i] < PLL_ZMIN)
+        z[i] = PLL_ZMIN;
       if(z[i] > zmax)
         z[i] = zmax;
     }
@@ -930,7 +930,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
         p2z[i] = p2->z[i];	   	   
       }
 
-      if (! removeNodeBIG(tr, pr, p,  numBranches)) return badRear;
+      if (! removeNodeBIG(tr, pr, p,  numBranches)) return PLL_BADREAR;
 
       if (!isTip(p1->number, tr->mxtips)) 
       {
@@ -981,7 +981,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
         q2z[i] = q2->z[i];
       }
 
-      if (! removeNodeBIG(tr, pr, q, numBranches)) return badRear;
+      if (! removeNodeBIG(tr, pr, q, numBranches)) return PLL_BADREAR;
 
       mintrav2 = mintrav > 2 ? mintrav : 2;
 

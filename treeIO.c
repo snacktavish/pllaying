@@ -191,8 +191,8 @@ double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr 
     {
       assert(tr->fracchange != -1.0);
       z = p->z[0];
-      if (z < zmin) 
-	z = zmin;      	 
+      if (z < PLL_ZMIN) 
+	z = PLL_ZMIN;      	 
       
       x = -log(z) * tr->fracchange;           
     }
@@ -211,8 +211,8 @@ double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr 
 	      assert(pr->partitionData[i]->partitionContribution != -1.0);
 	      assert(pr->partitionData[i]->fracchange != -1.0);
 	      z = p->z[i];
-	      if(z < zmin) 
-		z = zmin;      	 
+	      if(z < PLL_ZMIN) 
+		z = PLL_ZMIN;      	 
 	      x = -log(z) * pr->partitionData[i]->fracchange;
 	      avgX += x * pr->partitionData[i]->partitionContribution;
 	    }
@@ -226,8 +226,8 @@ double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr 
 	  
 	  z = p->z[perGene];
 	  
-	  if(z < zmin) 
-	    z = zmin;      	 
+	  if(z < PLL_ZMIN) 
+	    z = PLL_ZMIN;      	 
 	  
 	  x = -log(z) * pr->partitionData[perGene]->fracchange;
 	}

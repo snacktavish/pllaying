@@ -1376,7 +1376,7 @@ double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
   assert(partition_id >= 0);
   assert(tr->fracchange != -1.0);
   double z = p->z[partition_id];
-  if(z < zmin) z = zmin;
+  if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > zmax) z = zmax;
   return (-log(z) * tr->fracchange);
 }
@@ -1388,7 +1388,7 @@ void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
   assert(tr->fracchange != -1.0);
   double z;
   z = exp((-1 * bl)/tr->fracchange);
-  if(z < zmin) z = zmin;
+  if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > zmax) z = zmax;
   p->z[partition_id] = z;
 }
@@ -2370,7 +2370,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt)
           pllStackPush (&nodeStack, tr->nodep[i]->next);
           pllStackPush (&nodeStack, tr->nodep[i]->next->next);
           double z = exp((-1 * atof(item->branch))/tr->fracchange);
-          if(z < zmin) z = zmin;
+          if(z < PLL_ZMIN) z = PLL_ZMIN;
           if(z > zmax) z = zmax;
           for (k = 0; k < NUM_BRANCHES; ++ k)
              v->z[k] = tr->nodep[i]->z[k] = z;
@@ -2383,7 +2383,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt)
           tr->nodep[j]->back = v; //t->nodep[v->number];
 
           double z = exp((-1 * atof(item->branch))/tr->fracchange);
-          if(z < zmin) z = zmin;
+          if(z < PLL_ZMIN) z = PLL_ZMIN;
           if(z > zmax) z = zmax;
           for (k = 0; k < NUM_BRANCHES; ++ k)
             v->z[k] = tr->nodep[j]->z[k] = z;

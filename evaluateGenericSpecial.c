@@ -91,8 +91,8 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 
   /* transform the root branch length to the log and check if it is not too small */
 
-  if (z < zmin) 
-    lz = log(zmin);
+  if (z < PLL_ZMIN) 
+    lz = log(PLL_ZMIN);
   else
     lz = log(z);
 
@@ -131,8 +131,8 @@ static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rpt
   
   assert(numStates <= 64);
   
-  if (z < zmin) 
-    lz = log(zmin);
+  if (z < PLL_ZMIN) 
+    lz = log(PLL_ZMIN);
   else
     lz = log(z);
 

@@ -940,7 +940,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
         zprev[i] = z[i];
 
-        zstep[i] = (1.0 - zmax) * z[i] + zmin;
+        zstep[i] = (1.0 - zmax) * z[i] + PLL_ZMIN;
       }
     }
 
@@ -953,7 +953,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
       {
         double lz;
 
-        if (z[i] < zmin) z[i] = zmin;
+        if (z[i] < PLL_ZMIN) z[i] = PLL_ZMIN;
         else if (z[i] > zmax) z[i] = zmax;
         lz    = log(z[i]);
 
@@ -1043,8 +1043,8 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
           if (tantmp < 100)
           {
             z[i] *= EXP(tantmp);
-            if (z[i] < zmin)
-              z[i] = zmin;
+            if (z[i] < PLL_ZMIN)
+              z[i] = PLL_ZMIN;
 
             if (z[i] > 0.25 * zprev[i] + 0.75)
               z[i] = 0.25 * zprev[i] + 0.75;

@@ -284,8 +284,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
 	qz = ti[k].qz[branchReference],
 	rz = ti[k].rz[branchReference];
       
-      qz = (qz > zmin) ? log(qz) : log(zmin);
-      rz = (rz > zmin) ? log(rz) : log(zmin);
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
 
       /* invoke essentially a newview() for one site on the entry k of the traversal descriptor.
 	 counter should always correspond to the number of inner nodes in the tree for which we need
@@ -308,8 +308,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
  
   /* now just compute the log likelihood score of this site */
       
-  if(qz < zmin) 
-    lz = zmin;
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
   lz  = log(qz); 
   lz *= ki;  
   
@@ -796,8 +796,8 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
 	qz = ti[k].qz[branchReference],
 	rz = ti[k].rz[branchReference];
       
-      qz = (qz > zmin) ? log(qz) : log(zmin);
-      rz = (rz > zmin) ? log(rz) : log(zmin);
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
 
       computeVectorGTRGAMMAPROT(lVector, &scale, gammaRates, i, qz, rz, 
 				&ti[k], EIGN, myEI, EV, 
@@ -810,8 +810,8 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
   
   lz = qz;
 
-  if(qz < zmin) 
-    lz = zmin;
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
   lz  = log(qz);
   
   
@@ -873,8 +873,8 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 	qz = ti[k].qz[branchReference],
 	rz = ti[k].rz[branchReference];
       
-      qz = (qz > zmin) ? log(qz) : log(zmin);
-      rz = (rz > zmin) ? log(rz) : log(zmin);
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
 
       computeVectorGTRGAMMA(lVector, &scale, gammaRates, i, qz, rz, 
 				&ti[k], EIGN, myEI, EV, 
@@ -885,8 +885,8 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 
   assert(0 <=  (trav->qNumber - mxtips) && (trav->qNumber - mxtips) < mxtips);  
   
-  if(qz < zmin) 
-    lz = zmin;
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
   lz  = log(qz); 
   
   for(j = 0; j < 4; j++)
@@ -1025,8 +1025,8 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 	qz = ti[k].qz[branchReference],
 	rz = ti[k].rz[branchReference];
       
-      qz = (qz > zmin) ? log(qz) : log(zmin);
-      rz = (rz > zmin) ? log(rz) : log(zmin);
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
 
       computeVectorGTRCAT(lVector, &scale, ki, i, qz, rz, &ti[k], 
 			  EIGN, EI, EV, 
@@ -1037,8 +1037,8 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 
   assert(0 <=  (trav->qNumber - mxtips) && (trav->qNumber - mxtips) < mxtips);  
        
-  if(qz < zmin) 
-    lz = zmin;
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
   lz  = log(qz); 
   lz *= ki;  
   
@@ -1175,8 +1175,8 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
 	qz = ti[k].qz[branchReference],
 	rz = ti[k].rz[branchReference];
       
-      qz = (qz > zmin) ? log(qz) : log(zmin);
-      rz = (rz > zmin) ? log(rz) : log(zmin);
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
 
       computeVectorGTRCATPROT(lVector, &scale, ki, i, qz, rz, &ti[k], 
 			  EIGN, EI, EV, 
@@ -1187,8 +1187,8 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
 
   assert(0 <=  (trav->qNumber - mxtips) && (trav->qNumber - mxtips) < mxtips);  
        
-  if(qz < zmin) 
-    lz = zmin;
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
   lz  = log(qz); 
   lz *= ki;  
   

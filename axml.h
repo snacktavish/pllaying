@@ -81,10 +81,10 @@ extern "C" {
 #define PLL_SUMMARIZE_LH                        -2
 #define PLL_NO_BRANCHES                         -1
 
-#define MASK_LENGTH 32
-#define GET_BITVECTOR_LENGTH(x) ((x % MASK_LENGTH) ? (x / MASK_LENGTH + 1) : (x / MASK_LENGTH))
+#define PLL_MASK_LENGTH                         32
+#define GET_BITVECTOR_LENGTH(x) ((x % PLL_MASK_LENGTH) ? (x / PLL_MASK_LENGTH + 1) : (x / PLL_MASK_LENGTH))
 
-#define zmin       1.0E-15  /* max branch prop. to -log(zmin) (= 34) */
+#define PLL_ZMIN                                1.0E-15  /* max branch prop. to -log(PLL_ZMIN) (= 34) */
 #define zmax (1.0 - 1.0E-6) /* min branch prop. to 1.0-zmax (= 1.0E-6) */
 
 #define PLL_TWOTOTHE256 \
@@ -106,7 +106,7 @@ extern "C" {
 /*  2**64 (exactly)  */
 /* 4294967296 2**32 */
 
-#define badRear         -1
+#define PLL_BADREAR                             -1
 
 #define NUM_BRANCHES     16
 
