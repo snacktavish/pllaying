@@ -1994,7 +1994,7 @@ START_FAST_SPRS:
         printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-        Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+        Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, PLL_SUMMARIZE_LH, FALSE, FALSE);
 
         if(fastIterations % 2 == 0)	      
           memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2220,7 +2220,7 @@ START_SLOW_SPRS:
           printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 
-          Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+          Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, PLL_SUMMARIZE_LH, FALSE, FALSE);
 
           if(thoroughIterations % 2 == 0)	      
             memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));

@@ -185,7 +185,7 @@ double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr 
     x = 0.0;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
-  assert(perGene != NO_BRANCHES);
+  assert(perGene != PLL_NO_BRANCHES);
 	      
   if(numBranches == 1)
     {
@@ -198,7 +198,7 @@ double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr 
     }
   else
     {
-      if(perGene == SUMMARIZE_LH)
+      if(perGene == PLL_SUMMARIZE_LH)
 	{
 	  int 
 	    i;
@@ -407,12 +407,12 @@ void printTopology(pllInstance *tr, partitionList *pr, boolean printInner)
   if(!printInner)
   {
     boolean printBranchLengths = FALSE;
-    Tree2String(tr->tree_string, tr, pr, tr->start->back, printBranchLengths, 0, 0, 0, 0, SUMMARIZE_LH, 0,0);
+    Tree2String(tr->tree_string, tr, pr, tr->start->back, printBranchLengths, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0);
     fprintf(stderr, "%s", tr->tree_string);
   }
   else
   {
-    TreeInner2StringREC(tr->tree_string, tr, pr, tr->start->back, FALSE, 0, 0, 0, 0, SUMMARIZE_LH, 0,0, TRUE);
+    TreeInner2StringREC(tr->tree_string, tr, pr, tr->start->back, FALSE, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0, TRUE);
     fprintf(stderr, "%s", tr->tree_string);
     fprintf(stderr, "Start was %d, pnb %d, pnnb %d, pback %d\n", 
         tr->start->back->number, 

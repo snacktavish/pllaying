@@ -451,7 +451,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
   switch(adef->mode)
   {    
     case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, PLL_SUMMARIZE_LH, FALSE, FALSE);
 
       logFile = myfopen(temporaryFileName, "wb");
       fprintf(logFile, "%s", tr->tree_string);
@@ -469,7 +469,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
           case GAMMA_I:
 
             Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
-                SUMMARIZE_LH, FALSE, FALSE);
+                PLL_SUMMARIZE_LH, FALSE, FALSE);
 
             logFile = myfopen(temporaryFileName, "wb");
             fprintf(logFile, "%s", tr->tree_string);
@@ -480,11 +480,11 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
             break;
           case CAT:
             /*Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
-              NO_BRANCHES, FALSE, FALSE);*/
+              PLL_NO_BRANCHES, FALSE, FALSE);*/
 
 
             Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
-                TRUE, SUMMARIZE_LH, FALSE, FALSE);
+                TRUE, PLL_SUMMARIZE_LH, FALSE, FALSE);
 
 
 
@@ -501,7 +501,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
       else
       {
         Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
-            NO_BRANCHES, FALSE, FALSE);
+            PLL_NO_BRANCHES, FALSE, FALSE);
         logFile = myfopen(temporaryFileName, "wb");
         fprintf(logFile, "%s", tr->tree_string);
         fclose(logFile);

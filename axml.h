@@ -77,9 +77,9 @@ extern "C" {
 #define PLL_UNLIKELY                            -1.0E300    /* low likelihood for initialization */
 
 
-#define SUMMARIZE_LENGTH -3
-#define SUMMARIZE_LH     -2
-#define NO_BRANCHES      -1
+#define PLL_SUMMARIZE_LENGTH                    -3
+#define PLL_SUMMARIZE_LH                        -2
+#define PLL_NO_BRANCHES                         -1
 
 #define MASK_LENGTH 32
 #define GET_BITVECTOR_LENGTH(x) ((x % MASK_LENGTH) ? (x / MASK_LENGTH + 1) : (x / MASK_LENGTH))
