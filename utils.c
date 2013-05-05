@@ -129,14 +129,14 @@ void read_phylip_msa(pllInstance * tr, const char * filename, int format, int ty
   tr->originalCrunchedLength = pd->seqlen;
   pr->numberOfPartitions         = 1;
 
-  setupTree(tr, TRUE);
+  setupTree(tr, PLL_TRUE);
 
   tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
 
   /* TODO: The next two lines were commented in model-sep branch */
   tr->aliaswgt = pl_phylip_deldups (&pd);
   tr->originalCrunchedLength = pd->seqlen;
-  pr->perGeneBranchLengths = FALSE;
+  pr->perGeneBranchLengths = PLL_FALSE;
 
   pl_phylip_subst (pd, DNA_DATA);          /* TODO: Change to reflect the input type */
 
@@ -152,7 +152,7 @@ void read_phylip_msa(pllInstance * tr, const char * filename, int format, int ty
 
         
   for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
-    tr->executeModel[i] = TRUE;
+    tr->executeModel[i] = PLL_TRUE;
 
 
 
@@ -191,7 +191,7 @@ void read_phylip_msa(pllInstance * tr, const char * filename, int format, int ty
     p->protModels         =   2;
     p->autoProtModels     =   0;
     p->protFreqs          =   0;
-    p->nonGTR             =   FALSE;
+    p->nonGTR             =   PLL_FALSE;
     p->numberOfCategories =   0;
     
     /* later on if adding secondary structure data
@@ -265,8 +265,8 @@ void read_msa(pllInstance *tr, partitionList *pr, const char *filename)
     else
       tr->numBranches = 1;
     */
-    pr->perGeneBranchLengths = FALSE;
-    setupTree(tr, TRUE, pr);
+    pr->perGeneBranchLengths = PLL_FALSE;
+    setupTree(tr, PLL_TRUE, pr);
     
     myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
 
@@ -282,7 +282,7 @@ void read_msa(pllInstance *tr, partitionList *pr, const char *filename)
     tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
     for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
-      pr->partitionData[i]->executeModel = TRUE;
+      pr->partitionData[i]->executeModel = PLL_TRUE;
 
 
 
@@ -451,7 +451,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
   switch(adef->mode)
   {    
     case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, PLL_SUMMARIZE_LH, FALSE, FALSE);
+      Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
       logFile = myfopen(temporaryFileName, "wb");
       fprintf(logFile, "%s", tr->tree_string);
@@ -468,8 +468,8 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
           case GAMMA:
           case GAMMA_I:
 
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
-                PLL_SUMMARIZE_LH, FALSE, FALSE);
+            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
+                PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
             logFile = myfopen(temporaryFileName, "wb");
             fprintf(logFile, "%s", tr->tree_string);
@@ -479,12 +479,12 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
               printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
             break;
           case CAT:
-            /*Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
-              PLL_NO_BRANCHES, FALSE, FALSE);*/
+            /*Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, adef,
+              PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);*/
 
 
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
-                TRUE, PLL_SUMMARIZE_LH, FALSE, FALSE);
+            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE,
+                PLL_TRUE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
 
 
@@ -500,8 +500,8 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
       }
       else
       {
-        Tree2String(tr->tree_string, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
-            PLL_NO_BRANCHES, FALSE, FALSE);
+        Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
+            PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);
         logFile = myfopen(temporaryFileName, "wb");
         fprintf(logFile, "%s", tr->tree_string);
         fclose(logFile);
@@ -577,7 +577,7 @@ const partitionLengths *getPartitionLengths(pInfo *p)
     pLength.tipVectorLength   = tipLength * states;
     pLength.symmetryVectorLength = (states * states - states) / 2;
     pLength.frequencyGroupingLength = states;
-    pLength.nonGTR = FALSE;*/
+    pLength.nonGTR = PLL_FALSE;*/
   return (&pLengths[dataType]); 
 }
 
@@ -728,16 +728,16 @@ FILE *myfopen(const char *path, const char *mode)
   *  Number of tips in the tree
   *
   * @return
-  *   \b TRUE if tip, \b FALSE otherwise
+  *   \b PLL_TRUE if tip, \b PLL_FALSE otherwise
   */
 boolean isTip(int number, int maxTips)
 {
   assert(number > 0);
 
   if(number <= maxTips)
-    return TRUE;
+    return PLL_TRUE;
   else
-    return FALSE;
+    return PLL_FALSE;
 }
 
 void getxnode (nodeptr p)
@@ -855,7 +855,7 @@ boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
   if(doInit)
     init_default(tr);
 
-  tr->bigCutoff = FALSE;
+  tr->bigCutoff = PLL_FALSE;
 
   tr->maxCategories = MAX(4, tr->categories);
 
@@ -942,7 +942,7 @@ boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
   tr->nextnode    = 0;
 
   for(i = 0; i < NUM_BRANCHES; i++)
-    tr->partitionSmoothed[i] = FALSE;
+    tr->partitionSmoothed[i] = PLL_FALSE;
 
   tr->bitVectors = (unsigned int **)NULL;
 
@@ -959,7 +959,7 @@ boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
 	partitions->partitionData[i]->fracchange = 1.0;
   }
 
-  return TRUE;
+  return PLL_TRUE;
 }
 
 
@@ -970,17 +970,17 @@ boolean modelExists(char *model, pllInstance *tr)
   if(strcmp(model, "PSR") == 0)
   {
     tr->rateHetModel = CAT;
-    return TRUE;
+    return PLL_TRUE;
   }
 
   if(strcmp(model, "GAMMA") == 0)
   {
     tr->rateHetModel = GAMMA;
-    return TRUE;
+    return PLL_TRUE;
   }
 
 
-  return FALSE;
+  return PLL_FALSE;
 }
 
 
@@ -994,30 +994,30 @@ void init_default(pllInstance *tr)
   /*********** tr inits **************/
 
   tr->numberOfThreads = 1; 
-  tr->doCutoff = TRUE;
+  tr->doCutoff = PLL_TRUE;
   tr->secondaryStructureModel = SEC_16; /* default setting */
-  tr->searchConvergenceCriterion = FALSE;
+  tr->searchConvergenceCriterion = PLL_FALSE;
   tr->rateHetModel = GAMMA;
 
   tr->multiStateModel  = GTR_MULTI_STATE;
-  tr->saveMemory = FALSE;
+  tr->saveMemory = PLL_FALSE;
 
-  tr->fastScaling = FALSE;
+  tr->fastScaling = PLL_FALSE;
 
-  tr->manyPartitions = FALSE;
+  tr->manyPartitions = PLL_FALSE;
 
   tr->startingTree = randomTree;
   tr->randomNumberSeed = 12345;
 
   tr->categories             = 25;
 
-  tr->grouped = FALSE;
-  tr->constrained = FALSE;
+  tr->grouped = PLL_FALSE;
+  tr->constrained = PLL_FALSE;
 
   tr->gapyness               = 0.0; 
-  tr->useMedian = FALSE;
+  tr->useMedian = PLL_FALSE;
   /* recom */
-  tr->useRecom = FALSE;
+  tr->useRecom = PLL_FALSE;
   tr->rvec = (recompVectors*)NULL;
   /* recom */
 
@@ -1150,12 +1150,12 @@ void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr)
 
       newviewGenericAncestral(tr, pr, p);
 
-      /* and print it to terminal, the two booleans that are set to true here 
+      /* and print it to terminal, the two booleans that are set to PLL_TRUE here 
 	 tell the function to print the marginal probabilities as well as 
 	 a discrete inner sequence, that is, ACGT etc., always selecting and printing 
 	 the state that has the highest probability */
 
-      printAncestralState(p, TRUE, TRUE, tr, pr);
+      printAncestralState(p, PLL_TRUE, PLL_TRUE, tr, pr);
     }
 }
 
@@ -1230,7 +1230,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->perSiteRates      = (double *)rax_malloc(sizeof(double) * maxCategories);
 
-      localPartitions->partitionData[model]->nonGTR = FALSE;
+      localPartitions->partitionData[model]->nonGTR = PLL_FALSE;
 
       localPartitions->partitionData[model]->gammaRates = (double*)rax_malloc(sizeof(double) * 4);
       localPartitions->partitionData[model]->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char*) * ((size_t)localTree->mxtips + 1));
@@ -1649,7 +1649,7 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->partitionContribution =     -1.0;
      pl->partitionData[i]->partitionLH           =      0.0;
      pl->partitionData[i]->fracchange            =      1.0;
-     pl->partitionData[i]->executeModel          =     TRUE;
+     pl->partitionData[i]->executeModel          =     PLL_TRUE;
 
 
      pl->partitionData[i]->partitionName         = (char *) rax_malloc ((strlen (pi->partitionName) + 1) * sizeof (char));
@@ -1961,7 +1961,7 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
   else    
     {
       boolean 
-	zeroFreq = FALSE;
+	zeroFreq = PLL_FALSE;
 
       char 
 	typeOfData[1024];
@@ -1974,7 +1974,7 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 	    {
 	      printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
 	      printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
-	      zeroFreq = TRUE;
+	      zeroFreq = PLL_TRUE;
 	    }
 	}
 
@@ -2068,7 +2068,7 @@ double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, pllInstance *
 	      }
 	      break;
 	     case GTR_MULTI_STATE:
-	      genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, TRUE,
+	      genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, PLL_TRUE,
 				     bitVector32);
 	      break;
 	    default:
@@ -2195,7 +2195,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
   tr->useRecom     = useRecom;
 
   /* remove it from the library */
-  tr->useMedian    = FALSE;
+  tr->useMedian    = PLL_FALSE;
 
   tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
   
@@ -2224,7 +2224,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 
   tr->mxtips = tips;
 
-  tr->bigCutoff = FALSE;
+  tr->bigCutoff = PLL_FALSE;
   tr->treeStringLength = tr->mxtips * (PLL_NMLNGTH + 128) + 256 + tr->mxtips * 2;
   tr->tree_string = (char *) rax_calloc ( tr->treeStringLength, sizeof(char));
   tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
@@ -2292,7 +2292,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->ntips       = 0;
   tr->nextnode    = 0;
 
-  for (i = 0; i < NUM_BRANCHES; ++ i) tr->partitionSmoothed[i] = FALSE;
+  for (i = 0; i < NUM_BRANCHES; ++ i) tr->partitionSmoothed[i] = PLL_FALSE;
 
   tr->bitVectors = NULL;
   tr->vLength    = 0;
@@ -2306,8 +2306,8 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->td[0].ti               = (traversalInfo *) rax_malloc (sizeof(traversalInfo) * (size_t)tr->mxtips);
   tr->td[0].parameterValues  = (double *) rax_malloc(sizeof(double) * (size_t)NUM_BRANCHES);
   tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
-  tr->td[0].executeModel[0]  = TRUE;                                                                                                                                                                                                                                    
-  for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = TRUE;
+  tr->td[0].executeModel[0]  = PLL_TRUE;                                                                                                                                                                                                                                    
+  for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
 
 
   
@@ -2572,7 +2572,7 @@ pllTreeDestroy (pllInstance * tr)
   for (i = 1; i <= tr->mxtips; ++ i)
     rax_free (tr->nameList[i]);
   
-  pllHashDestroy (&(tr->nameHash), FALSE);
+  pllHashDestroy (&(tr->nameHash), PLL_FALSE);
   if (tr->yVector)
    {
      if (tr->yVector[0]) rax_free (tr->yVector[0]);
@@ -2594,5 +2594,4 @@ pllTreeDestroy (pllInstance * tr)
   rax_free (tr->tree1);
   rax_free (tr);
 }
-
 

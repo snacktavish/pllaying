@@ -110,8 +110,8 @@ extern "C" {
 
 #define NUM_BRANCHES     16
 
-#define TRUE             1
-#define FALSE            0
+#define PLL_TRUE                                1
+#define PLL_FALSE                               0
 
 
 

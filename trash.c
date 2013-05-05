@@ -61,9 +61,9 @@ void nodeRectifier(pllInstance *tr)
   int count = 0;
   
   tr->start       = tr->nodep[1];
-  tr->rooted      = FALSE;
+  tr->rooted      = PLL_FALSE;
 
-  /* TODO why is tr->rooted set to FALSE here ?*/
+  /* TODO why is tr->rooted set to PLL_FALSE here ?*/
   
   for(i = tr->mxtips + 1; i <= (tr->mxtips + tr->mxtips - 1); i++)
     np[i] = tr->nodep[i];           

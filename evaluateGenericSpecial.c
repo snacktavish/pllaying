@@ -940,24 +940,24 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 		   if(tr->saveMemory)
 		     partitionLikelihood = evaluateCAT_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
 								 x1_start, x2_start, pr->partitionData[model]->tipVector,
-								 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE,
+								 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, PLL_TRUE,
 								 x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
 		   else
 		     partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
 							    x1_start, x2_start, pr->partitionData[model]->tipVector,
-							    tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+							    tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, PLL_TRUE);
 		}
 	      else
 		{
 		  if(tr->saveMemory)
 		    partitionLikelihood = evaluateGAMMA_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
 								  x1_start, x2_start, pr->partitionData[model]->tipVector,
-								  tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE, 
+								  tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, PLL_TRUE, 
 								  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);		    
 		  else
 		    partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
 							     x1_start, x2_start, pr->partitionData[model]->tipVector,
-							     tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, TRUE);
+							     tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, PLL_TRUE);
 		}
 	    }
 	  else
@@ -1020,7 +1020,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 			if(pr->partitionData[model]->protModels == LG4)
 			  partitionLikelihood =  evaluateGTRGAMMAPROT_LG4((int *)NULL, (int *)NULL, pr->partitionData[model]->wgt,
 									  x1_start, x2_start, pr->partitionData[model]->tipVector_LG4,
-									  tip, width, diagptable, TRUE);
+									  tip, width, diagptable, PLL_TRUE);
 			else
 			  partitionLikelihood = evaluateGTRGAMMAPROT(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
 								     x1_start, x2_start, pr->partitionData[model]->tipVector,
@@ -1109,8 +1109,8 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   
 
   boolean
-        p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
-        q_recom = FALSE;
+        p_recom = PLL_FALSE, /* if one of was missing, we will need to force recomputation */
+        q_recom = PLL_FALSE;
 
   int
     i,
@@ -1165,15 +1165,15 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   if(fullTraversal)
   { 
     assert(isTip(q->back->number, tr->mxtips));
-    computeTraversal(tr, q, FALSE, numBranches);
+    computeTraversal(tr, q, PLL_FALSE, numBranches);
   }
   else
   {
     if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-      computeTraversal(tr, p, TRUE, numBranches);
+      computeTraversal(tr, p, PLL_TRUE, numBranches);
 
     if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-      computeTraversal(tr, q, TRUE, numBranches);
+      computeTraversal(tr, q, PLL_TRUE, numBranches);
   }
 
 
@@ -1185,7 +1185,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   /* also store in the traversal descriptor that something has changed i.e., in the parallel case that the 
      traversal descriptor list of nodes needs to be broadcast once again */
 
-  tr->td[0].traversalHasChanged = TRUE;
+  tr->td[0].traversalHasChanged = PLL_TRUE;
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
   /* now here we enter the fork-join region for Pthreads */
@@ -1222,7 +1222,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   /* and here is just the sequential case, we directly call evaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-  evaluateIterative(tr, pr, getPerSiteLikelihoods); //TRUE
+  evaluateIterative(tr, pr, getPerSiteLikelihoods); //PLL_TRUE
 
   /*
     if we want to obtain per-site rates they have initially been stored 
@@ -1231,7 +1231,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
      We may also chose that the user needs to rpovide an array, but this can be decided later-on.
   */
 
-  if(getPerSiteLikelihoods) //TRUE
+  if(getPerSiteLikelihoods) //PLL_TRUE
     {
       for(model = 0; model < pr->numberOfPartitions; model++)
 	memcpy(&(tr->lhs[pr->partitionData[model]->lower]), pr->partitionData[model]->perSiteLikelihoods, pr->partitionData[model]->width  * sizeof(double));
@@ -1252,7 +1252,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
      For numerical reasons we need to make a dirt ABS(difference) < epsilon
      comparison */
      
-  if(getPerSiteLikelihoods) //TRUE
+  if(getPerSiteLikelihoods) //PLL_TRUE
     {
       double 
 	likelihood = 0;
@@ -1287,7 +1287,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
 
   /* do some bookkeeping to have traversalHasChanged in a consistent state */
 
-  tr->td[0].traversalHasChanged = FALSE;
+  tr->td[0].traversalHasChanged = PLL_FALSE;
 }
 
 
@@ -1311,7 +1311,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
      will then be used for calculating per-site log likelihoods 
      for each site individually and independently */
 
-  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   //likelihood = tr->likelihood;
 

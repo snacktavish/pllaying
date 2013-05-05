@@ -81,15 +81,15 @@ boolean initrav (pllInstance *tr, partitionList *pr, nodeptr p)
 
     do 
     {	   
-      if (! initrav(tr, pr, q->back))  return FALSE;
+      if (! initrav(tr, pr, q->back))  return PLL_FALSE;
       q = q->next;	
     } 
     while (q != p);  
 
-    newviewGeneric(tr, pr, p, FALSE);
+    newviewGeneric(tr, pr, p, PLL_FALSE);
   }
 
-  return TRUE;
+  return PLL_TRUE;
 } 
 
 
@@ -119,9 +119,9 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
     z0[i] = q->z[i];    
 
   if(numBranches > 1)
-    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, TRUE);
+    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, PLL_TRUE);
   else
-    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, FALSE);
+    makenewzGeneric(tr, pr, p, q, z0, PLL_NEWZPERCYCLE, z, PLL_FALSE);
 
   for(i = 0; i < numBranches; i++)
   {         
@@ -129,7 +129,7 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
     {	  
       if(ABS(z[i] - z0[i]) > PLL_DELTAZ)  
       {	      
-        tr->partitionSmoothed[i] = FALSE;
+        tr->partitionSmoothed[i] = PLL_FALSE;
       }	 
 
       p->z[i] = q->z[i] = z[i];	 
@@ -167,36 +167,36 @@ void smooth (pllInstance *tr, partitionList *pr, nodeptr p)
     }	
 
     if(numBranches > 1 && !tr->useRecom)
-      newviewGeneric(tr, pr,p, TRUE);
+      newviewGeneric(tr, pr,p, PLL_TRUE);
     else
-      newviewGeneric(tr, pr,p, FALSE);
+      newviewGeneric(tr, pr,p, PLL_FALSE);
   }
 } 
 
 /**  @brief Check whether the branches in all partitions have been optimized
  
      Check if all branches in all partitions have reached the threshold for
-     optimization. If at least one branch can be optimized further return \b FALSE.
+     optimization. If at least one branch can be optimized further return \b PLL_FALSE.
 
      @param tr
        The library instance 
 
      @return
-       If at least one branch can be further optimized return \b FALSE,
-       otherwise \b TRUE.
+       If at least one branch can be further optimized return \b PLL_FALSE,
+       otherwise \b PLL_TRUE.
              
 */
 static boolean allSmoothed(pllInstance *tr, int numBranches)
 {
   int i;
-  boolean result = TRUE;
+  boolean result = PLL_TRUE;
 
   for(i = 0; i < numBranches; i++)
   {
-    if(tr->partitionSmoothed[i] == FALSE)
-      result = FALSE;
+    if(tr->partitionSmoothed[i] == PLL_FALSE)
+      result = PLL_FALSE;
     else
-      tr->partitionConverged[i] = TRUE;
+      tr->partitionConverged[i] = PLL_TRUE;
   }
 
   return result;
@@ -223,12 +223,12 @@ void smoothTree (pllInstance *tr, partitionList *pr, int maxtimes)
 
 	p = tr->start;
 	for(i = 0; i < numBranches; i++)
-		tr->partitionConverged[i] = FALSE;
+		tr->partitionConverged[i] = PLL_FALSE;
 
 	while (--maxtimes >= 0)
 	{
 		for(i = 0; i < numBranches; i++)
-			tr->partitionSmoothed[i] = TRUE;
+			tr->partitionSmoothed[i] = PLL_TRUE;
 
 		smooth(tr, pr, p->back);
 		if (!isTip(p->number, tr->mxtips))
@@ -246,7 +246,7 @@ void smoothTree (pllInstance *tr, partitionList *pr, int maxtimes)
 	}
 
 	for(i = 0; i < numBranches; i++)
-		tr->partitionConverged[i] = FALSE;
+		tr->partitionConverged[i] = PLL_FALSE;
 } 
 
 
@@ -272,12 +272,12 @@ void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
   if (isTip(p->number, tr->mxtips)) return;
 
   for(i = 0; i < NUM_BRANCHES; i++)
-    tr->partitionConverged[i] = FALSE;	
+    tr->partitionConverged[i] = PLL_FALSE;	
 
   while (--maxtimes >= 0) 
   {     
     for(i = 0; i < NUM_BRANCHES; i++)
-      tr->partitionSmoothed[i] = TRUE;
+      tr->partitionSmoothed[i] = PLL_TRUE;
 
     q = p;
     do 
@@ -293,8 +293,8 @@ void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
 
   for(i = 0; i < NUM_BRANCHES; i++)
   {
-    tr->partitionSmoothed[i] = FALSE; 
-    tr->partitionConverged[i] = FALSE;
+    tr->partitionSmoothed[i] = PLL_FALSE; 
+    tr->partitionConverged[i] = PLL_FALSE;
   }
 }
 
@@ -445,7 +445,7 @@ void smoothRegion (pllInstance *tr, partitionList *pr, nodeptr p, int region)
         q = q->next;
       }	
 
-      newviewGeneric(tr, pr,p, FALSE);
+      newviewGeneric(tr, pr,p, PLL_FALSE);
     }
   }
 }
@@ -481,12 +481,12 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
   if (isTip(p->number, tr->mxtips)) return;            /* Should be an error */
 
   for(i = 0; i < NUM_BRANCHES; i++)
-    tr->partitionConverged[i] = FALSE;
+    tr->partitionConverged[i] = PLL_FALSE;
 
   while (--maxtimes >= 0) 
   {	
     for(i = 0; i < NUM_BRANCHES; i++)
-      tr->partitionSmoothed[i] = TRUE;
+      tr->partitionSmoothed[i] = PLL_TRUE;
 
     q = p;
     do 
@@ -501,8 +501,8 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
   }
 
   for(i = 0; i < NUM_BRANCHES; i++) {
-    tr->partitionSmoothed[i] = FALSE;
-    tr->partitionConverged[i] = FALSE;
+    tr->partitionSmoothed[i] = PLL_FALSE;
+    tr->partitionConverged[i] = PLL_FALSE;
   }
 } 
 
@@ -544,7 +544,7 @@ nodeptr  removeNodeBIG (pllInstance *tr, partitionList *pr, nodeptr p, int numBr
   for(i = 0; i < numBranches; i++)
     zqr[i] = q->z[i] * r->z[i];        
 
-  makenewzGeneric(tr, pr, q, r, zqr, PLL_ITERATIONS, result, FALSE);
+  makenewzGeneric(tr, pr, q, r, zqr, PLL_ITERATIONS, result, PLL_FALSE);
 
   for(i = 0; i < numBranches; i++)        
     tr->zqr[i] = result[i];
@@ -584,8 +584,8 @@ nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
   q = p->next->back;
   r = p->next->next->back;  
 
-  newviewGeneric(tr, pr,q, FALSE);
-  newviewGeneric(tr, pr,r, FALSE);
+  newviewGeneric(tr, pr,q, PLL_FALSE);
+  newviewGeneric(tr, pr,r, PLL_FALSE);
 
   hookup(q, r, tr->currentZQR, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
@@ -623,14 +623,14 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     for(i = 0; i < numBranches; i++)
       defaultArray[i] = PLL_DEFAULTZ;
 
-    makenewzGeneric(tr, pr, q, r, qz, PLL_ITERATIONS, zqr, FALSE);
+    makenewzGeneric(tr, pr, q, r, qz, PLL_ITERATIONS, zqr, PLL_FALSE);
     /* the branch lengths values will be estimated using q, r and s
      * q-s are not connected, but both q and s have a valid LH vector , so we can call makenewzGeneric  to get a value for
      * lzsum, which is then use to generate reasonable starting values e1, e2, e3 for the new branches we create after the       insertion
      */
 
-    makenewzGeneric(tr, pr, q, s, defaultArray, PLL_ITERATIONS, zqs, FALSE);
-    makenewzGeneric(tr, pr, r, s, defaultArray, PLL_ITERATIONS, zrs, FALSE);
+    makenewzGeneric(tr, pr, q, s, defaultArray, PLL_ITERATIONS, zqs, PLL_FALSE);
+    makenewzGeneric(tr, pr, r, s, defaultArray, PLL_ITERATIONS, zrs, PLL_FALSE);
 
 
     for(i = 0; i < numBranches; i++)
@@ -675,7 +675,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     hookup(p->next->next, r, z, numBranches);
   }
 
-  newviewGeneric(tr, pr,p, FALSE);
+  newviewGeneric(tr, pr,p, PLL_FALSE);
 
   if(tr->thoroughInsertion)
   {     
@@ -688,7 +688,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     }
   }           
 
-  return  TRUE;
+  return  PLL_TRUE;
 }
 
 boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
@@ -726,9 +726,9 @@ boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr
     hookup(p->next->next, r, z, numBranches);
   }   
 
-  newviewGeneric(tr, pr,p, FALSE);
+  newviewGeneric(tr, pr,p, PLL_FALSE);
 
-  return  TRUE;
+  return  PLL_TRUE;
 }
 
 
@@ -812,7 +812,7 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
   nodeptr  r;
-  boolean doIt = TRUE;
+  boolean doIt = PLL_TRUE;
   double startLH = tr->endLH;
   int i;
 
@@ -827,9 +827,9 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   if(doIt)
   {     
-    if (! insertBIG(tr, pr, p, q))       return FALSE;
+    if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
-    evaluateGeneric(tr, pr, p->next->next, FALSE, FALSE);
+    evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
 
     if(tr->likelihood > tr->bestOfNode)
     {
@@ -869,15 +869,15 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
       tr->lhAVG += (startLH - tr->likelihood);
       tr->lhDEC++;
       if((startLH - tr->likelihood) >= tr->lhCutoff)
-        return FALSE;	    
+        return PLL_FALSE;	    
       else
-        return TRUE;
+        return PLL_TRUE;
     }
     else
-      return TRUE;
+      return PLL_TRUE;
   }
   else
-    return TRUE;  
+    return PLL_TRUE;  
 }
 
 
@@ -907,7 +907,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
   double   p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
   nodeptr  p1, p2, q, q1, q2;
   int      mintrav2, i;  
-  boolean doP = TRUE, doQ = TRUE;
+  boolean doP = PLL_TRUE, doQ = PLL_TRUE;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   if (maxtrav < 1 || mintrav > maxtrav)  return 0;
@@ -951,7 +951,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
 
       hookup(p->next,       p1, p1z, numBranches);
       hookup(p->next->next, p2, p2z, numBranches);
-      newviewGeneric(tr, pr,p, FALSE);
+      newviewGeneric(tr, pr,p, PLL_FALSE);
     }
   }  
 
@@ -1004,7 +1004,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
       hookup(q->next,       q1, q1z, numBranches);
       hookup(q->next->next, q2, q2z, numBranches);
 
-      newviewGeneric(tr, pr,q, FALSE);
+      newviewGeneric(tr, pr,q, PLL_FALSE);
     }
   } 
 
@@ -1103,7 +1103,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
 
   if(!tr->thoroughInsertion)
   {           
-    tr->thoroughInsertion = TRUE;  
+    tr->thoroughInsertion = PLL_TRUE;  
 
     for(i = 0; i < iList->valid; i++)
     { 	  
@@ -1128,7 +1128,7 @@ static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav,
       }
     }       
 
-    tr->thoroughInsertion = FALSE;
+    tr->thoroughInsertion = PLL_FALSE;
   }
 
   if(adef->permuteTreeoptimize)
@@ -1144,13 +1144,13 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
 {    
   if(tr->thoroughInsertion)
   {
-    if (! insertBIG(tr, pr, p, q))       return FALSE;
+    if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
-    evaluateGeneric(tr, pr, p->next->next, FALSE, FALSE);
+    evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
   }
   else
   {
-    if (! insertRestoreBIG(tr, pr, p, q))       return FALSE;
+    if (! insertRestoreBIG(tr, pr, p, q))       return PLL_FALSE;
 
     {
       nodeptr x, y;
@@ -1162,7 +1162,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! x->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, pr,x, FALSE);
+            newviewGeneric(tr, pr,x, PLL_FALSE);
         }
       }
 
@@ -1171,7 +1171,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! y->x)) 
         {		  
           if (! (y->x))
-            newviewGeneric(tr, pr,y, FALSE);
+            newviewGeneric(tr, pr,y, PLL_FALSE);
         }
       }
 
@@ -1180,9 +1180,9 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! x->x) || (! y->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, pr,x, FALSE);
+            newviewGeneric(tr, pr,x, PLL_FALSE);
           if (! (y->x))
-            newviewGeneric(tr, pr,y, FALSE);
+            newviewGeneric(tr, pr,y, PLL_FALSE);
         }
       }				      	
 
@@ -1191,7 +1191,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
     tr->likelihood = tr->endLH;
   }
 
-  return TRUE;
+  return PLL_TRUE;
 } 
 
 void restoreTreeFast(pllInstance *tr, partitionList *pr)
@@ -1405,12 +1405,12 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
 
     if(startAddress > tr->nodeBaseAddress)
     {
-      addIt = FALSE;
+      addIt = PLL_FALSE;
       offset = (size_t)startAddress - (size_t)tr->nodeBaseAddress;
     }
     else
     {
-      addIt = TRUE;
+      addIt = PLL_TRUE;
       offset = (size_t)tr->nodeBaseAddress - (size_t)startAddress;
     }       
 
@@ -1431,7 +1431,7 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
 
   }
 
-  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
@@ -1554,7 +1554,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
       treeReadTopologyString(tr->tree0, tr);   
 
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 0, BIPARTITIONS_RF, (branchInfo *)NULL,
-          &bCounter, 1, FALSE, FALSE, tr->threadID);
+          &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);
 
       assert(bCounter == tr->mxtips - 3);
     }
@@ -1572,7 +1572,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
       treeReadTopologyString(tr->tree1, tr); 
 
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 1, BIPARTITIONS_RF, (branchInfo *)NULL,
-          &bCounter, 1, FALSE, FALSE, tr->threadID);
+          &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);
 
       assert(bCounter == tr->mxtips - 3);
     }
@@ -1631,7 +1631,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
   masterBarrier(THREAD_COPY_INIT_MODEL, tr, pr);
 #endif
 
-  updatePerSiteRates(tr, pr, FALSE);
+  updatePerSiteRates(tr, pr, PLL_FALSE);
 
   readTree(tr, pr, f);
 
@@ -1682,7 +1682,7 @@ int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *a
     startLH = tr->likelihood; 
 
   boolean 
-    impr   = TRUE,
+    impr   = PLL_TRUE,
            cutoff = tr->doCutoff;
 
   if(adef->useCheckpoint)
@@ -1695,10 +1695,10 @@ int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *a
     impr     = tr->ckp.impr;      
     cutoff = tr->ckp.cutoff;
 
-    adef->useCheckpoint = FALSE;
+    adef->useCheckpoint = PLL_FALSE;
   }
 
-  tr->doCutoff = FALSE;      
+  tr->doCutoff = PLL_FALSE;      
 
   resetBestTree(bt);    
 
@@ -1752,10 +1752,10 @@ int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *a
       startLH = tr->likelihood; 	  	  	  
       printLog(tr);	  
       bestTrav = maxtrav;	 
-      impr = TRUE;
+      impr = PLL_TRUE;
     }
     else	
-      impr = FALSE;	
+      impr = PLL_FALSE;	
 
 
 
@@ -1840,9 +1840,9 @@ void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean
      three branches adjacent to the subtree insertion position via Newton-Raphson 
      */
 
-  tr->thoroughInsertion = FALSE;     
+  tr->thoroughInsertion = PLL_FALSE;     
 
-  /* if we are not using a checkpoint and estimateModel is set to TRUE we call the function 
+  /* if we are not using a checkpoint and estimateModel is set to PLL_TRUE we call the function 
      that optimizes model parameters, such as the CAT model assignment, the alpha paremeter
      or the rates in the GTR matrix. Otherwise we just optimize the branch lengths. Note that 
      the second parameter of treeEvaluate() controls how many times we will iterate over all branches 
@@ -1865,7 +1865,7 @@ void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean
 
   saveBestTree(bestT, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
-  /* if the rearrangmenet radius has been set by the user ie. adef->initailSet == TRUE 
+  /* if the rearrangmenet radius has been set by the user ie. adef->initailSet == PLL_TRUE 
      then just set the apppropriate parameter.
      Otherwise, call the function  determineRearrangementSetting() that seeks 
      for the best radius by executing SPR moves on the initial tree with different radii
@@ -1904,7 +1904,7 @@ void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean
 
   saveBestTree(bestT, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
-  /* set the loop variable to TRUE */
+  /* set the loop variable to PLL_TRUE */
 
   impr = 1;
 
@@ -1949,7 +1949,7 @@ START_FAST_SPRS:
 
       restoreTreeDataValuesFromCheckpoint(tr);	  
 
-      adef->useCheckpoint = FALSE;
+      adef->useCheckpoint = PLL_FALSE;
     }
     else
       /* otherwise, restore the currently best tree */
@@ -1985,7 +1985,7 @@ START_FAST_SPRS:
         cleanupHashTable(tr->h, (fastIterations % 2));		
       
       bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, fastIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
-          &bCounter, 1, FALSE, FALSE, tr->threadID);	    
+          &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);	    
 
       {
         char 
@@ -1994,7 +1994,7 @@ START_FAST_SPRS:
         printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-        Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, PLL_SUMMARIZE_LH, FALSE, FALSE);
+        Tree2String(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
         if(fastIterations % 2 == 0)	      
           memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2043,7 +2043,7 @@ START_FAST_SPRS:
 
     /* print this intermediate tree to file */
 
-    printResult(tr, pr, adef, FALSE);
+    printResult(tr, pr, adef, PLL_FALSE);
 
     /* update the current best likelihood */
 
@@ -2117,7 +2117,7 @@ cleanup_fast:
      hill climbing algo.
      */
 
-  tr->thoroughInsertion = TRUE;
+  tr->thoroughInsertion = PLL_TRUE;
   impr = 1;
 
   /* restore the currently best tree. this si actually required, because we do not know which tree
@@ -2128,7 +2128,7 @@ cleanup_fast:
   {
     /* RE-TRAVERSE THE ENTIRE TREE */
 
-    evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After Fast SPRs Final %f\n", tr->likelihood);   
 #endif
@@ -2165,7 +2165,7 @@ START_SLOW_SPRS:
 
       restoreTreeDataValuesFromCheckpoint(tr);	  
 
-      adef->useCheckpoint = FALSE;
+      adef->useCheckpoint = PLL_FALSE;
     }
     else
       /* otherwise we restore the currently best tree and load it from bestT into our tree data 
@@ -2193,7 +2193,7 @@ START_SLOW_SPRS:
     if(impr)
     {
       /* if the logl has improved write out some stuff and adapt the rearrangement radii */
-      printResult(tr, pr, adef, FALSE);
+      printResult(tr, pr, adef, PLL_FALSE);
       /* minimum rearrangement radius */
       rearrangementsMin = 1;
       /* max radius, this is probably something I need to explain at the whiteboard */
@@ -2209,7 +2209,7 @@ START_SLOW_SPRS:
           cleanupHashTable(tr->h, (thoroughIterations % 2));		
 
         bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, thoroughIterations % 2, BIPARTITIONS_RF, (branchInfo *)NULL,
-            &bCounter, 1, FALSE, FALSE, tr->threadID);	    
+            &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);	    
 
 
         {
@@ -2220,7 +2220,7 @@ START_SLOW_SPRS:
           printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 
-          Tree2String(buffer, tr, pr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, PLL_SUMMARIZE_LH, FALSE, FALSE);
+          Tree2String(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
           if(thoroughIterations % 2 == 0)	      
             memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2309,7 +2309,7 @@ cleanup:
   /* do a final full tree traversal, not sure if this is required here */
 
   {
-    evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("After SLOW SPRs Final %f\n", tr->likelihood);   
@@ -2335,7 +2335,7 @@ cleanup:
 
   printLog(tr);
 
-  printResult(tr, pr, adef, TRUE);
+  printResult(tr, pr, adef, PLL_TRUE);
 
   /* and we are done, return to main() in axml.c  */
 
@@ -2349,9 +2349,9 @@ treeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)      
 {
   smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
-  evaluateGeneric(tr, pr, tr->start, FALSE, FALSE);
+  evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
 
-  return TRUE;
+  return PLL_TRUE;
 }
 
 /** @brief Perform an NNI move

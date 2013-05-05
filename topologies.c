@@ -363,8 +363,8 @@ static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
   
   tr->nextnode   = tpl->nextnode;    
 
-  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
-  return TRUE;
+  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  return PLL_TRUE;
 }
 
 
@@ -383,7 +383,7 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
       bt->nvalid   = 0;
       bt->numtrees = 0;
       bt->best     = PLL_UNLIKELY;
-      bt->improved = FALSE;
+      bt->improved = PLL_FALSE;
       bt->byScore  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
       bt->byTopol  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
       if (! bt->byScore || ! bt->byTopol) {
@@ -429,7 +429,7 @@ void resetBestTree (bestlist *bt)
   bt->best     = PLL_UNLIKELY;
   bt->worst    = PLL_UNLIKELY;
   bt->nvalid   = 0;
-  bt->improved = FALSE;
+  bt->improved = PLL_FALSE;
 } /* resetBestTree */
 
 
@@ -445,7 +445,7 @@ boolean  freeBestTree(bestlist *bt)
   /* VALGRIND END */
 
   freeTopol(bt->start);
-  return TRUE;
+  return PLL_TRUE;
 } /* freeBestTree */
 
 
@@ -575,7 +575,7 @@ int  saveBestTree (bestlist *bt, pllInstance *tr, int numBranches)
     reuseScrNum = newValid;              /* Take worst tree */
     reuse = bt->byScore[reuseScrNum];
     reuseTplNum = (newValid > oldValid) ? newValid : reuse->tplNum;
-    if (tr->likelihood > bt->start->likelihood) bt->improved = TRUE;
+    if (tr->likelihood > bt->start->likelihood) bt->improved = PLL_TRUE;
   }
   
   scrNum = findInList((void *) tpl, (void **) (& (bt->byScore[1])),
@@ -620,7 +620,7 @@ int  recallBestTree (bestlist *bt, int rank, pllInstance *tr, partitionList *pr)
 { 
   if (rank < 1)  rank = 1;
   if (rank > bt->nvalid)  rank = bt->nvalid;
-  if (rank > 0)  if (! restoreTree(bt->byScore[rank], tr, pr)) return FALSE;
+  if (rank > 0)  if (! restoreTree(bt->byScore[rank], tr, pr)) return PLL_FALSE;
   return  rank;
 }
 

@@ -1649,7 +1649,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 							  pr->partitionData[model]->EV_LG4,
 							  pr->partitionData[model]->tipVector_LG4,
 							  (int*)NULL, tipX1, tipX2,
-							  width, left, right, wgt, &scalerIncrement, TRUE);
+							  width, left, right, wgt, &scalerIncrement, PLL_TRUE);
 #else
 			      newviewGTRGAMMAPROT_LG4(tInfo->tipCase,
 						      x1_start, x2_start, x3_start,
@@ -1657,7 +1657,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 						      pr->partitionData[model]->tipVector_LG4,
 						      (int*)NULL, tipX1, tipX2,
 						      width, left, right, 
-						      wgt, &scalerIncrement, TRUE);
+						      wgt, &scalerIncrement, PLL_TRUE);
 #endif			    
 			    }
               else
@@ -1750,11 +1750,11 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
   tr->td[0].count = 0;
 
   /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
-  computeTraversal(tr, p, TRUE, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
+  computeTraversal(tr, p, PLL_TRUE, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
-  tr->td[0].traversalHasChanged = TRUE;
+  tr->td[0].traversalHasChanged = PLL_TRUE;
 
   /* We do a masked newview, i.e., do not execute newvies for each partition, when for example 
      doing a branch length optimization on the entire tree when branches are estimated on a per partition basis.
@@ -1779,9 +1779,9 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
     for(model = 0; model < pr->numberOfPartitions; model++)
     {
       if(tr->partitionConverged[model])
-        pr->partitionData[model]->executeModel = FALSE;
+        pr->partitionData[model]->executeModel = PLL_FALSE;
       else
-        pr->partitionData[model]->executeModel = TRUE;
+        pr->partitionData[model]->executeModel = PLL_TRUE;
     }
   }
 
@@ -1814,10 +1814,10 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
     int model;
 
     for(model = 0; model < pr->numberOfPartitions; model++)
-      pr->partitionData[model]->executeModel = TRUE;
+      pr->partitionData[model]->executeModel = PLL_TRUE;
   }
 
-  tr->td[0].traversalHasChanged = FALSE;
+  tr->td[0].traversalHasChanged = PLL_FALSE;
 }
 
 /* function to compute the marginal ancestral probability vector at a node p for CAT/PSR model */
@@ -2045,7 +2045,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
 	  
 	  requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
 	  
-	  /* make sure that this vector had already been allocated. This must be true since we first invoked a standard newview() on this */
+	  /* make sure that this vector had already been allocated. This must be PLL_TRUE since we first invoked a standard newview() on this */
 
 	  assert(requiredLength == availableLength);                        	  	 
 
@@ -2096,9 +2096,9 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
       return;
     }
 
-  /* first call newviewGeneric() with mask set to FALSE such that the likelihood vector is there ! */
+  /* first call newviewGeneric() with mask set to PLL_FALSE such that the likelihood vector is there ! */
 
-  newviewGeneric(tr, pr, p, FALSE);
+  newviewGeneric(tr, pr, p, PLL_FALSE);
 
   /* now let's compute the ancestral states using this vector ! */
   
@@ -2107,12 +2107,12 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 
   tr->td[0].count = 0;
 
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions:1, TRUE, tr->rvec, tr->useRecom);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions:1, PLL_TRUE, tr->rvec, tr->useRecom);
 
-  tr->td[0].traversalHasChanged = TRUE;
+  tr->td[0].traversalHasChanged = PLL_TRUE;
 
   /* here we actually assert, that the traversal descriptor only contains one node triplet p, p->next->back, p->next->next->back
-     this must be true because we have alread invoked the standard newviewGeneric() on p.
+     this must be PLL_TRUE because we have alread invoked the standard newviewGeneric() on p.
   */ 
 
   assert(tr->td[0].count == 1);  
@@ -2128,7 +2128,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
   newviewAncestralIterative(tr, pr);
 #endif
 
-  tr->td[0].traversalHasChanged = FALSE;
+  tr->td[0].traversalHasChanged = PLL_FALSE;
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* invoke another parallel region to gather the marginal ancestral probabilities 
@@ -2215,7 +2215,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
 	    max = -1.0;
 	    
 	  boolean
-	    approximatelyEqual = TRUE;
+	    approximatelyEqual = PLL_TRUE;
 
 	  int
 	    max_l = -1,
@@ -4354,7 +4354,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
         _mm_store_pd(&x3[0], _mm_mul_pd(EV_t_l0_k0, sc));
         _mm_store_pd(&x3[2], _mm_mul_pd(EV_t_l2_k0, sc));	      	      
 
-        scaleGap = TRUE;	   
+        scaleGap = PLL_TRUE;	   
       }	
       else
       {
@@ -6008,7 +6008,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
           _mm_store_pd(&v[l], _mm_mul_pd(ex3v,twoto));	
         }		   		  
 
-        scaleGap = TRUE;	   
+        scaleGap = PLL_TRUE;	   
       }
     }
   }

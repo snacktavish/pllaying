@@ -904,7 +904,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
   volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
   int i, maxiter[NUM_BRANCHES], model;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
-  boolean firstIteration = TRUE;
+  boolean firstIteration = PLL_TRUE;
   boolean outerConverged[NUM_BRANCHES];
   boolean loopConverged;
 
@@ -920,8 +920,8 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
   {
     z[i] = z0[i];
     maxiter[i] = _maxiter;
-    outerConverged[i] = FALSE;
-    tr->curvatOK[i]       = TRUE;
+    outerConverged[i] = PLL_FALSE;
+    tr->curvatOK[i]       = PLL_TRUE;
   }
 
 
@@ -934,9 +934,9 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     for(i = 0; i < numBranches; i++)
     {
-      if(outerConverged[i] == FALSE && tr->curvatOK[i] == TRUE)
+      if(outerConverged[i] == PLL_FALSE && tr->curvatOK[i] == PLL_TRUE)
       {
-        tr->curvatOK[i] = FALSE;
+        tr->curvatOK[i] = PLL_FALSE;
 
         zprev[i] = z[i];
 
@@ -949,7 +949,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
       /* other case, the outer loop hasn't converged but we are trying to approach 
          the maximum from the wrong side */
 
-      if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
+      if(outerConverged[i] == PLL_FALSE && tr->curvatOK[i] == PLL_FALSE)
       {
         double lz;
 
@@ -997,10 +997,10 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     if(firstIteration)
       {
-	tr->td[0].traversalHasChanged = TRUE; 
+	tr->td[0].traversalHasChanged = PLL_TRUE; 
 	masterBarrier(THREAD_MAKENEWZ_FIRST, tr, pr);
-	firstIteration = FALSE; 
-	tr->td[0].traversalHasChanged = FALSE; 
+	firstIteration = PLL_FALSE; 
+	tr->td[0].traversalHasChanged = PLL_FALSE; 
       }
     else 
       masterBarrier(THREAD_MAKENEWZ, tr, pr);
@@ -1012,7 +1012,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
     if(firstIteration)
       {
 	makenewzIterative(tr, pr);
-	firstIteration = FALSE;
+	firstIteration = PLL_FALSE;
       }
     execCore(tr, pr, dlnLdlz, d2lnLdlz2);
 #endif
@@ -1022,12 +1022,12 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     for(i = 0; i < numBranches; i++)
     {
-      if(outerConverged[i] == FALSE && tr->curvatOK[i] == FALSE)
+      if(outerConverged[i] == PLL_FALSE && tr->curvatOK[i] == PLL_FALSE)
       {
         if ((d2lnLdlz2[i] >= 0.0) && (z[i] < PLL_ZMAX))
           zprev[i] = z[i] = 0.37 * z[i] + 0.63;  /*  Bad curvature, shorten branch */
         else
-          tr->curvatOK[i] = TRUE;
+          tr->curvatOK[i] = PLL_TRUE;
       }
     }
 
@@ -1035,7 +1035,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     for(i = 0; i < numBranches; i++)
     {
-      if(tr->curvatOK[i] == TRUE && outerConverged[i] == FALSE)
+      if(tr->curvatOK[i] == PLL_TRUE && outerConverged[i] == PLL_FALSE)
       {
         if (d2lnLdlz2[i] < 0.0)
         {
@@ -1060,15 +1060,15 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
         /* check if the outer loop has converged */
         if(maxiter[i] > 0 && (ABS(z[i] - zprev[i]) > zstep[i]))
-          outerConverged[i] = FALSE;
+          outerConverged[i] = PLL_FALSE;
         else
-          outerConverged[i] = TRUE;
+          outerConverged[i] = PLL_TRUE;
       }
     }
 
     /* check if the loop has converged for all partitions */
 
-    loopConverged = TRUE;
+    loopConverged = PLL_TRUE;
     for(i = 0; i < numBranches; i++)
       loopConverged = loopConverged && outerConverged[i];
   }
@@ -1078,7 +1078,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
   /* reset  partition execution mask */
 
   for(model = 0; model < pr->numberOfPartitions; model++)
-    pr->partitionData[model]->executeModel = TRUE;
+    pr->partitionData[model]->executeModel = PLL_TRUE;
 
   /* copy the new branches in the result array of branches.
      if we don't do a per partition estimate of 
@@ -1126,8 +1126,8 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   boolean 
-    p_recom = FALSE, /* if one of was missing, we will need to force recomputation */
-    q_recom = FALSE;
+    p_recom = PLL_FALSE, /* if one of was missing, we will need to force recomputation */
+    q_recom = PLL_FALSE;
 
   /* the first entry of the traversal descriptor stores the node pair that defines 
      the branch */
@@ -1142,9 +1142,9 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
     if(mask)
     {
       if (tr->partitionConverged[i])
-        pr->partitionData[i]->executeModel = FALSE;
+        pr->partitionData[i]->executeModel = PLL_FALSE;
       else
-        pr->partitionData[i]->executeModel = TRUE;
+        pr->partitionData[i]->executeModel = PLL_TRUE;
     }
   }
   if (tr->useRecom)
@@ -1173,10 +1173,10 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
   tr->td[0].count = 1;
 
   if(p_recom || needsRecomp(tr->useRecom, tr->rvec, p, tr->mxtips))
-    computeTraversal(tr, p, TRUE, numBranches);
+    computeTraversal(tr, p, PLL_TRUE, numBranches);
 
   if(q_recom || needsRecomp(tr->useRecom, tr->rvec, q, tr->mxtips))
-    computeTraversal(tr, q, TRUE, numBranches);
+    computeTraversal(tr, q, PLL_TRUE, numBranches);
 
   /* call the Newton-Raphson procedure */
 
@@ -1192,7 +1192,7 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
   /* fix eceuteModel this seems to be a bit redundant with topLevelMakenewz */ 
 
   for(i = 0; i < numBranches; i++)
-    pr->partitionData[i]->executeModel = TRUE;
+    pr->partitionData[i]->executeModel = PLL_TRUE;
 }
 
 

@@ -54,7 +54,7 @@ static boolean treeNeedString(const char *fp, char c1, int *position)
     c2 = fp[(*position)++];
   
   if(c2 == c1)  
-    return TRUE;
+    return PLL_TRUE;
   else  
     {   
       int 
@@ -69,7 +69,7 @@ static boolean treeNeedString(const char *fp, char c1, int *position)
       
       printf("\n");
 
-      return FALSE;
+      return PLL_FALSE;
   }
 } 
 
@@ -89,12 +89,12 @@ static boolean treeLabelEndString (char ch)
     case '(':   
     case ')':  
     case ';':
-      return TRUE;
+      return PLL_TRUE;
     default:
       break;
     }
   
-  return FALSE;
+  return PLL_FALSE;
 } 
 
 static boolean  treeGetLabelString (const char *fp, char *lblPtr, int maxlen, int *position)
@@ -156,7 +156,7 @@ static boolean treeProcessLengthString (const char *fp, double *dptr, int *posit
   while(fp[*position] != ',' && fp[*position] != ')' && fp[*position] != ';')
     *position = *position + 1;
   
-  return  TRUE;
+  return  PLL_TRUE;
 }
 
 static int treeFlushLenString (const char *fp, int *position)
@@ -231,24 +231,24 @@ static boolean addElementLenString(const char *fp, pllInstance *tr, nodeptr p, i
 	    {
 	      printf("ERROR: Too many internal nodes.  Is tree rooted?\n");
 	      printf("       Deepest splitting should be a trifurcation.\n");
-	      return FALSE;
+	      return PLL_FALSE;
 	    }
 	  else 
 	    {	   
-	      tr->rooted = TRUE;
+	      tr->rooted = PLL_TRUE;
 	    }
 	}
       
       q = tr->nodep[n];
 
       if (!addElementLenString(fp, tr, q->next, position))        
-	return FALSE;
+	return PLL_FALSE;
       if (!treeNeedString(fp, ',', position))             
-	return FALSE;
+	return PLL_FALSE;
       if (!addElementLenString(fp, tr, q->next->next, position))  
-	return FALSE;
+	return PLL_FALSE;
       if (!treeNeedString(fp, ')', position))             
-	return FALSE;
+	return PLL_FALSE;
       
      
       treeFlushLabelString(fp, position);
@@ -258,7 +258,7 @@ static boolean addElementLenString(const char *fp, pllInstance *tr, nodeptr p, i
       (*position)--;
      
       if ((n = treeFindTipNameString(fp, tr, position)) <= 0)          
-	return FALSE;
+	return PLL_FALSE;
       q = tr->nodep[n];
       
       if (tr->start->number > n)  
@@ -269,11 +269,11 @@ static boolean addElementLenString(const char *fp, pllInstance *tr, nodeptr p, i
      
   fres = treeFlushLenString(fp, position);
   if(!fres) 
-    return FALSE;
+    return PLL_FALSE;
   
   hookupDefault(p, q);
 
-  return TRUE;          
+  return PLL_TRUE;          
 }
 
 
@@ -311,7 +311,7 @@ void treeReadTopologyString(char *treeString, pllInstance *tr)
   tr->start       = tr->nodep[1];
   tr->ntips       = 0;
   tr->nextnode    = tr->mxtips + 1;    
-  tr->rooted      = FALSE;      
+  tr->rooted      = PLL_FALSE;      
   
   p = tr->nodep[(tr->nextnode)++]; 
    

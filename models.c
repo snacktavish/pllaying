@@ -3775,7 +3775,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 	  switch(tr->secondaryStructureModel)
 	    {
 	    case SEC_6_A:
-	    	partitions->partitionData[model]->nonGTR = FALSE;
+	    	partitions->partitionData[model]->nonGTR = PLL_FALSE;
 	      break;
 	    case SEC_6_B:
 	      {
@@ -3784,7 +3784,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 		  
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
 	    case SEC_6_C:
@@ -3794,7 +3794,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 		
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
 	    case SEC_6_D:
@@ -3804,7 +3804,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
 	    case SEC_6_E:
@@ -3814,11 +3814,11 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 15, f, partitions->partitionData[model]->frequencyGrouping, 6);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
 	    case SEC_7_A:
-	    	partitions->partitionData[model]->nonGTR = FALSE;
+	    	partitions->partitionData[model]->nonGTR = PLL_FALSE;
 	      break;
 	    case SEC_7_B:
 	      {
@@ -3827,7 +3827,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 	      }
 	      break;
@@ -3838,7 +3838,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 	      }
 	      break;
@@ -3849,7 +3849,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 	      }
 	      break;
@@ -3860,7 +3860,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 	      }
 	      break;
@@ -3871,13 +3871,13 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 21, f, partitions->partitionData[model]->frequencyGrouping, 7);
 
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 	      }
 	      break;
 	      
 	    case SEC_16:
-	    	partitions->partitionData[1]->nonGTR = FALSE;
+	    	partitions->partitionData[1]->nonGTR = PLL_FALSE;
 	      break;
 	    case SEC_16_A:
 	      {
@@ -3901,7 +3901,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 120, f, partitions->partitionData[model]->frequencyGrouping, 16);
 			      
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 
 		}
 	      break;
@@ -3927,7 +3927,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		
 		setSymmetry(s, partitions->partitionData[model]->symmetryVector, 120, f, partitions->partitionData[model]->frequencyGrouping, 16);
 			      
-		partitions->partitionData[model]->nonGTR = TRUE;
+		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
 	    case SEC_16_C:	      
@@ -3982,7 +3982,7 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
 	  partitions->partitionData[model]->perSiteRates[0] = 1.0;
     }
     
-  updatePerSiteRates(tr, partitions, FALSE);
+  updatePerSiteRates(tr, partitions, PLL_FALSE);
  
   setupSecondaryStructureSymmetries(tr, partitions);
   

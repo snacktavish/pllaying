@@ -186,7 +186,7 @@ static linkageList* initLinkageList(int *linkList, partitionList *pr)
 	 associated to the corresponding partitions. This deature is used in optRatesGeneric 
 	 to first optimize all DNA GTR rate matrices and then all PROT GTR rate matrices */
 
-      ll->ld[i].valid = TRUE;
+      ll->ld[i].valid = PLL_TRUE;
       partitions = 0;
 
       /* now figure out how many partitions share this joint parameter */
@@ -344,7 +344,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 	      if(converged[pos])
 		{		 
 		  for(k = 0; k < ll->ld[i].partitions; k++)
-		    pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = FALSE;
+		    pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
 		}
 	      else
 		{
@@ -368,7 +368,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 	  else
 	    {
 	      for(k = 0; k < ll->ld[i].partitions; k++)
-	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = FALSE;
+	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
 	    }
 	 
 	}
@@ -379,7 +379,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
       masterBarrier(THREAD_OPT_RATE, tr, pr);
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
-      evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif     
       
       /* update likelihoods and the sum of per-partition likelihoods for those partitions that share the parameter.
@@ -404,7 +404,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 	   for(k = 0; k < ll->ld[i].partitions; k++)
 	     {
 	       int index = ll->ld[i].partitionList[k];
-	       pr->partitionData[index]->executeModel = TRUE;
+	       pr->partitionData[index]->executeModel = PLL_TRUE;
 	     }	  
 	}
 
@@ -419,14 +419,14 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 	  if(converged[i])
 	    {
 	      for(k = 0; k < ll->ld[i].partitions; k++)
-	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = FALSE;
+	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
 	    }
 	  else
 	    {
 	      for(k = 0; k < ll->ld[i].partitions; k++)
 		{
 		  int index = ll->ld[i].partitionList[k];
-		  pr->partitionData[index]->executeModel = TRUE;
+		  pr->partitionData[index]->executeModel = PLL_TRUE;
 		  pr->partitionData[index]->alpha = value[i];
 
 		  /* re-compute the discrete gamma function approximation for the new alpha parameter */
@@ -437,7 +437,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 #if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
       masterBarrier(THREAD_OPT_ALPHA, tr, pr);
 #else  
-      evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif
             
       for(i = 0; i < ll->entries; i++)	
@@ -451,7 +451,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 	      assert(pr->partitionData[index]->partitionLH <= 0.0);
 	      
 	      result[i] -= pr->partitionData[index]->partitionLH;
-	      pr->partitionData[index]->executeModel = TRUE;
+	      pr->partitionData[index]->executeModel = PLL_TRUE;
 	    }
 	}
       break;
@@ -491,7 +491,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
   boolean allConverged;
   
   for(i = 0; i < numberOfModels; i++)    
-    converged[i] = FALSE;
+    converged[i] = PLL_FALSE;
 
   for(i = 0; i < numberOfModels; i++)
     {
@@ -520,7 +520,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
   for(iter = 1; iter <= ITMAX; iter++)
     {
-      allConverged = TRUE;
+      allConverged = PLL_TRUE;
 
       for(i = 0; i < numberOfModels && allConverged; i++)
 	allConverged = allConverged && converged[i];
@@ -567,7 +567,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 		{		 
 		  result[i] =  -fx[i];
 		  xmin[i]   = x[i];
-		  converged[i] = TRUE;		  
+		  converged[i] = PLL_TRUE;		  
 		}
 	      else
 		{
@@ -703,7 +703,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
   boolean allConverged;
 
   for(i = 0; i < numberOfModels; i++)
-    converged[i] = FALSE;
+    converged[i] = PLL_FALSE;
 
   for(i = 0; i < numberOfModels; i++)
     {
@@ -765,7 +765,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 
    while(1) 
      {       
-       allConverged = TRUE;
+       allConverged = PLL_TRUE;
 
        for(i = 0; i < numberOfModels && allConverged; i++)
 	 allConverged = allConverged && converged[i];
@@ -813,7 +813,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 		 case 0:
 		   endState[i] = 0;
 		   if(!(fb[i] > fc[i]))		         
-		     converged[i] = TRUE;		       		     
+		     converged[i] = PLL_TRUE;		       		     
 		   else
 		     {
 		   
@@ -927,7 +927,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 		       bx[i]=u[i];
 		       fa[i]=(fb[i]);
 		       fb[i]=fu[i]; 
-		       converged[i] = TRUE;		      
+		       converged[i] = PLL_TRUE;		      
 		     } 
 		   else 
 		     {
@@ -936,7 +936,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 			   assert(u[i] >= lim_inf && u[i] <= lim_sup);
 			   cx[i]=u[i];
 			   fc[i]=fu[i];
-			   converged[i] = TRUE;			  
+			   converged[i] = PLL_TRUE;			  
 			 }
 		       else
 			 {		   
@@ -1031,7 +1031,7 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
    int revertModel = 0;
 #endif   
 
-   evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
    
    /* 
      at this point here every worker has the traversal data it needs for the 
@@ -1149,7 +1149,7 @@ static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, li
 
   startRates = (double *)rax_malloc(sizeof(double) * numberOfRates * numberOfModels);
 
-  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   
   /* 
      at this point here every worker has the traversal data it needs for the 
@@ -1285,14 +1285,14 @@ static boolean AAisGTR(partitionList *pr)
 	{
 	  count++;
 	  if(pr->partitionData[i]->protModels != GTR)
-	    return FALSE;
+	    return PLL_FALSE;
 	}
     }
 
   if(count == 0)
-    return FALSE;
+    return PLL_FALSE;
 
-  return TRUE;
+  return PLL_TRUE;
 }
 
 
@@ -1322,7 +1322,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	{
 	case DNA_DATA:	
 	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	  ll->ld[i].valid = TRUE;
+	  ll->ld[i].valid = PLL_TRUE;
 	  dnaPartitions++;  
 	  break;
 	case BINARY_DATA:
@@ -1332,7 +1332,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	case SECONDARY_DATA_7:
 	case GENERIC_32:
 	case GENERIC_64:
-	  ll->ld[i].valid = FALSE;
+	  ll->ld[i].valid = PLL_FALSE;
 	  break;
 	default:
 	  assert(0);
@@ -1358,19 +1358,19 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	case SECONDARY_DATA_6:
 	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 	  secondaryModel = SECONDARY_DATA_6;
-	  ll->ld[i].valid = TRUE;
+	  ll->ld[i].valid = PLL_TRUE;
 	  secondaryPartitions++;  
 	  break;
 	case SECONDARY_DATA_7: 
 	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 	  secondaryModel = SECONDARY_DATA_7;
-	  ll->ld[i].valid = TRUE;
+	  ll->ld[i].valid = PLL_TRUE;
 	  secondaryPartitions++;  
 	  break;
 	case SECONDARY_DATA:
 	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 	  secondaryModel = SECONDARY_DATA;
-	  ll->ld[i].valid = TRUE;
+	  ll->ld[i].valid = PLL_TRUE;
 	  secondaryPartitions++;  
 	  break;
 	case BINARY_DATA:
@@ -1378,7 +1378,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	case DNA_DATA:
 	case GENERIC_32:
 	case GENERIC_64:
-	  ll->ld[i].valid = FALSE;
+	  ll->ld[i].valid = PLL_FALSE;
 	  break;
 	default:
 	  assert(0);
@@ -1422,7 +1422,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	    {
 	    case AA_DATA:
 	      states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	      ll->ld[i].valid = TRUE;
+	      ll->ld[i].valid = PLL_TRUE;
 	      aaPartitions++;
 	      break;
 	    case DNA_DATA:	    
@@ -1430,7 +1430,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	    case SECONDARY_DATA:	
 	    case SECONDARY_DATA_6:
 	    case SECONDARY_DATA_7:
-	      ll->ld[i].valid = FALSE;
+	      ll->ld[i].valid = PLL_FALSE;
 	      break;
 	    default:
 	      assert(0);
@@ -1461,11 +1461,11 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 		
 		states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 
-		ll->ld[i].valid = TRUE;
+		ll->ld[i].valid = PLL_TRUE;
 		
 		for(k = 0; k < ll->entries; k++)
 		  if(k != i)
-		    ll->ld[k].valid = FALSE;
+		    ll->ld[k].valid = PLL_FALSE;
 		
 		optRates(tr, pr, modelEpsilon, ll, 1, states);
 	      }
@@ -1487,7 +1487,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
   /* done with all partitions, so we can set all entries in the linkage list to valid again :-) */
 
   for(i = 0; i < ll->entries; i++)
-    ll->ld[i].valid = TRUE;
+    ll->ld[i].valid = PLL_TRUE;
 }
 
 
@@ -1744,7 +1744,7 @@ static void optRateCatModel(pllInstance *tr, partitionList *pr, int model, doubl
 
 
 /* 
-   set scaleRates to FALSE everywhere such that 
+   set scaleRates to PLL_FALSE everywhere such that 
    per-site rates are not scaled to obtain an overall mean rate 
    of 1.0
 */
@@ -2007,7 +2007,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
   
       assert(isTip(tr->start->number, tr->mxtips));         
       
-      evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
       if(tr->optimizeRateCategoryInvocations == 1)
 	{
@@ -2112,9 +2112,9 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
 	  rax_free(rc);
 	}
         	
-      updatePerSiteRates(tr, pr, TRUE);
+      updatePerSiteRates(tr, pr, PLL_TRUE);
 
-      evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       
       if(tr->likelihood < initialLH)
 	{	 		  
@@ -2127,9 +2127,9 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
 	  memcpy(tr->patratStored, ratStored, sizeof(double) * tr->originalCrunchedLength);
 	  memcpy(tr->rateCategory, oldCategory, sizeof(int) * tr->originalCrunchedLength);	     
 	  
-	  updatePerSiteRates(tr, pr, FALSE);
+	  updatePerSiteRates(tr, pr, PLL_FALSE);
 	  
-	  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 	  /* printf("REVERT: %1.40f %1.40f\n", initialLH, tr->likelihood); */
 
@@ -2302,7 +2302,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 #endif
 	  
 	  resetBranches(tr);
-	  evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 	  treeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
 
 	  for(model = 0; model < pr->numberOfPartitions; model++)
@@ -2340,7 +2340,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 #endif
 
       resetBranches(tr);
-      evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       treeEvaluate(tr, pr, 16); // 0.5 * 32 = 16
       
       /*printf("Exit: %f\n", tr->likelihood);*/
@@ -2397,7 +2397,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     optRatesGeneric(tr, pr, modelEpsilon, rateList);
 
-    evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
     autoProtein(tr, pr);
 
@@ -2407,7 +2407,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     {
       case GAMMA:      
         optAlpha(tr, pr, modelEpsilon, alphaList);
-        evaluateGeneric(tr, pr, tr->start, TRUE, FALSE);
+        evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
         treeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
         break;
       case CAT:

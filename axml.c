@@ -594,8 +594,8 @@ static int mygetopt(int argc, char **argv, char *opts, int *optind, char **optar
 static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
 {
   boolean
-    bad_opt    =FALSE,
-               resultDirSet = FALSE;
+    bad_opt    =PLL_FALSE,
+               resultDirSet = PLL_FALSE;
 
   char
     resultDir[1024] = "",
@@ -614,7 +614,7 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
            modelSet = 0;
 
   boolean
-    byteFileSet = FALSE;
+    byteFileSet = PLL_FALSE;
 
 
 
@@ -623,28 +623,28 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
   /*********** tr inits **************/
 
   tr->numberOfThreads = 1;
-  tr->doCutoff = TRUE;
+  tr->doCutoff = PLL_TRUE;
   tr->secondaryStructureModel = SEC_16; /* default setting */
-  tr->searchConvergenceCriterion = FALSE;
+  tr->searchConvergenceCriterion = PLL_FALSE;
   tr->rateHetModel = GAMMA;
 
   tr->multiStateModel  = GTR_MULTI_STATE;
-  tr->saveMemory = FALSE;
+  tr->saveMemory = PLL_FALSE;
 
-  tr->manyPartitions = FALSE;
+  tr->manyPartitions = PLL_FALSE;
 
   tr->startingTree = randomTree;
   tr->randomNumberSeed = 12345;
 
   tr->categories             = 25;
 
-  tr->grouped = FALSE;
-  tr->constrained = FALSE;
+  tr->grouped = PLL_FALSE;
+  tr->constrained = PLL_FALSE;
 
   tr->gapyness               = 0.0;
-  tr->useMedian = FALSE;
+  tr->useMedian = PLL_FALSE;
   /* recom */
-  tr->useRecom = FALSE;
+  tr->useRecom = PLL_FALSE;
   tr->rvec = (recompVectors*)NULL;
   /* recom */
 
@@ -658,7 +658,7 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
     switch(c)
     {
       case 'a':
-        tr->useMedian = TRUE;
+        tr->useMedian = PLL_TRUE;
         break;
       case 'p':
         tr->startingTree = parsimonyTree;
@@ -679,34 +679,34 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
           printf("Maximum memory to be used in MB passed via -L must be greater than zero zero.\n");
           exit(-1);
         }
-        tr->useRecom = TRUE; /* This might be disabled after parsing the alignment if the user limit is low */
+        tr->useRecom = PLL_TRUE; /* This might be disabled after parsing the alignment if the user limit is low */
         break;
 
         /* E recom */
       case 'Q':
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-        tr->manyPartitions = TRUE;
+        tr->manyPartitions = PLL_TRUE;
 #else
         printf("The \"-Q\" option does not have an effect in the sequential version\n");
-        tr->manyPartitions = FALSE;
+        tr->manyPartitions = PLL_FALSE;
 #endif
         break;
       case 's':
         strcpy(byteFileName, optarg);
-        byteFileSet = TRUE;
+        byteFileSet = PLL_TRUE;
         break;
       case 'S':
-        tr->saveMemory = TRUE;
+        tr->saveMemory = PLL_TRUE;
         break;
       case 'D':
-        tr->searchConvergenceCriterion = TRUE;
+        tr->searchConvergenceCriterion = PLL_TRUE;
         break;
       case 'R':
-        adef->useCheckpoint = TRUE;
+        adef->useCheckpoint = PLL_TRUE;
         strcpy(binaryCheckpointInputName, optarg);
         break;
       case 'M':
-        adef->perGeneBranchLengths = TRUE;
+        adef->perGeneBranchLengths = PLL_TRUE;
         break;
       case 'T':
 #ifdef _USE_PTHREADS
@@ -738,15 +738,15 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
         {
           case 'd':
             adef->mode = BIG_RAPID_MODE;
-            tr->doCutoff = TRUE;
+            tr->doCutoff = PLL_TRUE;
             break;
           case 'o':
             adef->mode = BIG_RAPID_MODE;
-            tr->doCutoff = FALSE;
+            tr->doCutoff = PLL_FALSE;
             break;
           case 'b':
             adef->mode = GPU_BENCHMARK;
-            tr->doCutoff = TRUE;
+            tr->doCutoff = PLL_TRUE;
             break;
           default:
             {
@@ -758,7 +758,7 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
         break;
       case 'i':
         sscanf(optarg, "%d", &adef->initial);
-        adef->initialSet = TRUE;
+        adef->initialSet = PLL_TRUE;
         break;
       case 'n':
         strcpy(run_id,optarg);
@@ -767,7 +767,7 @@ static void get_args(int argc, char *argv[], analdef *adef, pllInstance *tr)
         break;
       case 'w':
         strcpy(resultDir, optarg);
-        resultDirSet = TRUE;
+        resultDirSet = PLL_TRUE;
         break;
       case 't':
         strcpy(tree_file, optarg);
@@ -869,14 +869,14 @@ static void initAdef(analdef *adef)
   adef->stepwidth              = 5;
   adef->initial                = 10;
   adef->bestTrav               = 10;
-  adef->initialSet             = FALSE;
+  adef->initialSet             = PLL_FALSE;
   adef->mode                   = BIG_RAPID_MODE;
   adef->likelihoodEpsilon      = 0.1;
 
-  adef->permuteTreeoptimize    = FALSE;
-  adef->perGeneBranchLengths   = FALSE;
+  adef->permuteTreeoptimize    = PLL_FALSE;
+  adef->perGeneBranchLengths   = PLL_FALSE;
 
-  adef->useCheckpoint          = FALSE;
+  adef->useCheckpoint          = PLL_FALSE;
 }
 
 
@@ -1021,7 +1021,7 @@ int main (int argc, char *argv[])
 
   /* TODO initialize this the proper way ! */
 
-  tr->fastScaling = FALSE;
+  tr->fastScaling = PLL_FALSE;
 
   /* get the start time */
 
@@ -1100,10 +1100,10 @@ int main (int argc, char *argv[])
     for(i = 1; i <= tr->mxtips; i++)
       tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength]; 
 
-        setupTree(tr, FALSE, partitions);
+        setupTree(tr, PLL_FALSE, partitions);
 
     for(i = 0; i < partitions->numberOfPartitions; i++)
-          partitions->partitionData[i]->executeModel = TRUE;
+          partitions->partitionData[i]->executeModel = PLL_TRUE;
 
     /* data structures for convergence criterion need to be initialized after! setupTree */
 
@@ -1186,7 +1186,7 @@ int main (int argc, char *argv[])
     printBothOpen("User      maximum use of memory in MB: %f\n", tr->maxMegabytesMemory);
     if (approxTotalMegabytesRequired < tr->maxMegabytesMemory)
     {
-      tr->useRecom = FALSE; 
+      tr->useRecom = PLL_FALSE; 
       printBothOpen("Deactivated recomputation of inner vectors\n");
     }
     else
@@ -1234,7 +1234,7 @@ int main (int argc, char *argv[])
      printBothOpen() allows to simultaneously print to terminal and to the RAxML_info file, thereby making 
      the terminal output and the info in the RAxML_info file consistent */
 
-  printBothOpen("Memory Saving Option: %s\n", (tr->saveMemory == TRUE)?"ENABLED":"DISABLED");   	             
+  printBothOpen("Memory Saving Option: %s\n", (tr->saveMemory == PLL_TRUE)?"ENABLED":"DISABLED");   	             
 
   /* Tells us if the vector recomputation memory saving option has been activated in the command line or not.
    */
@@ -1249,7 +1249,7 @@ int main (int argc, char *argv[])
       tr->rvec->recomStraTime = 0.0;
     }
 #endif
-    printBothOpen("Memory Saving via Additional Vector Recomputations: %s\n", (tr->useRecom == TRUE)?"ENABLED":"DISABLED");
+    printBothOpen("Memory Saving via Additional Vector Recomputations: %s\n", (tr->useRecom == PLL_TRUE)?"ENABLED":"DISABLED");
     if(tr->useRecom)
       printBothOpen("Using a fraction %f of the total inner vectors that would normally be required\n", tr->vectorRecomFraction);
   }
@@ -1278,7 +1278,7 @@ int main (int argc, char *argv[])
 
       if(countLG4 > 0)
 	{
-	  if(tr->saveMemory == TRUE)
+	  if(tr->saveMemory == PLL_TRUE)
 	    {
 	      printBothOpen("Error: the LG4 substitution model does not work in combination with the \"-U\" memory saving flag!\n\n");	  
 	      assert(0);
@@ -1307,7 +1307,7 @@ int main (int argc, char *argv[])
     restart(tr, partitions);
 
     /* continue tree search where we left it off */
-    computeBIGRAPID(tr, partitions, adef, TRUE);
+    computeBIGRAPID(tr, partitions, adef, PLL_TRUE);
   }
   else
     {
@@ -1349,7 +1349,7 @@ int main (int argc, char *argv[])
 
     /* please do not remove this code from here ! */
 
-    evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
+    evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
     printBothOpen("Starting tree evaluated\n");
 
 
@@ -1361,7 +1361,7 @@ int main (int argc, char *argv[])
       {	
 	printf("trying to evaluate with per-site-lnls\n"); 
 
-	evaluateGeneric(tr, partitions, tr->start, TRUE, TRUE);
+	evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_TRUE);
 	printBothOpen("Starting tree evaluated with per-site lnls\n");
 
 	 
@@ -1413,7 +1413,7 @@ int main (int argc, char *argv[])
       // double t, masterTime = gettime();
       ticks t1 = getticks();
       printBothOpen("Eval once LH \n");
-      evaluateGeneric(tr, partitions, tr->start, TRUE, FALSE);
+      evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
       printBothOpen("Evaluated once LH %f, now opt \n", tr->likelihood);
       treeEvaluate(tr, partitions, 32);
       printBothOpen("tree evaluated: %f\n", tr->likelihood);
@@ -1429,7 +1429,7 @@ int main (int argc, char *argv[])
           printBothOpen("Random node %d\n", p->number);
           rearrangeBIG(tr, pr, p, 1, 15); 
           printBothOpen("Done rearrangements \n");
-          evaluateGeneric(tr, tr->start, TRUE, FALSE);	 
+          evaluateGeneric(tr, tr->start, PLL_TRUE, PLL_FALSE);	 
           printBothOpen("lh: after %d rearrangements: %f \n",i, tr->likelihood);
           modOpt(tr, 15.0);
           if(i>7)
@@ -1458,13 +1458,13 @@ int main (int argc, char *argv[])
     
     /* now start the ML search algorithm */
 
-    computeBIGRAPID(tr, partitions, adef, TRUE);
+    computeBIGRAPID(tr, partitions, adef, PLL_TRUE);
 
 /*partitions->numberOfPartitions=3;
 printModelAndProgramInfo(tr, partitions, adef, argc, argv);
-    computeBIGRAPID(tr, partitions, adef, TRUE);
+    computeBIGRAPID(tr, partitions, adef, PLL_TRUE);
 
-    computeBIGRAPID(tr, partitions, adef, TRUE);*/
+    computeBIGRAPID(tr, partitions, adef, PLL_TRUE);*/
   } 
 
   /* print som more nonsense into the RAxML_info file */

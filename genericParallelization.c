@@ -103,7 +103,7 @@ void initMPI(int argc, char *argv[])
 boolean workerTrap(pllInstance *tr, partitionList *pr)
 {
   /// @note for the broadcasting, we need to, if the tree structure has already been initialized 
-  treeIsInitialized = FALSE; 
+  treeIsInitialized = PLL_FALSE; 
 
   if(NOT MASTER_P) 
     {
@@ -115,9 +115,9 @@ boolean workerTrap(pllInstance *tr, partitionList *pr)
       likelihoodThread(&tData);
 
       /* notice: the next call MUST be the return call from the main method */
-      return TRUE; 
+      return PLL_TRUE; 
     }
-  return FALSE; 
+  return PLL_FALSE; 
 }
 
 
@@ -197,7 +197,7 @@ void startPthreads(pllInstance *tr, partitionList *pr)
   pthread_attr_t attr;
   int rc, t;
   threadData *tData;
-  treeIsInitialized = FALSE; 
+  treeIsInitialized = PLL_FALSE; 
 
   jobCycle        = 0;
   threadJob       = 0;
@@ -256,7 +256,7 @@ static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs
     {      
       for(j = 0; j < NUM_PAR_JOBS; ++j)
 	{
-	  boolean isFirst = TRUE; 
+	  boolean isFirst = PLL_TRUE; 
 	  for(i = 0; i < tr->numberOfThreads; ++i)
 	    {	      
 	      double num = timeBuffer[i * NUM_PAR_JOBS + j]; 
@@ -264,7 +264,7 @@ static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs
 		mins[j] = num; 
 	      if(isFirst || num > maxs[j])
 		maxs[j] = num; 
-	      isFirst = FALSE; 
+	      isFirst = PLL_FALSE; 
 	    }
 	}	
     }  
@@ -368,9 +368,9 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
 boolean isThisMyPartition(partitionList *localPr, int tid, int model)
 { 
   if(localPr->partitionData[model]->partitionAssignment == tid)
-    return TRUE;
+    return PLL_TRUE;
   else
-    return FALSE;
+    return PLL_FALSE;
 }
 
 /** @brief Computes partition size for all partitions (in case full partitions are assigns to workers). 
@@ -452,7 +452,7 @@ static int partCompare(const void *p1, const void *p2)
 /** @brief Top-level function for the multi processor scheduling
     scheme (assigns full partitions to workers).
     
-   tr->manyPartitions is set to TRUE if the user has indicated via -Q
+   tr->manyPartitions is set to PLL_TRUE if the user has indicated via -Q
    that there are substantially more partitions than threads/cores
    available. In that case we do not distribute sites from each
    partition in a cyclic fashion to the cores , but distribute entire
@@ -486,7 +486,7 @@ void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid)
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{        
 	  boolean 
-	    exists = FALSE;
+	    exists = PLL_FALSE;
 
 	  for(s = 0; s < arrayLength; s++)
 	    {
@@ -633,8 +633,8 @@ void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2ln
    @param tr Library instance 
    @param n number of workers 
    @param tid process id 
-   @param read TRUE, if read-mode  
-   @param countOnly  if TRUE, simply return the number of elements 
+   @param read PLL_TRUE, if read-mode  
+   @param countOnly  if PLL_TRUE, simply return the number of elements 
 
 */
 static int doublesToBuffer(double *buf, double *srcTar, pllInstance *tr, partitionList *pr, int n, int tid, boolean read, boolean countOnly)
@@ -718,9 +718,9 @@ void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionLis
       
       /* extract doubles  */
 
-      num1 = doublesToBuffer(buf1, localTree->patrat, tr, pr, n,i, TRUE, i!= tid);
-      num2 = doublesToBuffer(buf2, localTree->patratStored, tr, pr, n,i, TRUE, i!= tid);
-      num3 = doublesToBuffer(buf3, localTree->lhs, tr, pr, n,i, TRUE, i!= tid);
+      num1 = doublesToBuffer(buf1, localTree->patrat, tr, pr, n,i, PLL_TRUE, i!= tid);
+      num2 = doublesToBuffer(buf2, localTree->patratStored, tr, pr, n,i, PLL_TRUE, i!= tid);
+      num3 = doublesToBuffer(buf3, localTree->lhs, tr, pr, n,i, PLL_TRUE, i!= tid);
 
       /* printf("%d + %d + %d\n", num1, num2, num3);  */
 
@@ -740,9 +740,9 @@ void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionLis
       
       /* re-insert doubles  */
       int assertCtr = 0; 
-      assertCtr += doublesToBuffer(buf1, tr->patrat, tr, pr, n,i,FALSE, FALSE);
-      assertCtr += doublesToBuffer(buf2, tr->patratStored, tr, pr, n,i,FALSE, FALSE);
-      assertCtr += doublesToBuffer(buf3, tr->lhs, tr, pr, n,i,FALSE, FALSE);
+      assertCtr += doublesToBuffer(buf1, tr->patrat, tr, pr, n,i,PLL_FALSE, PLL_FALSE);
+      assertCtr += doublesToBuffer(buf2, tr->patratStored, tr, pr, n,i,PLL_FALSE, PLL_FALSE);
+      assertCtr += doublesToBuffer(buf3, tr->lhs, tr, pr, n,i,PLL_FALSE, PLL_FALSE);
 
       assert(assertCtr == numDouble); 
     }
@@ -772,7 +772,7 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
 #endif
 
   /* gather own values into buffer  */
-  int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,TRUE, FALSE);
+  int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,PLL_TRUE, PLL_FALSE);
 
 #ifdef _FINE_GRAIN_MPI 
   /* this communicates all the values to the master */
@@ -782,7 +782,7 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
     {
       for(i = 0; i < n; ++i)
 	{
-	  numberPerWorker[i] = doublesToBuffer(buf,src,tr,pr,n,i,FALSE, TRUE);
+	  numberPerWorker[i] = doublesToBuffer(buf,src,tr,pr,n,i,PLL_FALSE, PLL_TRUE);
 	  displacements[i] = i == 0 ? 0 : displacements[i-1] + numberPerWorker[i-1]; 
 	}
       
@@ -793,7 +793,7 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
       double *bufPtr = resultBuf; 
       for(i = 0 ; i < n; ++i)
 	{
-	  int numberWritten = doublesToBuffer(bufPtr, dst,tr,pr,n,i, FALSE, FALSE);
+	  int numberWritten = doublesToBuffer(bufPtr, dst,tr,pr,n,i, PLL_FALSE, PLL_FALSE);
 	  bufPtr += numberWritten; 
 	  assertNum += numberWritten; 
 	}    
@@ -804,7 +804,7 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
     MPI_Gatherv(buf, numberCollected, MPI_DOUBLE, resultBuf, numberPerWorker, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD);   
 #else 
   /* pthread only writes to global space  */  
-  assertNum = doublesToBuffer(buf, dst,tr,pr,n,tid, FALSE, FALSE);
+  assertNum = doublesToBuffer(buf, dst,tr,pr,n,tid, PLL_FALSE, PLL_FALSE);
   assert(assertNum == numberCollected); 
 #endif
 }
@@ -1155,7 +1155,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       newviewIterative(localTree, localPr, 0);
       break;     
     case THREAD_EVALUATE: 
-      reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
+      reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
@@ -1220,7 +1220,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
       if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
 
       break;           
     case THREAD_OPT_RATE:
@@ -1240,7 +1240,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	 to be propagated throughout the entire tree */
 
       if(localTree->td[0].functionType == THREAD_OPT_RATE)
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, FALSE);
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
 
       break;                       
     case THREAD_COPY_INIT_MODEL:
@@ -1444,13 +1444,13 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	MPI_Finalize();
 	exit(0); 
 #endif	
-	return FALSE; 
+	return PLL_FALSE; 
       }
       break; 
     case THREAD_EVALUATE_PER_SITE_LIKES: 
       {
 	int i ; 
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, TRUE);
+	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_TRUE);
       }
       break;
     default:
@@ -1458,7 +1458,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       assert(0);
     }
 
-  return TRUE; 
+  return PLL_TRUE; 
 }
 
 
@@ -1849,7 +1849,7 @@ void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partiti
   size_t
     model;
 
-  treeIsInitialized = TRUE; 
+  treeIsInitialized = PLL_TRUE; 
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
   ASSIGN_INT(localPr->numberOfPartitions, pr->numberOfPartitions);

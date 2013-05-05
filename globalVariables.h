@@ -127,31 +127,31 @@ const char *secondaryModelList[21] = { "S6A (GTR)", "S6B", "S6C", "S6D", "S6E", 
 const partitionLengths pLengths[MAX_MODEL] = {
   
   /* BINARY */
-  {4,   4,   2,  4,  2, 1, 2,  8, 2, 2, FALSE, 3, inverseMeaningBINARY, 2, FALSE, bitVectorIdentity},
+  {4,   4,   2,  4,  2, 1, 2,  8, 2, 2, PLL_FALSE, 3, inverseMeaningBINARY, 2, PLL_FALSE, bitVectorIdentity},
   
   /* DNA */
-  {16,  16,  4, 16, 16, 6, 4, 64, 6, 4, FALSE, 15, inverseMeaningDNA, 4, FALSE, bitVectorIdentity},
+  {16,  16,  4, 16, 16, 6, 4, 64, 6, 4, PLL_FALSE, 15, inverseMeaningDNA, 4, PLL_FALSE, bitVectorIdentity},
         
   /* AA */
-  {400, 400, 20, 400, 400, 190, 20, 460, 190, 20, FALSE, 22, inverseMeaningPROT, 20, TRUE, bitVectorAA},
+  {400, 400, 20, 400, 400, 190, 20, 460, 190, 20, PLL_FALSE, 22, inverseMeaningPROT, 20, PLL_TRUE, bitVectorAA},
   
   /* SECONDARY_DATA */
 
-  {256, 256, 16, 256, 256, 120, 16, 4096, 120, 16, FALSE, 255, (char*)NULL, 16, TRUE, bitVectorSecondary},
+  {256, 256, 16, 256, 256, 120, 16, 4096, 120, 16, PLL_FALSE, 255, (char*)NULL, 16, PLL_TRUE, bitVectorSecondary},
 
   
   /* SECONDARY_DATA_6 */
-  {36, 36,  6, 36, 36, 15, 6, 384, 15, 6, FALSE, 63, (char*)NULL, 6, TRUE, bitVectorIdentity},
+  {36, 36,  6, 36, 36, 15, 6, 384, 15, 6, PLL_FALSE, 63, (char*)NULL, 6, PLL_TRUE, bitVectorIdentity},
 
   
   /* SECONDARY_DATA_7 */
-  {49,   49,    7,   49, 49,  21, 7, 896, 21, 7, FALSE, 127, (char*)NULL, 7, TRUE, bitVectorIdentity},
+  {49,   49,    7,   49, 49,  21, 7, 896, 21, 7, PLL_FALSE, 127, (char*)NULL, 7, PLL_TRUE, bitVectorIdentity},
 
   /* 32 states */
-  {1024, 1024, 32, 1024, 1024, 496, 32, 1056, 496, 32, FALSE, 32, inverseMeaningGeneric32, 32, TRUE, bitVector32},
+  {1024, 1024, 32, 1024, 1024, 496, 32, 1056, 496, 32, PLL_FALSE, 32, inverseMeaningGeneric32, 32, PLL_TRUE, bitVector32},
   
   /* 64 states */
-  {4096, 4096, 64, 4096, 4096, 2016, 64, 4160, 64, 2016, FALSE, 64, (char*)NULL, 64, TRUE, (unsigned int*)NULL}
+  {4096, 4096, 64, 4096, 4096, 2016, 64, 4160, 64, 2016, PLL_FALSE, 64, (char*)NULL, 64, PLL_TRUE, (unsigned int*)NULL}
 };
 
 

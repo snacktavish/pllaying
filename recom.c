@@ -18,7 +18,7 @@
 
 /** @brief Locks node \a nodenum to force it remains availably in memory
  *
- * @warning If a node is available we dont need to recompute it, but we neet to make sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be false at this point, it will automatically be set to true, after the counter post-order instructions have been executed 
+ * @warning If a node is available we dont need to recompute it, but we neet to make sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be PLL_FALSE at this point, it will automatically be set to PLL_TRUE, after the counter post-order instructions have been executed 
 Omitting this call the traversal will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! 
  *
  *  @param rvec 
@@ -40,7 +40,7 @@ void protectNode(recompVectors *rvec, int nodenum, int mxtips)
   assert(rvec->iVector[slot] == nodenum);
 
   if(rvec->unpinnable[slot])
-    rvec->unpinnable[slot] = FALSE;
+    rvec->unpinnable[slot] = PLL_FALSE;
 }
 
 /** @brief Checks if \a nodenum  is currently pinned (available in RAM)
@@ -62,9 +62,9 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
   assert(nodenum > mxtips);
 
   if(rvec->iNode[nodenum - mxtips - 1] == NODE_UNPINNED)
-    return FALSE;
+    return PLL_FALSE;
   else
-    return TRUE;
+    return PLL_TRUE;
 }
 
 /** @brief Checks if the likelihood entries at node \a p should be updated
@@ -74,7 +74,7 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
  *    2. We are applying recomputations and node \a p is not currently available in RAM
  *  
  *  @param recompute 
- *    true if recomputation is currently applied 
+ *    PLL_TRUE if recomputation is currently applied 
  *
  *  @param nodeptr
  *    Pointer to a \a node struct
@@ -86,9 +86,9 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
 boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtips)
 { 
   if((!p->x) || (recompute && !isNodePinned(rvec, p->number, mxtips)))
-    return TRUE;
+    return PLL_TRUE;
   else
-    return FALSE;
+    return PLL_FALSE;
 }
 
 
@@ -97,7 +97,7 @@ boolean needsRecomp(boolean recompute, recompVectors *rvec, nodeptr p, int mxtip
  *  
  *  
  *  @todo this should not depend on tr (\a vectorRecomFraction should be a parameter)
- *    true if recomputation is currently applied 
+ *    PLL_TRUE if recomputation is currently applied 
  *
  */
 void allocRecompVectorsInfo(pllInstance *tr)
@@ -132,7 +132,7 @@ void allocRecompVectorsInfo(pllInstance *tr)
   for(i = 0; i < num_vectors; i++)
   {
     v->iVector[i]         = SLOT_UNUSED;
-    v->unpinnable[i]      = FALSE;
+    v->unpinnable[i]      = PLL_FALSE;
   }
 
   v->iNode      = (int *) rax_malloc((size_t)num_inner_nodes * sizeof(int));
@@ -144,7 +144,7 @@ void allocRecompVectorsInfo(pllInstance *tr)
     v->stlen[i] = INNER_NODE_INIT_STLEN;
   }
 
-  v->allSlotsBusy = FALSE;
+  v->allSlotsBusy = PLL_FALSE;
 
   /* init nodes tracking */
 
@@ -245,7 +245,7 @@ static int findFreeSlot(recompVectors *v, int mxtips)
     slotno = -1, 
            i;
 
-  assert(v->allSlotsBusy == FALSE);
+  assert(v->allSlotsBusy == PLL_FALSE);
 
   for(i = 0; i < v->numVectors; i++)
   {
@@ -258,7 +258,7 @@ static int findFreeSlot(recompVectors *v, int mxtips)
 
   if(slotno == -1)
   {
-    v->allSlotsBusy = TRUE;
+    v->allSlotsBusy = PLL_TRUE;
     slotno = findUnpinnableSlot(v, mxtips);
   }
 
@@ -284,7 +284,7 @@ static void pinAtomicNode(recompVectors *v, int nodenum, int slot, int mxtips)
 {
   v->iVector[slot] = nodenum;
   v->iNode[nodenum - mxtips - 1] = slot;
-  v->unpinnable[slot] = FALSE;
+  v->unpinnable[slot] = PLL_FALSE;
 }
 
 static int pinNode(recompVectors *rvec, int nodenum, int mxtips)
@@ -339,7 +339,7 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
     assert(slot >= 0 && slot < v->numVectors); 
 
     if(slot >= 0 && slot < v->numVectors)
-      v->unpinnable[slot] = TRUE;
+      v->unpinnable[slot] = PLL_TRUE;
   }
 }
 
@@ -369,19 +369,19 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 #endif
 
   boolean 
-    slotNeedsRecomp = FALSE;
+    slotNeedsRecomp = PLL_FALSE;
 
   *slot = rvec->iNode[nodenum - mxtips - 1];
 
   if(*slot == NODE_UNPINNED)
   {
     *slot = pinNode(rvec, nodenum, mxtips); /* now we will run the replacement strategy */
-    slotNeedsRecomp = TRUE;
+    slotNeedsRecomp = PLL_TRUE;
   }
 
   assert(*slot >= 0 && *slot < rvec->numVectors);
 
-  rvec->unpinnable[*slot] = FALSE;
+  rvec->unpinnable[*slot] = PLL_FALSE;
 #ifdef _DEBUG_RECOMPUTATION
   rvec->pinTime += gettime() - tstart;
 #endif
