@@ -43,7 +43,6 @@ static nodeptr pickMyRandomSubtree(pllInstance *tr)
 int main (int argc, char * argv[])
 {
   struct pllPhylip * phylip;
-  double ** empiricalFrequencies;
   pllInstance * tr;
   struct pllNewickTree * newick;
   partitionList * partitions;
@@ -57,7 +56,7 @@ int main (int argc, char * argv[])
    }
 
   /* Create a PLL tree */
-  tr = pllCreateInstance (GAMMA, FALSE, FALSE, FALSE);
+  tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE);
 
   /* Parse a PHYLIP file */
   phylip = pllPhylipParse (argv[1]);
@@ -102,9 +101,6 @@ int main (int argc, char * argv[])
   /* Do the base substitution (from A,C,G....  ->   0,1,2,3....)*/
   pllBaseSubstitute (phylip, partitions);
 
-  /* Compute the empirical frequencies */
-  empiricalFrequencies = pllBaseFrequenciesGTR (partitions, phylip);
-
   /* Set the topology of the PLL tree from a parsed newick tree */
   pllTreeInitTopologyNewick (tr, newick);
   /* Or instead of the previous function use the next commented line to create
@@ -118,20 +114,18 @@ int main (int argc, char * argv[])
      return (EXIT_FAILURE);
    }
   
-  /* TODO: initialize partitions and models, create interface calls*/
-  initializePartitions (tr, tr, partitions, 0, 0);              
-  initModel (tr, empiricalFrequencies, partitions);
-  resetBranches(tr);
+  /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
+  pllInitModel(tr, PLL_TRUE, PLL_TRUE, phylip, partitions);
 
   /* TODO: evaluate likelihood, create interface calls */
-  evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("Likelihood: %f\n", tr->likelihood);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s\n", tr->tree_string);
 
   /* another eval*/
   double computed_lh = tr->likelihood;
-  evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   assert(computed_lh == tr->likelihood);
   //printf ("Likelihood: %f\n", tr->likelihood);
   
@@ -139,7 +133,7 @@ int main (int argc, char * argv[])
   {
     double computed_lh = tr->likelihood;
     treeEvaluate(tr, partitions, 32);
-    evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+    evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
     assert(computed_lh < tr->likelihood);
     printf ("Likelihood after BL opt: %f\n", tr->likelihood);
   }
@@ -165,8 +159,8 @@ int main (int argc, char * argv[])
         printf ("new Tree at iter %d: %s\n", i,  tr->tree_string);
       }
       /* show the tree we have right now (most of the time did not change)*/
-      Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
-      evaluateGeneric (tr, partitions, tr->start, TRUE, FALSE);
+      Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+      evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
       if(i % (num_iterations/10) == 0)
       {
         modOpt(tr, partitions, 5.0);
@@ -175,9 +169,9 @@ int main (int argc, char * argv[])
     }
   }
   /* Print resulting tree */
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, TRUE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s\n", tr->tree_string);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s\n", tr->tree_string);
   printf("Final log lh: %f \n", tr->likelihood);
 
@@ -185,7 +179,6 @@ int main (int argc, char * argv[])
   /* Do some cleanup */
   pllPhylipDestroy (phylip);
   pllNewickParseDestroy (&newick);
-  pllEmpiricalFrequenciesDestroy (&empiricalFrequencies, partitions->numberOfPartitions);
 
   pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
   pllTreeDestroy (tr);
