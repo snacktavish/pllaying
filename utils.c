@@ -80,6 +80,7 @@
 #include "parser/partition/part.h"
 #include "parser/phylip/phylip.h"
 #include "parser/newick/newick.h"
+#include "utils.h"
 
 
 extern unsigned int mask32[32];
@@ -2595,3 +2596,32 @@ pllTreeDestroy (pllInstance * tr)
   rax_free (tr);
 }
 
+/** @brief Initialize partitions according to model parameters
+    
+    Initializes partitions according to model parameters.
+
+    @param tr
+      The PLL instance
+
+    @param bEmpiricalFreqs
+      Use empirical frequencies
+    
+    @param bResetBranches
+      Reset branch lengths to default lengths
+
+    @param phylip
+      The alignment
+
+    @param partitions
+      List of partitions
+*/
+void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, int bResetBranches, struct pllPhylip * phylip, partitionList * partitions)
+{
+  double ** ef;
+
+  ef = pllBaseFrequenciesGTR (partitions, phylip);
+  initializePartitions (tr, tr, partitions, partitions, 0, 0);
+  initModel (tr, ef, partitions);
+  if (bResetBranches) resetBranches (tr);
+  pllEmpiricalFrequenciesDestroy (&ef, partitions->numberOfPartitions);
+}

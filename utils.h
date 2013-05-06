@@ -7,7 +7,7 @@
 #include "queue.h"
 
 
-void read_msa(pllInstance *tr, const char *filename);
+//void read_msa(pllInstance *tr, const char *filename);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int, int);
 int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
@@ -21,5 +21,5 @@ void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
 void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom);
-
+void pllInitModel (pllInstance *, int, int, struct pllPhylip *, partitionList *);
 #endif /* UTILS_H_ */
