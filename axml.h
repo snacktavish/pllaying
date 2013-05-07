@@ -95,7 +95,8 @@ extern "C" {
 #define PLL_MINUSMINLIKELIHOOD                  -PLL_MINLIKELIHOOD
 
 
-
+#define PLL_DEEP_COPY                           1 << 0
+#define PLL_SHALLOW_COPY                        1 << 1
 
 /* 18446744073709551616.0 */
 
@@ -887,7 +888,7 @@ typedef struct {
   /* Protein specific ?? */
   int     protModels;
   int     autoProtModels;
-  int     protFreqs;
+  int     protFreqs;                    /** TODO: Is this the flag for empirical protein frequencies? (0 use default) */ 
   /* specific for secondary structures ?? */
   boolean nonGTR;
   int    *symmetryVector;
@@ -1123,8 +1124,9 @@ typedef  struct  {
   
 
   /* model stuff end */
+  int              bDeep;            /**< yVectors are 0: shallow-copy, or 1: deep-copy of alignment */
 
-  unsigned char             **yVector;        /**< list of raw sequences (parsed from the alignment)*/
+  unsigned char    **yVector;        /**< list of raw sequences (parsed from the alignment)*/
 
   int              secondaryStructureModel;
   int              originalCrunchedLength;

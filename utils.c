@@ -1916,7 +1916,6 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 	  for(j = lower; j < upper; j++) 
 	    {
 	      unsigned int code = bitMask[yptr[j]];
-              if (code <1) printf ("code: %d\n");
 	      assert(code >= 1);
 	      
 	      for(l = 0; l < numFreqs; l++)
@@ -2112,13 +2111,42 @@ pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
   *empiricalFrequencies = NULL;
 }
 
+/** @brief Load alignment to the PLL instance
+    
+    Loads the parsed phylip alignment to the PLL instance.
+    In case the deep switch is specified, the phylip structure
+    will be used as the alignment.
+
+    @param tr
+      The library instance
+
+    @param phylip
+      The phylip alignment
+
+    @param partitions
+      List of partitions
+
+    @param bDeep
+      Controls how the alignment is used within the library instance.
+      If PLL_DEEP_COPY is specified, new memory will be allocated
+      and the alignment will be copied there (deep copy). On the other
+      hand, if PLL_SHALLOW_COPY is specified, only the pointers will be
+      copied and therefore, the alignment will be shared between the 
+      phylip structure and the library instance (shallow copy).
+
+    @return
+      Returns 1 in case of success, 0 otherwise.
+*/
 int
-pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip)
+pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList * partitions, int bDeep)
 {
   int i;
   nodeptr node;
 
   if (tr->mxtips != phylip->nTaxa) return (0);
+
+  /* Do the base substitution (from A,C,G....  ->   0,1,2,3....)*/
+  pllBaseSubstitute (phylip, partitions);
 
   tr->aliaswgt = (int *) rax_malloc (phylip->seqLen * sizeof (int));
   memcpy (tr->aliaswgt, phylip->weights, phylip->seqLen * sizeof (int));
@@ -2131,12 +2159,17 @@ pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip)
 
   /* allocate memory for the alignment */
   tr->yVector    = (unsigned char **) rax_malloc ((phylip->nTaxa + 1) * sizeof (unsigned char *));                                                                                                                                                                      
-  tr->yVector[0] = (unsigned char *)  rax_malloc (sizeof (unsigned char) * (phylip->seqLen + 1) * phylip->nTaxa);
-  for (i = 1; i <= phylip->nTaxa; ++ i)                      
-   {                     
-     tr->yVector[i] = (unsigned char *) (tr->yVector[0] + (i - 1) * (phylip->seqLen + 1) * sizeof (unsigned char));
-     tr->yVector[i][phylip->seqLen] = 0;                     
-   }                     
+  tr->bDeep = bDeep;
+
+  if (bDeep == PLL_DEEP_COPY)
+   {
+     tr->yVector[0] = (unsigned char *)  rax_malloc (sizeof (unsigned char) * (phylip->seqLen + 1) * phylip->nTaxa);
+     for (i = 1; i <= phylip->nTaxa; ++ i)                      
+      {                     
+        tr->yVector[i] = (unsigned char *) (tr->yVector[0] + (i - 1) * (phylip->seqLen + 1) * sizeof (unsigned char));
+        tr->yVector[i][phylip->seqLen] = 0;
+      }                     
+   }
                          
   /* place sequences to tips */                              
   for (i = 1; i <= phylip->nTaxa; ++ i)                      
@@ -2148,11 +2181,14 @@ pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip)
         rax_free (tr->patrat);
         rax_free (tr->patratStored);
         rax_free (tr->lhs);
-        rax_free (tr->yVector[0]);
+        if (bDeep == PLL_DEEP_COPY) rax_free (tr->yVector[0]);
         rax_free (tr->yVector);
         return (0);
       }
-     memcpy (tr->yVector[node->number], phylip->seq[i], phylip->seqLen );
+     if (bDeep == PLL_DEEP_COPY)
+       memcpy (tr->yVector[node->number], phylip->seq[i], phylip->seqLen );
+     else
+       tr->yVector[node->number] = phylip->seq[i];
    }
 
   return (1);
@@ -2576,7 +2612,10 @@ pllTreeDestroy (pllInstance * tr)
   pllHashDestroy (&(tr->nameHash), PLL_FALSE);
   if (tr->yVector)
    {
-     if (tr->yVector[0]) rax_free (tr->yVector[0]);
+     if (tr->bDeep == PLL_DEEP_COPY)
+      {
+        if (tr->yVector[0]) rax_free (tr->yVector[0]);
+      }
      rax_free (tr->yVector);
    }
   rax_free (tr->aliaswgt);
@@ -2614,6 +2653,9 @@ pllTreeDestroy (pllInstance * tr)
 
     @param partitions
       List of partitions
+
+    @todo
+      implement the bEmpiricalFreqs flag
 */
 void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, int bResetBranches, struct pllPhylip * phylip, partitionList * partitions)
 {

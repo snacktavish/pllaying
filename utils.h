@@ -15,7 +15,7 @@ partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip *
 void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
 void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt);
-int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip);
+int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
