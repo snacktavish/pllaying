@@ -98,9 +98,6 @@ int main (int argc, char * argv[])
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (phylip, partitions);
 
-  /* Do the base substitution (from A,C,G....  ->   0,1,2,3....)*/
-  pllBaseSubstitute (phylip, partitions);
-
   /* Set the topology of the PLL tree from a parsed newick tree */
   pllTreeInitTopologyNewick (tr, newick);
   /* Or instead of the previous function use the next commented line to create
@@ -108,7 +105,7 @@ int main (int argc, char * argv[])
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
 
   /* Connect the alignment with the tree structure */
-  if (!pllLoadAlignment (tr, phylip))
+  if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
    {
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
