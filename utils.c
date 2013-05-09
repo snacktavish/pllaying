@@ -1210,7 +1210,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
       
-       if(localPartitions->partitionData[model]->protModels == LG4)      
+       if(localPartitions->partitionData[model]->dataType == AA_DATA && localPartitions->partitionData[model]->protModels == LG4)      
 	{	  	  
 	  int 
 	    k;
@@ -2361,9 +2361,12 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
     @param nt
       The \a pllNewickTree wrapper structure that contains the parsed newick tree
 
+    @param bDefaultZ
+      If set to \b PLL_TRUE then the branch lengths will be reset to the default
+      value.
 */
 void
-pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt)
+pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUseDefaultZ)
 {
   struct pllStack * nodeStack = NULL;
   struct pllStack * head;
@@ -2438,6 +2441,8 @@ pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt)
   tr->start = tr->nodep[1];
   
   pllStackClear (&nodeStack);
+
+  if (bUseDefaultZ == PLL_TRUE) resetBranches (tr);
 }
 
 /** @brief Initialize PLL tree with a random topology
@@ -2657,13 +2662,12 @@ pllTreeDestroy (pllInstance * tr)
     @todo
       implement the bEmpiricalFreqs flag
 */
-void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, int bResetBranches, struct pllPhylip * phylip, partitionList * partitions)
+void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, struct pllPhylip * phylip, partitionList * partitions)
 {
   double ** ef;
 
   ef = pllBaseFrequenciesGTR (partitions, phylip);
   initializePartitions (tr, tr, partitions, partitions, 0, 0);
   initModel (tr, ef, partitions);
-  if (bResetBranches) resetBranches (tr);
   pllEmpiricalFrequenciesDestroy (&ef, partitions->numberOfPartitions);
 }

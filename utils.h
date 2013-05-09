@@ -14,12 +14,12 @@ int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
 partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip);
 void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
-void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt);
+void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUseDefaultZ);
 int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
 void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom);
-void pllInitModel (pllInstance *, int, int, struct pllPhylip *, partitionList *);
+void pllInitModel (pllInstance *, int, struct pllPhylip *, partitionList *);
 #endif /* UTILS_H_ */
