@@ -1435,7 +1435,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* compute the left and right P matrices */
 
-	if(pr->partitionData[model]->protModels == LG4)		     
+	if(pr->partitionData[model]->dataType == AA_DATA && pr->partitionData[model]->protModels == LG4)		     
 		makeP_FlexLG4(qz, rz, pr->partitionData[model]->gammaRates,
 			      pr->partitionData[model]->EI_LG4,
 			      pr->partitionData[model]->EIGN_LG4,

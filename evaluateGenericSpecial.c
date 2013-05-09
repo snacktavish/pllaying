@@ -907,7 +907,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 	  
 	  /* calc P-Matrix at root for branch z connecting nodes p and q */
 	  
-	  if(pr->partitionData[model]->protModels == LG4)					  
+	  if(pr->partitionData[model]->dataType == AA_DATA && pr->partitionData[model]->protModels == LG4)					  
 	    calcDiagptableFlex_LG4(z, 4, pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN_LG4, diagptable, 20);
 	  else
 	  calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
