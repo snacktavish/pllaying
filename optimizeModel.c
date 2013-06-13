@@ -324,57 +324,52 @@ static void freeLinkageList( linkageList* ll)
 
 static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
 { 
-  int i, k, pos;
+  int 
+    i, 
+    k, 
+    pos;
 
-  switch(whichFunction)
-    {    
-    case RATE_F:
-      /* loop over linkage list entries for Q matrix rates */
-
-      for(i = 0, pos = 0; i < ll->entries; i++)
+  for(i = 0, pos = 0; i < ll->entries; i++)
+    {
+      if(ll->ld[i].valid)
 	{
-	  /* if valid, i.e. we want to assess the change for a certain partition data type, e.g., DNA */
-	  if(ll->ld[i].valid)
+	  if(converged[pos])
 	    {
-	      /* if the iterative numerical procedure for the partitions sharing the parameter 
-		 has already converged don't do anything.
-		 This stuff is required for parallel load balanicing as described in:
-		 
-		 A. Stamatakis, M. Ott: "Load Balance in the Phylogenetic Likelihood Kernel". Proceedings of ICPP 2009, Vienna, Austria, September 2009.
-	      */
-	      if(converged[pos])
-		{		 
-		  for(k = 0; k < ll->ld[i].partitions; k++)
-		    pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
-		}
-	      else
-		{
-		  /* loop over partitions that share the same parameter */
-
-		  for(k = 0; k < ll->ld[i].partitions; k++)
-		    {
-		      int index = ll->ld[i].partitionList[k];		  
-		      
-		      /* update them to new, proposed value for which we want to obtain the likelihood */
-	      
-		      setRateModel(pr, index, value[pos], rateNumber);
-
-		      /* in the case of rates, i.e., Q matrix, re-compute the corresponding eigenvector eigenvalue decomposition */
-
-		      initReversibleGTR(tr, pr, index);
-		    }
-		}
-	      pos++;
+	      for(k = 0; k < ll->ld[i].partitions; k++)
+		pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
 	    }
 	  else
 	    {
 	      for(k = 0; k < ll->ld[i].partitions; k++)
-	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
+		{
+		  int 
+		    index = ll->ld[i].partitionList[k];
+		  
+		  switch(whichFunction)
+		    {
+		    case RATE_F:
+		      setRateModel(pr, index, value[pos], rateNumber);  
+		      initReversibleGTR(tr, pr, index);		 
+		      break;
+		    case ALPHA_F:
+		      pr->partitionData[index]->alpha = value[pos];
+		      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
+		      break;
+		    default:
+		      assert(0);
+		    }
+		}
 	    }
-	 
+	  pos++;
 	}
+      else
+	{
+	  for(k = 0; k < ll->ld[i].partitions; k++)
+	    pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
+	}      
+    }
 
-      assert(pos == numberOfModels);
+  assert(pos == numberOfModels);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
       masterBarrier(THREAD_OPT_RATE, tr, pr);
@@ -382,103 +377,34 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
       /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif     
-      
-      /* update likelihoods and the sum of per-partition likelihoods for those partitions that share the parameter.
-	 that's the likelihood we actually want to optimize here */
 
-      for(i = 0, pos = 0; i < ll->entries; i++)	
+
+  for(i = 0, pos = 0; i < ll->entries; i++)	
+    {
+      if(ll->ld[i].valid)
 	{
-	  if(ll->ld[i].valid)
+	  result[pos] = 0.0;
+	  
+	  for(k = 0; k < ll->ld[i].partitions; k++)
 	    {
-	      result[pos] = 0.0;
-	      for(k = 0; k < ll->ld[i].partitions; k++)
-		{
-		  int index = ll->ld[i].partitionList[k];
+	      int 
+		index = ll->ld[i].partitionList[k];
 
-		  assert(pr->partitionData[index]->partitionLH <= 0.0);
-
-		  result[pos] -= pr->partitionData[index]->partitionLH;
-		  
-		}
-	      pos++;
+	      assert(pr->partitionData[index]->partitionLH <= 0.0);
+	      
+	      result[pos] -= pr->partitionData[index]->partitionLH;
+	      
 	    }
-	   for(k = 0; k < ll->ld[i].partitions; k++)
-	     {
-	       int index = ll->ld[i].partitionList[k];
-	       pr->partitionData[index]->executeModel = PLL_TRUE;
-	     }	  
+	  pos++;
 	}
-
-      assert(pos == numberOfModels);
-      break;
-    case ALPHA_F:
-      /*
-      updated the code for evaluating alpha
-      this will be needed later-on when LG4X is integrated 
-      the previous version of the code assumed that we'd just have 
-      to optimize all alpha values at once, this is not the case any more !
-      */
-
-       for(i = 0, pos = 0; i < ll->entries; i++)
+      for(k = 0; k < ll->ld[i].partitions; k++)
 	{
-	  int 
-	    index = ll->ld[i].partitionList[0];
-	  
-	  assert(ll->ld[i].partitions == 1);
-	  
-	  if(ll->ld[i].valid)
-	    {
-	      if(converged[pos])		
-		pr->partitionData[index]->executeModel = PLL_FALSE;	       
-	      else
-		{		  		  
-		  pr->partitionData[index]->executeModel = PLL_TRUE;
-		  pr->partitionData[index]->alpha = value[pos];
-		  makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
-		}
-	       
-	      pos++;
-	    }
-	  else	    	      
-	    pr->partitionData[index]->executeModel = PLL_FALSE;	   
-	}
-      
-      assert(pos == numberOfModels);
-
-
-#if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-      masterBarrier(THREAD_OPT_ALPHA, tr, pr);
-#else  
-      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-#endif
-
-      for(i = 0, pos = 0; i < ll->entries; i++)	
-	{ 
-	  int 
-	    index = ll->ld[i].partitionList[0];
-	  
-	  assert(ll->ld[i].partitions == 1);	  
-	  
-	  if(ll->ld[i].valid)
-	    {
-	      result[pos] = 0.0;	  	      
-	      	      
-	      assert(pr->partitionData[index]->partitionLH <= 0.0);		
-	      
-	      result[pos] -= pr->partitionData[index]->partitionLH;	            	      
-	      
-	      pos++;
-	    }
-	  	 
+	  int index = ll->ld[i].partitionList[k];
 	  pr->partitionData[index]->executeModel = PLL_TRUE;
-	}
-      
-      assert(pos == numberOfModels);
-      break;
-            
-    default:
-      assert(0);	
+	}	  
     }
+  
+  assert(pos == numberOfModels);   
 }
 
 /* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
