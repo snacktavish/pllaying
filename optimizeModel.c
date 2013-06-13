@@ -220,6 +220,46 @@ static linkageList* initLinkageList(int *linkList, partitionList *pr)
   return ll;
 }
 
+static linkageList* initLinkageListString(char *linkageString, partitionList * pr)
+{
+  int 
+    *list = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
+    j;
+
+  linkageList 
+    *l;
+
+  char
+    *str1,
+    *saveptr,
+//    *ch = strdup(linkageString),
+    *ch,
+    *token;
+  
+  ch = (char *) rax_malloc (strlen (linkageString) + 1);
+  strcpy (ch, linkageString);
+
+  for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
+    {
+      token = strtok_r(str1, ",", &saveptr);
+      if(token == (char *)NULL)
+	break;
+      assert(j < pr->numberOfPartitions);
+      list[j] = atoi(token);
+      //printf("%d: %s\n", j, token);
+    }
+  
+  rax_free(ch);
+
+  l = initLinkageList(list, pr);
+  
+  rax_free(list);
+
+  return l;
+}
+
+
+
 /* dedicated helper function to initialize the linkage list, that is, essentiaylly compute 
    the integer vector int *linkList used above for linking GTR models.
    
@@ -2363,8 +2403,12 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
        alpha[3] = {0, 0, 1},
        gtr[3]   = {0, 0, 1};
 
+       alphaList = initLinkageListString("0,0,0,1", pr);
+       rateList  = initLinkageListString("0,0,0", pr);
+       /*
        alphaList = initLinkageList (alpha, pr);
        rateList  = initLinkageList (gtr, pr);
+       */
 
   /* alpha parameters and p-invar parameters are unlinked.
      this is the point where I actually hard-coded this in RAxML */
