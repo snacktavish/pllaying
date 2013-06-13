@@ -125,6 +125,9 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
     pr->partitionData[model]->substRates[position] = rate;
 }
 
+//LIBRARY: the only thing that we will need to do here is to 
+//replace linkList by a string and also add some error correction 
+//code
 
 /* 
    the following three functions are used to link/unlink parameters 
@@ -164,6 +167,8 @@ static linkageList* initLinkageList(int *linkList, partitionList *pr)
   
   for(i = 0; i < pr->numberOfPartitions; i++)
     {
+      assert(linkList[i] >= 0 && linkList[i] < pr->numberOfPartitions);
+
       if(linkList[i] > numberOfModels)
 	numberOfModels = linkList[i];
     }
@@ -1001,7 +1006,6 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
     optParamGeneric(tr, pr, modelEpsilon, ll, non_LG4X_Partitions, -1, ALPHA_MIN, ALPHA_MAX, ALPHA_F);
   
   //right now this assertion shouldn't fail, undo when implementing LG4X  
-  assert(non_LG4X_Partitions == pr->numberOfPartitions);
   assert(LG4X_Partitions == 0);
  
 
@@ -2339,7 +2343,6 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
      and the GTR subst matrices */
 
   linkageList *alphaList;
-  linkageList *invarList;
   linkageList *rateList; 
 
   int *unlinked = (int *)rax_malloc(sizeof(int) * pr->numberOfPartitions);
@@ -2352,17 +2355,29 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   for(i = 0; i < pr->numberOfPartitions; i++)
     unlinked[i] = i;
 
+
+  // test code for library
+  if (0)
+   {
+     int
+       alpha[3] = {0, 0, 1},
+       gtr[3]   = {0, 0, 1};
+
+       alphaList = initLinkageList (alpha, pr);
+       rateList  = initLinkageList (gtr, pr);
+
   /* alpha parameters and p-invar parameters are unlinked.
      this is the point where I actually hard-coded this in RAxML */
-
-  alphaList = initLinkageList(unlinked, pr);
-  invarList = initLinkageList(unlinked, pr);
 
   /* call the dedicated function for linking the GTR matrix across all AA data partitions 
      If we have only DNA data all GTR matrix estimates will be unlinked.
      */
-
-  rateList  = initLinkageListGTR(pr);
+   }
+  else
+   {
+     alphaList = initLinkageList(unlinked, pr);
+     rateList  = initLinkageListGTR(pr);
+   }
 
   tr->start = tr->nodep[1];
 
@@ -2440,6 +2455,5 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   rax_free(unlinked);
   freeLinkageList(alphaList);
   freeLinkageList(rateList);
-  freeLinkageList(invarList);  
 }
 
