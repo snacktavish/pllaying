@@ -2512,7 +2512,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 
       resetBranches(tr);
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-      treeEvaluate(tr, pr, 16); // 0.5 * 32 = 16
+      treeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
       
       if(tr->likelihood < startLH)
 	{	
