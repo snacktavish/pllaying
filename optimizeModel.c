@@ -61,6 +61,7 @@ extern char lengthFileName[1024];
 extern char lengthFileNameModel[1024];
 extern char *protModels[NUM_PROT_MODELS];
 
+static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int rateNumber, double lim_inf, double lim_sup, int whichParameterType);
 // FLAG for easier debugging of model parameter optimization routines 
 
 //#define _DEBUG_MOD_OPT
@@ -319,9 +320,24 @@ static void freeLinkageList( linkageList* ll)
 #define ALPHA_F 0
 #define RATE_F  1
 
+static void changeModelParameters(int index, int rateNumber, double value, int whichParameterType, pllInstance *tr, partitionList * pr)
+{
+  switch(whichParameterType)
+    {
+    case RATE_F:
+      setRateModel(pr, index, value, rateNumber);  
+      initReversibleGTR(tr, pr, index);		 
+      break;
+    case ALPHA_F:
+      pr->partitionData[index]->alpha = value;
+      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
+      break;
+    default:
+      assert(0);
+    }
+}
 
 /* function that evaluates the change to a parameter */
-
 static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
 { 
   int 
@@ -344,20 +360,9 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 		{
 		  int 
 		    index = ll->ld[i].partitionList[k];
-		  
-		  switch(whichFunction)
-		    {
-		    case RATE_F:
-		      setRateModel(pr, index, value[pos], rateNumber);  
-		      initReversibleGTR(tr, pr, index);		 
-		      break;
-		    case ALPHA_F:
-		      pr->partitionData[index]->alpha = value[pos];
-		      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
-		      break;
-		    default:
-		      assert(0);
-		    }
+
+
+		  changeModelParameters(index, rateNumber, value[pos], whichFunction, tr, pr);
 		}
 	    }
 	  pos++;
@@ -944,153 +949,6 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 /* ALPHA PARAM ********************************************************************************************/
 
 
-
-
-/* function for optimizing alpha parameter */
-
-/* the new parameter numberOfModels in the function below will be required for implementing */
-
-static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels)
-{
-  int 
-    pos,
-    i;
-  
-  double 
-    lim_inf     = ALPHA_MIN,
-    lim_sup     = ALPHA_MAX,
-    *endLH      = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *startLH    = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *startAlpha = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *endAlpha   = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_a         = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_b         = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_c         = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fa        = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fb        = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fc        = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_param     = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *result     = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_x         = (double *)rax_malloc(sizeof(double) * numberOfModels);   
-
-   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-
-   #ifdef  _DEBUG_MOD_OPT
-     double
-       initialLH = tr->likelihood;
-   #endif
-   
-   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      int revertModel = 0;
-   #endif   
-
-   
-  for(i = 0, pos = 0; i < ll->entries; i++)
-    {
-      //the valid field is required later-on to distinguish between 
-      //LG4X and non-LG4X partitions 
-
-      if(ll->ld[i].valid)
-	{
-	  int 
-	    index = ll->ld[i].partitionList[0];
-      
-	  //we always assume that alphas are not linked across partitions in ExaML,
-	  //hence each entry of the partition list must have a length of 1!
-
-	  assert(ll->ld[i].partitions == 1);
-	  	  
-	  startAlpha[pos] = pr->partitionData[index]->alpha;
-
-	  _a[pos] = startAlpha[pos] + 0.1;
-	  _b[pos] = startAlpha[pos] - 0.1;      
-	  
-	   if(_a[pos] < lim_inf) 
-	    _a[pos] = lim_inf;
-	  
-	  if(_a[pos] > lim_sup) 
-	    _a[pos] = lim_sup;
-	      
-	  if(_b[pos] < lim_inf) 
-	    _b[pos] = lim_inf;
-	  
-	  if(_b[pos] > lim_sup) 
-	    _b[pos] = lim_sup;   
-
-	  startLH[pos] = pr->partitionData[index]->partitionLH;
-	  endLH[pos] = PLL_UNLIKELY;
-
-	  pos++;
-	}
-    }					  
-
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, -1, ALPHA_F, tr, pr, ll, modelEpsilon);
-  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, ALPHA_F, -1, tr, pr, ll, lim_inf, lim_sup);
-
-  for(i = 0; i < numberOfModels; i++)
-    endLH[i] = result[i];
-  
-
-  for(i = 0, pos = 0; i < ll->entries; i++)
-    {
-       if(ll->ld[i].valid)
-	{
-	  int
-	    index = ll->ld[i].partitionList[0];
-	  
-	  assert(ll->ld[i].partitions == 1);
-
-	  if(startLH[pos] > endLH[pos])
-	    {    	  	 
-	      pr->partitionData[index]->alpha = startAlpha[pos];
-	      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian); 		
-	    }       
-	  else
-	    {		     
-	      //same error corrected is in the GTR rate optimization, need to set the value 
-	      //to the optimum _x, after optimization !
-	      pr->partitionData[index]->alpha = _x[pos];
-	      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian); 		
-	    }
-	  pos++;
-	}
-    }
-
-  assert(pos == numberOfModels);
-
-  //in the library and standard RAxML we must call the barrier at this point, regardless of wheter 
-  //we reverted the model or not, to update the values of the alphas and the discrete GAMMA rates 
-  /* broadcast new alpha value to all parallel threads/processes */
-
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    masterBarrier(THREAD_COPY_ALPHA, tr, pr);
-#endif
-  
-
-#ifdef _DEBUG_MOD_OPT
-  evaluateGenericInitrav(tr, tr->start);
-
-  if(tr->likelihood < initialLH)
-    printf("%f %f\n", tr->likelihood, initialLH);
-  assert(tr->likelihood >= initialLH);
-#endif 
-
-  rax_free(startLH);
-  rax_free (endLH);
-  rax_free(startAlpha);
-  rax_free(endAlpha);
-  rax_free(result);
-  rax_free(_a);
-  rax_free(_b);
-  rax_free(_c);
-  rax_free(_fa);
-  rax_free(_fb);
-  rax_free(_fc);
-  rax_free(_param);
-  rax_free(_x);  
-
-}
-
 //this function is required for implementing the LG4X model later-on 
 
 static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
@@ -1139,8 +997,8 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
 
  
 
-  if(non_LG4X_Partitions > 0)
-    optAlpha(tr, pr, modelEpsilon, ll, non_LG4X_Partitions);
+  if(non_LG4X_Partitions > 0)    
+    optParamGeneric(tr, pr, modelEpsilon, ll, non_LG4X_Partitions, -1, ALPHA_MIN, ALPHA_MAX, ALPHA_F);
   
   //right now this assertion shouldn't fail, undo when implementing LG4X  
   assert(non_LG4X_Partitions == pr->numberOfPartitions);
@@ -1181,7 +1039,7 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
     ll->ld[i].valid = PLL_TRUE;
 }
 
-static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states, int rateNumber, int numberOfRates)
+static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int rateNumber, double lim_inf, double lim_sup, int whichParameterType)
 {
   int
     l,
@@ -1190,23 +1048,18 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
     pos;
     
   double 
-    lim_inf     = RATE_MIN,
-    lim_sup     = RATE_MAX,
-    *startRates = (double *)malloc(sizeof(double) * numberOfRates * numberOfModels),
-    *startLH    = (double *)malloc(sizeof(double) * numberOfModels),
-    *endLH      = (double *)malloc(sizeof(double) * numberOfModels),
-    *_a         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_b         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_c         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fa        = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fb        = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fc        = (double *)malloc(sizeof(double) * numberOfModels),
-    *_param     = (double *)malloc(sizeof(double) * numberOfModels),
-    *result     = (double *)malloc(sizeof(double) * numberOfModels),
-    *_x         = (double *)malloc(sizeof(double) * numberOfModels); 
+    *startValues = (double *)malloc(sizeof(double) * numberOfModels),
+    *startLH     = (double *)malloc(sizeof(double) * numberOfModels),
+    *endLH       = (double *)malloc(sizeof(double) * numberOfModels),
+    *_a          = (double *)malloc(sizeof(double) * numberOfModels),
+    *_b          = (double *)malloc(sizeof(double) * numberOfModels),
+    *_c          = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fa         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fb         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fc         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_param      = (double *)malloc(sizeof(double) * numberOfModels),
+    *_x          = (double *)malloc(sizeof(double) * numberOfModels); 
    
-  assert(states != -1);
-
   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   
 #ifdef  _DEBUG_MOD_OPT
@@ -1233,8 +1086,17 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
 	      
 	      startLH[pos] += pr->partitionData[index]->partitionLH;
 	      
-	      for(k = 0; k < numberOfRates; k++)
-		startRates[pos * numberOfRates + k] = pr->partitionData[index]->substRates[k];      
+	      switch(whichParameterType)
+		{
+		case ALPHA_F:
+		  startValues[pos] = pr->partitionData[index]->alpha;
+		  break;
+		case RATE_F:
+		  startValues[pos] = pr->partitionData[index]->substRates[rateNumber];      
+		  break;
+		default:
+		  assert(0);
+		}
 	    }
 	  pos++;
 	}
@@ -1245,13 +1107,10 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
   for(k = 0, pos = 0; k < ll->entries; k++)
     {
       if(ll->ld[k].valid)
-	{	 
-	  int 
-	    index = ll->ld[k].partitionList[0];
-	  
-	  _a[pos] = pr->partitionData[index]->substRates[rateNumber] + 0.1;
-	  _b[pos] = pr->partitionData[index]->substRates[rateNumber] - 0.1;
-	      
+        {
+	  _a[pos] = startValues[pos] + 0.1;
+	  _b[pos] = startValues[pos] - 0.1;
+
 	  if(_a[pos] < lim_inf) 
 	    _a[pos] = lim_inf;
 	  
@@ -1270,7 +1129,7 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
 
   assert(pos == numberOfModels);
 
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, RATE_F, tr, pr, ll, modelEpsilon);
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, whichParameterType, tr, pr, ll, modelEpsilon);
       
   for(k = 0; k < numberOfModels; k++)
     {
@@ -1279,11 +1138,8 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
       assert(_c[k] >= lim_inf && _c[k] <= lim_sup);	    
     }      
 
-  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, RATE_F, rateNumber, tr,  pr, ll, lim_inf, lim_sup);
+  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, endLH, numberOfModels, whichParameterType, rateNumber, tr,  pr, ll, lim_inf, lim_sup);
 	
-  for(k = 0; k < numberOfModels; k++)
-    endLH[k] = result[k];
-	      
   for(k = 0, pos = 0; k < ll->entries; k++)
     {
       if(ll->ld[k].valid)
@@ -1298,8 +1154,7 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
 		  int 
 		    index = ll->ld[k].partitionList[j];
 		  
-		  pr->partitionData[index]->substRates[rateNumber] = startRates[pos * numberOfRates + rateNumber];	             	  
-		  initReversibleGTR(tr, pr, index);
+                    changeModelParameters(index, rateNumber, startValues[pos], whichParameterType, tr, pr); 
 		}
 	    }
 	  else
@@ -1313,8 +1168,7 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
 		  int 
 		    index = ll->ld[k].partitionList[j];
 		  
-		  pr->partitionData[index]->substRates[rateNumber] = _x[pos];	             	  
-		  initReversibleGTR(tr, pr, index);
+                  changeModelParameters(index, rateNumber, _x[pos], whichParameterType, tr, pr); 
 		}
 	    }
 	  pos++;
@@ -1328,18 +1182,17 @@ static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, li
     
   assert(pos == numberOfModels);
 
-  free(startLH);
-  free(endLH);
-  free(result);
-  free(_a);
-  free(_b);
-  free(_c);
-  free(_fa);
-  free(_fb);
-  free(_fc);
-  free(_param);
-  free(_x);  
-  free(startRates);
+  rax_free(startLH);
+  rax_free(endLH);
+  rax_free(_a);
+  rax_free(_b);
+  rax_free(_c);
+  rax_free(_fa);
+  rax_free(_fb);
+  rax_free(_fc);
+  rax_free(_param);
+  rax_free(_x);  
+  rax_free(startValues);
 
 #ifdef _DEBUG_MOD_OPT
   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
@@ -1359,7 +1212,7 @@ static void optRates(pllInstance *tr, partitionList * pr, double modelEpsilon, l
     numberOfRates = ((states * states - states) / 2) - 1;
 
   for(rateNumber = 0; rateNumber < numberOfRates; rateNumber++)
-    optRate(tr, pr, modelEpsilon, ll, numberOfModels, states, rateNumber, numberOfRates);
+    optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, rateNumber, RATE_MIN, RATE_MAX, RATE_F);
 }
 
 
