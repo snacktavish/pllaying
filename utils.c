@@ -53,6 +53,7 @@
 #include <limits.h>
 #include <assert.h>
 #include "cycle.h"
+#include "parser/phylip/ssort.h"
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
