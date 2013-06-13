@@ -2425,7 +2425,6 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 {
   int 
     countAutos = 0,
-    i,
     model;
     
    for(model = 0; model < pr->numberOfPartitions; model++)
@@ -2435,16 +2434,29 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
   if(countAutos > 0)
     {
       int 
+        i,
 	numProteinModels = AUTO,
-	*bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
+	*bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
+	*oldIndex  = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
 
       double
+        startLH,
 	*bestScores = (double*)rax_malloc(sizeof(double) * pr->numberOfPartitions);
 
+      topolRELL_LIST 
+	*rl = (topolRELL_LIST *)rax_malloc(sizeof(topolRELL_LIST));
+
+      initTL(rl, tr, 1);
+      saveTL(rl, tr, 0);
+
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
+
+      startLH = tr->likelihood;
       /*printf("Entry: %f\n", tr->likelihood);*/
       
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{
+	  oldIndex[model] = pr->partitionData[model]->autoProtModels;
 	  bestIndex[model] = -1;
 	  bestScores[model] = PLL_UNLIKELY;
 	}
@@ -2456,7 +2468,6 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 	      if(pr->partitionData[model]->protModels == AUTO)
 		{
 		  pr->partitionData[model]->autoProtModels = i;
-
 		  initReversibleGTR(tr, pr, model);
 		}
 	    }
@@ -2479,8 +2490,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 		      bestIndex[model] = i;		      
 		    }
 		}
-
-	    }       
+	    }
 	}
 
       printBothOpen("\n\n");
@@ -2490,13 +2500,10 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 	  if(pr->partitionData[model]->protModels == AUTO)
 	    {
 	      pr->partitionData[model]->autoProtModels = bestIndex[model];
-
 	      initReversibleGTR(tr, pr, model);
-
 	      printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[pr->partitionData[model]->autoProtModels], bestScores[model]);
-	    }	 
+	    }
 	}
-      
       printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
@@ -2507,8 +2514,33 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       treeEvaluate(tr, pr, 16); // 0.5 * 32 = 16
       
-      /*printf("Exit: %f\n", tr->likelihood);*/
+      if(tr->likelihood < startLH)
+	{	
+	  for(model = 0; model < pr->numberOfPartitions; model++)
+	    {
+	      if(pr->partitionData[model]->protModels == AUTO)
+		{
+		  pr->partitionData[model]->autoProtModels = oldIndex[model];
+		  initReversibleGTR(tr, pr, model);
+		}
+	    }
+	  
+	  //this barrier needs to be called in the library 	  
+	  //#ifdef _USE_PTHREADS	
+	  //masterBarrier(THREAD_COPY_RATES, tr);	   
+	  //#endif 
+
+	  restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);	
+	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
+	}
       
+      assert(tr->likelihood >= startLH);
+      /*printf("Exit: %f\n", tr->likelihood);*/
+
+      freeTL(rl);   
+      rax_free(rl); 
+      
+      rax_free(oldIndex);
       rax_free(bestIndex);
       rax_free(bestScores);
     }
