@@ -413,54 +413,73 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
       assert(pos == numberOfModels);
       break;
     case ALPHA_F:
+      /*
+      updated the code for evaluating alpha
+      this will be needed later-on when LG4X is integrated 
+      the previous version of the code assumed that we'd just have 
+      to optimize all alpha values at once, this is not the case any more !
+      */
 
-      /* analoguos to the rate stuff above */
-
-      for(i = 0; i < ll->entries; i++)
+       for(i = 0, pos = 0; i < ll->entries; i++)
 	{
-	  if(converged[i])
+	  int 
+	    index = ll->ld[i].partitionList[0];
+	  
+	  assert(ll->ld[i].partitions == 1);
+	  
+	  if(ll->ld[i].valid)
 	    {
-	      for(k = 0; k < ll->ld[i].partitions; k++)
-	    	  pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
-	    }
-	  else
-	    {
-	      for(k = 0; k < ll->ld[i].partitions; k++)
-		{
-		  int index = ll->ld[i].partitionList[k];
+	      if(converged[pos])		
+		pr->partitionData[index]->executeModel = PLL_FALSE;	       
+	      else
+		{		  		  
 		  pr->partitionData[index]->executeModel = PLL_TRUE;
-		  pr->partitionData[index]->alpha = value[i];
-
-		  /* re-compute the discrete gamma function approximation for the new alpha parameter */
+		  pr->partitionData[index]->alpha = value[pos];
 		  makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
 		}
+	       
+	      pos++;
 	    }
+	  else	    	      
+	    pr->partitionData[index]->executeModel = PLL_FALSE;	   
 	}
+      
+      assert(pos == numberOfModels);
+
+
 #if (defined( _USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
       masterBarrier(THREAD_OPT_ALPHA, tr, pr);
 #else  
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif
-            
-      for(i = 0; i < ll->entries; i++)	
-	{	  
-	  result[i] = 0.0;
+
+      for(i = 0, pos = 0; i < ll->entries; i++)	
+	{ 
+	  int 
+	    index = ll->ld[i].partitionList[0];
 	  
-	  for(k = 0; k < ll->ld[i].partitions; k++)
+	  assert(ll->ld[i].partitions == 1);	  
+	  
+	  if(ll->ld[i].valid)
 	    {
-	      int index = ll->ld[i].partitionList[k];
+	      result[pos] = 0.0;	  	      
 	      	      
-	      assert(pr->partitionData[index]->partitionLH <= 0.0);
+	      assert(pr->partitionData[index]->partitionLH <= 0.0);		
 	      
-	      result[i] -= pr->partitionData[index]->partitionLH;
-	      pr->partitionData[index]->executeModel = PLL_TRUE;
+	      result[pos] -= pr->partitionData[index]->partitionLH;	            	      
+	      
+	      pos++;
 	    }
+	  	 
+	  pr->partitionData[index]->executeModel = PLL_TRUE;
 	}
+      
+      assert(pos == numberOfModels);
       break;
+            
     default:
       assert(0);	
     }
-
 }
 
 /* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
