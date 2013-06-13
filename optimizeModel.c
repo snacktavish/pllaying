@@ -61,7 +61,9 @@ extern char lengthFileName[1024];
 extern char lengthFileNameModel[1024];
 extern char *protModels[NUM_PROT_MODELS];
 
+// FLAG for easier debugging of model parameter optimization routines 
 
+//#define _DEBUG_MOD_OPT
 
 
 /*********************FUNCTIONS FOOR EXACT MODEL OPTIMIZATION UNDER GTRGAMMA ***************************************/
@@ -724,7 +726,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
    
   
-  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, tol);
+  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
 
   for(i = 0; i < numberOfModels; i++)
@@ -738,7 +740,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
   
-  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, tol);
+  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
   for(i = 0; i < numberOfModels; i++)  
     {
@@ -761,7 +763,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
   
  
-  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, tol);
+  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, modelEpsilon);
 
    while(1) 
      {       
@@ -905,7 +907,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 	     }
 	 }
              
-       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, tol);
+       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
        for(i = 0; i < numberOfModels; i++)
 	 {
@@ -1115,7 +1117,7 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
 
 /* optimize rates in the Q matrix */
 
-static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states, int rateNumber, int numberOfRates)
 {
   int 
     i, 
@@ -2392,7 +2394,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   tr->start = tr->nodep[1];
 
   inputLikelihood = tr->likelihood;
-  evaluateGeneric (tr, tr->start, PLL_TRUE);
+  evaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   assert (inputLikelihood == tr->likelihood);
 
   do
