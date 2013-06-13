@@ -113,6 +113,16 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
   int i;
   double   z[NUM_BRANCHES], z0[NUM_BRANCHES];
   int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  #ifdef _DEBUG_UPDATE
+    double 
+      startLH;
+  
+    evaluateGeneric(tr, p);
+  
+    startLH = tr->likelihood;
+  #endif
+
   q = p->back;   
 
   for(i = 0; i < numBranches; i++)
@@ -135,6 +145,19 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
       p->z[i] = q->z[i] = z[i];	 
     }
   }
+ 
+  #ifdef _DEBUG_UPDATE
+    evaluateGeneric(tr, p);
+  
+    if(tr->likelihood <= startLH)
+      {
+        if(fabs(tr->likelihood - startLH) > 0.01)
+  	{
+  	  printf("%f %f\n", startLH, tr->likelihood);
+  	  assert(0);      
+  	}
+      }
+  #endif
 }
 
 /** @brief Branch length optimization of specific branches
