@@ -47,7 +47,6 @@ int main (int argc, char * argv[])
   struct pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
-  int i;
 
   if (argc != 4)
    {
@@ -99,7 +98,7 @@ int main (int argc, char * argv[])
   pllPhylipRemoveDuplicate (phylip, partitions);
 
   /* Set the topology of the PLL tree from a parsed newick tree */
-  pllTreeInitTopologyNewick (tr, newick);
+  pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
   /* Or instead of the previous function use the next commented line to create
      a random tree topology 
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
@@ -112,7 +111,7 @@ int main (int argc, char * argv[])
    }
   
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
-  pllInitModel(tr, PLL_TRUE, PLL_TRUE, phylip, partitions);
+  pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
   /* TODO: evaluate likelihood, create interface calls */
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
@@ -122,55 +121,55 @@ int main (int argc, char * argv[])
 
   /* another eval*/
   double computed_lh = tr->likelihood;
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   assert(computed_lh == tr->likelihood);
   //printf ("Likelihood: %f\n", tr->likelihood);
   
-  /* optimize BL */
-  {
-    double computed_lh = tr->likelihood;
-    treeEvaluate(tr, partitions, 32);
-    evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
-    assert(computed_lh < tr->likelihood);
-    printf ("Likelihood after BL opt: %f\n", tr->likelihood);
-  }
-
-  /* do some simple SPR to improve your topology */
-  {
-    int i;
-    int max_radius = 15;
-    int min_radius = 1;
-    int num_iterations = 200;
-    tr->startLH = tr->endLH = tr->likelihood;
-    for(i=0; i<num_iterations; i++)
-    {
-      nodeptr p = pickMyRandomSubtree(tr);
-      /* make sure starting and end likelihood are the same */
-      tr->startLH = tr->endLH = tr->likelihood;
-      /* explore a neighbourhood of possible re-insertions */
-      rearrangeBIG(tr, partitions, p, min_radius, max_radius);
-      /* if one of the insertions was better, keep it as a best tree */
-      if(tr->startLH < tr->endLH)
-      {
-        restoreTreeFast(tr, partitions);
-        printf ("new Tree at iter %d: %s\n", i,  tr->tree_string);
-      }
-      /* show the tree we have right now (most of the time did not change)*/
-      Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-      evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
-      if(i % (num_iterations/10) == 0)
-      {
-        modOpt(tr, partitions, 5.0);
-        printf("log lh: after %d iterations: %f \n",i, tr->likelihood);
-      }
-    }
-  }
-  /* Print resulting tree */
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s\n", tr->tree_string);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s\n", tr->tree_string);
-  printf("Final log lh: %f \n", tr->likelihood);
+//  /* optimize BL */
+//  {
+//    double computed_lh = tr->likelihood;
+//    treeEvaluate(tr, partitions, 32);
+//    evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
+//    assert(computed_lh < tr->likelihood);
+//    printf ("Likelihood after BL opt: %f\n", tr->likelihood);
+//  }
+//  
+//  /* do some simple SPR to improve your topology */
+//  {
+//    int i;
+//    int max_radius = 15;
+//    int min_radius = 1;
+//    int num_iterations = 200;
+//    tr->startLH = tr->endLH = tr->likelihood;
+//    for(i=0; i<num_iterations; i++)
+//    {
+//      nodeptr p = pickMyRandomSubtree(tr);
+//      /* make sure starting and end likelihood are the same */
+//      tr->startLH = tr->endLH = tr->likelihood;
+//      /* explore a neighbourhood of possible re-insertions */
+//      rearrangeBIG(tr, partitions, p, min_radius, max_radius);
+//      /* if one of the insertions was better, keep it as a best tree */
+//      if(tr->startLH < tr->endLH)
+//      {
+//        restoreTreeFast(tr, partitions);
+//        printf ("new Tree at iter %d: %s\n", i,  tr->tree_string);
+//      }
+//      /* show the tree we have right now (most of the time did not change)*/
+//      Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+//      evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
+//      if(i % (num_iterations/10) == 0)
+//      {
+//        modOpt(tr, partitions, 5.0);
+//        printf("log lh: after %d iterations: %f \n",i, tr->likelihood);
+//      }
+//    }
+//  }
+//  /* Print resulting tree */
+//  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+//  printf ("Tree: %s\n", tr->tree_string);
+//  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+//  printf ("Tree: %s\n", tr->tree_string);
+//  printf("Final log lh: %f \n", tr->likelihood);
 
 
   /* Do some cleanup */
