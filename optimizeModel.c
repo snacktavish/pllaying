@@ -1115,163 +1115,185 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
 
 }
 
-/* optimize rates in the Q matrix */
-
-static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states, int rateNumber, int numberOfRates)
+static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states, int rateNumber, int numberOfRates)
 {
-  int 
-    i, 
+  int
+    l,
     k, 
     j, 
-    pos,
-    numberOfRates = ((states * states - states) / 2) - 1;
+    pos;
     
-  double lim_inf = RATE_MIN;
-  double lim_sup = RATE_MAX;
   double 
-    *startRates;
-  double 
-    *startLH= (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *endLH  = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_a     = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_b     = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_c     = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fa    = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fb    = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_fc    = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_param = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *result = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_x     = (double *)rax_malloc(sizeof(double) * numberOfModels); 
-
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-   int revertModel = 0;
-#endif
-
-   assert(states != -1);
-
-  startRates = (double *)rax_malloc(sizeof(double) * numberOfRates * numberOfModels);
+    lim_inf     = RATE_MIN,
+    lim_sup     = RATE_MAX,
+    *startRates = (double *)malloc(sizeof(double) * numberOfRates * numberOfModels),
+    *startLH    = (double *)malloc(sizeof(double) * numberOfModels),
+    *endLH      = (double *)malloc(sizeof(double) * numberOfModels),
+    *_a         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_b         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_c         = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fa        = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fb        = (double *)malloc(sizeof(double) * numberOfModels),
+    *_fc        = (double *)malloc(sizeof(double) * numberOfModels),
+    *_param     = (double *)malloc(sizeof(double) * numberOfModels),
+    *result     = (double *)malloc(sizeof(double) * numberOfModels),
+    *_x         = (double *)malloc(sizeof(double) * numberOfModels); 
+   
+  assert(states != -1);
 
   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   
+#ifdef  _DEBUG_MOD_OPT
+  double
+    initialLH = tr->likelihood;
+#endif
+
   /* 
      at this point here every worker has the traversal data it needs for the 
      search 
   */
 
-  /* get the initial rates */
-
-  for(i = 0, pos = 0; i < ll->entries; i++)
+  for(l = 0, pos = 0; l < ll->entries; l++)
     {
-      if(ll->ld[i].valid)
+      if(ll->ld[l].valid)
 	{
 	  endLH[pos] = PLL_UNLIKELY;
 	  startLH[pos] = 0.0;
 
-	  /* loop over all partitions that are linked via the corresponding GTR matrx, i.e., that share the same GTR matrix */
-
-	  for(j = 0; j < ll->ld[i].partitions; j++)
+	  for(j = 0; j < ll->ld[l].partitions; j++)
 	    {
 	      int 
-		index = ll->ld[i].partitionList[j];
+		index = ll->ld[l].partitionList[j];
 	      
 	      startLH[pos] += pr->partitionData[index]->partitionLH;
 	      
 	      for(k = 0; k < numberOfRates; k++)
-		startRates[pos * numberOfRates + k] = pr->partitionData[index]->substRates[k];
+		startRates[pos * numberOfRates + k] = pr->partitionData[index]->substRates[k];      
 	    }
 	  pos++;
 	}
     }  
 
   assert(pos == numberOfModels);
-  
-  /* 
-     Now loop over all rates in the matrix, e.g., 5 if it's DNA, and 189 if it's protein data.
-     Note that we do this on a rate by rate basis, i.e., first try to optimize a->c, a->g, etc.
-   */
-
-  for(i = 0; i < numberOfRates; i++)
-    {     
-      for(k = 0, pos = 0; k < ll->entries; k++)
-	{
-	  if(ll->ld[k].valid)
-	    {
-	      int index = ll->ld[k].partitionList[0];
-	      _a[pos] = pr->partitionData[index]->substRates[i] + 0.1;
-	      _b[pos] = pr->partitionData[index]->substRates[i] - 0.1;
+   
+  for(k = 0, pos = 0; k < ll->entries; k++)
+    {
+      if(ll->ld[k].valid)
+	{	 
+	  int 
+	    index = ll->ld[k].partitionList[0];
+	  
+	  _a[pos] = pr->partitionData[index]->substRates[rateNumber] + 0.1;
+	  _b[pos] = pr->partitionData[index]->substRates[rateNumber] - 0.1;
 	      
-	      if(_a[pos] < lim_inf) _a[pos] = lim_inf;
-	      if(_a[pos] > lim_sup) _a[pos] = lim_sup;
+	  if(_a[pos] < lim_inf) 
+	    _a[pos] = lim_inf;
+	  
+	  if(_a[pos] > lim_sup) 
+	    _a[pos] = lim_sup;
 	      
-	      if(_b[pos] < lim_inf) _b[pos] = lim_inf;
-	      if(_b[pos] > lim_sup) _b[pos] = lim_sup;    
-	      pos++;
-	    }
-	}                       	     
+	  if(_b[pos] < lim_inf) 
+	    _b[pos] = lim_inf;
+	  
+	  if(_b[pos] > lim_sup) 
+	    _b[pos] = lim_sup;    
 
-      assert(pos == numberOfModels);
-
-      brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, i, RATE_F, tr, pr, ll, modelEpsilon);
-      
-      for(k = 0; k < numberOfModels; k++)
-	{
-	  assert(_a[k] >= lim_inf && _a[k] <= lim_sup);
-	  assert(_b[k] >= lim_inf && _b[k] <= lim_sup);	  
-	  assert(_c[k] >= lim_inf && _c[k] <= lim_sup);	    
-	}      
-
-      brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, RATE_F, i, tr, pr, ll, lim_inf, lim_sup);
-	
-      for(k = 0; k < numberOfModels; k++)
-	endLH[k] = result[k];	           
-      
-      /* if the proposed new rate does not improve the likelihood undo the change */
-
-      for(k = 0, pos = 0; k < ll->entries; k++)
-	{
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-	  revertModel = 0;
-#endif
-	  if(ll->ld[k].valid)
-	    { 
-	      if(startLH[pos] > endLH[pos])
-		{		  
-		  for(j = 0; j < ll->ld[k].partitions; j++)
-		    {
-		      int index = ll->ld[k].partitionList[j];
-		      pr->partitionData[index]->substRates[i] = startRates[pos * numberOfRates + i];
-
-		      initReversibleGTR(tr, pr, index);
-		    }
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-		  revertModel++;
-#endif
-		}
-	      pos++;
-	    }
+	  pos++;
 	}
+    }                    	     
 
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      if(revertModel > 0)
-	masterBarrier(THREAD_COPY_RATES, tr, pr);
-#endif
+  assert(pos == numberOfModels);
+
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, RATE_F, tr, pr, ll, modelEpsilon);
       
-      assert(pos == numberOfModels);
+  for(k = 0; k < numberOfModels; k++)
+    {
+      assert(_a[k] >= lim_inf && _a[k] <= lim_sup);
+      assert(_b[k] >= lim_inf && _b[k] <= lim_sup);	  
+      assert(_c[k] >= lim_inf && _c[k] <= lim_sup);	    
+    }      
+
+  brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, RATE_F, rateNumber, tr,  pr, ll, lim_inf, lim_sup);
+	
+  for(k = 0; k < numberOfModels; k++)
+    endLH[k] = result[k];
+	      
+  for(k = 0, pos = 0; k < ll->entries; k++)
+    {
+      if(ll->ld[k].valid)
+	{ 
+	  if(startLH[pos] > endLH[pos])
+	    {
+	      //if the initial likelihood was better than the likelihodo after optimization, we set the values back 
+	      //to their original values 
+
+	      for(j = 0; j < ll->ld[k].partitions; j++)
+		{
+		  int 
+		    index = ll->ld[k].partitionList[j];
+		  
+		  pr->partitionData[index]->substRates[rateNumber] = startRates[pos * numberOfRates + rateNumber];	             	  
+		  initReversibleGTR(tr, pr, index);
+		}
+	    }
+	  else
+	    {
+	      //otherwise we set the value to the optimized value 
+	      //this used to be a bug in standard RAxML, before I fixed it 
+	      //I was not using _x[pos] as value that needs to be set 
+
+	      for(j = 0; j < ll->ld[k].partitions; j++)
+		{
+		  int 
+		    index = ll->ld[k].partitionList[j];
+		  
+		  pr->partitionData[index]->substRates[rateNumber] = _x[pos];	             	  
+		  initReversibleGTR(tr, pr, index);
+		}
+	    }
+	  pos++;
+	}
     }
 
- 
-  rax_free(startLH);
-  rax_free(endLH);
-  rax_free(result);
-  rax_free(_a);
-  rax_free(_b);
-  rax_free(_c);
-  rax_free(_fa);
-  rax_free(_fb);
-  rax_free(_fc);
-  rax_free(_param);
-  rax_free(_x);  
-  rax_free(startRates);
+  #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+    masterBarrier(THREAD_COPY_RATES, tr);
+  #endif    
+
+    
+  assert(pos == numberOfModels);
+
+  free(startLH);
+  free(endLH);
+  free(result);
+  free(_a);
+  free(_b);
+  free(_c);
+  free(_fa);
+  free(_fb);
+  free(_fc);
+  free(_param);
+  free(_x);  
+  free(startRates);
+
+#ifdef _DEBUG_MOD_OPT
+  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+
+  if(tr->likelihood < initialLH)
+    printf("%f %f\n", tr->likelihood, initialLH);
+  assert(tr->likelihood >= initialLH);
+#endif
+}
+
+/* new version for optimizing rates, an external loop that iterates over the rates */
+
+static void optRates(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+{
+  int
+    rateNumber,
+    numberOfRates = ((states * states - states) / 2) - 1;
+
+  for(rateNumber = 0; rateNumber < numberOfRates; rateNumber++)
+    optRate(tr, pr, modelEpsilon, ll, numberOfModels, states, rateNumber, numberOfRates);
 }
 
 
