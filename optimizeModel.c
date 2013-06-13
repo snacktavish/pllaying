@@ -1004,18 +1004,18 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 
 /* function for optimizing alpha parameter */
 
+/* the new parameter numberOfModels in the function below will be required for implementing */
 
-static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
+static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll, int numberOfModels)
 {
   int 
-    i, 
-    k,
-    numberOfModels = ll->entries;
+    pos,
+    i;
   
   double 
     lim_inf     = ALPHA_MIN,
-    lim_sup     = ALPHA_MAX;
-  double
+    lim_sup     = ALPHA_MAX,
+    *endLH      = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *startLH    = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *startAlpha = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *endAlpha   = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -1029,43 +1029,54 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
     *result     = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *_x         = (double *)rax_malloc(sizeof(double) * numberOfModels);   
 
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-   int revertModel = 0;
-#endif   
-
    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+
+   #ifdef  _DEBUG_MOD_OPT
+     double
+       initialLH = tr->likelihood;
+   #endif
    
-   /* 
-     at this point here every worker has the traversal data it needs for the 
-     search, so we won't re-distribute it he he :-)
-  */
+   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+      int revertModel = 0;
+   #endif   
 
-  for(i = 0; i < numberOfModels; i++)
+   
+  for(i = 0, pos = 0; i < ll->entries; i++)
     {
-      /* make sure that we want to optimize alpha here */
+      //the valid field is required later-on to distinguish between 
+      //LG4X and non-LG4X partitions 
 
-      assert(ll->ld[i].valid);
-      
-      /* get the representative alpha value for all partitions that share it.
-	 In RAxML we have hard-coded all alpha parameters to be estimated separately.
-	 hence linking alpha parameters has not been tested for a long long time, be cautious 
-      */
-      
-      startAlpha[i] = pr->partitionData[ll->ld[i].partitionList[0]]->alpha;
-      _a[i] = startAlpha[i] + 0.1;
-      _b[i] = startAlpha[i] - 0.1;      
-      if(_b[i] < lim_inf) 
-	_b[i] = lim_inf;
-
-      startLH[i] = 0.0;
-      
-      for(k = 0; k < ll->ld[i].partitions; k++)	
+      if(ll->ld[i].valid)
 	{
-	  /* sum over all per-partition log likelihood scores that share the same alpha parameter */
-	  startLH[i] += pr->partitionData[ll->ld[i].partitionList[k]]->partitionLH;
+	  int 
+	    index = ll->ld[i].partitionList[0];
+      
+	  //we always assume that alphas are not linked across partitions in ExaML,
+	  //hence each entry of the partition list must have a length of 1!
+
+	  assert(ll->ld[i].partitions == 1);
+	  	  
+	  startAlpha[pos] = pr->partitionData[index]->alpha;
+
+	  _a[pos] = startAlpha[pos] + 0.1;
+	  _b[pos] = startAlpha[pos] - 0.1;      
 	  
-	  /* make sure that all copies of the linked alpha parameter have been updated appropriately */
-	  assert(pr->partitionData[ll->ld[i].partitionList[0]]->alpha ==  pr->partitionData[ll->ld[i].partitionList[k]]->alpha);
+	   if(_a[pos] < lim_inf) 
+	    _a[pos] = lim_inf;
+	  
+	  if(_a[pos] > lim_sup) 
+	    _a[pos] = lim_sup;
+	      
+	  if(_b[pos] < lim_inf) 
+	    _b[pos] = lim_inf;
+	  
+	  if(_b[pos] > lim_sup) 
+	    _b[pos] = lim_sup;   
+
+	  startLH[pos] = pr->partitionData[index]->partitionLH;
+	  endLH[pos] = PLL_UNLIKELY;
+
+	  pos++;
 	}
     }					  
 
@@ -1073,34 +1084,55 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
   brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, ALPHA_F, -1, tr, pr, ll, lim_inf, lim_sup);
 
   for(i = 0; i < numberOfModels; i++)
-    endAlpha[i] = result[i];
+    endLH[i] = result[i];
   
-  /* if for some reason we couldn't improve the likelihood further, restore the old alpha value for all partitions sharing it */
 
-  for(i = 0; i < numberOfModels; i++)
+  for(i = 0, pos = 0; i < ll->entries; i++)
     {
-      if(startLH[i] > endAlpha[i])
-	{    	  
-	  for(k = 0; k < ll->ld[i].partitions; k++)
-	    {	      
-	      pr->partitionData[ll->ld[i].partitionList[k]]->alpha = startAlpha[i];
+       if(ll->ld[i].valid)
+	{
+	  int
+	    index = ll->ld[i].partitionList[0];
+	  
+	  assert(ll->ld[i].partitions == 1);
 
-	      makeGammaCats(pr->partitionData[ll->ld[i].partitionList[k]]->alpha, pr->partitionData[ll->ld[i].partitionList[k]]->gammaRates, 4, tr->useMedian);
+	  if(startLH[pos] > endLH[pos])
+	    {    	  	 
+	      pr->partitionData[index]->alpha = startAlpha[pos];
+	      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian); 		
+	    }       
+	  else
+	    {		     
+	      //same error corrected is in the GTR rate optimization, need to set the value 
+	      //to the optimum _x, after optimization !
+	      pr->partitionData[index]->alpha = _x[pos];
+	      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian); 		
 	    }
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-	  revertModel++;
-#endif
-	}  
+	  pos++;
+	}
     }
 
+  assert(pos == numberOfModels);
+
+  //in the library and standard RAxML we must call the barrier at this point, regardless of wheter 
+  //we reverted the model or not, to update the values of the alphas and the discrete GAMMA rates 
   /* broadcast new alpha value to all parallel threads/processes */
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  if(revertModel > 0)
     masterBarrier(THREAD_COPY_ALPHA, tr, pr);
 #endif
   
+
+#ifdef _DEBUG_MOD_OPT
+  evaluateGenericInitrav(tr, tr->start);
+
+  if(tr->likelihood < initialLH)
+    printf("%f %f\n", tr->likelihood, initialLH);
+  assert(tr->likelihood >= initialLH);
+#endif 
+
   rax_free(startLH);
+  rax_free (endLH);
   rax_free(startAlpha);
   rax_free(endAlpha);
   rax_free(result);
@@ -1113,6 +1145,96 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
   rax_free(_param);
   rax_free(_x);  
 
+}
+
+//this function is required for implementing the LG4X model later-on 
+
+static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
+{
+  int 
+    i,
+    non_LG4X_Partitions = 0,
+    LG4X_Partitions  = 0;
+
+  /* assumes homogeneous super-partitions, that either contain DNA or AA partitions !*/
+  /* does not check whether AA are all linked */
+
+  /* first do non-LG4X partitions */
+
+  for(i = 0; i < ll->entries; i++)
+    {
+      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
+	{
+	case DNA_DATA:			  	
+	case BINARY_DATA:
+	case SECONDARY_DATA:
+	case SECONDARY_DATA_6:
+	case SECONDARY_DATA_7:
+	case GENERIC_32:
+	case GENERIC_64:
+	  ll->ld[i].valid = PLL_TRUE;
+	  non_LG4X_Partitions++;
+	  break;
+	case AA_DATA:	  
+	  //to be implemented later-on 
+	  /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)
+	    {
+	      LG4X_Partitions++;	      
+	      ll->ld[i].valid = FALSE;
+	    }
+	    else*/
+	    {
+	      ll->ld[i].valid = PLL_TRUE;
+	      non_LG4X_Partitions++;
+	    }
+	  break;
+	default:
+	  assert(0);
+	}      
+    }   
+
+ 
+
+  if(non_LG4X_Partitions > 0)
+    optAlpha(tr, pr, modelEpsilon, ll, non_LG4X_Partitions);
+  
+  //right now this assertion shouldn't fail, undo when implementing LG4X  
+  assert(non_LG4X_Partitions == pr->numberOfPartitions);
+  assert(LG4X_Partitions == 0);
+ 
+
+  /* then LG4x partitions */
+
+  for(i = 0; i < ll->entries; i++)
+    {
+      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
+	{
+	case DNA_DATA:			  	
+	case BINARY_DATA:
+	case SECONDARY_DATA:
+	case SECONDARY_DATA_6:
+	case SECONDARY_DATA_7:
+	case GENERIC_32:
+	case GENERIC_64:
+	  ll->ld[i].valid = PLL_FALSE;	  
+	  break;
+	case AA_DATA:	  
+	  //deal with this later-on
+	  /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)	      
+	    ll->ld[i].valid = TRUE;	   
+	    else*/
+	    ll->ld[i].valid = PLL_FALSE;	   	    
+	  break;
+	default:
+	  assert(0);
+	}      
+    }   
+  
+  //if(LG4X_Partitions > 0)
+  //  optLG4X(tr, modelEpsilon, ll, LG4X_Partitions);
+
+  for(i = 0; i < ll->entries; i++)
+    ll->ld[i].valid = PLL_TRUE;
 }
 
 static void optRate(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states, int rateNumber, int numberOfRates)
@@ -2448,7 +2570,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     switch(tr->rateHetModel)
     {
       case GAMMA:      
-        optAlpha(tr, pr, modelEpsilon, alphaList);
+        optAlphasGeneric (tr, pr, modelEpsilon, alphaList);
         evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
         #ifdef _DEBUG_MOD_OPT
