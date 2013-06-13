@@ -317,8 +317,7 @@ static void freeLinkageList( linkageList* ll)
 }
 
 #define ALPHA_F 0
-#define INVAR_F 1
-#define RATE_F  2
+#define RATE_F  1
 
 
 /* function that evaluates the change to a parameter */
@@ -2565,26 +2564,26 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     //printBothOpen("cur LH: %f\n", tr->likelihood);
     currentLikelihood = tr->likelihood;     
 
-    #ifdef _DEBUG_MOD_OPT
+#ifdef _DEBUG_MOD_OPT
       printf ("start: %f\n", currentLikelihood);
-    #endif
+#endif
 
     optRatesGeneric(tr, pr, modelEpsilon, rateList);
 
     evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-    #ifdef _DEBUG_MOD_OPT
+#ifdef _DEBUG_MOD_OPT
       printf ("after rates %f\n", tr->likelihood);
-    #endif
+#endif
 
     autoProtein(tr, pr);
 
     treeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
 
-    #ifdef _DEBUG_MOD_OPT
+#ifdef _DEBUG_MOD_OPT
       evaluateGeneric(tr, tr->start, TRUE);
       printf("after br-len 1 %f\n", tr->likelihood); 
-    #endif
+#endif
 
     switch(tr->rateHetModel)
     {
@@ -2592,25 +2591,26 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
         optAlphasGeneric (tr, pr, modelEpsilon, alphaList);
         evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-        #ifdef _DEBUG_MOD_OPT
+#ifdef _DEBUG_MOD_OPT
           printf("after alphas %f\n", tr->likelihood); 
-        #endif
+#endif
 
         treeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
 
-        #ifdef _DEBUG_MOD_OPT
-          evaluateGeneric(tr, tr->start, TRUE);  
+#ifdef _DEBUG_MOD_OPT
+          evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
           printf("after br-len 2 %f\n", tr->likelihood); 
-        #endif
+#endif
         break;
       case CAT:
         if(catOpt < 3)
         {	      	     	     
+          evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
           optimizeRateCategories(tr, pr, tr->categories);
-          #ifdef _DEBUG_MOD_OPT
-            evaluateGeneric(tr, tr->start, TRUE);  
+#ifdef _DEBUG_MOD_OPT
+            evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
             printf("after cat-opt %f\n", tr->likelihood); 
-          #endif
+#endif
           catOpt++;
         }
         break;	  
