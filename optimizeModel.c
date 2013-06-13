@@ -95,31 +95,24 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
     {    
       int 
 	i, 
-	k = pr->partitionData[model]->symmetryVector[position];
+	index    = pr->partitionData[model]->symmetryVector[position],
+	lastRate = pr->partitionData[model]->symmetryVector[numRates - 1];
 
-      assert(pr->partitionData[model]->dataType == SECONDARY_DATA ||
-	     pr->partitionData[model]->dataType == SECONDARY_DATA_6 ||
-	     pr->partitionData[model]->dataType == SECONDARY_DATA_7);
 
-      if(k == -1)
-	pr->partitionData[model]->substRates[position] = 0.0;
-      else
-	{
-	  if(k == pr->partitionData[model]->symmetryVector[numRates - 1])
+           
+      for(i = 0; i < numRates; i++)
+	{	
+	  if(pr->partitionData[model]->symmetryVector[i] == index)
 	    {
-	      for(i = 0; i < numRates - 1; i++)
-		if(pr->partitionData[model]->symmetryVector[i] == k)
-		  pr->partitionData[model]->substRates[position] = 1.0;
+	      if(index == lastRate)
+		pr->partitionData[model]->substRates[i] = 1.0;
+	      else
+		pr->partitionData[model]->substRates[i] = rate;      
 	    }
-	  else
-	    {
-	      for(i = 0; i < numRates - 1; i++)
-		{
-		  if(pr->partitionData[model]->symmetryVector[i] == k)
-		    pr->partitionData[model]->substRates[i] = rate;
-		}	      	     
-	    }
+	  
+	  //printf("%f ", tr->partitionData[model].substRates[i]);
 	}
+      //printf("\n");
     }
   else
     pr->partitionData[model]->substRates[position] = rate;
@@ -260,6 +253,59 @@ static linkageList* initLinkageListString(char *linkageString, partitionList * p
 
   return l;
 }
+
+static void init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int model)
+{
+  int 
+    states = pr->partitionData[model]->states,
+    numberOfRates = ((states * states - states) / 2), 
+    *list = (int *)rax_malloc(sizeof(int) * numberOfRates),
+    j,
+    max = -1;
+
+  char
+    *str1,
+    *saveptr,
+    *ch,
+    *token;
+
+  ch = (char *) rax_malloc (strlen (linkageString) + 1);
+  strcpy (ch, linkageString);
+
+
+  for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
+    {
+      token = strtok_r(str1, ",", &saveptr);
+      if(token == (char *)NULL)
+	break;
+      assert(j < numberOfRates);
+      list[j] = atoi(token);     
+    }
+  
+  rax_free(ch);
+
+  for(j = 0; j < numberOfRates; j++)
+    {
+      assert(list[j] <= j);
+      assert(list[j] <= max + 1);
+      
+      if(list[j] > max)
+	max = list[j];
+    }  
+
+  assert(numberOfRates == 6);
+  
+  for(j = 0; j < numberOfRates; j++)  
+    pr->partitionData[model]->symmetryVector[j] = list[j];    
+
+  //less than the maximum possible number of rate parameters
+
+  if(max < numberOfRates - 1)    
+    pr->partitionData[model]->nonGTR = PLL_TRUE;
+
+  rax_free(list);
+}
+
 
 
 
@@ -1223,7 +1269,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     }
 
   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    masterBarrier(THREAD_COPY_RATES, tr);
+    masterBarrier(THREAD_COPY_RATES, tr, pr);
   #endif    
 
     
@@ -1294,8 +1340,6 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
     i,
     dnaPartitions = 0,
     aaPartitions  = 0,
-    secondaryPartitions = 0,
-    secondaryModel = -1,
     states = -1;
 
   /* assumes homogeneous super-partitions, that either contain DNA or AA partitions !*/
@@ -1335,69 +1379,6 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
     optRates(tr, pr, modelEpsilon, ll, dnaPartitions, states);
   
 
-  /* now we do the same thing for secondary structure models  */
-
-   for(i = 0; i < ll->entries; i++)
-    {
-      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	  /* 
-	     we only have one type of secondary data models in one analysis, RAxML allows for only one secondary data 
-	     partition !
-	   */
-	case SECONDARY_DATA_6:
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	  secondaryModel = SECONDARY_DATA_6;
-	  ll->ld[i].valid = PLL_TRUE;
-	  secondaryPartitions++;  
-	  break;
-	case SECONDARY_DATA_7: 
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	  secondaryModel = SECONDARY_DATA_7;
-	  ll->ld[i].valid = PLL_TRUE;
-	  secondaryPartitions++;  
-	  break;
-	case SECONDARY_DATA:
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	  secondaryModel = SECONDARY_DATA;
-	  ll->ld[i].valid = PLL_TRUE;
-	  secondaryPartitions++;  
-	  break;
-	case BINARY_DATA:
-	case AA_DATA:	
-	case DNA_DATA:
-	case GENERIC_32:
-	case GENERIC_64:
-	  ll->ld[i].valid = PLL_FALSE;
-	  break;
-	default:
-	  assert(0);
-	}      
-    }
-
-   /* if there are secondary struct data partitions (and there can only be at most one), let's optimize 
-      their rates, tehre are models with 6, 7 and 16 states */
-   
-   if(secondaryPartitions > 0)
-     {
-       assert(secondaryPartitions == 1);
-
-       switch(secondaryModel)
-	 {
-	 case SECONDARY_DATA:
-	   optRates(tr, pr, modelEpsilon, ll, secondaryPartitions, states);
-	   break;
-	 case SECONDARY_DATA_6:
-	   optRates(tr, pr, modelEpsilon, ll, secondaryPartitions, states);
-	   break;
-	 case SECONDARY_DATA_7:
-	   optRates(tr, pr, modelEpsilon, ll, secondaryPartitions, states);
-	   break; 
-	 default:
-	   assert(0);
-	 }
-     }
-
   /* then AA for GTR */
 
    /* now if all AA partitions share a joint GTR subst matrix, let's do a joint estimate 
@@ -1430,48 +1411,6 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
       assert(aaPartitions == 1);     
       
       optRates(tr, pr, modelEpsilon, ll, aaPartitions, states);
-    }
-  
-  /* then multi-state data partitions
-
-     now here we have to be careful, because every multi-state partition can actually 
-     have a distinct number of states, so we will go to every multi-state partition separately,
-     parallel efficiency for this will suck, but what the hell .....
-  */
-
-  if(tr->multiStateModel == GTR_MULTI_STATE)
-    {     
-      for(i = 0; i < ll->entries; i++)
-	{
-	  switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	    {
-	    case GENERIC_32:
-	      {
-		int k;
-		
-		states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-
-		ll->ld[i].valid = PLL_TRUE;
-		
-		for(k = 0; k < ll->entries; k++)
-		  if(k != i)
-		    ll->ld[k].valid = PLL_FALSE;
-		
-		optRates(tr, pr, modelEpsilon, ll, 1, states);
-	      }
-	      break;
-	    case AA_DATA:	    
-	    case DNA_DATA:	    
-	    case BINARY_DATA:
-	    case SECONDARY_DATA:	
-	    case SECONDARY_DATA_6:
-	    case SECONDARY_DATA_7:
-	    case GENERIC_64:
-	      break;
-	    default:
-	      assert(0);
-	    }	 
-	}           
     }
 
   /* done with all partitions, so we can set all entries in the linkage list to valid again :-) */
@@ -2372,6 +2311,50 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
     }
 }
 
+static void checkMatrixSymnmetriesAndLinkage(partitionList *pr, linkageList *ll)
+{
+  int 
+    i;
+  
+  for(i = 0; i < ll->entries; i++)
+    {
+      int
+	partitions = ll->ld[i].partitions;
+
+      if(partitions > 1)
+	{
+	  int
+	    k, 
+	    reference = ll->ld[i].partitionList[0];
+
+	  for(k = 1; k < partitions; k++)
+	    {
+	      int 
+		index = ll->ld[i].partitionList[k];
+
+	      int
+		states = pr->partitionData[index]->states,
+		rates = ((states * states - states) / 2);
+	      
+	      if(pr->partitionData[reference]->nonGTR != pr->partitionData[index]->nonGTR)
+		assert(0);
+	      
+	      if(pr->partitionData[reference]->nonGTR)
+		{
+		  int 
+		    j;
+		  
+		  for(j = 0; j < rates; j++)
+		    {
+		      if(pr->partitionData[reference]->symmetryVector[j] != pr->partitionData[index]->symmetryVector[j])
+			assert(0);
+		    }
+		}
+	    }	    
+	}
+    }
+}
+
 /* iterative procedure for optimizing all model parameters */
 
 void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
@@ -2402,16 +2385,28 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   // test code for library
   if (0)
    {
-     int
-       alpha[3] = {0, 0, 1},
-       gtr[3]   = {0, 0, 1};
+     
+      //assuming that we have three partitions for testing here 
 
-       alphaList = initLinkageListString("0,0,0,1", pr);
-       rateList  = initLinkageListString("0,0,0", pr);
-       /*
-       alphaList = initLinkageList (alpha, pr);
-       rateList  = initLinkageList (gtr, pr);
-       */
+      alphaList = initLinkageListString("0,1,2", tr);
+      rateList  = initLinkageListString("0,1,1", tr);
+    
+      init_Q_MatrixSymmetries("0,1,2,3,4,5", pr, 0);
+      init_Q_MatrixSymmetries("0,1,2,3,4,4", pr, 1);
+      init_Q_MatrixSymmetries("0,1,1,2,3,4", pr, 2);
+      
+      //function that checks that partitions that have linked Q matrices as in our example above
+      //will not have different configurations of the Q matrix as set by the init_Q_MatrixSymmetries() function
+      //e.g., on would have HKY and one would have GTR, while the user claimes that they are linked
+      //in our example, the Q matrices of partitions 1 and 2 are linked 
+      //but we set different matrix symmetries via 
+      // init_Q_MatrixSymmetries("0,1,2,3,4,4", tr, 1);
+      // and
+      // init_Q_MatrixSymmetries("0,1,1,2,3,4", tr, 2);
+      //
+      //the function just let's assertions fail for the time being .....
+
+      checkMatrixSymnmetriesAndLinkage(pr, rateList);
 
   /* alpha parameters and p-invar parameters are unlinked.
      this is the point where I actually hard-coded this in RAxML */
