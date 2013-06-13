@@ -13,7 +13,7 @@ static struct pllHashTable * hashTable;
 
 static void destroy_model_names(void)
 {
-  pllHashDestroy (&hashTable, TRUE);
+  pllHashDestroy (&hashTable, PLL_TRUE);
 }
 
 static void init_model_names (void)
