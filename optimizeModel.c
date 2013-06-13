@@ -59,7 +59,7 @@ extern char workdir[1024];
 extern char run_id[128];
 extern char lengthFileName[1024];
 extern char lengthFileNameModel[1024];
-extern char *protModels[20];
+extern char *protModels[NUM_PROT_MODELS];
 
 
 
@@ -321,7 +321,7 @@ static void freeLinkageList( linkageList* ll)
 
 /* function that evaluates the change to a parameter */
 
-static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
+static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
 { 
   int i, k, pos;
 
@@ -604,7 +604,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 	    }
 	}
                  
-      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll);
+      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
 
       for(i = 0; i < numberOfModels; i++)
 	{
@@ -683,7 +683,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
 		       double *fc, double lim_inf, double lim_sup, 
-		       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll)
+		       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll, double modelEpsilon)
 {
   double 
     *ulim = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -724,7 +724,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
    
   
-  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, tol);
 
 
   for(i = 0; i < numberOfModels; i++)
@@ -738,7 +738,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
   
-  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, tol);
 
   for(i = 0; i < numberOfModels; i++)  
     {
@@ -761,7 +761,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
   
  
-  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll);
+  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, tol);
 
    while(1) 
      {       
@@ -905,7 +905,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 	     }
 	 }
              
-       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll);
+       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, tol);
 
        for(i = 0; i < numberOfModels; i++)
 	 {
@@ -1067,7 +1067,7 @@ static void optAlpha(pllInstance *tr, partitionList *pr, double modelEpsilon, li
 	}
     }					  
 
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, -1, ALPHA_F, tr, pr, ll);
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, -1, ALPHA_F, tr, pr, ll, modelEpsilon);
   brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, result, numberOfModels, ALPHA_F, -1, tr, pr, ll, lim_inf, lim_sup);
 
   for(i = 0; i < numberOfModels; i++)
@@ -1209,7 +1209,7 @@ static void optRates(pllInstance *tr, partitionList *pr, double modelEpsilon, li
 
       assert(pos == numberOfModels);
 
-      brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, i, RATE_F, tr, pr, ll);
+      brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, i, RATE_F, tr, pr, ll, modelEpsilon);
       
       for(k = 0; k < numberOfModels; k++)
 	{
@@ -2356,6 +2356,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 { 
   int i, catOpt = 0; 
   double 
+    inputLikelihood,
     currentLikelihood,
     modelEpsilon = 0.0001;
 
@@ -2390,30 +2391,61 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
   tr->start = tr->nodep[1];
 
+  inputLikelihood = tr->likelihood;
+  evaluateGeneric (tr, tr->start, PLL_TRUE);
+  assert (inputLikelihood == tr->likelihood);
+
   do
   {           
     //printBothOpen("cur LH: %f\n", tr->likelihood);
     currentLikelihood = tr->likelihood;     
 
+    #ifdef _DEBUG_MOD_OPT
+      printf ("start: %f\n", currentLikelihood);
+    #endif
+
     optRatesGeneric(tr, pr, modelEpsilon, rateList);
 
     evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
+    #ifdef _DEBUG_MOD_OPT
+      printf ("after rates %f\n", tr->likelihood);
+    #endif
+
     autoProtein(tr, pr);
 
     treeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
+
+    #ifdef _DEBUG_MOD_OPT
+      evaluateGeneric(tr, tr->start, TRUE);
+      printf("after br-len 1 %f\n", tr->likelihood); 
+    #endif
 
     switch(tr->rateHetModel)
     {
       case GAMMA:      
         optAlpha(tr, pr, modelEpsilon, alphaList);
         evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+
+        #ifdef _DEBUG_MOD_OPT
+          printf("after alphas %f\n", tr->likelihood); 
+        #endif
+
         treeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
+
+        #ifdef _DEBUG_MOD_OPT
+          evaluateGeneric(tr, tr->start, TRUE);  
+          printf("after br-len 2 %f\n", tr->likelihood); 
+        #endif
         break;
       case CAT:
         if(catOpt < 3)
         {	      	     	     
           optimizeRateCategories(tr, pr, tr->categories);
+          #ifdef _DEBUG_MOD_OPT
+            evaluateGeneric(tr, tr->start, TRUE);  
+            printf("after cat-opt %f\n", tr->likelihood); 
+          #endif
           catOpt++;
         }
         break;	  
@@ -2421,7 +2453,9 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
         assert(0);
     }                   
 
-
+    if(tr->likelihood < currentLikelihood)
+      printf("%f %f\n", tr->likelihood, currentLikelihood);
+    assert(tr->likelihood >= currentLikelihood);
 
     printAAmatrix(pr, fabs(currentLikelihood - tr->likelihood));
   }
