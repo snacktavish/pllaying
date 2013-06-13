@@ -1059,8 +1059,30 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
         maxiter[i] = maxiter[i] - 1;
 
         /* check if the outer loop has converged */
+
+        //old code below commented out, integrated new PRELIMINARY BUG FIX !
+        //this needs further work at some point!
+
+        /*
         if(maxiter[i] > 0 && (ABS(z[i] - zprev[i]) > zstep[i]))
           outerConverged[i] = PLL_FALSE;
+        else
+          outerConverged[i] = PLL_TRUE;
+        */
+
+        if((ABS(z[i] - zprev[i]) > zstep[i]))
+         {
+           /* We should make a more informed decision here,
+  	      based on the log like improvement */
+
+           if(maxiter[i] < -20)
+            {
+              z[i] = z0[i];
+              outerConverged[i] = PLL_TRUE;
+            }
+           else
+             outerConverged[i] = PLL_FALSE;
+         }
         else
           outerConverged[i] = PLL_TRUE;
       }
