@@ -169,8 +169,11 @@ static linkageList* initLinkageList(int *linkList, partitionList *pr)
     {
       assert(linkList[i] >= 0 && linkList[i] < pr->numberOfPartitions);
 
+      assert (linkList[i] <= i && linkList[i] <= numberOfModels + 1);
+
       if(linkList[i] > numberOfModels)
 	numberOfModels = linkList[i];
+
     }
 
   numberOfModels++;
