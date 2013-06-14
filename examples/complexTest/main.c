@@ -68,6 +68,7 @@ int main (int argc, char * argv[])
 
   /* Parse a NEWICK file */
   newick = pllNewickParseFile (argv[2]);
+  
   if (!newick)
    {
      fprintf (stderr, "Error while parsing newick file %s\n", argv[2]);
@@ -98,11 +99,15 @@ int main (int argc, char * argv[])
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (phylip, partitions);
 
+  
+
   /* Set the topology of the PLL tree from a parsed newick tree */
-  pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
+  //pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
   /* Or instead of the previous function use the next commented line to create
      a random tree topology 
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
+
+  pllTreeInitTopologyForAlignment(tr, phylip); 
 
   /* Connect the alignment with the tree structure */
   if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
@@ -113,6 +118,20 @@ int main (int argc, char * argv[])
   
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
   pllInitModel(tr, PLL_TRUE, phylip, partitions);
+
+  /* TODO transform into pll functions !*/
+  
+  allocateParsimonyDataStructures(tr, partitions);
+  makeParsimonyTreeFast(tr, partitions);
+  freeParsimonyDataStructures(tr, partitions);
+  
+  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+
+  printf("%f \n", tr->likelihood);
+  exit(0);
+  
+  /*end */
+
 
   /* TODO: evaluate likelihood, create interface calls */
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);

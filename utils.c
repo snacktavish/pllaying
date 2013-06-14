@@ -2488,6 +2488,29 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
   makeRandomTree (tr);
 }
 
+
+
+void 
+pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip)
+{
+  int
+    tips = phylip->nTaxa,
+    i;
+
+  char 
+    **nameList = phylip->label;
+  
+  pllTreeInitDefaults (tr, 2 * tips - 1, tips);
+
+  for (i = 1; i <= tips; ++ i)
+   {
+     tr->nameList[i] = (char *) rax_malloc ((strlen (nameList[i]) + 1) * sizeof (char));
+     strcpy (tr->nameList[i], nameList[i]);
+     pllHashAdd (tr->nameHash, tr->nameList[i], (void *) (tr->nodep[i]));
+   }
+}
+
+
 void
 pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)
 {

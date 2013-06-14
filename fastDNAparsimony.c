@@ -1140,6 +1140,8 @@ static void determineUninformativeSites(pllInstance *tr, partitionList *pr, int 
 
   for(model = 0; model < pr->numberOfPartitions; model++)
     {
+      
+      
       for(i = pr->partitionData[model]->lower; i < pr->partitionData[model]->upper; i++)
 	{
 	   if(isInformative(tr, pr->partitionData[model]->dataType, i))
