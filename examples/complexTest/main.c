@@ -47,6 +47,7 @@ int main (int argc, char * argv[])
   struct pllNewickTree * newick;
   partitionList * partitions, *partitions2;
   struct pllQueue * parts;
+  int i;
 
   if (argc != 4)
    {
@@ -58,10 +59,10 @@ int main (int argc, char * argv[])
   tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
   tr2 = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
-  /* Parse a PHYLIP file */  
+  /* Parse a PHYLIP file */
   phylip = pllPhylipParse (argv[1]);
   phylip2 = pllPhylipParse (argv[1]);
-  
+
   if (!phylip)
    {
      fprintf (stderr, "Error while parsing %s\n", argv[1]);
@@ -70,13 +71,13 @@ int main (int argc, char * argv[])
 
   /* Parse a NEWICK file */
   newick = pllNewickParseFile (argv[2]);
-  
+
   if (!newick)
    {
      fprintf (stderr, "Error while parsing newick file %s\n", argv[2]);
      return (EXIT_FAILURE);
    }
-  
+
   if (!pllValidateNewick (newick))  /* check whether the valid newick tree is also a tree that can be processed with our nodeptr structure */
    {
      fprintf (stderr, "Invalid phylogenetic tree\n");
@@ -85,7 +86,7 @@ int main (int argc, char * argv[])
 
   /* Parse the partitions file into a partition queue structure */
   parts = pllPartitionParse (argv[3]);
-  
+
   /* Validate the partitions */
   if (!pllPartitionsValidate (parts, phylip))
    {
@@ -103,15 +104,15 @@ int main (int argc, char * argv[])
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (phylip, partitions);
   pllPhylipRemoveDuplicate (phylip2, partitions2);
-  
+
 
   /* Set the topology of the PLL tree from a parsed newick tree */
   //pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
   /* Or instead of the previous function use the next commented line to create
-     a random tree topology 
+     a random tree topology
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
 
-  pllTreeInitTopologyForAlignment(tr, phylip); 
+  pllTreeInitTopologyForAlignment(tr, phylip);
 
   /* Connect the alignment with the tree structure */
   if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
@@ -119,28 +120,28 @@ int main (int argc, char * argv[])
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
    }
-  
+
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
  pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
   /* TODO transform into pll functions !*/
-  
-  /* 
+
+  /*
      allocateParsimonyDataStructures(tr, partitions);
      makeParsimonyTreeFast(tr, partitions);
      freeParsimonyDataStructures(tr, partitions);
   */
-  
+
   pllComputeRandomizedStepwiseAdditionParsimonyTree(tr, partitions);
   Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);  
+  printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);
   evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
-  double 
+  double
     firstTree = tr->likelihood;
 
   printf("%f \n", tr->likelihood);
-  computeBIGRAPID_Test(tr, partitions, PLL_TRUE);
+  //computeBIGRAPID_Test(tr, partitions, PLL_TRUE);
   printf("final like %f\n", tr->likelihood);
   //pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
@@ -151,97 +152,127 @@ int main (int argc, char * argv[])
      return (EXIT_FAILURE);
    }
   pllInitModel(tr2, PLL_TRUE, phylip2, partitions2);
-  
+
   Tree2String (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);  
+  printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);
   evaluateGeneric(tr2, partitions2, tr2->start, PLL_TRUE, PLL_FALSE);
-  
+
   printf("%f \n", tr2->likelihood);
 
   double
     secondTree = tr2->likelihood;
 
   assert(firstTree == secondTree);
-  
+
   pllOptimizeModelParameters(tr2, partitions2, 10.0);
-  
+
   printf("%f \n", tr2->likelihood);
-  
 
-  //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
-  //printf("%f \n", tr->likelihood);
-
-  exit(0);
-  
-  /*end */
-
-
-  /* TODO: evaluate likelihood, create interface calls */
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
-  printf ("Likelihood: %f\n", tr->likelihood);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s\n", tr->tree_string);
-
-  /* another eval*/
-  double computed_lh = tr->likelihood;
-  evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
-  assert(computed_lh == tr->likelihood);
-  //printf ("Likelihood: %f\n", tr->likelihood);
-  
-//  /* optimize BL */
-//  {
-//    double computed_lh = tr->likelihood;
-//    treeEvaluate(tr, partitions, 32);
-//    evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
-//    assert(computed_lh < tr->likelihood);
-//    printf ("Likelihood after BL opt: %f\n", tr->likelihood);
-//  }
-//  
-//  /* do some simple SPR to improve your topology */
-//  {
-//    int i;
-//    int max_radius = 15;
-//    int min_radius = 1;
-//    int num_iterations = 200;
-//    tr->startLH = tr->endLH = tr->likelihood;
-//    for(i=0; i<num_iterations; i++)
-//    {
-//      nodeptr p = pickMyRandomSubtree(tr);
-//      /* make sure starting and end likelihood are the same */
-//      tr->startLH = tr->endLH = tr->likelihood;
-//      /* explore a neighbourhood of possible re-insertions */
-//      rearrangeBIG(tr, partitions, p, min_radius, max_radius);
-//      /* if one of the insertions was better, keep it as a best tree */
-//      if(tr->startLH < tr->endLH)
-//      {
-//        restoreTreeFast(tr, partitions);
-//        printf ("new Tree at iter %d: %s\n", i,  tr->tree_string);
-//      }
-//      /* show the tree we have right now (most of the time did not change)*/
-//      Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-//      evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
-//      if(i % (num_iterations/10) == 0)
-//      {
-//        modOpt(tr, partitions, 5.0);
-//        printf("log lh: after %d iterations: %f \n",i, tr->likelihood);
-//      }
-//    }
-//  }
-//  /* Print resulting tree */
-//  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-//  printf ("Tree: %s\n", tr->tree_string);
-//  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-//  printf ("Tree: %s\n", tr->tree_string);
-//  printf("Final log lh: %f \n", tr->likelihood);
-
-
-  /* Do some cleanup */
   pllPhylipDestroy (phylip);
   pllNewickParseDestroy (&newick);
 
   pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
   pllTreeDestroy (tr);
 
+  pllPhylipDestroy (phylip2); 
+  pllPartitionsDestroy (&partitions2, partitions2->numberOfPartitions, tr2->mxtips);
+  pllTreeDestroy (tr2);
+
+
+
+  for(i = 0; i < 4; i++)
+    {
+      FILE *f = fopen("dummy", "w");
+      
+      fprintf(f, "DNA, p1 = 1-200\n");
+      fprintf(f, "DNA, p1 = 201-400\n");
+      fprintf(f, "DNA, p1 = 401-705\n");
+      
+      fclose(f);
+      
+      tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
+      
+      phylip = pllPhylipParse (argv[1]);
+      
+      newick = pllNewickParseFile (argv[2]);
+      
+      parts = pllPartitionParse ("dummy");
+      
+      /* Validate the partitions */
+      if (!pllPartitionsValidate (parts, phylip))
+	{
+	  fprintf (stderr, "Error: Partitions do not cover all sites\n");
+	  return (EXIT_FAILURE);
+	}
+      
+      /* commit the partitions and build a partitions structure */
+      partitions = pllPartitionsCommit (parts, phylip);
+      
+      /* destroy the  intermedia partition queue structure */
+      pllQueuePartitionsDestroy (&parts);
+      
+      /* eliminate duplicate sites from the alignment and update weights vector */
+      pllPhylipRemoveDuplicate (phylip, partitions);
+      
+      pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
+      if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
+	{
+	  fprintf (stderr, "Incompatible tree/alignment combination\n");
+	  return (EXIT_FAILURE);
+	}
+      pllInitModel(tr, PLL_TRUE, phylip, partitions);
+      
+      switch(i)
+	{
+	case 0:
+	  //link params in one way 
+	  
+	  pllLinkAlphaParameters("0,1,2", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);	
+	  break;
+	case 1:
+	  //link params in another way 
+	  
+	  pllLinkAlphaParameters("0,0,0", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);    
+	  break;
+	case 2:
+	  //link params in yet another way 
+	  
+	  pllLinkAlphaParameters("0,0,0", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,0", partitions);    	
+	  break;
+
+	case 3:
+	  //also fiddle around with the Q matrices, make them to be non-GTR, but simpler
+	  
+	  pllLinkAlphaParameters("0,1,2", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);    
+	  
+	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 0);
+	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 1);
+	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,0", partitions, 2);
+	  break;	
+	default:
+	  assert(0);
+	}
+      
+      evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+      printf("%f \n", tr->likelihood);
+      pllOptimizeModelParameters(tr, partitions, 10.0);
+      printf("%f \n", tr->likelihood); 
+      //cleanup
+      pllPhylipDestroy (phylip);
+      pllNewickParseDestroy (&newick);
+      
+      pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+      pllTreeDestroy (tr);      
+    }
+  
 
   return (EXIT_SUCCESS);
 }

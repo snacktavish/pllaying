@@ -43,6 +43,7 @@
 #include <string.h>
 #include <assert.h>
 #include "axml.h"
+#include "utils.h"
 
 static const double MNBRAK_GOLD =    1.618034;
 static const double MNBRAK_TINY =      1.e-20;
@@ -142,169 +143,7 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
    should look like this: {0, 1, 2, 0} 
 */
 
-static linkageList* initLinkageList(int *linkList, partitionList *pr)
-{
-  int 
-    k,
-    partitions,
-    numberOfModels = 0,
-    i,
-    pos;
-  
-  linkageList 
-    *ll = (linkageList*)rax_malloc(sizeof(linkageList));
-    
-  /* figure out how many distinct parameters we need to estimate 
-     in total, if all parameters are linked the result will be 1 if all 
-     are unlinked the result will be pr->numberOfPartitions */
-  
-  for(i = 0; i < pr->numberOfPartitions; i++)
-    {
-      assert(linkList[i] >= 0 && linkList[i] < pr->numberOfPartitions);
 
-      assert (linkList[i] <= i && linkList[i] <= numberOfModels + 1);
-
-      if(linkList[i] > numberOfModels)
-	numberOfModels = linkList[i];
-
-    }
-
-  numberOfModels++;
-  
-  /* allocate the linkage list data structure that containes information which parameters of which partition are 
-     linked with each other.
-
-     Note that we need a separate invocation of initLinkageList() and a separate linkage list 
-     for each parameter type */
-
-  ll->entries = numberOfModels;
-  ll->ld      = (linkageData*)rax_malloc(sizeof(linkageData) * numberOfModels);
-
-  /* noe loop over the number of free parameters and assign the corresponding partitions to each parameter */
-
-  for(i = 0; i < numberOfModels; i++)
-    {
-      /* 
-	 the valid flag is used for distinguishing between DNA and protein data partitions.
-	 This can be used to enable/disable parameter optimization for the paremeter 
-	 associated to the corresponding partitions. This deature is used in optRatesGeneric 
-	 to first optimize all DNA GTR rate matrices and then all PROT GTR rate matrices */
-
-      ll->ld[i].valid = PLL_TRUE;
-      partitions = 0;
-
-      /* now figure out how many partitions share this joint parameter */
-
-      for(k = 0; k < pr->numberOfPartitions; k++)
-	if(linkList[k] == i)
-	  partitions++;	    
-
-      /* assign a list to store the partitions that share the parameter */
-
-      ll->ld[i].partitions = partitions;
-      ll->ld[i].partitionList = (int*)rax_malloc(sizeof(int) * partitions);
-      
-      /* now store the respective partition indices in this list */
-      
-      for(k = 0, pos = 0; k < pr->numberOfPartitions; k++)
-	if(linkList[k] == i)
-	  ll->ld[i].partitionList[pos++] = k;
-    }
-
-  /* return the linkage list for the parameter */
-
-  return ll;
-}
-
-static linkageList* initLinkageListString(char *linkageString, partitionList * pr)
-{
-  int 
-    *list = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
-    j;
-
-  linkageList 
-    *l;
-
-  char
-    *str1,
-    *saveptr,
-//    *ch = strdup(linkageString),
-    *ch,
-    *token;
-  
-  ch = (char *) rax_malloc (strlen (linkageString) + 1);
-  strcpy (ch, linkageString);
-
-  for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
-    {
-      token = strtok_r(str1, ",", &saveptr);
-      if(token == (char *)NULL)
-	break;
-      assert(j < pr->numberOfPartitions);
-      list[j] = atoi(token);
-      //printf("%d: %s\n", j, token);
-    }
-  
-  rax_free(ch);
-
-  l = initLinkageList(list, pr);
-  
-  rax_free(list);
-
-  return l;
-}
-
-static void init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int model)
-{
-  int 
-    states = pr->partitionData[model]->states,
-    numberOfRates = ((states * states - states) / 2), 
-    *list = (int *)rax_malloc(sizeof(int) * numberOfRates),
-    j,
-    max = -1;
-
-  char
-    *str1,
-    *saveptr,
-    *ch,
-    *token;
-
-  ch = (char *) rax_malloc (strlen (linkageString) + 1);
-  strcpy (ch, linkageString);
-
-
-  for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
-    {
-      token = strtok_r(str1, ",", &saveptr);
-      if(token == (char *)NULL)
-	break;
-      assert(j < numberOfRates);
-      list[j] = atoi(token);     
-    }
-  
-  rax_free(ch);
-
-  for(j = 0; j < numberOfRates; j++)
-    {
-      assert(list[j] <= j);
-      assert(list[j] <= max + 1);
-      
-      if(list[j] > max)
-	max = list[j];
-    }  
-
-  assert(numberOfRates == 6);
-  
-  for(j = 0; j < numberOfRates; j++)  
-    pr->partitionData[model]->symmetryVector[j] = list[j];    
-
-  //less than the maximum possible number of rate parameters
-
-  if(max < numberOfRates - 1)    
-    pr->partitionData[model]->nonGTR = PLL_TRUE;
-
-  rax_free(list);
-}
 
 
 
@@ -400,16 +239,7 @@ static linkageList* initLinkageListGTR(partitionList *pr)
 
 /* free linkage list data structure */
 
-static void freeLinkageList( linkageList* ll)
-{
-  int i;    
 
-  for(i = 0; i < ll->entries; i++)    
-    rax_free(ll->ld[i].partitionList);         
-
-  rax_free(ll->ld);
-  rax_free(ll);   
-}
 
 #define ALPHA_F 0
 #define RATE_F  1
@@ -2429,55 +2259,12 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
     }
 }
 
-static void checkMatrixSymnmetriesAndLinkage(partitionList *pr, linkageList *ll)
-{
-  int 
-    i;
-  
-  for(i = 0; i < ll->entries; i++)
-    {
-      int
-	partitions = ll->ld[i].partitions;
-
-      if(partitions > 1)
-	{
-	  int
-	    k, 
-	    reference = ll->ld[i].partitionList[0];
-
-	  for(k = 1; k < partitions; k++)
-	    {
-	      int 
-		index = ll->ld[i].partitionList[k];
-
-	      int
-		states = pr->partitionData[index]->states,
-		rates = ((states * states - states) / 2);
-	      
-	      if(pr->partitionData[reference]->nonGTR != pr->partitionData[index]->nonGTR)
-		assert(0);
-	      
-	      if(pr->partitionData[reference]->nonGTR)
-		{
-		  int 
-		    j;
-		  
-		  for(j = 0; j < rates; j++)
-		    {
-		      if(pr->partitionData[reference]->symmetryVector[j] != pr->partitionData[index]->symmetryVector[j])
-			assert(0);
-		    }
-		}
-	    }	    
-	}
-    }
-}
 
 /* iterative procedure for optimizing all model parameters */
 
 void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 { 
-  int i, catOpt = 0; 
+  int catOpt = 0; 
   double 
     inputLikelihood,
     currentLikelihood,
@@ -2487,20 +2274,11 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
      and the GTR subst matrices */
 
   linkageList
-    *alphaList,
-    *rateList,
-    *freqList;
-
-  int *unlinked = (int *)rax_malloc(sizeof(int) * pr->numberOfPartitions);
+    *alphaList = pr->alphaList,
+    *rateList  = pr->rateList,
+    *freqList  = pr->freqList;
 
   modelEpsilon = 0.0001;
-
-  /* set the integer vector for linking parameters to all parameters being unlinked, 
-     i.e. a separate/independent estimate of parameters will be conducted for eahc partition */
-
-  for(i = 0; i < pr->numberOfPartitions; i++)
-    unlinked[i] = i;
-
 
   // test code for library
   if (0)
@@ -2508,12 +2286,12 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
      
       //assuming that we have three partitions for testing here 
 
-      alphaList = initLinkageListString("0,1,2", pr);
-      rateList  = initLinkageListString("0,1,1", pr);
+      //alphaList = initLinkageListString("0,1,2", pr);
+      //rateList  = initLinkageListString("0,1,1", pr);
     
-      init_Q_MatrixSymmetries("0,1,2,3,4,5", pr, 0);
-      init_Q_MatrixSymmetries("0,1,2,3,4,4", pr, 1);
-      init_Q_MatrixSymmetries("0,1,1,2,3,4", pr, 2);
+      //init_Q_MatrixSymmetries("0,1,2,3,4,5", pr, 0);
+      //init_Q_MatrixSymmetries("0,1,2,3,4,4", pr, 1);
+      //init_Q_MatrixSymmetries("0,1,1,2,3,4", pr, 2);
       
       //function that checks that partitions that have linked Q matrices as in our example above
       //will not have different configurations of the Q matrix as set by the init_Q_MatrixSymmetries() function
@@ -2526,7 +2304,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
       //
       //the function just let's assertions fail for the time being .....
 
-      checkMatrixSymnmetriesAndLinkage(pr, rateList);
+      //checkMatrixSymnmetriesAndLinkage(pr, rateList);
 
   /* alpha parameters and p-invar parameters are unlinked.
      this is the point where I actually hard-coded this in RAxML */
@@ -2537,9 +2315,9 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
    }
   else
    {
-     alphaList = initLinkageList(unlinked, pr);
-     freqList  = initLinkageList(unlinked, pr);
-     rateList  = initLinkageListGTR(pr);
+     //alphaList = initLinkageList(unlinked, pr);
+     //freqList  = initLinkageList(unlinked, pr);
+     //rateList  = initLinkageListGTR(pr);
    }
 
   tr->start = tr->nodep[1];
@@ -2628,9 +2406,6 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
 
-  rax_free(unlinked);
-  freeLinkageList(freqList);
-  freeLinkageList(alphaList);
-  freeLinkageList(rateList);
+  
 }
 

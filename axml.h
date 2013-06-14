@@ -539,7 +539,7 @@ typedef struct
 typedef struct
 {
   boolean valid;
-  int partitions;
+  int partitions;  
   int *partitionList;
 }
   linkageData;
@@ -949,6 +949,9 @@ typedef struct
    pInfo **partitionData;
    int numberOfPartitions;
    boolean perGeneBranchLengths;
+   linkageList *alphaList;
+   linkageList *rateList;
+   linkageList *freqList;
  }  partitionList;
 
 

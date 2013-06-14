@@ -5,7 +5,6 @@ CC = gcc
 
 CFLAGS = -Wall -g -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -msse3 #-D_OPTIMIZED_FUNCTIONS -D_GNU_SOURCE -O2 -fomit-frame-pointer -funroll-loops -D__AVX -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wbad-function-cast #-Wunused-function -Wundef -Wunused
 
-
 LIBRARIES = -lm
 
 RM = rm -f

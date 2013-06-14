@@ -6,6 +6,13 @@
 #include "parser/newick/newick.h"
 #include "queue.h"
 
+//linkageList* initLinkageList(int *linkList, partitionList *pr);
+//void freeLinkageList( linkageList* ll);
+
+void pllLinkAlphaParameters(char *string, partitionList *pr);
+void pllLinkFrequencies(char *string, partitionList *pr);
+void pllLinkRates(char *string, partitionList *pr);
+void pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
 
 //void read_msa(pllInstance *tr, const char *filename);
 void makeParsimonyTree(pllInstance *tr);
