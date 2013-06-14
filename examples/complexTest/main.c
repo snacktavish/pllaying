@@ -134,7 +134,7 @@ int main (int argc, char * argv[])
   evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
   printf("%f \n", tr->likelihood);
-  computeBIGRAPID(tr, adef, TRUE);
+  computeBIGRAPID_Test(tr, partitions, PLL_TRUE);
   printf("final like %f\n", tr->likelihood);
   
 

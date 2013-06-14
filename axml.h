@@ -1463,9 +1463,10 @@ extern boolean testInsertRestoreBIG ( pllInstance *tr, partitionList *pr, nodept
 extern void restoreTreeFast ( pllInstance *tr, partitionList *pr );
 extern int determineRearrangementSetting ( pllInstance *tr, partitionList *pr, analdef *adef, bestlist *bestT, bestlist *bt );
 extern void computeBIGRAPID ( pllInstance *tr, partitionList *pr, analdef *adef, boolean estimateModel);
+
 extern boolean treeEvaluate ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 extern boolean treeEvaluatePartition ( pllInstance *tr, double smoothFactor, int model );
-
+extern void computeBIGRAPID_Test (pllInstance *tr, partitionList *pr, boolean estimateModel);
 extern void meshTreeSearch(pllInstance *tr, analdef *adef, int thorough);
 
 extern void initTL ( topolRELL_LIST *rl, pllInstance *tr, int n );
