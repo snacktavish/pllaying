@@ -1515,6 +1515,8 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
   while(randomMP < startMP);
   
   printf("OPT: %d\n", tr->bestParsimony);
+
+  rax_free(perm);
 } 
 
 void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr)
