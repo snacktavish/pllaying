@@ -1453,6 +1453,7 @@ pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
      rax_free (pl->partitionData[i]->EI);
      rax_free (pl->partitionData[i]->substRates);
      rax_free (pl->partitionData[i]->frequencies);
+     rax_free (pl->partitionData[i]->freqExponents);
      rax_free (pl->partitionData[i]->empiricalFrequencies);
      rax_free (pl->partitionData[i]->tipVector);
      rax_free (pl->partitionData[i]->symmetryVector);
