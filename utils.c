@@ -1009,7 +1009,6 @@ void init_default(pllInstance *tr)
   tr->manyPartitions = PLL_FALSE;
 
   tr->startingTree = randomTree;
-  tr->randomNumberSeed = 12345;
 
   tr->categories             = 25;
 
@@ -2227,7 +2226,7 @@ pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList * p
       On success returns an instance to PLL, otherwise \b NULL
 */
 pllInstance *
-pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom)
+pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed)
 {
   pllInstance * tr;
 
@@ -2240,6 +2239,8 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
   tr->fastScaling  = fastScaling;
   tr->saveMemory   = saveMemory;
   tr->useRecom     = useRecom;
+  
+  tr->randomNumberSeed = randomNumberSeed;
 
   /* remove it from the library */
   tr->useMedian    = PLL_FALSE;
