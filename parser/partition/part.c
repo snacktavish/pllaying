@@ -145,7 +145,7 @@ parse_partition (char * rawdata, int * inp)
            {
              if (! pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
-                pllQueuePartitionDestroy (&partitions);
+                pllQueuePartitionsDestroy (&partitions);
                 return (0);
               }
              pi->partitionModel[token.len - 1] = 0;
@@ -156,7 +156,7 @@ parse_partition (char * rawdata, int * inp)
            {
              if (! pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
-                pllQueuePartitionDestroy (&partitions);
+                pllQueuePartitionsDestroy (&partitions);
                 return (0);
               }
              pi->partitionModel[token.len - 1] = 0;
@@ -165,7 +165,7 @@ parse_partition (char * rawdata, int * inp)
            }
           else
            {
-             pllQueuePartitionDestroy (&partitions);
+             pllQueuePartitionsDestroy (&partitions);
              return (0);
            }
         }
