@@ -865,6 +865,7 @@ typedef struct {
   /* In GTR we can write Q = S * D, where S is a symmetrical matrix and D a diagonal with the state frequencies */
   double *substRates;       /**< TRANSITION MODEL Entries in S, e.g. 6 free parameters in DNA */   
   double *frequencies;      /**< State frequencies, entries in D, are initialized as empiricalFrequencies */
+  double *freqExponents;
   /* Matrix decomposition: @todo map this syntax to Explanation of the mathematical background */
   double *EIGN;             /**< eigenvalues */
   double *EV;               /**< eigenvectors */
@@ -891,6 +892,7 @@ typedef struct {
   int     protFreqs;                    /** TODO: Is this the flag for empirical protein frequencies? (0 use default) */ 
   /* specific for secondary structures ?? */
   boolean nonGTR;
+  boolean optimizeBaseFrequencies;
   int    *symmetryVector;
   int    *frequencyGrouping;
 

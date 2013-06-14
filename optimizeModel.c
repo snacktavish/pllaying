@@ -413,6 +413,7 @@ static void freeLinkageList( linkageList* ll)
 
 #define ALPHA_F 0
 #define RATE_F  1
+#define FREQ_F  2
 
 static void changeModelParameters(int index, int rateNumber, double value, int whichParameterType, pllInstance *tr, partitionList * pr)
 {
@@ -425,6 +426,25 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
     case ALPHA_F:
       pr->partitionData[index]->alpha = value;
       makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
+      break;
+    case FREQ_F:
+      {
+	int 
+	  j;
+
+	double 
+	  w = 0.0;
+
+	tr->partitionData[index].freqExponents[rateNumber] = value;
+
+	for(j = 0; j < 4; j++)
+	  w += exp(tr->partitionData[index].freqExponents[j]);
+
+	for(j = 0; j < 4; j++)	    	    
+	  tr->partitionData[index].frequencies[j] = exp(tr->partitionData[index].freqExponents[j]) / w;
+	
+	initReversibleGTR(tr, index);
+      }
       break;
     default:
       assert(0);
@@ -471,7 +491,18 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
   assert(pos == numberOfModels);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
-      masterBarrier(THREAD_OPT_RATE, tr, pr);
+   switch (whichFunction)
+    {
+      case RATE_F:
+        masterBarrier(THREAD_OPT_RATE, tr, pr);
+        break;
+      case ALPHA_F:
+        masterBarrier(THREAD_OPT_ALPHA, tr, pr);
+        break;
+      case FREQ_F:
+        masterBarrier(THREAD_OPT_RATE, tr, pr);
+        break;
+    }
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);

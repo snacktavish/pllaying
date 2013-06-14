@@ -3997,6 +3997,9 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
   
   for(model = 0; model < partitions->numberOfPartitions; model++)
    {
+     int
+       k;
+
      partitions->partitionData[model]->alpha = 1.0;
      if(partitions->partitionData[model]->dataType == AA_DATA && partitions->partitionData[model]->protModels == AUTO)
        partitions->partitionData[model]->autoProtModels = WAG; /* initialize by WAG per default */
@@ -4004,6 +4007,9 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
      initReversibleGTR(tr, partitions, model); /* Decomposition of Q matrix */
       /* GAMMA model init */
      makeGammaCats(partitions->partitionData[model]->alpha, partitions->partitionData[model]->gammaRates, 4, tr->useMedian);
+
+     for(k = 0; k < partitions->partitionData[model]->states; k++)
+       partitionsr->partitionData[model]->freqExponents[k] = 0.0;	
    }                   		       
   
    

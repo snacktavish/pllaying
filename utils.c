@@ -1208,6 +1208,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
       localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model].freqExponents                   = (double*)malloc(pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
       
