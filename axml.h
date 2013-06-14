@@ -1342,6 +1342,7 @@ typedef struct
   int frequencyGroupingLength;
 
   boolean nonGTR;
+  boolean optimizeBaseFrequencies;
 
   int undetermined;
 

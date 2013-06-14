@@ -1218,6 +1218,9 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 		case RATE_F:
 		  startValues[pos] = pr->partitionData[index]->substRates[rateNumber];      
 		  break;
+		case FREQ_F:
+		  startValues[pos] = tr->partitionData[index].freqExponents[rateNumber];
+		  break;
 		default:
 		  assert(0);
 		}
@@ -1326,6 +1329,90 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
   assert(tr->likelihood >= initialLH);
 #endif
 }
+
+//******************** rate optimization functions ***************************************************/
+
+static void optFreqs(tree *tr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+{ 
+  int 
+    rateNumber;
+
+  double
+    freqMin = -1000000.0,
+    freqMax = 200.0;
+  
+  for(rateNumber = 0; rateNumber < states; rateNumber++)
+    optParamGeneric(tr, modelEpsilon, ll, numberOfModels, rateNumber, freqMin, freqMax, FREQ_F);   
+}
+
+static void optBaseFreqs(tree *tr, double modelEpsilon, linkageList *ll)
+{
+  int 
+    i,
+    states,
+    dnaPartitions = 0,
+    aaPartitions  = 0;
+
+  /* first do DNA */
+
+  for(i = 0; i < ll->entries; i++)
+    {
+      switch(tr->partitionData[ll->ld[i].partitionList[0]].dataType)
+	{
+	case DNA_DATA:	
+	  states = tr->partitionData[ll->ld[i].partitionList[0]].states;	 
+	  if(tr->partitionData[ll->ld[i].partitionList[0]].optimizeBaseFrequencies)
+	    {
+	      ll->ld[i].valid = TRUE;
+	      dnaPartitions++;  	    
+	    }
+	  else
+	     ll->ld[i].valid = FALSE;
+	  break;       
+	case AA_DATA:
+	  ll->ld[i].valid = FALSE;
+	  break;
+	default:
+	  assert(0);
+	}      
+    }   
+
+  if(dnaPartitions > 0)
+    optFreqs(tr, modelEpsilon, ll, dnaPartitions, states);
+  
+  /* then AA */
+
+  
+  for(i = 0; i < ll->entries; i++)
+    {
+      switch(tr->partitionData[ll->ld[i].partitionList[0]].dataType)
+	{
+	case AA_DATA:	  
+	  states = tr->partitionData[ll->ld[i].partitionList[0]].states; 	      
+	  if(tr->partitionData[ll->ld[i].partitionList[0]].optimizeBaseFrequencies)
+	    {
+	      ll->ld[i].valid = TRUE;
+	      aaPartitions++;		
+	    }
+	  else
+	    ll->ld[i].valid = FALSE; 
+	  break;
+	case DNA_DATA:	    
+	  ll->ld[i].valid = FALSE;
+	  break;
+	default:
+	  assert(0);
+	}	 
+    }
+  
+  if(aaPartitions > 0)      
+    optFreqs(tr, modelEpsilon, ll, aaPartitions, states);
+
+  for(i = 0; i < ll->entries; i++)
+    ll->ld[i].valid = TRUE;
+}
+
+
 
 /* new version for optimizing rates, an external loop that iterates over the rates */
 
@@ -2399,8 +2486,10 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   /* linkage lists for alpha, p-invar has actually been ommitted in this version of the code 
      and the GTR subst matrices */
 
-  linkageList *alphaList;
-  linkageList *rateList; 
+  linkageList
+    *alphaList,
+    *rateList,
+    *freqList;
 
   int *unlinked = (int *)rax_malloc(sizeof(int) * pr->numberOfPartitions);
 
@@ -2449,6 +2538,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   else
    {
      alphaList = initLinkageList(unlinked, pr);
+     freqList  = initLinkageList(unlinked, tr);
      rateList  = initLinkageListGTR(pr);
    }
 
@@ -2483,6 +2573,19 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
       evaluateGeneric(tr, tr->start, TRUE);
       printf("after br-len 1 %f\n", tr->likelihood); 
 #endif
+
+      evaluateGeneric(tr, tr->start, TRUE);
+
+      optBaseFreqs(tr, modelEpsilon, freqList);
+      
+      evaluateGeneric(tr, tr->start, TRUE);
+      
+      treeEvaluate(tr, 0.0625);
+
+#ifdef _DEBUG_MOD_OPT
+      evaluateGeneric(tr, tr->start, TRUE); 
+      printf("after optBaseFreqs 1 %f\n", tr->likelihood);
+#endif 
 
     switch(tr->rateHetModel)
     {
@@ -2526,6 +2629,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
 
   rax_free(unlinked);
+  freeLinkageList(freqList);
   freeLinkageList(alphaList);
   freeLinkageList(rateList);
 }

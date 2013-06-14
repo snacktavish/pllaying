@@ -1632,8 +1632,19 @@ createPartitions (struct pllQueue * parts, int * bounds)
      // TODO: get the model parameters, currently some defaults
      if (!strcmp (pi->partitionModel, "DNA"))  /* DNA */
       {
-        pl->partitionData[i]->dataType           = DNA_DATA;
-        pl->partitionData[i]->maxTipStates       = 16;
+        pl->partitionData[i]->protModels                = -1;
+        pl->initialPartitionData[modelNumber].protFreqs = -1;
+        pl->partitionData[i]->dataType                  = DNA_DATA;
+        pl->partitionData[i]->maxTipStates              = 16;
+      }
+     else if (!strcmp (pi->partitionModel, "DNAX"))
+      {
+        pl->partitionData[i]->protModels                = -1;
+        pl->initialPartitionData[modelNumber].protFreqs = -1;
+        pl->partitionData[i]->dataType                  = DNA_DATA;
+        pl->partitionDaata[i]->optimizeBaseFrequencies  = PLL_TRUE;
+        pl->partitionData[i]->maxTipStates              = 16;
+
       }
      else  /* AA */
       {
@@ -1642,10 +1653,7 @@ createPartitions (struct pllQueue * parts, int * bounds)
         pl->partitionData[i]->maxTipStates       = 23;
       }
      pl->partitionData[i]->states                = pLengths[pl->partitionData[i]->dataType].states;
-     //pl->partitionData[i]->dataType              = DNA_DATA;
-     //pl->partitionData[i]->protModels            =        0;
      pl->partitionData[i]->numberOfCategories    =        1;
-     //pl->partitionData[i]->protModels            =        2;
      pl->partitionData[i]->autoProtModels        =        0;
      pl->partitionData[i]->nonGTR                =        0;
      pl->partitionData[i]->protFreqs             =        0;
