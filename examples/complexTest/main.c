@@ -42,10 +42,10 @@ static nodeptr pickMyRandomSubtree(pllInstance *tr)
 
 int main (int argc, char * argv[])
 {
-  struct pllPhylip * phylip;
-  pllInstance * tr;
+  struct pllPhylip * phylip, *phylip2;
+  pllInstance * tr, *tr2;
   struct pllNewickTree * newick;
-  partitionList * partitions;
+  partitionList * partitions, *partitions2;
   struct pllQueue * parts;
 
   if (argc != 4)
@@ -56,9 +56,11 @@ int main (int argc, char * argv[])
 
   /* Create a PLL tree */
   tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
+  tr2 = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
   /* Parse a PHYLIP file */  
   phylip = pllPhylipParse (argv[1]);
+  phylip2 = pllPhylipParse (argv[1]);
   
   if (!phylip)
    {
@@ -93,13 +95,14 @@ int main (int argc, char * argv[])
 
   /* commit the partitions and build a partitions structure */
   partitions = pllPartitionsCommit (parts, phylip);
-  
+  partitions2 =  pllPartitionsCommit (parts, phylip2);
+
   /* destroy the  intermedia partition queue structure */
   pllQueuePartitionsDestroy (&parts);
 
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (phylip, partitions);
-
+  pllPhylipRemoveDuplicate (phylip2, partitions2);
   
 
   /* Set the topology of the PLL tree from a parsed newick tree */
@@ -118,7 +121,7 @@ int main (int argc, char * argv[])
    }
   
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
-  pllInitModel(tr, PLL_TRUE, phylip, partitions);
+ pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
   /* TODO transform into pll functions !*/
   
@@ -136,15 +139,22 @@ int main (int argc, char * argv[])
   printf("%f \n", tr->likelihood);
   computeBIGRAPID_Test(tr, partitions, PLL_TRUE);
   printf("final like %f\n", tr->likelihood);
-  
+  //pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
-  /*pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);  
-  evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllTreeInitTopologyNewick (tr2, newick, PLL_TRUE);
+  if (!pllLoadAlignment (tr2, phylip2, partitions2, PLL_DEEP_COPY))
+   {
+     fprintf (stderr, "Incompatible tree/alignment combination\n");
+     return (EXIT_FAILURE);
+   }
+  pllInitModel(tr2, PLL_TRUE, phylip2, partitions2);
   
-  printf("%f \n", tr->likelihood);
-  */
+  Tree2String (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+  printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);  
+  evaluateGeneric(tr2, partitions2, tr2->start, PLL_TRUE, PLL_FALSE);
+  
+  printf("%f \n", tr2->likelihood);
+  
 
   //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   //printf("%f \n", tr->likelihood);
