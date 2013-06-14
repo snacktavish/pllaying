@@ -24,4 +24,5 @@ void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed);
 void pllInitModel (pllInstance *, int, struct pllPhylip *, partitionList *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
+void pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 #endif /* UTILS_H_ */

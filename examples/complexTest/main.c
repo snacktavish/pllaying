@@ -163,6 +163,10 @@ int main (int argc, char * argv[])
 
   assert(firstTree == secondTree);
   
+  pllOptimizeModelParameters(tr2, partitions2, 10.0);
+  
+  printf("%f \n", tr2->likelihood);
+  
 
   //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   //printf("%f \n", tr->likelihood);

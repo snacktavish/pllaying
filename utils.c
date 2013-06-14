@@ -2734,3 +2734,25 @@ void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, struct pllPhylip * phy
   initModel (tr, ef, partitions);
   pllEmpiricalFrequenciesDestroy (&ef, partitions->numberOfPartitions);
 }
+
+/** @brief Optimize all free model parameters of the likelihood model
+    
+    Initializes partitions according to model parameters.
+
+    @param tr
+      The PLL instance
+
+    @param pr
+      List of partitions
+
+    @param likelihoodEpsilon
+      Specifies up to which epsilon in likelihood values the iterative routine will 
+      be optimizing the parameters  
+
+    @todo
+      nothing
+*/
+void pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
+{
+  modOpt(tr, pr, likelihoodEpsilon);
+}
