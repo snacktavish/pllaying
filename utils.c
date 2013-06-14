@@ -1446,6 +1446,23 @@ static void freeLinkageList( linkageList* ll)
   rax_free(ll);   
 }
 
+/** @brief free all data structures associated to a partition
+    
+    frees all data structures allocated for this partition
+
+    @param partitions
+      the pointer to the partition list
+
+    @param models
+      number of models in this partition
+
+    @param tips  
+       number of tips in the tree      
+
+    @todo
+      why is models passed as separate parameter, it's part of the 
+      partition structure
+*/
 void 
 pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
 {
@@ -2824,7 +2841,23 @@ static void checkMatrixSymnmetriesAndLinkage(partitionList *pr, linkageList *ll)
 	}
     }
 }
+/** @brief Set symmetries among parameters in the Q matrix
+    
+    Allows to link some or all rate parameters in the Q-matrix 
+    for obtaining simpler models than GTR
 
+    @param string
+      string describing the symmetry pattern among the rates in the Q matrix
+
+    @param pr
+      List of partitions
+      
+    @param model
+      Index of the partition for which we want to set the Q matrix symmetries
+
+    @todo
+      nothing
+*/
 void pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model)
 {
   init_Q_MatrixSymmetries(string, pr, model);
@@ -2954,7 +2987,20 @@ static linkageList* initLinkageListString(char *linkageString, partitionList * p
   return l;
 }
 
+/** @brief Link alpha parameters across partitions
+    
+    Links alpha paremeters across partitions (GAMMA model of rate heterogeneity)
 
+    @param string
+      string describing the linkage pattern    
+
+    @param pr
+      List of partitions
+
+    @todo
+      test behavior/impact/mem-leaks of this when PSR model is used 
+      it shouldn't do any harm, but it would be better to check!
+*/
 void pllLinkAlphaParameters(char *string, partitionList *pr)
 {
   //assumes that it has already been assigned once
@@ -2962,7 +3008,24 @@ void pllLinkAlphaParameters(char *string, partitionList *pr)
   
   pr->alphaList = initLinkageListString(string, pr);
 }
+
+/** @brief Link base frequency parameters across partitions
     
+    Links base frequency paremeters across partitions
+
+    @param string
+      string describing the linkage pattern    
+
+    @param pr
+      List of partitions
+
+    @todo
+      semantics of this function not clear yet: right now this only has an effect 
+      when we do a ML estimate of base frequencies 
+      when we use empirical or model-defined (protein data) base frequencies, one could 
+      maybe average over the per-partition frequencies, but the averages would need to be weighted 
+      accodring on the number of patterns per partition 
+*/
 void pllLinkFrequencies(char *string, partitionList *pr)
 {
   //assumes that it has already been assigned once
@@ -2971,6 +3034,20 @@ void pllLinkFrequencies(char *string, partitionList *pr)
   pr->freqList = initLinkageListString(string, pr);
 }
 
+/** @brief Link Substitution matrices across partitions
+    
+    Links substitution matrices (Q matrices) across partitions
+
+    @param string
+      string describing the linkage pattern    
+
+    @param pr
+      List of partitions
+
+    @todo
+      re-think/re-design how this is done for protein
+      models
+*/
 void pllLinkRates(char *string, partitionList *pr)
 {
   //assumes that it has already been assigned once
