@@ -1208,7 +1208,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
       localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localPartitions->partitionData[model].freqExponents                   = (double*)malloc(pl->frequenciesLength * sizeof(double));
+      localPartitions->partitionData[model]->freqExponents     = (double*)malloc(pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
       
@@ -1633,16 +1633,16 @@ createPartitions (struct pllQueue * parts, int * bounds)
      if (!strcmp (pi->partitionModel, "DNA"))  /* DNA */
       {
         pl->partitionData[i]->protModels                = -1;
-        pl->initialPartitionData[modelNumber].protFreqs = -1;
+        pl->partitionData[i]->protFreqs                 = -1;
         pl->partitionData[i]->dataType                  = DNA_DATA;
         pl->partitionData[i]->maxTipStates              = 16;
       }
      else if (!strcmp (pi->partitionModel, "DNAX"))
       {
         pl->partitionData[i]->protModels                = -1;
-        pl->initialPartitionData[modelNumber].protFreqs = -1;
+        pl->partitionData[i]->protFreqs                 = -1;
         pl->partitionData[i]->dataType                  = DNA_DATA;
-        pl->partitionDaata[i]->optimizeBaseFrequencies  = PLL_TRUE;
+        pl->partitionData[i]->optimizeBaseFrequencies   = PLL_TRUE;
         pl->partitionData[i]->maxTipStates              = 16;
 
       }

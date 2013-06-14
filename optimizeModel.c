@@ -435,15 +435,15 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
 	double 
 	  w = 0.0;
 
-	tr->partitionData[index].freqExponents[rateNumber] = value;
+	pr->partitionData[index]->freqExponents[rateNumber] = value;
 
 	for(j = 0; j < 4; j++)
-	  w += exp(tr->partitionData[index].freqExponents[j]);
+	  w += exp(pr->partitionData[index]->freqExponents[j]);
 
 	for(j = 0; j < 4; j++)	    	    
-	  tr->partitionData[index].frequencies[j] = exp(tr->partitionData[index].freqExponents[j]) / w;
+	  pr->partitionData[index]->frequencies[j] = exp(pr->partitionData[index]->freqExponents[j]) / w;
 	
-	initReversibleGTR(tr, index);
+	initReversibleGTR(tr, pr, index);
       }
       break;
     default:
@@ -1219,7 +1219,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 		  startValues[pos] = pr->partitionData[index]->substRates[rateNumber];      
 		  break;
 		case FREQ_F:
-		  startValues[pos] = tr->partitionData[index].freqExponents[rateNumber];
+		  startValues[pos] = pr->partitionData[index]->freqExponents[rateNumber];
 		  break;
 		default:
 		  assert(0);
@@ -1332,7 +1332,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 
 //******************** rate optimization functions ***************************************************/
 
-static void optFreqs(tree *tr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
+static void optFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 { 
   int 
     rateNumber;
@@ -1342,10 +1342,10 @@ static void optFreqs(tree *tr, double modelEpsilon, linkageList *ll, int numberO
     freqMax = 200.0;
   
   for(rateNumber = 0; rateNumber < states; rateNumber++)
-    optParamGeneric(tr, modelEpsilon, ll, numberOfModels, rateNumber, freqMin, freqMax, FREQ_F);   
+    optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, rateNumber, freqMin, freqMax, FREQ_F);   
 }
 
-static void optBaseFreqs(tree *tr, double modelEpsilon, linkageList *ll)
+static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -1357,20 +1357,20 @@ static void optBaseFreqs(tree *tr, double modelEpsilon, linkageList *ll)
 
   for(i = 0; i < ll->entries; i++)
     {
-      switch(tr->partitionData[ll->ld[i].partitionList[0]].dataType)
+      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
 	{
 	case DNA_DATA:	
-	  states = tr->partitionData[ll->ld[i].partitionList[0]].states;	 
-	  if(tr->partitionData[ll->ld[i].partitionList[0]].optimizeBaseFrequencies)
+	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 
+	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
 	    {
-	      ll->ld[i].valid = TRUE;
+	      ll->ld[i].valid = PLL_TRUE;
 	      dnaPartitions++;  	    
 	    }
 	  else
-	     ll->ld[i].valid = FALSE;
+	     ll->ld[i].valid = PLL_FALSE;
 	  break;       
 	case AA_DATA:
-	  ll->ld[i].valid = FALSE;
+	  ll->ld[i].valid = PLL_FALSE;
 	  break;
 	default:
 	  assert(0);
@@ -1378,27 +1378,27 @@ static void optBaseFreqs(tree *tr, double modelEpsilon, linkageList *ll)
     }   
 
   if(dnaPartitions > 0)
-    optFreqs(tr, modelEpsilon, ll, dnaPartitions, states);
+    optFreqs(tr, pr, modelEpsilon, ll, dnaPartitions, states);
   
   /* then AA */
 
   
   for(i = 0; i < ll->entries; i++)
     {
-      switch(tr->partitionData[ll->ld[i].partitionList[0]].dataType)
+      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
 	{
 	case AA_DATA:	  
-	  states = tr->partitionData[ll->ld[i].partitionList[0]].states; 	      
-	  if(tr->partitionData[ll->ld[i].partitionList[0]].optimizeBaseFrequencies)
+	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 	      
+	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
 	    {
-	      ll->ld[i].valid = TRUE;
+	      ll->ld[i].valid = PLL_TRUE;
 	      aaPartitions++;		
 	    }
 	  else
-	    ll->ld[i].valid = FALSE; 
+	    ll->ld[i].valid = PLL_FALSE; 
 	  break;
 	case DNA_DATA:	    
-	  ll->ld[i].valid = FALSE;
+	  ll->ld[i].valid = PLL_FALSE;
 	  break;
 	default:
 	  assert(0);
@@ -1406,10 +1406,10 @@ static void optBaseFreqs(tree *tr, double modelEpsilon, linkageList *ll)
     }
   
   if(aaPartitions > 0)      
-    optFreqs(tr, modelEpsilon, ll, aaPartitions, states);
+    optFreqs(tr, pr, modelEpsilon, ll, aaPartitions, states);
 
   for(i = 0; i < ll->entries; i++)
-    ll->ld[i].valid = TRUE;
+    ll->ld[i].valid = PLL_TRUE;
 }
 
 
@@ -2508,8 +2508,8 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
      
       //assuming that we have three partitions for testing here 
 
-      alphaList = initLinkageListString("0,1,2", tr);
-      rateList  = initLinkageListString("0,1,1", tr);
+      alphaList = initLinkageListString("0,1,2", pr);
+      rateList  = initLinkageListString("0,1,1", pr);
     
       init_Q_MatrixSymmetries("0,1,2,3,4,5", pr, 0);
       init_Q_MatrixSymmetries("0,1,2,3,4,4", pr, 1);
@@ -2538,7 +2538,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   else
    {
      alphaList = initLinkageList(unlinked, pr);
-     freqList  = initLinkageList(unlinked, tr);
+     freqList  = initLinkageList(unlinked, pr);
      rateList  = initLinkageListGTR(pr);
    }
 
@@ -2570,20 +2570,20 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     treeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
 
 #ifdef _DEBUG_MOD_OPT
-      evaluateGeneric(tr, tr->start, TRUE);
+      evaluateGeneric(tr, tr->start, PLL_TRUE);
       printf("after br-len 1 %f\n", tr->likelihood); 
 #endif
 
-      evaluateGeneric(tr, tr->start, TRUE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-      optBaseFreqs(tr, modelEpsilon, freqList);
+      optBaseFreqs(tr, pr, modelEpsilon, freqList);
       
-      evaluateGeneric(tr, tr->start, TRUE);
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       
-      treeEvaluate(tr, 0.0625);
+      treeEvaluate(tr, pr, 0.0625);
 
 #ifdef _DEBUG_MOD_OPT
-      evaluateGeneric(tr, tr->start, TRUE); 
+      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
       printf("after optBaseFreqs 1 %f\n", tr->likelihood);
 #endif 
 
