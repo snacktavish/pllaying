@@ -136,6 +136,9 @@ int main (int argc, char * argv[])
   printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);  
   evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
+  double 
+    firstTree = tr->likelihood;
+
   printf("%f \n", tr->likelihood);
   computeBIGRAPID_Test(tr, partitions, PLL_TRUE);
   printf("final like %f\n", tr->likelihood);
@@ -154,6 +157,11 @@ int main (int argc, char * argv[])
   evaluateGeneric(tr2, partitions2, tr2->start, PLL_TRUE, PLL_FALSE);
   
   printf("%f \n", tr2->likelihood);
+
+  double
+    secondTree = tr2->likelihood;
+
+  assert(firstTree == secondTree);
   
 
   //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
