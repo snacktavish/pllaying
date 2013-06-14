@@ -17,7 +17,7 @@ int main (int argc, char * argv[])
    {
      printf ("Parsed successfully...\n");
      pllPartitionDump (partitions);
-     pllPartitionsDestroy (&partitions);
+//     pllPartitionsDestroy (&partitions);
    }
   else
    {

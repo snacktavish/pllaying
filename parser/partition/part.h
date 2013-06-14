@@ -18,6 +18,9 @@ struct pllPartitionInfo
   char * partitionName;
   char * partitionModel;
   int protModels;
+  int protFreqs;
+  int dataType;
+  boolean optimizeBaseFrequencies;
   struct pllQueue * regionList;
 };
 
