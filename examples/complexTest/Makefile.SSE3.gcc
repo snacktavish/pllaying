@@ -3,18 +3,14 @@
 
 CC = gcc 
 
-CFLAGS = -Wall  -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -msse3 #-D_OPTIMIZED_FUNCTIONS -D_GNU_SOURCE -O2 -fomit-frame-pointer -funroll-loops -D__AVX -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wbad-function-cast #-Wunused-function -Wundef -Wunused
+CFLAGS = -Wall -g -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -msse3 #-D_OPTIMIZED_FUNCTIONS -D_GNU_SOURCE -O2 -fomit-frame-pointer -funroll-loops -D__AVX -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wbad-function-cast #-Wunused-function -Wundef -Wunused
 
 
 LIBRARIES = -lm
 
 RM = rm -f
 
-<<<<<<< HEAD
 objs    = lexer.o stack.o queue.o hash.o newick.o ssort.o phylip.o part.o utils.o optimizeModel.o  fastDNAparsimony.o ../../trash.o  ../../topologies.o ../../treeIO.o models.o ../../evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o ../../makenewzGenericSpecial.o ../../bipartitionList.o ../../restartHashTable.o ../../randomTree.o ../../recom.o ../../mem_alloc.o main.o examlSearch.o
-=======
-objs    = lexer.o stack.o queue.o hash.o newick.o ssort.o phylip.o part.o utils.o optimizeModel.o fastDNAparsimony.o ../../trash.o ../../topologies.o ../../treeIO.o models.o ../../evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o ../../makenewzGenericSpecial.o ../../bipartitionList.o ../../restartHashTable.o ../../randomTree.o ../../recom.o ../../mem_alloc.o main.o examlSearch.o
->>>>>>> 530b5313228cb04524bdb4bc2b1a90a8f3bc535d
 
 all : example
 
@@ -26,12 +22,6 @@ example : $(objs)
 examlSearch.o : examlSearch.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -c -o examlSearch.o examlSearch.c
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> 530b5313228cb04524bdb4bc2b1a90a8f3bc535d
 fastDNAparsimony.o : ../../fastDNAparsimony.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -c -o fastDNAparsimony.o ../../fastDNAparsimony.c
 
