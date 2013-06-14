@@ -2287,7 +2287,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 
 
   /* TODO: FIX THIS! */
-  tr->fracchange = -1;
+  //tr->fracchange = -1;
 
   for (i = 1; i <= tips; ++ i)
    {
@@ -2448,7 +2448,8 @@ pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUse
   
   pllStackClear (&nodeStack);
 
-  if (bUseDefaultZ == PLL_TRUE) resetBranches (tr);
+  if (bUseDefaultZ == PLL_TRUE) 
+    resetBranches (tr);
 }
 
 /** @brief Initialize PLL tree with a random topology
@@ -2479,6 +2480,7 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
      strcpy (tr->nameList[i], nameList[i]);
      pllHashAdd (tr->nameHash, tr->nameList[i], (void *) (tr->nodep[i]));
    }
+  
 
   makeRandomTree (tr);
 }

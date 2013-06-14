@@ -2838,7 +2838,9 @@ static void updateFracChange(pllInstance *tr, partitionList *pr)
   if(numberOfModels == 1)
     {   
       assert(pr->partitionData[0]->fracchange != -1.0);
-      tr->fracchange = pr->partitionData[0]->fracchange;
+     
+      tr->fracchange = pr->partitionData[0]->fracchange; 
+      //printf("Set %f\n", tr->fracchange);
       pr->partitionData[0]->fracchange = -1.0;
     }      
   else
