@@ -1443,6 +1443,10 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
     randomMP, 
     startMP;         
   
+  /* We have a problem on 32-bit systems with no popcnt instruction.
+     The 128bit value (from SSE) is stored to two 32bit values (instead of
+     two 64bit). Therefore we lose precision */
+  assert (sizeof (unsigned long) >= 8);
   assert(!tr->constrained);
 
   makePermutationFast(perm, tr->mxtips, tr);
