@@ -18,8 +18,10 @@ void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int
 int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
+void pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip);
 void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
 void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed);
 void pllInitModel (pllInstance *, int, struct pllPhylip *, partitionList *);
+void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 #endif /* UTILS_H_ */
