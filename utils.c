@@ -1627,30 +1627,25 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->lower = bounds[i << 1];
      pl->partitionData[i]->upper = bounds[(i << 1) + 1];
      pl->partitionData[i]->width = bounds[(i << 1) + 1] - bounds[i << 1];
-     
-     // TODO: get the model parameters, currently some defaults
-     if (!strcmp (pi->partitionModel, "DNA"))  /* DNA */
-      {
-        pl->partitionData[i]->protModels                = -1;
-        pl->partitionData[i]->protFreqs                 = -1;
-        pl->partitionData[i]->dataType                  = DNA_DATA;
-        pl->partitionData[i]->maxTipStates              = 16;
-      }
-     else if (!strcmp (pi->partitionModel, "DNAX"))
-      {
-        pl->partitionData[i]->protModels                = -1;
-        pl->partitionData[i]->protFreqs                 = -1;
-        pl->partitionData[i]->dataType                  = DNA_DATA;
-        pl->partitionData[i]->optimizeBaseFrequencies   = PLL_TRUE;
-        pl->partitionData[i]->maxTipStates              = 16;
 
-      }
-     else  /* AA */
+     if (pi->dataType == DNA_DATA)
       {
-        pl->partitionData[i]->dataType           = AA_DATA; 
-        pl->partitionData[i]->protModels         = pi->protModels;
-        pl->partitionData[i]->maxTipStates       = 23;
+        pl->partitionData[i]->protModels                = -1;
+        pl->partitionData[i]->protFreqs                 = -1;
+        pl->partitionData[i]->dataType                  = DNA_DATA;
+        pl->partitionData[i]->maxTipStates              = 16;
+        pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
       }
+     else /* AA_DATA */
+      {
+        pl->partitionData[i]->dataType                  = AA_DATA; 
+        pl->partitionData[i]->protModels                = pi->protModels;
+        pl->partitionData[i]->maxTipStates              = 23;
+        pl->partitionData[i]->protFreqs                 = pi->protFreqs;
+        pl->partitionData[i]->protModels                = pi->protModels;
+        pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
+      }
+     
      pl->partitionData[i]->states                = pLengths[pl->partitionData[i]->dataType].states;
      pl->partitionData[i]->numberOfCategories    =        1;
      pl->partitionData[i]->autoProtModels        =        0;
