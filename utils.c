@@ -2489,7 +2489,19 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
 }
 
 
+/** @brief Initialize a tree that corresponds to a given (already parsed) alignment 
 
+    Initializes the PLL tree such that it corresponds to the given alignment
+
+    @todo
+      nothing 
+
+    @param tr
+      The PLL instance
+
+    @param phylip
+      Parsed alignment
+*/
 void 
 pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip)
 {
@@ -2510,6 +2522,26 @@ pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip)
    }
 }
 
+
+/** @brief Compute a randomized stepwise addition oder parsimony tree
+
+    Implements the RAxML randomized stepwise addition order algorithm 
+
+    @todo
+      check functions that are invoked for potential memory leaks!
+
+    @param tr
+      The PLL instance
+
+    @param partitions
+      The partitions
+*/
+void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions)
+{
+  allocateParsimonyDataStructures(tr, partitions);
+  makeParsimonyTreeFast(tr, partitions);
+  freeParsimonyDataStructures(tr, partitions);
+}
 
 void
 pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)

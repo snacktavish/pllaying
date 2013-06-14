@@ -121,13 +121,23 @@ int main (int argc, char * argv[])
 
   /* TODO transform into pll functions !*/
   
-  allocateParsimonyDataStructures(tr, partitions);
-  makeParsimonyTreeFast(tr, partitions);
-  freeParsimonyDataStructures(tr, partitions);
+  /* 
+     allocateParsimonyDataStructures(tr, partitions);
+     makeParsimonyTreeFast(tr, partitions);
+     freeParsimonyDataStructures(tr, partitions);
+  */
   
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllComputeRandomizedStepwiseAdditionParsimonyTree(tr, partitions);
+
+  evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
   printf("%f \n", tr->likelihood);
+
+  
+
+  //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
+  //printf("%f \n", tr->likelihood);
+
   exit(0);
   
   /*end */
