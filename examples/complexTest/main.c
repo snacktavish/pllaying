@@ -74,6 +74,7 @@ int main (int argc, char * argv[])
      fprintf (stderr, "Error while parsing newick file %s\n", argv[2]);
      return (EXIT_FAILURE);
    }
+  
   if (!pllValidateNewick (newick))  /* check whether the valid newick tree is also a tree that can be processed with our nodeptr structure */
    {
      fprintf (stderr, "Invalid phylogenetic tree\n");
@@ -128,12 +129,22 @@ int main (int argc, char * argv[])
   */
   
   pllComputeRandomizedStepwiseAdditionParsimonyTree(tr, partitions);
-
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+  printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);  
   evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
   printf("%f \n", tr->likelihood);
-
+  computeBIGRAPID(tr, adef, TRUE);
+  printf("final like %f\n", tr->likelihood);
   
+
+  /*pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
+  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+  printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);  
+  evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  
+  printf("%f \n", tr->likelihood);
+  */
 
   //evaluateGeneric(tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   //printf("%f \n", tr->likelihood);
