@@ -4009,7 +4009,7 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
      makeGammaCats(partitions->partitionData[model]->alpha, partitions->partitionData[model]->gammaRates, 4, tr->useMedian);
 
      for(k = 0; k < partitions->partitionData[model]->states; k++)
-       partitionsr->partitionData[model]->freqExponents[k] = 0.0;	
+       partitions->partitionData[model]->freqExponents[k] = 0.0;	
    }                   		       
   
    
