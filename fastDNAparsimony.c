@@ -50,13 +50,17 @@
 
 
 
-#if (defined(__SIM_SSE3) && !defined(__AVX))
+#if (defined(__SIM_SSE3) && !defined(__AVX)) 
 
 #include <xmmintrin.h>
 #include <pmmintrin.h>
   
 #define INTS_PER_VECTOR 4
+#ifdef __i386__
+#define LONG_INTS_PER_VECTOR 4
+#else
 #define LONG_INTS_PER_VECTOR 2
+#endif
 #define INT_TYPE __m128i
 #define CAST __m128i*
 #define SET_ALL_BITS_ONE _mm_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF)
@@ -1443,10 +1447,6 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
     randomMP, 
     startMP;         
   
-  /* We have a problem on 32-bit systems with no popcnt instruction.
-     The 128bit value (from SSE) is stored to two 32bit values (instead of
-     two 64bit). Therefore we lose precision */
-  assert (sizeof (unsigned long) >= 8);
   assert(!tr->constrained);
 
   makePermutationFast(perm, tr->mxtips, tr);
