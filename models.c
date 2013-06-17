@@ -3374,7 +3374,7 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 
 	 for(i = 0; i < 4; i++)
 	   {
-	     fracchanges_LG4[i]  = (double *)malloc(pr->numberOfPartitions * sizeof(double));
+	     fracchanges_LG4[i]  = (double *)rax_malloc(pr->numberOfPartitions * sizeof(double));
 	     initGeneric(states, bitVectorAA, 23, fracchanges_LG4[i],
 			 pr->partitionData[model]->EIGN_LG4[i],  pr->partitionData[model]->EV_LG4[i],  pr->partitionData[model]->EI_LG4[i], pr->partitionData[model]->frequencies_LG4[i], pr->partitionData[model]->substRates_LG4[i],
 			 pr->partitionData[model]->tipVector_LG4[i], 
@@ -3384,7 +3384,7 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	 for(i = 0; i < 4; i++)
 	   {	    
 	     acc += fracchanges_LG4[i][model];
-	     free(fracchanges_LG4[i]);
+	     rax_free(fracchanges_LG4[i]);
 	   }
 
 	 //tr->fracchanges[model] = acc / 4;

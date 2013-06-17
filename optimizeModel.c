@@ -1002,17 +1002,17 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     pos;
     
   double 
-    *startValues = (double *)malloc(sizeof(double) * numberOfModels),
-    *startLH     = (double *)malloc(sizeof(double) * numberOfModels),
-    *endLH       = (double *)malloc(sizeof(double) * numberOfModels),
-    *_a          = (double *)malloc(sizeof(double) * numberOfModels),
-    *_b          = (double *)malloc(sizeof(double) * numberOfModels),
-    *_c          = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fa         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fb         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_fc         = (double *)malloc(sizeof(double) * numberOfModels),
-    *_param      = (double *)malloc(sizeof(double) * numberOfModels),
-    *_x          = (double *)malloc(sizeof(double) * numberOfModels); 
+    *startValues = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *startLH     = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *endLH       = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_a          = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_b          = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_c          = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_fa         = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_fb         = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_fc         = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_param      = (double *)rax_malloc(sizeof(double) * numberOfModels),
+    *_x          = (double *)rax_malloc(sizeof(double) * numberOfModels); 
    
   evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   
