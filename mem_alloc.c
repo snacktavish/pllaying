@@ -5,7 +5,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+#ifndef __APPLE__
+#include <malloc.h>             // this is probably not necessary
+#endif
 
 #ifdef RAXML_USE_LLALLOC
 
