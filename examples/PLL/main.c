@@ -55,7 +55,7 @@ int main (int argc, char * argv[])
    }
 
   /* Create a PLL tree */
-  tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE);
+  tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
   /* Parse a PHYLIP file */
   phylip = pllPhylipParse (argv[1]);

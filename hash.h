@@ -3,8 +3,8 @@
 
 struct pllHashItem
 {
-  char * str;
   void * data;
+  char * str;
   struct pllHashItem * next;
 };
 
