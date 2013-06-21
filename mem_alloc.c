@@ -60,7 +60,11 @@ void *rax_malloc_aligned(size_t size)
 
 void *rax_memalign(size_t align, size_t size) {
 #if defined (__APPLE__)
-    return malloc(size); // apple has no memalign, but seem to return 16byte (32byte?) aligned blocks by default
+    void * mem;
+    if (posix_memalign (&mem, align, size))
+      return (NULL);
+    else
+      return (mem);
 #else
     return memalign(align, size);
 #endif
