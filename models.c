@@ -29,6 +29,15 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file models.c
+   
+   @brief Model related code
+
+   Detailed description to appear soon.
+
+*/ 
+
+
 #include "mem_alloc.h"
 
 #ifndef WIN32
@@ -69,7 +78,14 @@ extern FILE *byteFile;
 
 
 
-
+/** @brief Hardcoded values for the WAG model
+  
+    Fill the \a ext_initialRates array with hardcoded substitution rates
+    of the WAG model.
+   
+    @param ext_initialRates
+      Where to place the substitution rates
+*/
 void putWAG(double *ext_initialRates)
 { 
   double
@@ -82,6 +98,7 @@ void putWAG(double *ext_initialRates)
     j,
     r;
 
+  /* fill the triangle below the diagonal with values */
   daa[ 1*20+ 0] =  55.15710; daa[ 2*20+ 0] =  50.98480; daa[ 2*20+ 1] =  63.53460; 
   daa[ 3*20+ 0] =  73.89980; daa[ 3*20+ 1] =  14.73040; daa[ 3*20+ 2] = 542.94200; 
   daa[ 4*20+ 0] = 102.70400; daa[ 4*20+ 1] =  52.81910; daa[ 4*20+ 2] =  26.52560; 
@@ -147,14 +164,19 @@ void putWAG(double *ext_initialRates)
   daa[19*20+15] =  23.27390; daa[19*20+16] = 138.82300; daa[19*20+17] =  36.53690; 
   daa[19*20+18] =  31.47300; 
 
+  /* initialize a 20x20 matrix */
   for(i = 0; i < 20; i++)
     for(j = 0; j < 20; j++)
       q[i][j] = 0.0;
 
+  /* fill the triangle above the diagonal with the corresponding values from the
+     lower triangle */
   for (i=0; i<20; i++)  
     for (j=0; j<i; j++)               
       daa[j*20+i] = daa[i*20+j];
 
+  /* copy the triangle above the diagonal from daa (which is a linear block) to
+     the triangle above the diagonal of a square matrix q */
   for(i = 0; i < 19; i++)
     for(j = i + 1; j < 20; j++)      
       q[i][j] = daa[i * 20 + j];
@@ -172,14 +194,18 @@ void putWAG(double *ext_initialRates)
     printf("%f\n", q[18][19]);
   */
 
+  /* create a scaler from the last value (last row last column) of the upper
+     triangle of q */
   scaler = 1.0 / q[18][19];
 
   
 
+  /* scale all values of the matrix */
   for(i = 0; i < 19; i++)
     for(j = i + 1; j < 20; j++)      
       q[i][j] *= scaler;
 
+  /* copy the upper triangle of q to the linear array ext_initialRates */
   for(i = 0, r = 0; i < 19; i++)          
     for(j = i + 1; j < 20; j++)      
       ext_initialRates[r++] = q[i][j];           
@@ -196,6 +222,28 @@ void putWAG(double *ext_initialRates)
 
 }
 
+
+
+/** @brief Initialize protein substitution rates matrix 
+  * 
+  * Initialize the array pointed to by \a ext_initialRates with the substitution
+  * rates of the corresponding protein model and set f to the appropriate
+  * stationary frequencies
+  *
+  * @param f
+  *   Array where to store the stationary frequency rates
+  *
+  * @param proteinMatrix
+  *   Which protein matrix to use  
+  *
+  * @param ext_initialRates
+      Where to store the retrieved substitution rates
+  *
+  * @param lg4_index
+  *   In case we are filling a substitution rates matrix of an LG4 model the index
+  *   specifies which of the four matrixes to use 
+  *
+*/
 static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRates, int lg4_index)
 { 
   double q[20][20];
@@ -1103,16 +1151,16 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    daa[19*20+7] = 0.076701; daa[19*20+8] = 0.119013; daa[19*20+9] = 10.649107; daa[19*20+10] = 1.702745; daa[19*20+11] = 0.185202; daa[19*20+12] = 1.898718; 
 	    daa[19*20+13] = 0.654683; daa[19*20+14] = 0.296501; daa[19*20+15] = 0.098369; daa[19*20+16] = 2.188158; daa[19*20+17] = 0.189510; daa[19*20+18] = 0.249313;
 	    
-	    f[0] = 0.07906;
-	    f[1] = 0.05594; 
-	    f[2] = 0.04198; 
-	    f[3] = 0.05305; 
-	    f[4] = 0.01294; 
-	    f[5] = 0.04077; 
-	    f[6] = 0.07158; 
-	    f[7] = 0.05734; 
-	    f[8] = 0.02235; 
-	    f[9] = 0.06216; 
+	    f[0]  = 0.07906;
+	    f[1]  = 0.05594; 
+	    f[2]  = 0.04198; 
+	    f[3]  = 0.05305; 
+	    f[4]  = 0.01294; 
+	    f[5]  = 0.04077; 
+	    f[6]  = 0.07158; 
+	    f[7]  = 0.05734; 
+	    f[8]  = 0.02235; 
+	    f[9]  = 0.06216; 
 	    f[10] = 0.09908; 
 	    f[11] = 0.06460; 
 	    f[12] = 0.02295; 
@@ -2777,6 +2825,8 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
  
 
 
+  /* fill the upper triangle (above the diagonal) with the corresponding values
+     from the lower triangle */
   for (i=0; i<20; i++)  
     for (j=0; j<i; j++)               
       daa[j*20+i] = daa[i*20+j];
@@ -2803,6 +2853,9 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 
   max = 0;
   
+  /* copy the triangle above the diagonal from daa (which is a linear block) to
+     the triangle above the diagonal of a square matrix q. Store the maximal
+     value in variable max */
   for(i = 0; i < 19; i++)
     for(j = i + 1; j < 20; j++)
       {
@@ -2815,6 +2868,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
    
   /* SCALING HAS BEEN RE-INTRODUCED TO RESOLVE NUMERICAL  PROBLEMS */   
 
+  /* copy and scale values to the initialRates array */
   r = 0;
   for(i = 0; i < 19; i++)
     {      
@@ -2831,7 +2885,22 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
     }             
 }
 
-          
+/** @brief Set the frac
+  *
+  * Update \a partitionContribution in each partition by setting it to the fraction of sites in
+  * that partition to the total number of sites. Also set \a tr->fracchange according to the
+  * computes \a fracchange of each partition.
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  * 
+  * @todo 
+      I understand how fracchange is computed for each partition, but I dont know
+      what is it for. Also what is tr->fracchange for?
+*/
 static void updateFracChange(pllInstance *tr, partitionList *pr)
 {   
   int numberOfModels = pr->numberOfPartitions;
@@ -2885,6 +2954,11 @@ static void updateFracChange(pllInstance *tr, partitionList *pr)
     }
 }
 
+/** @brief Not sure what this function does
+  * 
+  * @todo
+  *   Comment this function
+  */
 static void mytred2(double **a, const int n, double *d, double *e)
 {
   int     l, k, j, i;
@@ -2968,6 +3042,11 @@ static void mytred2(double **a, const int n, double *d, double *e)
 }
 /*#define MYSIGN(a,b) ((b)<0 ? -fabs(a) : fabs(a))*/
 
+/** @brief Not sure what this function does
+  * 
+  * @todo
+  *   Comment this function
+  */
 static int mytqli(double *d, double *e, const int n, double **z)
 {
   int     m, l, iter, i, k;
@@ -3045,21 +3124,74 @@ static int mytqli(double *d, double *e, const int n, double **z)
  }
 
 
-static void makeEigen(double **_a, const int n, double *d, double *e)
+/** @brief Compute the eigenvectors and eigenvalues
+  *
+  * @param _a
+  *   The Q matrix
+  *
+  * @param states
+  *   Number of states
+  *
+  * @param d
+  *  Eigenvalues I think? 
+  * 
+  * @param e
+  *  Not sure why this is passed as a parameter. It is uninitialized, it is first set in mytqli(...) and it is never used in initGeneric()
+  *
+  * @todo
+  *   Remove e from parameter?
+*/
+static void makeEigen(double **_a, const int states, double *d, double *e)
 {
-  mytred2(_a, n, d, e);
-  mytqli(d, e, n, _a);
+  mytred2(_a, states, d, e);
+  mytqli(d, e, states, _a);
 }
 
-static void initGeneric(const int n, const unsigned int *valueVector, int valueVectorLength,
-			double *fracchange,
-			double *ext_EIGN,
-			double *EV,
-			double *EI,
-			double *frequencies,
-			double *ext_initialRates,
-			double *tipVector,
-			int model
+/** @brief Generic initialization of parameters and decomposition of the Q matrix
+  *
+  * Decompose the Q matrix into eigenvectors and eigenvalues. 
+  *
+  * @param states
+  *  Number of states of the current model
+  *
+  * @param valueVector
+  *  Pointer where the tipVector will be stored
+  *
+  * @param valueVectorLength
+  *  Number of elements (of size \a states) of the tipVector
+  *
+  * @param fracchange
+  *  Variable where the computed fracchange will be stored
+  *
+  * @param ext_EIGN
+  *   Array where the eigenvalues will be stored
+  *
+  * @param EV
+  *   Array where the eigenvectors will be stored
+  *  
+  * @param EI
+  *   Array where the inverse eigenvectors will be stored
+  *
+  * @param frequencies
+  *   The model frequencies
+  *
+  * @param ext_initialRates
+  *   The model substitution rates
+  *
+  * @param tipVector
+  *   Array where the computed tipVector will be stored
+  *
+*/
+static void initGeneric(const int states, 
+                        const unsigned int *valueVector, 
+                        int valueVectorLength,
+                        double *fracchange,
+                        double *ext_EIGN,
+                        double *EV,
+                        double *EI,
+                        double *frequencies,
+                        double *ext_initialRates,
+                        double *tipVector
  		      )
 {
   double 
@@ -3081,38 +3213,38 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
     m, 
     l;  
 
-  r    = (double **)rax_malloc((size_t)n * sizeof(double *));
-  EIGV = (double **)rax_malloc((size_t)n * sizeof(double *));  
-  a    = (double **)rax_malloc((size_t)n * sizeof(double *));	  
+  r    = (double **)rax_malloc((size_t)states * sizeof(double *));
+  EIGV = (double **)rax_malloc((size_t)states * sizeof(double *));  
+  a    = (double **)rax_malloc((size_t)states * sizeof(double *));	  
   
-  for(i = 0; i < n; i++)
+  for(i = 0; i < states; i++)
     {
-      a[i]    = (double*)rax_malloc((size_t)n * sizeof(double));
-      EIGV[i] = (double*)rax_malloc((size_t)n * sizeof(double));
-      r[i]    = (double*)rax_malloc((size_t)n * sizeof(double));
+      a[i]    = (double*)rax_malloc((size_t)states * sizeof(double));
+      EIGV[i] = (double*)rax_malloc((size_t)states * sizeof(double));
+      r[i]    = (double*)rax_malloc((size_t)states * sizeof(double));
     }
 
-  f       = (double*)rax_malloc((size_t)n * sizeof(double));
-  e       = (double*)rax_malloc((size_t)n * sizeof(double));
-  d       = (double*)rax_malloc((size_t)n * sizeof(double));
-  invfreq = (double*)rax_malloc((size_t)n * sizeof(double));
-  EIGN    = (double*)rax_malloc((size_t)n * sizeof(double));
+  f       = (double*)rax_malloc((size_t)states * sizeof(double));
+  e       = (double*)rax_malloc((size_t)states * sizeof(double));
+  d       = (double*)rax_malloc((size_t)states * sizeof(double));
+  invfreq = (double*)rax_malloc((size_t)states * sizeof(double));
+  EIGN    = (double*)rax_malloc((size_t)states * sizeof(double));
   
-  for(l = 0; l < n; l++)		 
+  for(l = 0; l < states; l++) 
     f[l] = frequencies[l];	
     
   
   i = 0;
   
-  for(j = 0; j < n; j++)	 
-    for(k = 0; k < n; k++)
+  for(j = 0; j < states; j++)	 
+    for(k = 0; k < states; k++)
       r[j][k] = 0.0;
   
-  for(j = 0; j < n - 1; j++)
-    for (k = j+1; k < n; k++)      	  
+  for(j = 0; j < states - 1; j++)
+    for (k = j + 1; k < states; k++)      	  
       r[j][k] = initialRates[i++];         
   
-  for (j = 0; j < n; j++) 
+  for (j = 0; j < states; j++) 
     {
       r[j][j] = 0.0;
       for (k = 0; k < j; k++)
@@ -3123,20 +3255,22 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
   *fracchange = 0.0;
   
-  for (j = 0; j< n; j++)
-    for (k = 0; k< n; k++)
+  for (j = 0; j < states; j++)
+    for (k = 0; k < states; k++)
       *fracchange += f[j] * r[j][k] * f[k];
   
   m = 0;
   
-  for(i=0; i< n; i++) 
+  for(i=0; i< states; i++) 
     a[i][i] = 0;
   
-  /*  assert(r[n - 2][n - 1] == 1.0);*/
+  /*  assert(r[states - 2][states - 1] == 1.0);*/
   
-  for(i=0; i < n; i++) 
+  /* compute a matrix from the rates such that each element of the diagonal
+     equals to the negative sum of all other values in the current row */
+  for(i = 0; i < states; i++) 
     {
-      for(j=i+1;  j < n; j++) 
+      for(j = i + 1;  j < states; j++) 
 	{
 	  double factor =  initialRates[m++];
 	  a[i][j] = a[j][i] = factor * sqrt( f[i] * f[j]);
@@ -3145,17 +3279,17 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 	}
     }             	        
 
-  makeEigen(a, n, d, e);
+  makeEigen(a, states, d, e);
   
  
   
-  for(i=0; i<n; i++)     
-    for(j=0; j<n; j++)       
+  for (i = 0; i < states; i++)     
+    for (j = 0; j < states; j++)       
       a[i][j] *= sqrt(f[j]);
    
   
   
-  for (i=0; i<n; i++)
+  for (i = 0; i < states; i++)
     {	  
       if (d[i] > -1e-8) 
 	{	      
@@ -3164,31 +3298,31 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 	      double tmp = d[i], sum=0;
 	      d[i] = d[0];
 	      d[0] = tmp;
-	      for (j=0; j < n; j++) 
+	      for (j=0; j < states; j++) 
 		{
 		  tmp = a[i][j];
 		  a[i][j] = a[0][j];
 		  sum += (a[0][j] = tmp);
 		}
-	      for (j=0; j < n; j++) 
+	      for (j=0; j < states; j++) 
 		a[0][j] /= sum;
 	    }
 	  break;
 	}
     }
   
-  for (i=0; i< n; i++) 
+  for (i = 0; i < states; i++) 
     {
       EIGN[i] = -d[i];
       
-      for (j=0; j<n; j++)
+      for (j=0; j < states; j++)
 	EIGV[i][j] = a[j][i];
       invfreq[i] = 1 / EIGV[i][0]; 
     }                                    
   
   ext_EIGN[0] = 0.0;
 
-  for(l = 1; l < n; l++)
+  for (l = 1; l < states; l++)
     {
       ext_EIGN[l] = EIGN[l]; 
       assert(ext_EIGN[l] > 0.0);
@@ -3196,35 +3330,35 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   
   eptr = EV;
   
-  for(i = 0; i < n; i++)		  
-    for(j = 0; j < n; j++)
+  for (i = 0; i < states; i++)		  
+    for (j = 0; j < states; j++)
       {
 	*eptr++ = EIGV[i][j];	 /* EIGV: Eigenvalues */ 
 	
       }
   
-  for(i = 0; i < n; i++)
-    for(j = 0; j < n; j++)
+  for (i = 0; i < states; i++)
+    for (j = 0; j < states; j++)
       {
 	if(j == 0)
-	  EI[i * n + j] = 1.0;
+	  EI[i * states + j] = 1.0;
 	else
-	  EI[i * n + j] = EV[i * n + j] * invfreq[i];   /* EV = Eigenvector, EI = Inverse Eigenvector,   $ u_{i,x}^{-1} = \pi_x u_{x,i} */
+	  EI[i * states + j] = EV[i * states + j] * invfreq[i];   /* EV = Eigenvector, EI = Inverse Eigenvector,   $ u_{i,x}^{-1} = \pi_x u_{x,i} */
       }
   
   /* 
      printf("EIGN\n");
 
-     for(i = 0; i < n; i++)
+     for(i = 0; i < states; i++)
      printf("%f ", ext_EIGN[i]);
      printf("\n");
 
      printf("EI\n");
-     for(i = 0; i < n; i++)
+     for(i = 0; i < states; i++)
      {
-     for(j = 0; j < n; j++)
+     for(j = 0; j < states; j++)
      {
-     printf("%f ", EI[i * n + j]);             
+     printf("%f ", EI[i * states + j]);             
      }
      printf("\n");
     }
@@ -3232,38 +3366,38 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
   
 
 
-  for(i=0; i < valueVectorLength; i++)
+  for (i = 0; i < valueVectorLength; i++)
     {
       unsigned int value = valueVector[i];
       
-      for(j = 0; j < n; j++)
-	tipVector[i * n + j]     = 0;	            
+      for(j = 0; j < states; j++)
+	tipVector[i * states + j]     = 0;	            
 
       if(value > 0)
 	{		      
-	  for (j = 0; j < n; j++) 
+	  for (j = 0; j < states; j++) 
 	    {	    
 	      if ((value >> j) & 1) 
 		{
 		  int l;
-		  for(l = 0; l < n; l++)
-		    tipVector[i * n + l] += EIGV[j][l];
+		  for (l = 0; l < states; l++)
+		    tipVector[i * states + l] += EIGV[j][l];
 		}	     		  
 	    }	    
 	}     
     }
 
-  for(i = 0; i < valueVectorLength; i++)
+  for (i = 0; i < valueVectorLength; i++)
     {
-       for(j = 0; j < n; j++)
-	 if(tipVector[i * n + j] > PLL_MAX_TIP_EV)
-	   tipVector[i * n + j] = PLL_MAX_TIP_EV;
+       for(j = 0; j < states; j++)
+	 if(tipVector[i * states + j] > PLL_MAX_TIP_EV)
+	   tipVector[i * states + j] = PLL_MAX_TIP_EV;
     }
 
 
   
 
-  for(i = 0; i < n; i++)
+  for (i = 0; i < states; i++)
     {
       rax_free(EIGV[i]);
       rax_free(a[i]);
@@ -3283,7 +3417,20 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
 
 
-
+/** @brief Initialize GTR
+  *
+  * Wrapper function for the decomposition of the substitution rates matrix
+  * into eigenvectors and eigenvalues
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param model
+  *   Partition index
+  */
 void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 { 
  double   
@@ -3344,58 +3491,74 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	   }
 	 else
 	   {
+             if(pr->partitionData[model]->protModels == AUTO)
+	       initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates, 0);
+	     else	  
+	       initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates, 0);
+
+	     /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
+	       assert(tr->partitionData[model].protFreqs);*/
 	 
-	 if(pr->partitionData[model]->protModels == AUTO)
-	   initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates, 0);
-	 else	  
-	   initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates, 0);
-	 
-	 /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
-	   assert(tr->partitionData[model].protFreqs);*/
-	 
-	 if(!pr->partitionData[model]->protFreqs)
-	   {	     	    
-	     for(l = 0; l < 20; l++)		
-	       frequencies[l] = f[l];
-	   } 
-       }  
+              if(!pr->partitionData[model]->protFreqs)
+               {	     	    
+                 for(l = 0; l < 20; l++)		
+                   frequencies[l] = f[l];
+               } 
+           }  
        }
                
- if(pr->partitionData[model]->protModels == LG4)
+     if(pr->partitionData[model]->protModels == LG4)
        {
-	 int 
-	   i;
+         int 
+           i;
 
-	 double 
-	   *fracchanges_LG4[4],
-	   acc = 0.0;
+         double 
+           *fracchanges_LG4[4],
+           acc = 0.0;
 
-	 /* TODO frac change !*/
+         /* TODO frac change !*/
 
-	 for(i = 0; i < 4; i++)
-	   {
-	     fracchanges_LG4[i]  = (double *)rax_malloc(pr->numberOfPartitions * sizeof(double));
-	     initGeneric(states, bitVectorAA, 23, fracchanges_LG4[i],
-			 pr->partitionData[model]->EIGN_LG4[i],  pr->partitionData[model]->EV_LG4[i],  pr->partitionData[model]->EI_LG4[i], pr->partitionData[model]->frequencies_LG4[i], pr->partitionData[model]->substRates_LG4[i],
-			 pr->partitionData[model]->tipVector_LG4[i], 
-			 model);   
-	   }
+         for(i = 0; i < 4; i++)
+           {
+             fracchanges_LG4[i]  = (double *)rax_malloc(pr->numberOfPartitions * sizeof(double));
+             initGeneric(states, 
+                         bitVectorAA, 
+                         23, 
+                         fracchanges_LG4[i],
+                         pr->partitionData[model]->EIGN_LG4[i], 
+                         pr->partitionData[model]->EV_LG4[i],
+                         pr->partitionData[model]->EI_LG4[i],
+                         pr->partitionData[model]->frequencies_LG4[i],
+                         pr->partitionData[model]->substRates_LG4[i],
+                         pr->partitionData[model]->tipVector_LG4[i], 
+                         model
+                        );   
+           }
 
-	 for(i = 0; i < 4; i++)
-	   {	    
-	     acc += fracchanges_LG4[i][model];
-	     rax_free(fracchanges_LG4[i]);
-	   }
+         for(i = 0; i < 4; i++)
+           {	    
+             acc += fracchanges_LG4[i][model];
+             rax_free(fracchanges_LG4[i]);
+           }
 
-	 //tr->fracchanges[model] = acc / 4;
-	 //TODO check if valid
-	 fracchange[model] = acc / 4;
+         //tr->fracchanges[model] = acc / 4;
+         //TODO check if valid
+         fracchange[model] = acc / 4;
        }
      else
-     initGeneric(states, bitVectorAA, 23, fracchange,
-		 ext_EIGN, EV, EI, frequencies, ext_initialRates,
-		 tipVector, model);
-     break;  
+       initGeneric(states, 
+                   bitVectorAA, 
+                   23, 
+                   fracchange,
+                   ext_EIGN, 
+                   EV, 
+                   EI, 
+                   frequencies, 
+                   ext_initialRates,
+                   tipVector, 
+                   model
+                  );
+    break;  
    default:
      assert(0);
    } 
@@ -3608,7 +3771,25 @@ l4:
 
 
 
+/** @brief Compute the gamma rates
+    
+    Compute the gamma rates
 
+    @param alpha
+      Alpha parameter
+
+    @param gammaRates
+      Array where to store the computed gamma rates
+
+    @param K
+      Number of categories
+
+    @param useMedian
+      Boolean flag whether to use a median or not
+
+    @todo
+       Document this more.
+*/
 void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
 {
   int 
@@ -3666,6 +3847,16 @@ void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
 }
 
 
+/** @brief Set the substitution rates
+  *
+  * @brief Set \a rates - 1  substitution rates. Set the last rate to 1.
+  *
+  * @param r
+  *  Array of substitution rates
+  *
+  * @param rates
+  *   Number of rates to set
+  */
 static void setRates(double *r, int rates)
 {
   int i;
@@ -3680,6 +3871,20 @@ static void setRates(double *r, int rates)
   r[rates - 1] = 1.0;
 }
 
+/** @brief Initialize the substitution rates matrix
+  *
+  * Initialize the substitution rates matrices for all partitions
+  *
+  * @param tr
+  *   The PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @todo
+  *   Do we need the secondary structure and binary? Will we only use GTR? If yes,
+  *   we could rename this function to initRateMatrixGTR
+  */
 void initRateMatrix(pllInstance *tr, partitionList *pr)
 {
   int model;
@@ -3757,6 +3962,11 @@ void initRateMatrix(pllInstance *tr, partitionList *pr)
     }  
 }
 
+/** @brief Function for setting secondary structure symmetries
+  *
+  * @todo
+  *   Do we need this function?
+*/
 static void setSymmetry(int *s, int *sDest, const int sCount, int *f, int *fDest, const int fCount)
 {
   int i;
@@ -3768,6 +3978,11 @@ static void setSymmetry(int *s, int *sDest, const int sCount, int *f, int *fDest
     fDest[i] = f[i];
 }
 
+/** @brief Wrapper function for setting secondary structure symmetries
+  *
+  * @todo
+  *   Do we need this function?
+*/
 static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *partitions)
 {
   int model;
@@ -3954,6 +4169,17 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 }
 
+/** @brief Initialize base frequencies in partition data
+  *
+  * Copy the computed empirical frequencies for each partition from the \a empiricalFrequencies
+  * structure to each partition structure.
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param empiricalFrequencies
+  *   Array containing the empirical frequencies
+*/
 static void initializeBaseFreqs(partitionList *pr, double **empiricalFrequencies)
 {
   size_t 
@@ -3966,6 +4192,25 @@ static void initializeBaseFreqs(partitionList *pr, double **empiricalFrequencies
     }
 }
 
+
+/** @brief Initialize the model parameters
+  * 
+  * Initialize the model parameters. Specifically
+  *   - Base frequencies
+  *   - Rate matrix
+  *
+  * @param tr
+  *   The PLL instance
+  *
+  * @param empiricalFrequencies
+  *   Pointer to the empirical frequencies array
+  *
+  * @param partitions
+  *   Pointer to the partitions structure
+  *
+  * @todo
+  *   What is tr->optimizeRateCategoryInvocations = 1 ?
+  */
 void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * partitions)
 {  
   int model, j;
@@ -4015,11 +4260,14 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
    }                   		       
   
    
+   printf ("Fracchange: %f\n", tr->fracchange);
+   printf ("originalCrunchedLength: %d\n", tr->originalCrunchedLength);
+   printf ("num of parts: %d\n", partitions->numberOfPartitions);
 
   if(partitions->numberOfPartitions > 1)
     {
       tr->fracchange = 0;
-      for(model = 0; model < partitions->numberOfPartitions; model++)
+      for(model = 0; model < partitions->numberOfPartitions; model++) 
 	tr->fracchange += partitions->partitionData[model]->fracchange;
       
       tr->fracchange /= ((double)partitions->numberOfPartitions);
