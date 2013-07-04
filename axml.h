@@ -1084,8 +1084,8 @@ typedef  struct  {
   int             *aliaswgt;    /**< weight by pattern */ 
   boolean    manyPartitions;
 
-  boolean grouped;
-  boolean constrained;
+  boolean grouped;              /**< No idea what this is, but is always set to PLL_FALSE */
+  boolean constrained;          /**< No idea what this is, but is always set to PLL_FALSE */
   int threadID;
   volatile int numberOfThreads;
 
@@ -1158,7 +1158,7 @@ typedef  struct  {
   node            *start;                /**< starting node by default for full traversals */
   int              mxtips;  /**< Number of tips in the topology */
 
-  int              *constraintVector;
+  int              *constraintVector;   /**< @todo What is this? */
   int              numberOfSecondaryColumns;
   boolean          searchConvergenceCriterion;
   int              ntips;

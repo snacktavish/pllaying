@@ -29,6 +29,10 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file optimizeModel.c
+  * @brief Model optimization routines
+  */ 
+
 #include "mem_alloc.h"
 
 #ifndef WIN32
@@ -95,24 +99,24 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
   if(pr->partitionData[model]->nonGTR)
     {    
       int 
-	i, 
-	index    = pr->partitionData[model]->symmetryVector[position],
-	lastRate = pr->partitionData[model]->symmetryVector[numRates - 1];
+        i, 
+        index    = pr->partitionData[model]->symmetryVector[position],
+        lastRate = pr->partitionData[model]->symmetryVector[numRates - 1];
 
 
            
       for(i = 0; i < numRates; i++)
-	{	
-	  if(pr->partitionData[model]->symmetryVector[i] == index)
-	    {
-	      if(index == lastRate)
-		pr->partitionData[model]->substRates[i] = 1.0;
-	      else
-		pr->partitionData[model]->substRates[i] = rate;      
-	    }
-	  
-	  //printf("%f ", tr->partitionData[model].substRates[i]);
-	}
+        {       
+          if(pr->partitionData[model]->symmetryVector[i] == index)
+            {
+              if(index == lastRate)
+                pr->partitionData[model]->substRates[i] = 1.0;
+              else
+                pr->partitionData[model]->substRates[i] = rate;      
+            }
+          
+          //printf("%f ", tr->partitionData[model].substRates[i]);
+        }
       //printf("\n");
     }
   else
@@ -179,16 +183,16 @@ static linkageList* initLinkageListGTR(partitionList *pr)
   for(i = 0; i < pr->numberOfPartitions; i++)
     {     
       if(pr->partitionData[i]->dataType == AA_DATA)
-	{
-	  if(pr->partitionData[i]->protModels == GTR)
-	    {
-	      if(i < firstAA)
-		firstAA = i;
-	      countGTR++;
-	    }
-	  else
-	    countOtherModel++;
-	}
+        {
+          if(pr->partitionData[i]->protModels == GTR)
+            {
+              if(i < firstAA)
+                firstAA = i;
+              countGTR++;
+            }
+          else
+            countOtherModel++;
+        }
     }
   
   assert((countGTR > 0 && countOtherModel == 0) || (countGTR == 0 && countOtherModel > 0) ||  (countGTR == 0 && countOtherModel == 0));
@@ -198,33 +202,33 @@ static linkageList* initLinkageListGTR(partitionList *pr)
   if(countGTR == 0)
     {
       for(i = 0; i < pr->numberOfPartitions; i++)
-	links[i] = i;
+        links[i] = i;
     }
   else
     {
       /* otherwise we let all partitions, except for the protein partitions use 
-	 unlinked rate matrices while we link the GTR rate matrices of all 
-	 protein data partitions */
+         unlinked rate matrices while we link the GTR rate matrices of all 
+         protein data partitions */
       for(i = 0; i < pr->numberOfPartitions; i++)
-	{
-	  switch(pr->partitionData[i]->dataType)
-	    {	   
-	    case DNA_DATA:
-	    case BINARY_DATA:
-	    case GENERIC_32:
-	    case GENERIC_64:
-	    case SECONDARY_DATA:
-	    case SECONDARY_DATA_6:
-	    case SECONDARY_DATA_7: 
-	      links[i] = i;
-	      break;
-	    case AA_DATA:	  
-	      links[i] = firstAA;
-	      break;
-	    default:
-	      assert(0);
-	    }
-	}
+        {
+          switch(pr->partitionData[i]->dataType)
+            {      
+            case DNA_DATA:
+            case BINARY_DATA:
+            case GENERIC_32:
+            case GENERIC_64:
+            case SECONDARY_DATA:
+            case SECONDARY_DATA_6:
+            case SECONDARY_DATA_7: 
+              links[i] = i;
+              break;
+            case AA_DATA:         
+              links[i] = firstAA;
+              break;
+            default:
+              assert(0);
+            }
+        }
     }
   
 
@@ -251,7 +255,7 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
     {
     case RATE_F:
       setRateModel(pr, index, value, rateNumber);  
-      initReversibleGTR(tr, pr, index);		 
+      initReversibleGTR(tr, pr, index);          
       break;
     case ALPHA_F:
       pr->partitionData[index]->alpha = value;
@@ -259,21 +263,21 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
       break;
     case FREQ_F:
       {
-	int 
-	  j;
+        int 
+          j;
 
-	double 
-	  w = 0.0;
+        double 
+          w = 0.0;
 
-	pr->partitionData[index]->freqExponents[rateNumber] = value;
+        pr->partitionData[index]->freqExponents[rateNumber] = value;
 
-	for(j = 0; j < 4; j++)
-	  w += exp(pr->partitionData[index]->freqExponents[j]);
+        for(j = 0; j < 4; j++)
+          w += exp(pr->partitionData[index]->freqExponents[j]);
 
-	for(j = 0; j < 4; j++)	    	    
-	  pr->partitionData[index]->frequencies[j] = exp(pr->partitionData[index]->freqExponents[j]) / w;
-	
-	initReversibleGTR(tr, pr, index);
+        for(j = 0; j < 4; j++)              
+          pr->partitionData[index]->frequencies[j] = exp(pr->partitionData[index]->freqExponents[j]) / w;
+        
+        initReversibleGTR(tr, pr, index);
       }
       break;
     default:
@@ -292,30 +296,30 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
   for(i = 0, pos = 0; i < ll->entries; i++)
     {
       if(ll->ld[i].valid)
-	{
-	  if(converged[pos])
-	    {
-	      for(k = 0; k < ll->ld[i].partitions; k++)
-		pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
-	    }
-	  else
-	    {
-	      for(k = 0; k < ll->ld[i].partitions; k++)
-		{
-		  int 
-		    index = ll->ld[i].partitionList[k];
+        {
+          if(converged[pos])
+            {
+              for(k = 0; k < ll->ld[i].partitions; k++)
+                pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
+            }
+          else
+            {
+              for(k = 0; k < ll->ld[i].partitions; k++)
+                {
+                  int 
+                    index = ll->ld[i].partitionList[k];
 
 
-		  changeModelParameters(index, rateNumber, value[pos], whichFunction, tr, pr);
-		}
-	    }
-	  pos++;
-	}
+                  changeModelParameters(index, rateNumber, value[pos], whichFunction, tr, pr);
+                }
+            }
+          pos++;
+        }
       else
-	{
-	  for(k = 0; k < ll->ld[i].partitions; k++)
-	    pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
-	}      
+        {
+          for(k = 0; k < ll->ld[i].partitions; k++)
+            pr->partitionData[ll->ld[i].partitionList[k]]->executeModel = PLL_FALSE;
+        }      
     }
 
   assert(pos == numberOfModels);
@@ -339,29 +343,29 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 #endif     
 
 
-  for(i = 0, pos = 0; i < ll->entries; i++)	
+  for(i = 0, pos = 0; i < ll->entries; i++)     
     {
       if(ll->ld[i].valid)
-	{
-	  result[pos] = 0.0;
-	  
-	  for(k = 0; k < ll->ld[i].partitions; k++)
-	    {
-	      int 
-		index = ll->ld[i].partitionList[k];
+        {
+          result[pos] = 0.0;
+          
+          for(k = 0; k < ll->ld[i].partitions; k++)
+            {
+              int 
+                index = ll->ld[i].partitionList[k];
 
-	      assert(pr->partitionData[index]->partitionLH <= 0.0);
-	      
-	      result[pos] -= pr->partitionData[index]->partitionLH;
-	      
-	    }
-	  pos++;
-	}
+              assert(pr->partitionData[index]->partitionLH <= 0.0);
+              
+              result[pos] -= pr->partitionData[index]->partitionLH;
+              
+            }
+          pos++;
+        }
       for(k = 0; k < ll->ld[i].partitions; k++)
-	{
-	  int index = ll->ld[i].partitionList[k];
-	  pr->partitionData[index]->executeModel = PLL_TRUE;
-	}	  
+        {
+          int index = ll->ld[i].partitionList[k];
+          pr->partitionData[index]->executeModel = PLL_TRUE;
+        }         
     }
   
   assert(pos == numberOfModels);   
@@ -370,7 +374,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 /* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
 
 static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double tol, double *xmin, double *result, int numberOfModels, 
-			 int whichFunction, int rateNumber, pllInstance *tr, partitionList *pr, linkageList *ll, double lim_inf, double lim_sup)
+                         int whichFunction, int rateNumber, pllInstance *tr, partitionList *pr, linkageList *ll, double lim_inf, double lim_sup)
 {
   int iter, i;
   double 
@@ -429,135 +433,135 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
       allConverged = PLL_TRUE;
 
       for(i = 0; i < numberOfModels && allConverged; i++)
-	allConverged = allConverged && converged[i];
+        allConverged = allConverged && converged[i];
 
       if(allConverged)
-	{
-	  rax_free(converged);
-	  rax_free(a);
-	  rax_free(b);
-	  rax_free(d);
-	  rax_free(etemp);
-	  rax_free(fu);
-	  rax_free(fv);
-	  rax_free(fw);
-	  rax_free(fx);
-	  rax_free(p);
-	  rax_free(q);
-	  rax_free(r);
-	  rax_free(tol1);
-	  rax_free(tol2);
-	  rax_free(u);
-	  rax_free(v);
-	  rax_free(w);
-	  rax_free(x);
-	  rax_free(xm);
-	  rax_free(e);
-	  return;
-	}     
+        {
+          rax_free(converged);
+          rax_free(a);
+          rax_free(b);
+          rax_free(d);
+          rax_free(etemp);
+          rax_free(fu);
+          rax_free(fv);
+          rax_free(fw);
+          rax_free(fx);
+          rax_free(p);
+          rax_free(q);
+          rax_free(r);
+          rax_free(tol1);
+          rax_free(tol2);
+          rax_free(u);
+          rax_free(v);
+          rax_free(w);
+          rax_free(x);
+          rax_free(xm);
+          rax_free(e);
+          return;
+        }     
 
       for(i = 0; i < numberOfModels; i++)
-	{
-	  if(!converged[i])
-	    {	     	      
-	      assert(a[i] >= lim_inf && a[i] <= lim_sup);
-	      assert(b[i] >= lim_inf && b[i] <= lim_sup);
-	      assert(x[i] >= lim_inf && x[i] <= lim_sup);
-	      assert(v[i] >= lim_inf && v[i] <= lim_sup);
-	      assert(w[i] >= lim_inf && w[i] <= lim_sup);
+        {
+          if(!converged[i])
+            {                 
+              assert(a[i] >= lim_inf && a[i] <= lim_sup);
+              assert(b[i] >= lim_inf && b[i] <= lim_sup);
+              assert(x[i] >= lim_inf && x[i] <= lim_sup);
+              assert(v[i] >= lim_inf && v[i] <= lim_sup);
+              assert(w[i] >= lim_inf && w[i] <= lim_sup);
   
-	      xm[i] = 0.5 * (a[i] + b[i]);
-	      tol2[i] = 2.0 * (tol1[i] = tol * fabs(x[i]) + BRENT_ZEPS);
-	  
-	      if(fabs(x[i] - xm[i]) <= (tol2[i] - 0.5 * (b[i] - a[i])))
-		{		 
-		  result[i] =  -fx[i];
-		  xmin[i]   = x[i];
-		  converged[i] = PLL_TRUE;		  
-		}
-	      else
-		{
-		  if(fabs(e[i]) > tol1[i])
-		    {		     
-		      r[i] = (x[i] - w[i]) * (fx[i] - fv[i]);
-		      q[i] = (x[i] - v[i]) * (fx[i] - fw[i]);
-		      p[i] = (x[i] - v[i]) * q[i] - (x[i] - w[i]) * r[i];
-		      q[i] = 2.0 * (q[i] - r[i]);
-		      if(q[i] > 0.0)
-			p[i] = -p[i];
-		      q[i] = fabs(q[i]);
-		      etemp[i] = e[i];
-		      e[i] = d[i];
-		      if((fabs(p[i]) >= fabs(0.5 * q[i] * etemp[i])) || (p[i] <= q[i] * (a[i]-x[i])) || (p[i] >= q[i] * (b[i] - x[i])))
-			d[i] = BRENT_CGOLD * (e[i] = (x[i] >= xm[i] ? a[i] - x[i] : b[i] - x[i]));
-		      else
-			{
-			  d[i] = p[i] / q[i];
-			  u[i] = x[i] + d[i];
-			  if( u[i] - a[i] < tol2[i] || b[i] - u[i] < tol2[i])
-			    d[i] = SIGN(tol1[i], xm[i] - x[i]);
-			}
-		    }
-		  else
-		    {		     
-		      d[i] = BRENT_CGOLD * (e[i] = (x[i] >= xm[i] ? a[i] - x[i]: b[i] - x[i]));
-		    }
-		  u[i] = ((fabs(d[i]) >= tol1[i]) ? (x[i] + d[i]): (x[i] +SIGN(tol1[i], d[i])));
-		}
+              xm[i] = 0.5 * (a[i] + b[i]);
+              tol2[i] = 2.0 * (tol1[i] = tol * fabs(x[i]) + BRENT_ZEPS);
+          
+              if(fabs(x[i] - xm[i]) <= (tol2[i] - 0.5 * (b[i] - a[i])))
+                {                
+                  result[i] =  -fx[i];
+                  xmin[i]   = x[i];
+                  converged[i] = PLL_TRUE;                
+                }
+              else
+                {
+                  if(fabs(e[i]) > tol1[i])
+                    {                
+                      r[i] = (x[i] - w[i]) * (fx[i] - fv[i]);
+                      q[i] = (x[i] - v[i]) * (fx[i] - fw[i]);
+                      p[i] = (x[i] - v[i]) * q[i] - (x[i] - w[i]) * r[i];
+                      q[i] = 2.0 * (q[i] - r[i]);
+                      if(q[i] > 0.0)
+                        p[i] = -p[i];
+                      q[i] = fabs(q[i]);
+                      etemp[i] = e[i];
+                      e[i] = d[i];
+                      if((fabs(p[i]) >= fabs(0.5 * q[i] * etemp[i])) || (p[i] <= q[i] * (a[i]-x[i])) || (p[i] >= q[i] * (b[i] - x[i])))
+                        d[i] = BRENT_CGOLD * (e[i] = (x[i] >= xm[i] ? a[i] - x[i] : b[i] - x[i]));
+                      else
+                        {
+                          d[i] = p[i] / q[i];
+                          u[i] = x[i] + d[i];
+                          if( u[i] - a[i] < tol2[i] || b[i] - u[i] < tol2[i])
+                            d[i] = SIGN(tol1[i], xm[i] - x[i]);
+                        }
+                    }
+                  else
+                    {                
+                      d[i] = BRENT_CGOLD * (e[i] = (x[i] >= xm[i] ? a[i] - x[i]: b[i] - x[i]));
+                    }
+                  u[i] = ((fabs(d[i]) >= tol1[i]) ? (x[i] + d[i]): (x[i] +SIGN(tol1[i], d[i])));
+                }
 
-	      if(!converged[i])
-		assert(u[i] >= lim_inf && u[i] <= lim_sup);
-	    }
-	}
+              if(!converged[i])
+                assert(u[i] >= lim_inf && u[i] <= lim_sup);
+            }
+        }
                  
       evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
 
       for(i = 0; i < numberOfModels; i++)
-	{
-	  if(!converged[i])
-	    {
-	      if(fu[i] <= fx[i])
-		{
-		  if(u[i] >= x[i])
-		    a[i] = x[i];
-		  else
-		    b[i] = x[i];
-		  
-		  SHFT(v[i],w[i],x[i],u[i]);
-		  SHFT(fv[i],fw[i],fx[i],fu[i]);
-		}
-	      else
-		{
-		  if(u[i] < x[i])
-		    a[i] = u[i];
-		  else
-		    b[i] = u[i];
-		  
-		  if(fu[i] <= fw[i] || w[i] == x[i])
-		    {
-		      v[i] = w[i];
-		      w[i] = u[i];
-		      fv[i] = fw[i];
-		      fw[i] = fu[i];
-		    }
-		  else
-		    {
-		      if(fu[i] <= fv[i] || v[i] == x[i] || v[i] == w[i])
-			{
-			  v[i] = u[i];
-			  fv[i] = fu[i];
-			}
-		    }	    
-		}
-	      
-	      assert(a[i] >= lim_inf && a[i] <= lim_sup);
-	      assert(b[i] >= lim_inf && b[i] <= lim_sup);
-	      assert(x[i] >= lim_inf && x[i] <= lim_sup);
-	      assert(v[i] >= lim_inf && v[i] <= lim_sup);
-	      assert(w[i] >= lim_inf && w[i] <= lim_sup);
-	      assert(u[i] >= lim_inf && u[i] <= lim_sup);
-	    }
-	}
+        {
+          if(!converged[i])
+            {
+              if(fu[i] <= fx[i])
+                {
+                  if(u[i] >= x[i])
+                    a[i] = x[i];
+                  else
+                    b[i] = x[i];
+                  
+                  SHFT(v[i],w[i],x[i],u[i]);
+                  SHFT(fv[i],fw[i],fx[i],fu[i]);
+                }
+              else
+                {
+                  if(u[i] < x[i])
+                    a[i] = u[i];
+                  else
+                    b[i] = u[i];
+                  
+                  if(fu[i] <= fw[i] || w[i] == x[i])
+                    {
+                      v[i] = w[i];
+                      w[i] = u[i];
+                      fv[i] = fw[i];
+                      fw[i] = fu[i];
+                    }
+                  else
+                    {
+                      if(fu[i] <= fv[i] || v[i] == x[i] || v[i] == w[i])
+                        {
+                          v[i] = u[i];
+                          fv[i] = fu[i];
+                        }
+                    }       
+                }
+              
+              assert(a[i] >= lim_inf && a[i] <= lim_sup);
+              assert(b[i] >= lim_inf && b[i] <= lim_sup);
+              assert(x[i] >= lim_inf && x[i] <= lim_sup);
+              assert(v[i] >= lim_inf && v[i] <= lim_sup);
+              assert(w[i] >= lim_inf && w[i] <= lim_sup);
+              assert(u[i] >= lim_inf && u[i] <= lim_sup);
+            }
+        }
     }
 
   rax_free(converged);
@@ -588,8 +592,8 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 /* generic bracketing function required for Brent's algorithm. For details please see the corresponding chapter in the book Numerical Recipees in C */
 
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
-		       double *fc, double lim_inf, double lim_sup, 
-		       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll, double modelEpsilon)
+                       double *fc, double lim_inf, double lim_sup, 
+                       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll, double modelEpsilon)
 {
   double 
     *ulim = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -620,11 +624,11 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 
       param[i] = ax[i];
 
-      if(param[i] > lim_sup) 	
-	param[i] = ax[i] = lim_sup;
+      if(param[i] > lim_sup)    
+        param[i] = ax[i] = lim_sup;
       
       if(param[i] < lim_inf) 
-	param[i] = ax[i] = lim_inf;
+        param[i] = ax[i] = lim_inf;
 
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
@@ -637,9 +641,9 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     {
       param[i] = bx[i];
       if(param[i] > lim_sup) 
-	param[i] = bx[i] = lim_sup;
+        param[i] = bx[i] = lim_sup;
       if(param[i] < lim_inf) 
-	param[i] = bx[i] = lim_inf;
+        param[i] = bx[i] = lim_inf;
 
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
@@ -649,19 +653,19 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
   for(i = 0; i < numberOfModels; i++)  
     {
       if (fb[i] > fa[i]) 
-	{	  
-	  SHFT(dum[i],ax[i],bx[i],dum[i]);
-	  SHFT(dum[i],fa[i],fb[i],dum[i]);
-	}
+        {         
+          SHFT(dum[i],ax[i],bx[i],dum[i]);
+          SHFT(dum[i],fa[i],fb[i],dum[i]);
+        }
       
       cx[i] = bx[i] + MNBRAK_GOLD * (bx[i] - ax[i]);
       
       param[i] = cx[i];
       
       if(param[i] > lim_sup) 
-	param[i] = cx[i] = lim_sup;
+        param[i] = cx[i] = lim_sup;
       if(param[i] < lim_inf) 
-	param[i] = cx[i] = lim_inf;
+        param[i] = cx[i] = lim_inf;
 
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
@@ -674,211 +678,211 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
        allConverged = PLL_TRUE;
 
        for(i = 0; i < numberOfModels && allConverged; i++)
-	 allConverged = allConverged && converged[i];
+         allConverged = allConverged && converged[i];
 
        if(allConverged)
-	 {
-	   for(i = 0; i < numberOfModels; i++)
-	     {	       
-	       if(ax[i] > lim_sup) 
-		 ax[i] = lim_sup;
-	       if(ax[i] < lim_inf) 
-		 ax[i] = lim_inf;
+         {
+           for(i = 0; i < numberOfModels; i++)
+             {         
+               if(ax[i] > lim_sup) 
+                 ax[i] = lim_sup;
+               if(ax[i] < lim_inf) 
+                 ax[i] = lim_inf;
 
-	       if(bx[i] > lim_sup) 
-		 bx[i] = lim_sup;
-	       if(bx[i] < lim_inf) 
-		 bx[i] = lim_inf;
-	       
-	       if(cx[i] > lim_sup) 
-		 cx[i] = lim_sup;
-	       if(cx[i] < lim_inf) 
-		 cx[i] = lim_inf;
-	     }
+               if(bx[i] > lim_sup) 
+                 bx[i] = lim_sup;
+               if(bx[i] < lim_inf) 
+                 bx[i] = lim_inf;
+               
+               if(cx[i] > lim_sup) 
+                 cx[i] = lim_sup;
+               if(cx[i] < lim_inf) 
+                 cx[i] = lim_inf;
+             }
 
-	   rax_free(converged);
-	   rax_free(ulim);
-	   rax_free(u);
-	   rax_free(r);
-	   rax_free(q);
-	   rax_free(fu);
-	   rax_free(dum); 
-	   rax_free(temp);
-	   rax_free(state);   
-	   rax_free(endState);
-	   return 0;
-	   
-	 }
+           rax_free(converged);
+           rax_free(ulim);
+           rax_free(u);
+           rax_free(r);
+           rax_free(q);
+           rax_free(fu);
+           rax_free(dum); 
+           rax_free(temp);
+           rax_free(state);   
+           rax_free(endState);
+           return 0;
+           
+         }
 
        for(i = 0; i < numberOfModels; i++)
-	 {
-	   if(!converged[i])
-	     {
-	       switch(state[i])
-		 {
-		 case 0:
-		   endState[i] = 0;
-		   if(!(fb[i] > fc[i]))		         
-		     converged[i] = PLL_TRUE;		       		     
-		   else
-		     {
-		   
-		       if(ax[i] > lim_sup) 
-			 ax[i] = lim_sup;
-		       if(ax[i] < lim_inf) 
-			 ax[i] = lim_inf;
-		       if(bx[i] > lim_sup) 
-			 bx[i] = lim_sup;
-		       if(bx[i] < lim_inf) 
-			 bx[i] = lim_inf;
-		       if(cx[i] > lim_sup) 
-			 cx[i] = lim_sup;
-		       if(cx[i] < lim_inf) 
-			 cx[i] = lim_inf;
-		       
-		       r[i]=(bx[i]-ax[i])*(fb[i]-fc[i]);
-		       q[i]=(bx[i]-cx[i])*(fb[i]-fa[i]);
-		       u[i]=(bx[i])-((bx[i]-cx[i])*q[i]-(bx[i]-ax[i])*r[i])/
-			 (2.0*SIGN(MAX(fabs(q[i]-r[i]),MNBRAK_TINY),q[i]-r[i]));
-		       
-		       ulim[i]=(bx[i])+MNBRAK_GLIMIT*(cx[i]-bx[i]);
-		       
-		       if(u[i] > lim_sup) 
-			 u[i] = lim_sup;
-		       if(u[i] < lim_inf) 
-			 u[i] = lim_inf;
-		       if(ulim[i] > lim_sup) 
-			 ulim[i] = lim_sup;
-		       if(ulim[i] < lim_inf) 
-			 ulim[i] = lim_inf;
-		       
-		       if ((bx[i]-u[i])*(u[i]-cx[i]) > 0.0)
-			 {
-			   param[i] = u[i];
-			   if(param[i] > lim_sup) 			     
-			     param[i] = u[i] = lim_sup;
-			   if(param[i] < lim_inf)
-			     param[i] = u[i] = lim_inf;
-			   endState[i] = 1;
-			 }
-		       else 
-			 {
-			   if ((cx[i]-u[i])*(u[i]-ulim[i]) > 0.0) 
-			     {
-			       param[i] = u[i];
-			       if(param[i] > lim_sup) 
-				 param[i] = u[i] = lim_sup;
-			       if(param[i] < lim_inf) 
-				 param[i] = u[i] = lim_inf;
-			       endState[i] = 2;
-			     }		  	       
-			   else
-			     {
-			       if ((u[i]-ulim[i])*(ulim[i]-cx[i]) >= 0.0) 
-				 {
-				   u[i] = ulim[i];
-				   param[i] = u[i];	
-				   if(param[i] > lim_sup) 
-				     param[i] = u[i] = ulim[i] = lim_sup;
-				   if(param[i] < lim_inf) 
-				     param[i] = u[i] = ulim[i] = lim_inf;
-				   endState[i] = 0;
-				 }		  		
-			       else 
-				 {		  
-				   u[i]=(cx[i])+MNBRAK_GOLD*(cx[i]-bx[i]);
-				   param[i] = u[i];
-				   endState[i] = 0;
-				   if(param[i] > lim_sup) 
-				     param[i] = u[i] = lim_sup;
-				   if(param[i] < lim_inf) 
-				     param[i] = u[i] = lim_inf;
-				 }
-			     }	  
-			 }
-		     }
-		   break;
-		 case 1:
-		   endState[i] = 0;
-		   break;
-		 case 2:
-		   endState[i] = 3;
-		   break;
-		 default:
-		   assert(0);
-		 }
-	       assert(param[i] >= lim_inf && param[i] <= lim_sup);
-	     }
-	 }
+         {
+           if(!converged[i])
+             {
+               switch(state[i])
+                 {
+                 case 0:
+                   endState[i] = 0;
+                   if(!(fb[i] > fc[i]))                  
+                     converged[i] = PLL_TRUE;                                
+                   else
+                     {
+                   
+                       if(ax[i] > lim_sup) 
+                         ax[i] = lim_sup;
+                       if(ax[i] < lim_inf) 
+                         ax[i] = lim_inf;
+                       if(bx[i] > lim_sup) 
+                         bx[i] = lim_sup;
+                       if(bx[i] < lim_inf) 
+                         bx[i] = lim_inf;
+                       if(cx[i] > lim_sup) 
+                         cx[i] = lim_sup;
+                       if(cx[i] < lim_inf) 
+                         cx[i] = lim_inf;
+                       
+                       r[i]=(bx[i]-ax[i])*(fb[i]-fc[i]);
+                       q[i]=(bx[i]-cx[i])*(fb[i]-fa[i]);
+                       u[i]=(bx[i])-((bx[i]-cx[i])*q[i]-(bx[i]-ax[i])*r[i])/
+                         (2.0*SIGN(MAX(fabs(q[i]-r[i]),MNBRAK_TINY),q[i]-r[i]));
+                       
+                       ulim[i]=(bx[i])+MNBRAK_GLIMIT*(cx[i]-bx[i]);
+                       
+                       if(u[i] > lim_sup) 
+                         u[i] = lim_sup;
+                       if(u[i] < lim_inf) 
+                         u[i] = lim_inf;
+                       if(ulim[i] > lim_sup) 
+                         ulim[i] = lim_sup;
+                       if(ulim[i] < lim_inf) 
+                         ulim[i] = lim_inf;
+                       
+                       if ((bx[i]-u[i])*(u[i]-cx[i]) > 0.0)
+                         {
+                           param[i] = u[i];
+                           if(param[i] > lim_sup)                            
+                             param[i] = u[i] = lim_sup;
+                           if(param[i] < lim_inf)
+                             param[i] = u[i] = lim_inf;
+                           endState[i] = 1;
+                         }
+                       else 
+                         {
+                           if ((cx[i]-u[i])*(u[i]-ulim[i]) > 0.0) 
+                             {
+                               param[i] = u[i];
+                               if(param[i] > lim_sup) 
+                                 param[i] = u[i] = lim_sup;
+                               if(param[i] < lim_inf) 
+                                 param[i] = u[i] = lim_inf;
+                               endState[i] = 2;
+                             }                         
+                           else
+                             {
+                               if ((u[i]-ulim[i])*(ulim[i]-cx[i]) >= 0.0) 
+                                 {
+                                   u[i] = ulim[i];
+                                   param[i] = u[i];     
+                                   if(param[i] > lim_sup) 
+                                     param[i] = u[i] = ulim[i] = lim_sup;
+                                   if(param[i] < lim_inf) 
+                                     param[i] = u[i] = ulim[i] = lim_inf;
+                                   endState[i] = 0;
+                                 }                              
+                               else 
+                                 {                
+                                   u[i]=(cx[i])+MNBRAK_GOLD*(cx[i]-bx[i]);
+                                   param[i] = u[i];
+                                   endState[i] = 0;
+                                   if(param[i] > lim_sup) 
+                                     param[i] = u[i] = lim_sup;
+                                   if(param[i] < lim_inf) 
+                                     param[i] = u[i] = lim_inf;
+                                 }
+                             }    
+                         }
+                     }
+                   break;
+                 case 1:
+                   endState[i] = 0;
+                   break;
+                 case 2:
+                   endState[i] = 3;
+                   break;
+                 default:
+                   assert(0);
+                 }
+               assert(param[i] >= lim_inf && param[i] <= lim_sup);
+             }
+         }
              
        evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
        for(i = 0; i < numberOfModels; i++)
-	 {
-	   if(!converged[i])
-	     {	       
-	       switch(endState[i])
-		 {
-		 case 0:
-		   fu[i] = temp[i];
-		   SHFT(ax[i],bx[i],cx[i],u[i]);
-		   SHFT(fa[i],fb[i],fc[i],fu[i]);
-		   state[i] = 0;
-		   break;
-		 case 1:
-		   fu[i] = temp[i];
-		   if (fu[i] < fc[i]) 
-		     {
-		       ax[i]=(bx[i]);
-		       bx[i]=u[i];
-		       fa[i]=(fb[i]);
-		       fb[i]=fu[i]; 
-		       converged[i] = PLL_TRUE;		      
-		     } 
-		   else 
-		     {
-		       if (fu[i] > fb[i]) 
-			 {
-			   assert(u[i] >= lim_inf && u[i] <= lim_sup);
-			   cx[i]=u[i];
-			   fc[i]=fu[i];
-			   converged[i] = PLL_TRUE;			  
-			 }
-		       else
-			 {		   
-			   u[i]=(cx[i])+MNBRAK_GOLD*(cx[i]-bx[i]);
-			   param[i] = u[i];
-			   if(param[i] > lim_sup) {param[i] = u[i] = lim_sup;}
-			   if(param[i] < lim_inf) {param[i] = u[i] = lim_inf;}	  
-			   state[i] = 1;		 
-			 }		  
-		     }
-		   break;
-		 case 2: 
-		   fu[i] = temp[i];
-		   if (fu[i] < fc[i]) 
-		     {		     
-		       SHFT(bx[i],cx[i],u[i], cx[i]+MNBRAK_GOLD*(cx[i]-bx[i]));
-		       state[i] = 2;
-		     }	   
-		   else
-		     {
-		       state[i] = 0;
-		       SHFT(ax[i],bx[i],cx[i],u[i]);
-		       SHFT(fa[i],fb[i],fc[i],fu[i]);
-		     }
-		   break;	   
-		 case 3:		  
-		   SHFT(fb[i],fc[i],fu[i], temp[i]);
-		   SHFT(ax[i],bx[i],cx[i],u[i]);
-		   SHFT(fa[i],fb[i],fc[i],fu[i]);
-		   state[i] = 0;
-		   break;
-		 default:
-		   assert(0);
-		 }
-	     }
-	 }
+         {
+           if(!converged[i])
+             {         
+               switch(endState[i])
+                 {
+                 case 0:
+                   fu[i] = temp[i];
+                   SHFT(ax[i],bx[i],cx[i],u[i]);
+                   SHFT(fa[i],fb[i],fc[i],fu[i]);
+                   state[i] = 0;
+                   break;
+                 case 1:
+                   fu[i] = temp[i];
+                   if (fu[i] < fc[i]) 
+                     {
+                       ax[i]=(bx[i]);
+                       bx[i]=u[i];
+                       fa[i]=(fb[i]);
+                       fb[i]=fu[i]; 
+                       converged[i] = PLL_TRUE;               
+                     } 
+                   else 
+                     {
+                       if (fu[i] > fb[i]) 
+                         {
+                           assert(u[i] >= lim_inf && u[i] <= lim_sup);
+                           cx[i]=u[i];
+                           fc[i]=fu[i];
+                           converged[i] = PLL_TRUE;                       
+                         }
+                       else
+                         {                 
+                           u[i]=(cx[i])+MNBRAK_GOLD*(cx[i]-bx[i]);
+                           param[i] = u[i];
+                           if(param[i] > lim_sup) {param[i] = u[i] = lim_sup;}
+                           if(param[i] < lim_inf) {param[i] = u[i] = lim_inf;}    
+                           state[i] = 1;                 
+                         }                
+                     }
+                   break;
+                 case 2: 
+                   fu[i] = temp[i];
+                   if (fu[i] < fc[i]) 
+                     {               
+                       SHFT(bx[i],cx[i],u[i], cx[i]+MNBRAK_GOLD*(cx[i]-bx[i]));
+                       state[i] = 2;
+                     }     
+                   else
+                     {
+                       state[i] = 0;
+                       SHFT(ax[i],bx[i],cx[i],u[i]);
+                       SHFT(fa[i],fb[i],fc[i],fu[i]);
+                     }
+                   break;          
+                 case 3:                  
+                   SHFT(fb[i],fc[i],fu[i], temp[i]);
+                   SHFT(ax[i],bx[i],cx[i],u[i]);
+                   SHFT(fa[i],fb[i],fc[i],fu[i]);
+                   state[i] = 0;
+                   break;
+                 default:
+                   assert(0);
+                 }
+             }
+         }
     }
    
 
@@ -918,36 +922,36 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
 
   /* first do non-LG4X partitions */
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	case DNA_DATA:			  	
-	case BINARY_DATA:
-	case SECONDARY_DATA:
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
-	case GENERIC_32:
-	case GENERIC_64:
-	  ll->ld[i].valid = PLL_TRUE;
-	  non_LG4X_Partitions++;
-	  break;
-	case AA_DATA:	  
-	  //to be implemented later-on 
-	  /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)
-	    {
-	      LG4X_Partitions++;	      
-	      ll->ld[i].valid = FALSE;
-	    }
-	    else*/
-	    {
-	      ll->ld[i].valid = PLL_TRUE;
-	      non_LG4X_Partitions++;
-	    }
-	  break;
-	default:
-	  assert(0);
-	}      
+        {
+        case DNA_DATA:                          
+        case BINARY_DATA:
+        case SECONDARY_DATA:
+        case SECONDARY_DATA_6:
+        case SECONDARY_DATA_7:
+        case GENERIC_32:
+        case GENERIC_64:
+          ll->ld[i].valid = PLL_TRUE;
+          non_LG4X_Partitions++;
+          break;
+        case AA_DATA:     
+          //to be implemented later-on 
+          /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)
+            {
+              LG4X_Partitions++;              
+              ll->ld[i].valid = FALSE;
+            }
+            else*/
+            {
+              ll->ld[i].valid = PLL_TRUE;
+              non_LG4X_Partitions++;
+            }
+          break;
+        default:
+          assert(0);
+        }      
     }   
 
  
@@ -961,35 +965,35 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
 
   /* then LG4x partitions */
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	case DNA_DATA:			  	
-	case BINARY_DATA:
-	case SECONDARY_DATA:
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
-	case GENERIC_32:
-	case GENERIC_64:
-	  ll->ld[i].valid = PLL_FALSE;	  
-	  break;
-	case AA_DATA:	  
-	  //deal with this later-on
-	  /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)	      
-	    ll->ld[i].valid = TRUE;	   
-	    else*/
-	    ll->ld[i].valid = PLL_FALSE;	   	    
-	  break;
-	default:
-	  assert(0);
-	}      
+        {
+        case DNA_DATA:                          
+        case BINARY_DATA:
+        case SECONDARY_DATA:
+        case SECONDARY_DATA_6:
+        case SECONDARY_DATA_7:
+        case GENERIC_32:
+        case GENERIC_64:
+          ll->ld[i].valid = PLL_FALSE;    
+          break;
+        case AA_DATA:     
+          //deal with this later-on
+          /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)              
+            ll->ld[i].valid = TRUE;        
+            else*/
+            ll->ld[i].valid = PLL_FALSE;                    
+          break;
+        default:
+          assert(0);
+        }      
     }   
   
   //if(LG4X_Partitions > 0)
   //  optLG4X(tr, modelEpsilon, ll, LG4X_Partitions);
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     ll->ld[i].valid = PLL_TRUE;
 }
 
@@ -1026,63 +1030,63 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
      search 
   */
 
-  for(l = 0, pos = 0; l < ll->entries; l++)
+  for(l = 0, pos = 0; ll && l < ll->entries; l++)
     {
       if(ll->ld[l].valid)
-	{
-	  endLH[pos] = PLL_UNLIKELY;
-	  startLH[pos] = 0.0;
+        {
+          endLH[pos] = PLL_UNLIKELY;
+          startLH[pos] = 0.0;
 
-	  for(j = 0; j < ll->ld[l].partitions; j++)
-	    {
-	      int 
-		index = ll->ld[l].partitionList[j];
-	      
-	      startLH[pos] += pr->partitionData[index]->partitionLH;
-	      
-	      switch(whichParameterType)
-		{
-		case ALPHA_F:
-		  startValues[pos] = pr->partitionData[index]->alpha;
-		  break;
-		case RATE_F:
-		  startValues[pos] = pr->partitionData[index]->substRates[rateNumber];      
-		  break;
-		case FREQ_F:
-		  startValues[pos] = pr->partitionData[index]->freqExponents[rateNumber];
-		  break;
-		default:
-		  assert(0);
-		}
-	    }
-	  pos++;
-	}
+          for(j = 0; j < ll->ld[l].partitions; j++)
+            {
+              int 
+                index = ll->ld[l].partitionList[j];
+              
+              startLH[pos] += pr->partitionData[index]->partitionLH;
+              
+              switch(whichParameterType)
+                {
+                case ALPHA_F:
+                  startValues[pos] = pr->partitionData[index]->alpha;
+                  break;
+                case RATE_F:
+                  startValues[pos] = pr->partitionData[index]->substRates[rateNumber];      
+                  break;
+                case FREQ_F:
+                  startValues[pos] = pr->partitionData[index]->freqExponents[rateNumber];
+                  break;
+                default:
+                  assert(0);
+                }
+            }
+          pos++;
+        }
     }  
 
   assert(pos == numberOfModels);
    
-  for(k = 0, pos = 0; k < ll->entries; k++)
+  for(k = 0, pos = 0; ll && k < ll->entries; k++)
     {
       if(ll->ld[k].valid)
         {
-	  _a[pos] = startValues[pos] + 0.1;
-	  _b[pos] = startValues[pos] - 0.1;
+          _a[pos] = startValues[pos] + 0.1;
+          _b[pos] = startValues[pos] - 0.1;
 
-	  if(_a[pos] < lim_inf) 
-	    _a[pos] = lim_inf;
-	  
-	  if(_a[pos] > lim_sup) 
-	    _a[pos] = lim_sup;
-	      
-	  if(_b[pos] < lim_inf) 
-	    _b[pos] = lim_inf;
-	  
-	  if(_b[pos] > lim_sup) 
-	    _b[pos] = lim_sup;    
+          if(_a[pos] < lim_inf) 
+            _a[pos] = lim_inf;
+          
+          if(_a[pos] > lim_sup) 
+            _a[pos] = lim_sup;
+              
+          if(_b[pos] < lim_inf) 
+            _b[pos] = lim_inf;
+          
+          if(_b[pos] > lim_sup) 
+            _b[pos] = lim_sup;    
 
-	  pos++;
-	}
-    }                    	     
+          pos++;
+        }
+    }                                
 
   assert(pos == numberOfModels);
 
@@ -1091,45 +1095,45 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
   for(k = 0; k < numberOfModels; k++)
     {
       assert(_a[k] >= lim_inf && _a[k] <= lim_sup);
-      assert(_b[k] >= lim_inf && _b[k] <= lim_sup);	  
-      assert(_c[k] >= lim_inf && _c[k] <= lim_sup);	    
+      assert(_b[k] >= lim_inf && _b[k] <= lim_sup);       
+      assert(_c[k] >= lim_inf && _c[k] <= lim_sup);         
     }      
 
   brentGeneric(_a, _b, _c, _fb, modelEpsilon, _x, endLH, numberOfModels, whichParameterType, rateNumber, tr,  pr, ll, lim_inf, lim_sup);
-	
-  for(k = 0, pos = 0; k < ll->entries; k++)
+        
+  for(k = 0, pos = 0; ll && k < ll->entries; k++)
     {
       if(ll->ld[k].valid)
-	{ 
-	  if(startLH[pos] > endLH[pos])
-	    {
-	      //if the initial likelihood was better than the likelihodo after optimization, we set the values back 
-	      //to their original values 
+        { 
+          if(startLH[pos] > endLH[pos])
+            {
+              //if the initial likelihood was better than the likelihodo after optimization, we set the values back 
+              //to their original values 
 
-	      for(j = 0; j < ll->ld[k].partitions; j++)
-		{
-		  int 
-		    index = ll->ld[k].partitionList[j];
-		  
+              for(j = 0; j < ll->ld[k].partitions; j++)
+                {
+                  int 
+                    index = ll->ld[k].partitionList[j];
+                  
                     changeModelParameters(index, rateNumber, startValues[pos], whichParameterType, tr, pr); 
-		}
-	    }
-	  else
-	    {
-	      //otherwise we set the value to the optimized value 
-	      //this used to be a bug in standard RAxML, before I fixed it 
-	      //I was not using _x[pos] as value that needs to be set 
+                }
+            }
+          else
+            {
+              //otherwise we set the value to the optimized value 
+              //this used to be a bug in standard RAxML, before I fixed it 
+              //I was not using _x[pos] as value that needs to be set 
 
-	      for(j = 0; j < ll->ld[k].partitions; j++)
-		{
-		  int 
-		    index = ll->ld[k].partitionList[j];
-		  
+              for(j = 0; j < ll->ld[k].partitions; j++)
+                {
+                  int 
+                    index = ll->ld[k].partitionList[j];
+                  
                   changeModelParameters(index, rateNumber, _x[pos], whichParameterType, tr, pr); 
-		}
-	    }
-	  pos++;
-	}
+                }
+            }
+          pos++;
+        }
     }
 
   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
@@ -1185,26 +1189,26 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
 
   /* first do DNA */
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	case DNA_DATA:	
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 
-	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
-	    {
-	      ll->ld[i].valid = PLL_TRUE;
-	      dnaPartitions++;  	    
-	    }
-	  else
-	     ll->ld[i].valid = PLL_FALSE;
-	  break;       
-	case AA_DATA:
-	  ll->ld[i].valid = PLL_FALSE;
-	  break;
-	default:
-	  assert(0);
-	}      
+        {
+        case DNA_DATA:  
+          states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 
+          if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
+            {
+              ll->ld[i].valid = PLL_TRUE;
+              dnaPartitions++;              
+            }
+          else
+             ll->ld[i].valid = PLL_FALSE;
+          break;       
+        case AA_DATA:
+          ll->ld[i].valid = PLL_FALSE;
+          break;
+        default:
+          assert(0);
+        }      
     }   
 
   if(dnaPartitions > 0)
@@ -1213,32 +1217,32 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
   /* then AA */
 
   
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	case AA_DATA:	  
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 	      
-	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
-	    {
-	      ll->ld[i].valid = PLL_TRUE;
-	      aaPartitions++;		
-	    }
-	  else
-	    ll->ld[i].valid = PLL_FALSE; 
-	  break;
-	case DNA_DATA:	    
-	  ll->ld[i].valid = PLL_FALSE;
-	  break;
-	default:
-	  assert(0);
-	}	 
+        {
+        case AA_DATA:     
+          states = pr->partitionData[ll->ld[i].partitionList[0]]->states;             
+          if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
+            {
+              ll->ld[i].valid = PLL_TRUE;
+              aaPartitions++;           
+            }
+          else
+            ll->ld[i].valid = PLL_FALSE; 
+          break;
+        case DNA_DATA:      
+          ll->ld[i].valid = PLL_FALSE;
+          break;
+        default:
+          assert(0);
+        }        
     }
   
   if(aaPartitions > 0)      
     optFreqs(tr, pr, modelEpsilon, ll, aaPartitions, states);
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     ll->ld[i].valid = PLL_TRUE;
 }
 
@@ -1266,11 +1270,11 @@ static boolean AAisGTR(partitionList *pr)
   for(i = 0; i < pr->numberOfPartitions; i++)
     {
       if(pr->partitionData[i]->dataType == AA_DATA)
-	{
-	  count++;
-	  if(pr->partitionData[i]->protModels != GTR)
-	    return PLL_FALSE;
-	}
+        {
+          count++;
+          if(pr->partitionData[i]->protModels != GTR)
+            return PLL_FALSE;
+        }
     }
 
   if(count == 0)
@@ -1298,27 +1302,27 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
      linkage list data structure. 
    */
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	{
-	case DNA_DATA:	
-	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	  ll->ld[i].valid = PLL_TRUE;
-	  dnaPartitions++;  
-	  break;
-	case BINARY_DATA:
-	case AA_DATA:
-	case SECONDARY_DATA:
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
-	case GENERIC_32:
-	case GENERIC_64:
-	  ll->ld[i].valid = PLL_FALSE;
-	  break;
-	default:
-	  assert(0);
-	}      
+        {
+        case DNA_DATA:  
+          states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
+          ll->ld[i].valid = PLL_TRUE;
+          dnaPartitions++;  
+          break;
+        case BINARY_DATA:
+        case AA_DATA:
+        case SECONDARY_DATA:
+        case SECONDARY_DATA_6:
+        case SECONDARY_DATA_7:
+        case GENERIC_32:
+        case GENERIC_64:
+          ll->ld[i].valid = PLL_FALSE;
+          break;
+        default:
+          assert(0);
+        }      
     }   
 
   /* if we have dna partitions in our dataset, let's optimize all 5 rates in their substitution matrices */
@@ -1335,26 +1339,26 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 
   if(AAisGTR(pr))
     {
-      for(i = 0; i < ll->entries; i++)
-	{
-	  switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-	    {
-	    case AA_DATA:
-	      states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-	      ll->ld[i].valid = PLL_TRUE;
-	      aaPartitions++;
-	      break;
-	    case DNA_DATA:	    
-	    case BINARY_DATA:
-	    case SECONDARY_DATA:	
-	    case SECONDARY_DATA_6:
-	    case SECONDARY_DATA_7:
-	      ll->ld[i].valid = PLL_FALSE;
-	      break;
-	    default:
-	      assert(0);
-	    }	 
-	}
+      for(i = 0; ll && i < ll->entries; i++)
+        {
+          switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
+            {
+            case AA_DATA:
+              states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
+              ll->ld[i].valid = PLL_TRUE;
+              aaPartitions++;
+              break;
+            case DNA_DATA:          
+            case BINARY_DATA:
+            case SECONDARY_DATA:        
+            case SECONDARY_DATA_6:
+            case SECONDARY_DATA_7:
+              ll->ld[i].valid = PLL_FALSE;
+              break;
+            default:
+              assert(0);
+            }    
+        }
 
       assert(aaPartitions == 1);     
       
@@ -1363,7 +1367,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 
   /* done with all partitions, so we can set all entries in the linkage list to valid again :-) */
 
-  for(i = 0; i < ll->entries; i++)
+  for(i = 0; ll && i < ll->entries; i++)
     ll->ld[i].valid = PLL_TRUE;
 }
 
@@ -1407,38 +1411,38 @@ static void categorizePartition(pllInstance *tr, partitionList *pr, rateCategori
 
   for (i = lower, zeroCounter = 0; i < upper; i++, zeroCounter++) 
       {
-	double
-	  temp = tr->patrat[i];
+        double
+          temp = tr->patrat[i];
 
-	int
-	  found = 0;
-	
-	for(k = 0; k < pr->partitionData[model]->numberOfCategories; k++)
-	  {
-	    if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
-	      {
-		found = 1;
-		tr->rateCategory[i] = k; 
-		break;
-	      }
-	  }
-	
-	if(!found)
-	  {
-	    min = fabs(temp - rc[0].rate);
-	    tr->rateCategory[i] = 0;
+        int
+          found = 0;
+        
+        for(k = 0; k < pr->partitionData[model]->numberOfCategories; k++)
+          {
+            if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
+              {
+                found = 1;
+                tr->rateCategory[i] = k; 
+                break;
+              }
+          }
+        
+        if(!found)
+          {
+            min = fabs(temp - rc[0].rate);
+            tr->rateCategory[i] = 0;
 
-	    for(k = 1; k < pr->partitionData[model]->numberOfCategories; k++)
-	      {
-		diff = fabs(temp - rc[k].rate);
+            for(k = 1; k < pr->partitionData[model]->numberOfCategories; k++)
+              {
+                diff = fabs(temp - rc[k].rate);
 
-		if(diff < min)
-		  {
-		    min = diff;
-		    tr->rateCategory[i] = k;
-		  }
-	      }
-	  }
+                if(diff < min)
+                  {
+                    min = diff;
+                    tr->rateCategory[i] = k;
+                  }
+              }
+          }
       }
 
   for(k = 0; k < pr->partitionData[model]->numberOfCategories; k++)
@@ -1457,82 +1461,82 @@ void optRateCatPthreads(pllInstance *tr, partitionList *pr, double lower_spacing
   for(model = 0; model < pr->numberOfPartitions; model++)
     {      
       int 
-	localIndex = 0;
+        localIndex = 0;
 
       boolean 
-	execute = ((tr->manyPartitions && isThisMyPartition(pr, tid, model)) || (!tr->manyPartitions));
+        execute = ((tr->manyPartitions && isThisMyPartition(pr, tid, model)) || (!tr->manyPartitions));
 
       if(execute)
-	for(i = pr->partitionData[model]->lower;  i < pr->partitionData[model]->upper; i++)
-	  {
-	    if(tr->manyPartitions || (i % n == tid))
-	      {
-	      
-		double initialRate, initialLikelihood, 
-		  leftLH, rightLH, leftRate, rightRate, v;
-		const double epsilon = 0.00001;
-		int k;	      
-		
-		tr->patrat[i] = tr->patratStored[i];     
-		initialRate = tr->patrat[i];
-		
-		initialLikelihood = evaluatePartialGeneric(tr, pr, localIndex, initialRate, model); /* i is real i ??? */
-		
-		
-		leftLH = rightLH = initialLikelihood;
-		leftRate = rightRate = initialRate;
-		
-		k = 1;
-		
-		while((initialRate - k * lower_spacing > 0.0001) && 
-		      ((v = evaluatePartialGeneric(tr, pr, localIndex, initialRate - k * lower_spacing, model))
-		       > leftLH) && 
-		      (fabs(leftLH - v) > epsilon))  
-		  {	  
+        for(i = pr->partitionData[model]->lower;  i < pr->partitionData[model]->upper; i++)
+          {
+            if(tr->manyPartitions || (i % n == tid))
+              {
+              
+                double initialRate, initialLikelihood, 
+                  leftLH, rightLH, leftRate, rightRate, v;
+                const double epsilon = 0.00001;
+                int k;        
+                
+                tr->patrat[i] = tr->patratStored[i];     
+                initialRate = tr->patrat[i];
+                
+                initialLikelihood = evaluatePartialGeneric(tr, pr, localIndex, initialRate, model); /* i is real i ??? */
+                
+                
+                leftLH = rightLH = initialLikelihood;
+                leftRate = rightRate = initialRate;
+                
+                k = 1;
+                
+                while((initialRate - k * lower_spacing > 0.0001) && 
+                      ((v = evaluatePartialGeneric(tr, pr, localIndex, initialRate - k * lower_spacing, model))
+                       > leftLH) && 
+                      (fabs(leftLH - v) > epsilon))  
+                  {       
 #ifndef WIN32
-		    if(isnan(v))
-		      assert(0);
+                    if(isnan(v))
+                      assert(0);
 #endif
-		    
-		    leftLH = v;
-		    leftRate = initialRate - k * lower_spacing;
-		    k++;	  
-		  }      
-		
-		k = 1;
-		
-		while(((v = evaluatePartialGeneric(tr, pr, localIndex, initialRate + k * upper_spacing, model)) > rightLH) &&
-		      (fabs(rightLH - v) > epsilon))    	
-		  {
+                    
+                    leftLH = v;
+                    leftRate = initialRate - k * lower_spacing;
+                    k++;          
+                  }      
+                
+                k = 1;
+                
+                while(((v = evaluatePartialGeneric(tr, pr, localIndex, initialRate + k * upper_spacing, model)) > rightLH) &&
+                      (fabs(rightLH - v) > epsilon))            
+                  {
 #ifndef WIN32
-		    if(isnan(v))
-		      assert(0);
+                    if(isnan(v))
+                      assert(0);
 #endif     
-		    rightLH = v;
-		    rightRate = initialRate + k * upper_spacing;	 
-		    k++;
-		  }           
-		
-		if(rightLH > initialLikelihood || leftLH > initialLikelihood)
-		  {
-		    if(rightLH > leftLH)	    
-		      {	     
-			tr->patrat[i] = rightRate;
-			lhs[i] = rightLH;
-		      }
-		    else
-		      {	      
-			tr->patrat[i] = leftRate;
-			lhs[i] = leftLH;
-		      }
-		  }
-		else
-		  lhs[i] = initialLikelihood;
-		
-		tr->patratStored[i] = tr->patrat[i];
-		localIndex++;
-	      }
-	  }
+                    rightLH = v;
+                    rightRate = initialRate + k * upper_spacing;         
+                    k++;
+                  }           
+                
+                if(rightLH > initialLikelihood || leftLH > initialLikelihood)
+                  {
+                    if(rightLH > leftLH)            
+                      {      
+                        tr->patrat[i] = rightRate;
+                        lhs[i] = rightLH;
+                      }
+                    else
+                      {       
+                        tr->patrat[i] = leftRate;
+                        lhs[i] = leftLH;
+                      }
+                  }
+                else
+                  lhs[i] = initialLikelihood;
+                
+                tr->patratStored[i] = tr->patrat[i];
+                localIndex++;
+              }
+          }
       assert(localIndex == pr->partitionData[model]->width);
     }
 }
@@ -1550,7 +1554,7 @@ static void optRateCatModel(pllInstance *tr, partitionList *pr, int model, doubl
   for(i = lower; i < upper; i++)
     {
       double initialRate, initialLikelihood, 
-	leftLH, rightLH, leftRate, rightRate, v;
+        leftLH, rightLH, leftRate, rightRate, v;
       const double epsilon = 0.00001;
       int k;
       
@@ -1566,49 +1570,49 @@ static void optRateCatModel(pllInstance *tr, partitionList *pr, int model, doubl
       k = 1;
       
       while((initialRate - k * lower_spacing > 0.0001) && 
-	    ((v = evaluatePartialGeneric(tr, pr, i, initialRate - k * lower_spacing, model))
-	     > leftLH) && 
-	    (fabs(leftLH - v) > epsilon))  
-	{	  
+            ((v = evaluatePartialGeneric(tr, pr, i, initialRate - k * lower_spacing, model))
+             > leftLH) && 
+            (fabs(leftLH - v) > epsilon))  
+        {         
 #ifndef WIN32
-	  if(isnan(v))
-	    assert(0);
+          if(isnan(v))
+            assert(0);
 #endif
-	  
-	  leftLH = v;
-	  leftRate = initialRate - k * lower_spacing;
-	  k++;	  
-	}      
+          
+          leftLH = v;
+          leftRate = initialRate - k * lower_spacing;
+          k++;    
+        }      
       
       k = 1;
       
       while(((v = evaluatePartialGeneric(tr, pr, i, initialRate + k * upper_spacing, model)) > rightLH) &&
-	    (fabs(rightLH - v) > epsilon))    	
-	{
+            (fabs(rightLH - v) > epsilon))      
+        {
 #ifndef WIN32
-	  if(isnan(v))
-	    assert(0);
+          if(isnan(v))
+            assert(0);
 #endif     
-	  rightLH = v;
-	  rightRate = initialRate + k * upper_spacing;	 
-	  k++;
-	}           
+          rightLH = v;
+          rightRate = initialRate + k * upper_spacing;   
+          k++;
+        }           
   
       if(rightLH > initialLikelihood || leftLH > initialLikelihood)
-	{
-	  if(rightLH > leftLH)	    
-	    {	     
-	      tr->patrat[i] = rightRate;
-	      lhs[i] = rightLH;
-	    }
-	  else
-	    {	      
-	      tr->patrat[i] = leftRate;
-	      lhs[i] = leftLH;
-	    }
-	}
+        {
+          if(rightLH > leftLH)      
+            {        
+              tr->patrat[i] = rightRate;
+              lhs[i] = rightLH;
+            }
+          else
+            {         
+              tr->patrat[i] = leftRate;
+              lhs[i] = leftLH;
+            }
+        }
       else
-	lhs[i] = initialLikelihood;
+        lhs[i] = initialLikelihood;
       
       tr->patratStored[i] = tr->patrat[i];
     }
@@ -1635,222 +1639,222 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
   if(pr->perGeneBranchLengths && pr->numberOfPartitions > 1)
     {            
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  int 	       
-	    lower = pr->partitionData[model]->lower,
-	    upper = pr->partitionData[model]->upper;
-	  
-	  if(scaleRates)
-	    {
-	      double 
-		scaler = 0.0,       
-		accRat = 0.0; 
+        {
+          int          
+            lower = pr->partitionData[model]->lower,
+            upper = pr->partitionData[model]->upper;
+          
+          if(scaleRates)
+            {
+              double 
+                scaler = 0.0,       
+                accRat = 0.0; 
 
-	      int 
-		accWgt     = 0;
-	      
-	      for(i = lower; i < upper; i++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}	   
-	  
-	      accRat /= ((double)accWgt);
-	  
-	      scaler = 1.0 / ((double)accRat);
-	  	  
-	      for(i = 0; i < pr->partitionData[model]->numberOfCategories; i++)
-		pr->partitionData[model]->perSiteRates[i] *= scaler;
+              int 
+                accWgt     = 0;
+              
+              for(i = lower; i < upper; i++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+                  
+                  accWgt += w;
+                  
+                  accRat += (w * rate);
+                }          
+          
+              accRat /= ((double)accWgt);
+          
+              scaler = 1.0 / ((double)accRat);
+                  
+              for(i = 0; i < pr->partitionData[model]->numberOfCategories; i++)
+                pr->partitionData[model]->perSiteRates[i] *= scaler;
 
-	      accRat = 0.0;	 
-	      
-	      for(i = lower; i < upper; i++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
-		  
-		  accRat += (w * rate);
-		}	         
+              accRat = 0.0;      
+              
+              for(i = lower; i < upper; i++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);        
+                  
+                  accRat += (w * rate);
+                }                
 
-	      accRat /= ((double)accWgt);	  
+              accRat /= ((double)accWgt);         
 
-	      assert(ABS(1.0 - accRat) < 1.0E-5);
-	    }
-	  else
-	    {
-	      double 		   
-		accRat = 0.0; 
+              assert(ABS(1.0 - accRat) < 1.0E-5);
+            }
+          else
+            {
+              double               
+                accRat = 0.0; 
 
-	      int 
-		accWgt     = 0;
-	      
-	      for(i = lower; i < upper; i++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}	   
-	  
-	      accRat /= ((double)accWgt);
-	      
-	      assert(ABS(1.0 - accRat) < 1.0E-5);
-	    }
+              int 
+                accWgt     = 0;
+              
+              for(i = lower; i < upper; i++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+                  
+                  accWgt += w;
+                  
+                  accRat += (w * rate);
+                }          
+          
+              accRat /= ((double)accWgt);
+              
+              assert(ABS(1.0 - accRat) < 1.0E-5);
+            }
 
-	  
+          
 #if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-	  {
-	    int 
-	      localCount = 0;
-	    
-	    for(i = lower, localCount = 0; i < upper; i++, localCount++)
-	      {	    	      
-		pr->partitionData[model]->rateCategory[localCount] = tr->rateCategory[i];
-	      }
-	  }
+          {
+            int 
+              localCount = 0;
+            
+            for(i = lower, localCount = 0; i < upper; i++, localCount++)
+              {               
+                pr->partitionData[model]->rateCategory[localCount] = tr->rateCategory[i];
+              }
+          }
 #endif
-	}
+        }
     }
   else
     {
       int
-	accWgt = 0;
+        accWgt = 0;
 
       double 
-	scaler = 0.0,       
-	accRat = 0.0; 
+        scaler = 0.0,       
+        accRat = 0.0; 
 
       if(scaleRates)
-	{
-	  for(model = 0, accRat = 0.0, accWgt = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      int 
-		localCount = 0,
-		lower = pr->partitionData[model]->lower,
-		upper = pr->partitionData[model]->upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}
-	    }
-	  
-	  accRat /= ((double)accWgt);
-	  
-	  scaler = 1.0 / ((double)accRat);
-	  
-	  for(model = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      for(i = 0; i < pr->partitionData[model]->numberOfCategories; i++)
-		pr->partitionData[model]->perSiteRates[i] *= scaler;
-	    }
+        {
+          for(model = 0, accRat = 0.0, accWgt = 0; model < pr->numberOfPartitions; model++)
+            {
+              int 
+                localCount = 0,
+                lower = pr->partitionData[model]->lower,
+                upper = pr->partitionData[model]->upper;
+              
+              for(i = lower, localCount = 0; i < upper; i++, localCount++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+                  
+                  accWgt += w;
+                  
+                  accRat += (w * rate);
+                }
+            }
+          
+          accRat /= ((double)accWgt);
+          
+          scaler = 1.0 / ((double)accRat);
+          
+          for(model = 0; model < pr->numberOfPartitions; model++)
+            {
+              for(i = 0; i < pr->partitionData[model]->numberOfCategories; i++)
+                pr->partitionData[model]->perSiteRates[i] *= scaler;
+            }
 
-	  for(model = 0, accRat = 0.0; model < pr->numberOfPartitions; model++)
-	    {
-	      int 
-		localCount = 0,
-		lower = pr->partitionData[model]->lower,
-		upper = pr->partitionData[model]->upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);	      
-		  
-		  accRat += (w * rate);
-		}
-	    }           
+          for(model = 0, accRat = 0.0; model < pr->numberOfPartitions; model++)
+            {
+              int 
+                localCount = 0,
+                lower = pr->partitionData[model]->lower,
+                upper = pr->partitionData[model]->upper;
+              
+              for(i = lower, localCount = 0; i < upper; i++, localCount++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);        
+                  
+                  accRat += (w * rate);
+                }
+            }           
 
-	  accRat /= ((double)accWgt);	  
+          accRat /= ((double)accWgt);     
 
-	  assert(ABS(1.0 - accRat) < 1.0E-5);
-	}
+          assert(ABS(1.0 - accRat) < 1.0E-5);
+        }
       else
-	{
-	  for(model = 0, accRat = 0.0, accWgt = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      int 
-		localCount = 0,
-		lower = pr->partitionData[model]->lower,
-		upper = pr->partitionData[model]->upper;
-	      
-	      for(i = lower, localCount = 0; i < upper; i++, localCount++)
-		{
-		  int 
-		    w = tr->aliaswgt[i];
-		  
-		  double
-		    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
-		  
-		  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
-		  
-		  accWgt += w;
-		  
-		  accRat += (w * rate);
-		}
-	    }
-	  
-	  accRat /=  (double)accWgt;
+        {
+          for(model = 0, accRat = 0.0, accWgt = 0; model < pr->numberOfPartitions; model++)
+            {
+              int 
+                localCount = 0,
+                lower = pr->partitionData[model]->lower,
+                upper = pr->partitionData[model]->upper;
+              
+              for(i = lower, localCount = 0; i < upper; i++, localCount++)
+                {
+                  int 
+                    w = tr->aliaswgt[i];
+                  
+                  double
+                    rate = pr->partitionData[model]->perSiteRates[tr->rateCategory[i]];
+                  
+                  assert(0 <= tr->rateCategory[i] && tr->rateCategory[i] < tr->maxCategories);
+                  
+                  accWgt += w;
+                  
+                  accRat += (w * rate);
+                }
+            }
+          
+          accRat /=  (double)accWgt;
 
-	  assert(ABS(1.0 - accRat) < 1.0E-5);
-	}
+          assert(ABS(1.0 - accRat) < 1.0E-5);
+        }
          
          /*
        for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  int 
-	    localCount = 0,
-	    lower = pr->partitionData[model]->lower,
-	    upper = pr->partitionData[model]->upper;
+        {
+          int 
+            localCount = 0,
+            lower = pr->partitionData[model]->lower,
+            upper = pr->partitionData[model]->upper;
 
-	}  */       
+        }  */       
 #if NOT (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{   	  	  	 
-	  int 
-	    localCount,
-	    lower = pr->partitionData[model]->lower,
-	    upper = pr->partitionData[model]->upper;
-	  
-	  for(i = lower, localCount = 0; i < upper; i++, localCount++)
-	      pr->partitionData[model]->rateCategory[localCount] = tr->rateCategory[i];
-	}
+        {                        
+          int 
+            localCount,
+            lower = pr->partitionData[model]->lower,
+            upper = pr->partitionData[model]->upper;
+          
+          for(i = lower, localCount = 0; i < upper; i++, localCount++)
+              pr->partitionData[model]->rateCategory[localCount] = tr->rateCategory[i];
+        }
 #endif
     }
   
@@ -1866,56 +1870,56 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
   if(_maxCategories > 1)
     {
       double  
-	temp,  
-	lower_spacing, 
-	upper_spacing,
-	initialLH = tr->likelihood,	
-	*ratStored = (double *)rax_malloc(sizeof(double) * tr->originalCrunchedLength),
-	/**lhs =       (double *)malloc(sizeof(double) * tr->originalCrunchedLength),*/
-	**oldCategorizedRates = (double **)rax_malloc(sizeof(double *) * pr->numberOfPartitions);
+        temp,  
+        lower_spacing, 
+        upper_spacing,
+        initialLH = tr->likelihood,     
+        *ratStored = (double *)rax_malloc(sizeof(double) * tr->originalCrunchedLength),
+        /**lhs =       (double *)malloc(sizeof(double) * tr->originalCrunchedLength),*/
+        **oldCategorizedRates = (double **)rax_malloc(sizeof(double *) * pr->numberOfPartitions);
 
       int  
-	i,
-	k,
-	maxCategories = _maxCategories,
-	*oldCategory =  (int *)rax_malloc(sizeof(int) * tr->originalCrunchedLength),
-	model,
-	*oldNumbers = (int *)rax_malloc(sizeof(int) * pr->numberOfPartitions);
+        i,
+        k,
+        maxCategories = _maxCategories,
+        *oldCategory =  (int *)rax_malloc(sizeof(int) * tr->originalCrunchedLength),
+        model,
+        *oldNumbers = (int *)rax_malloc(sizeof(int) * pr->numberOfPartitions);
   
       assert(isTip(tr->start->number, tr->mxtips));         
       
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
       if(tr->optimizeRateCategoryInvocations == 1)
-	{
-	  lower_spacing = 0.5 / ((double)(tr->optimizeRateCategoryInvocations));
-	  upper_spacing = 1.0 / ((double)(tr->optimizeRateCategoryInvocations));
-	}
+        {
+          lower_spacing = 0.5 / ((double)(tr->optimizeRateCategoryInvocations));
+          upper_spacing = 1.0 / ((double)(tr->optimizeRateCategoryInvocations));
+        }
       else
-	{
-	  lower_spacing = 0.05 / ((double)(tr->optimizeRateCategoryInvocations));
-	  upper_spacing = 0.1 / ((double)(tr->optimizeRateCategoryInvocations));
-	}
+        {
+          lower_spacing = 0.05 / ((double)(tr->optimizeRateCategoryInvocations));
+          upper_spacing = 0.1 / ((double)(tr->optimizeRateCategoryInvocations));
+        }
       
       if(lower_spacing < 0.001)
-	lower_spacing = 0.001;
+        lower_spacing = 0.001;
       
       if(upper_spacing < 0.001)
-	upper_spacing = 0.001;
+        upper_spacing = 0.001;
       
       tr->optimizeRateCategoryInvocations = tr->optimizeRateCategoryInvocations + 1;
 
-      memcpy(oldCategory, tr->rateCategory, sizeof(int) * tr->originalCrunchedLength);	     
+      memcpy(oldCategory, tr->rateCategory, sizeof(int) * tr->originalCrunchedLength);       
       memcpy(ratStored,   tr->patratStored, sizeof(double) * tr->originalCrunchedLength);
 
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  oldNumbers[model]          = pr->partitionData[model]->numberOfCategories;
+        {
+          oldNumbers[model]          = pr->partitionData[model]->numberOfCategories;
 
-	  oldCategorizedRates[model] = (double *)rax_malloc(sizeof(double) * tr->maxCategories);
-	  
-	  memcpy(oldCategorizedRates[model], pr->partitionData[model]->perSiteRates, tr->maxCategories * sizeof(double));
-	}      
+          oldCategorizedRates[model] = (double *)rax_malloc(sizeof(double) * tr->maxCategories);
+          
+          memcpy(oldCategorizedRates[model], pr->partitionData[model]->perSiteRates, tr->maxCategories * sizeof(double));
+        }      
       
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       /*tr->lhs = lhs;*/
@@ -1924,97 +1928,97 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
       masterBarrier(THREAD_RATE_CATS, tr, pr);
 #else      
       for(model = 0; model < pr->numberOfPartitions; model++)
-	optRateCatModel(tr, pr, model, lower_spacing, upper_spacing, tr->lhs);
+        optRateCatModel(tr, pr, model, lower_spacing, upper_spacing, tr->lhs);
 #endif     
 
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{     
-	  int 
-	    where = 1,
-	    found = 0,
-	    width = pr->partitionData[model]->upper -  pr->partitionData[model]->lower,
-	    upper = pr->partitionData[model]->upper,
-	    lower = pr->partitionData[model]->lower;
-	    
-	  rateCategorize 
-	    *rc = (rateCategorize *)rax_malloc(sizeof(rateCategorize) * width);		 
-	
-	  for (i = 0; i < width; i++)
-	    {
-	      rc[i].accumulatedSiteLikelihood = 0.0;
-	      rc[i].rate = 0.0;
-	    }  
-	
-	  rc[0].accumulatedSiteLikelihood = tr->lhs[lower];
-	  rc[0].rate = tr->patrat[lower];
-	
-	  tr->rateCategory[lower] = 0;
-	
-	  for (i = lower + 1; i < upper; i++) 
-	    {
-	      temp = tr->patrat[i];
-	      found = 0;
-	    
-	      for(k = 0; k < where; k++)
-		{
-		  if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
-		    {
-		      found = 1;						
-		      rc[k].accumulatedSiteLikelihood += tr->lhs[i];	
-		      break;
-		    }
-		}
-	    
-	      if(!found)
-		{	    
-		  rc[where].rate = temp;	    
-		  rc[where].accumulatedSiteLikelihood += tr->lhs[i];	    
-		  where++;
-		}
-	    }
-	
-	  qsort(rc, where, sizeof(rateCategorize), catCompare);
-	
-	  if(where < maxCategories)
-	    {
-	      pr->partitionData[model]->numberOfCategories = where;
-	      categorizePartition(tr, pr, rc, model, lower, upper);
-	    }
-	  else
-	    {
-	      pr->partitionData[model]->numberOfCategories = maxCategories;
-	      categorizePartition(tr, pr, rc, model, lower, upper);
-	    }
-	
-	  rax_free(rc);
-	}
-        	
+        {     
+          int 
+            where = 1,
+            found = 0,
+            width = pr->partitionData[model]->upper -  pr->partitionData[model]->lower,
+            upper = pr->partitionData[model]->upper,
+            lower = pr->partitionData[model]->lower;
+            
+          rateCategorize 
+            *rc = (rateCategorize *)rax_malloc(sizeof(rateCategorize) * width);          
+        
+          for (i = 0; i < width; i++)
+            {
+              rc[i].accumulatedSiteLikelihood = 0.0;
+              rc[i].rate = 0.0;
+            }  
+        
+          rc[0].accumulatedSiteLikelihood = tr->lhs[lower];
+          rc[0].rate = tr->patrat[lower];
+        
+          tr->rateCategory[lower] = 0;
+        
+          for (i = lower + 1; i < upper; i++) 
+            {
+              temp = tr->patrat[i];
+              found = 0;
+            
+              for(k = 0; k < where; k++)
+                {
+                  if(temp == rc[k].rate || (fabs(temp - rc[k].rate) < 0.001))
+                    {
+                      found = 1;                                                
+                      rc[k].accumulatedSiteLikelihood += tr->lhs[i];    
+                      break;
+                    }
+                }
+            
+              if(!found)
+                {           
+                  rc[where].rate = temp;            
+                  rc[where].accumulatedSiteLikelihood += tr->lhs[i];        
+                  where++;
+                }
+            }
+        
+          qsort(rc, where, sizeof(rateCategorize), catCompare);
+        
+          if(where < maxCategories)
+            {
+              pr->partitionData[model]->numberOfCategories = where;
+              categorizePartition(tr, pr, rc, model, lower, upper);
+            }
+          else
+            {
+              pr->partitionData[model]->numberOfCategories = maxCategories;
+              categorizePartition(tr, pr, rc, model, lower, upper);
+            }
+        
+          rax_free(rc);
+        }
+                
       updatePerSiteRates(tr, pr, PLL_TRUE);
 
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       
       if(tr->likelihood < initialLH)
-	{	 		  
-	  for(model = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      pr->partitionData[model]->numberOfCategories = oldNumbers[model];
-	      memcpy(pr->partitionData[model]->perSiteRates, oldCategorizedRates[model], tr->maxCategories * sizeof(double));
-	    }	      
-	  
-	  memcpy(tr->patratStored, ratStored, sizeof(double) * tr->originalCrunchedLength);
-	  memcpy(tr->rateCategory, oldCategory, sizeof(int) * tr->originalCrunchedLength);	     
-	  
-	  updatePerSiteRates(tr, pr, PLL_FALSE);
-	  
-	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+        {                         
+          for(model = 0; model < pr->numberOfPartitions; model++)
+            {
+              pr->partitionData[model]->numberOfCategories = oldNumbers[model];
+              memcpy(pr->partitionData[model]->perSiteRates, oldCategorizedRates[model], tr->maxCategories * sizeof(double));
+            }         
+          
+          memcpy(tr->patratStored, ratStored, sizeof(double) * tr->originalCrunchedLength);
+          memcpy(tr->rateCategory, oldCategory, sizeof(int) * tr->originalCrunchedLength);           
+          
+          updatePerSiteRates(tr, pr, PLL_FALSE);
+          
+          evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-	  /* printf("REVERT: %1.40f %1.40f\n", initialLH, tr->likelihood); */
+          /* printf("REVERT: %1.40f %1.40f\n", initialLH, tr->likelihood); */
 
-	  assert(initialLH == tr->likelihood);
-	}
+          assert(initialLH == tr->likelihood);
+        }
           
       for(model = 0; model < pr->numberOfPartitions; model++)
-	rax_free(oldCategorizedRates[model]);
+        rax_free(oldCategorizedRates[model]);
                    
       rax_free(oldCategorizedRates);
       rax_free(oldCategory);
@@ -2034,6 +2038,13 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
 
 /* reset all branche lengths in tree to default values */
 
+/** @brief Reset all branch lengths to default values
+  
+    Reset all branch lengths in the tree instance to default values (\b PLL_DEFAULTZ)
+
+    @param tr
+      PLL instance
+  */
 void resetBranches(pllInstance *tr)
 {
   nodeptr  p, q;
@@ -2044,22 +2055,31 @@ void resetBranches(pllInstance *tr)
   while (nodes-- > 0) 
     {   
       for(i = 0; i < NUM_BRANCHES; i++)
-	p->z[i] = PLL_DEFAULTZ;
-	
+        p->z[i] = PLL_DEFAULTZ;
+        
       q = p->next;
       while(q != p)
-	{	
-	  for(i = 0; i < NUM_BRANCHES; i++)
-	    q->z[i] = PLL_DEFAULTZ;	    
-	  q = q->next;
-	}
+        {       
+          for(i = 0; i < NUM_BRANCHES; i++)
+            q->z[i] = PLL_DEFAULTZ;         
+          q = q->next;
+        }
       p++;
     }
 }
 
-/* print the protein GTR substitution matrix to file. This is only printed if we are actually estimating a 
-   GTR model for all protein data partitions in the data */
-
+/** @brief Print protein GTR substitution matrix to file
+  *
+  * Print the protein GTR substritution matrix to a file. This is only printed
+  * if we are actually estimating a GTR model for all protein data partitions
+  * in the data
+  *
+  * @aparam pr
+  *  List of partitions
+  *
+  * @param epsilon
+  *   Difference in likelihoods to be  printed in the file
+  */
 static void printAAmatrix(partitionList *pr, double epsilon)
 {
   if(AAisGTR(pr))
@@ -2067,66 +2087,66 @@ static void printAAmatrix(partitionList *pr, double epsilon)
       int model;
       
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  if(pr->partitionData[model]->dataType == AA_DATA)
-	    {
-	      char gtrFileName[1024];
-	      char epsilonStr[1024];
-	      FILE *gtrFile;
-	      double *rates = pr->partitionData[model]->substRates;
-	      double *f     = pr->partitionData[model]->frequencies;
-	      double q[20][20];
-	      int    r = 0;
-	      int i, j;
+        {
+          if(pr->partitionData[model]->dataType == AA_DATA)
+            {
+              char gtrFileName[1024];
+              char epsilonStr[1024];
+              FILE *gtrFile;
+              double *rates = pr->partitionData[model]->substRates;
+              double *f     = pr->partitionData[model]->frequencies;
+              double q[20][20];
+              int    r = 0;
+              int i, j;
 
-	      assert(pr->partitionData[model]->protModels == GTR);
+              assert(pr->partitionData[model]->protModels == GTR);
 
-	      sprintf(epsilonStr, "%f", epsilon);
+              sprintf(epsilonStr, "%f", epsilon);
 
-	      strcpy(gtrFileName, workdir);
-	      strcat(gtrFileName, "RAxML_proteinGTRmodel.");
-	      strcat(gtrFileName, run_id);
-	      strcat(gtrFileName, "_");
-	      strcat(gtrFileName, epsilonStr);
+              strcpy(gtrFileName, workdir);
+              strcat(gtrFileName, "RAxML_proteinGTRmodel.");
+              strcat(gtrFileName, run_id);
+              strcat(gtrFileName, "_");
+              strcat(gtrFileName, epsilonStr);
 
-	      gtrFile = myfopen(gtrFileName, "wb");
+              gtrFile = myfopen(gtrFileName, "wb");
 
-	      for(i = 0; i < 20; i++)
-		for(j = 0; j < 20; j++)
-		  q[i][j] = 0.0;
+              for(i = 0; i < 20; i++)
+                for(j = 0; j < 20; j++)
+                  q[i][j] = 0.0;
 
-	      for(i = 0; i < 19; i++)
-		for(j = i + 1; j < 20; j++)
-		  q[i][j] = rates[r++];
+              for(i = 0; i < 19; i++)
+                for(j = i + 1; j < 20; j++)
+                  q[i][j] = rates[r++];
 
-	      for(i = 0; i < 20; i++)
-		for(j = 0; j <= i; j++)
-		  {
-		    if(i == j)
-		      q[i][j] = 0.0;
-		    else
-		      q[i][j] = q[j][i];
-		  }
-	   
-	      for(i = 0; i < 20; i++)
-		{
-		  for(j = 0; j < 20; j++)		
-		    fprintf(gtrFile, "%1.80f ", q[i][j]);
-		
-		  fprintf(gtrFile, "\n");
-		}
-	      for(i = 0; i < 20; i++)
-		fprintf(gtrFile, "%1.80f ", f[i]);
-	      fprintf(gtrFile, "\n");
+              for(i = 0; i < 20; i++)
+                for(j = 0; j <= i; j++)
+                  {
+                    if(i == j)
+                      q[i][j] = 0.0;
+                    else
+                      q[i][j] = q[j][i];
+                  }
+           
+              for(i = 0; i < 20; i++)
+                {
+                  for(j = 0; j < 20; j++)               
+                    fprintf(gtrFile, "%1.80f ", q[i][j]);
+                
+                  fprintf(gtrFile, "\n");
+                }
+              for(i = 0; i < 20; i++)
+                fprintf(gtrFile, "%1.80f ", f[i]);
+              fprintf(gtrFile, "\n");
 
-	      fclose(gtrFile);
+              fclose(gtrFile);
 
-	      printBothOpen("\nPrinted intermediate AA substitution matrix to file %s\n\n", gtrFileName);
-	      
-	      break;
-	    }
+              printBothOpen("\nPrinted intermediate AA substitution matrix to file %s\n\n", gtrFileName);
+              
+              break;
+            }
 
-	}	  
+        }         
     }
 }
 
@@ -2134,118 +2154,137 @@ static void printAAmatrix(partitionList *pr, double epsilon)
    automatically compute the best protein substitution model for the dataset at hand.
  */
 
+/** @brief Compute the best protein substitution model
+  *
+  * Automatically compute the best protein substitution model for the dataset
+  * at hand
+  *
+  * @param tr
+  *   The PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  */
 static void autoProtein(pllInstance *tr, partitionList *pr)
 {
   int 
     countAutos = 0,
     model;
     
-   for(model = 0; model < pr->numberOfPartitions; model++)
-     if(pr->partitionData[model]->protModels == AUTO)
-       countAutos++;
+  /* count the number of partitions with model set to AUTO */
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    if(pr->partitionData[model]->protModels == AUTO)
+      countAutos++;
   
+  /* if there are partitions with model set to AUTO compute the best model */
   if(countAutos > 0)
     {
       int 
         i,
-	numProteinModels = AUTO,
-	*bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
-	*oldIndex  = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
+        numProteinModels = AUTO,
+        *bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
+        *oldIndex  = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
 
       double
         startLH,
-	*bestScores = (double*)rax_malloc(sizeof(double) * pr->numberOfPartitions);
+        *bestScores = (double*)rax_malloc(sizeof(double) * pr->numberOfPartitions);
 
       topolRELL_LIST 
-	*rl = (topolRELL_LIST *)rax_malloc(sizeof(topolRELL_LIST));
+        *rl = (topolRELL_LIST *)rax_malloc(sizeof(topolRELL_LIST));
 
       initTL(rl, tr, 1);
       saveTL(rl, tr, 0);
 
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
 
+      /* store the initial likelihood of the tree with the currently assigned protein models */
       startLH = tr->likelihood;
-      /*printf("Entry: %f\n", tr->likelihood);*/
       
+      /* save the currently assigned protein model for each AUTO partition */
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  oldIndex[model] = pr->partitionData[model]->autoProtModels;
-	  bestIndex[model] = -1;
-	  bestScores[model] = PLL_UNLIKELY;
-	}
+        {
+          oldIndex[model] = pr->partitionData[model]->autoProtModels;
+          bestIndex[model] = -1;
+          bestScores[model] = PLL_UNLIKELY;
+        }
 
+      /* check what is the likelihood for every possible protein model */
       for(i = 0; i < numProteinModels; i++)
-	{
-	  for(model = 0; model < pr->numberOfPartitions; model++)
-	    {	   
-	      if(pr->partitionData[model]->protModels == AUTO)
-		{
-		  pr->partitionData[model]->autoProtModels = i;
-		  initReversibleGTR(tr, pr, model);
-		}
-	    }
-	  
+       {
+         for(model = 0; model < pr->numberOfPartitions; model++)
+           {       
+             if(pr->partitionData[model]->protModels == AUTO)
+              {
+                 pr->partitionData[model]->autoProtModels = i;
+                 initReversibleGTR(tr, pr, model);
+              }
+           }
+          
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-	  masterBarrier(THREAD_COPY_RATES, tr, pr);
+           masterBarrier(THREAD_COPY_RATES, tr, pr);
 #endif
-	  
-	  resetBranches(tr);
-	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-	  treeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
+          
+           resetBranches(tr);
+           evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+           treeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
 
-	  for(model = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      if(pr->partitionData[model]->protModels == AUTO)
-		{
-		  if(pr->partitionData[model]->partitionLH > bestScores[model])
-		    {
-		      bestScores[model] = pr->partitionData[model]->partitionLH;
-		      bestIndex[model] = i;		      
-		    }
-		}
-	    }
-	}
+           for(model = 0; model < pr->numberOfPartitions; model++)
+            {
+              if(pr->partitionData[model]->protModels == AUTO)
+               {
+                 if(pr->partitionData[model]->partitionLH > bestScores[model])
+                  {
+                    bestScores[model] = pr->partitionData[model]->partitionLH;
+                    bestIndex[model] = i;                     
+                  }
+               }
+            }
+       }
 
       printBothOpen("\n\n");
       
+      /* set the protein model of AUTO partitions to the best computed and reset model parameters */
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{	   
-	  if(pr->partitionData[model]->protModels == AUTO)
-	    {
-	      pr->partitionData[model]->autoProtModels = bestIndex[model];
-	      initReversibleGTR(tr, pr, model);
-	      printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[pr->partitionData[model]->autoProtModels], bestScores[model]);
-	    }
-	}
+       {           
+         if(pr->partitionData[model]->protModels == AUTO)
+           {
+             pr->partitionData[model]->autoProtModels = bestIndex[model];
+             initReversibleGTR(tr, pr, model);
+             printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[pr->partitionData[model]->autoProtModels], bestScores[model]);
+           }
+       }
       printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       masterBarrier(THREAD_COPY_RATES, tr, pr);
 #endif
 
+      /* compute again the likelihood of the tree */
       resetBranches(tr);
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       treeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
       
+      /* check if the likelihood of the tree with the new protein models assigned to AUTO partitions is better than the with the old protein models */
       if(tr->likelihood < startLH)
-	{	
-	  for(model = 0; model < pr->numberOfPartitions; model++)
-	    {
-	      if(pr->partitionData[model]->protModels == AUTO)
-		{
-		  pr->partitionData[model]->autoProtModels = oldIndex[model];
-		  initReversibleGTR(tr, pr, model);
-		}
-	    }
-	  
-	  //this barrier needs to be called in the library 	  
-	  //#ifdef _USE_PTHREADS	
-	  //masterBarrier(THREAD_COPY_RATES, tr);	   
-	  //#endif 
+        {       
+          for(model = 0; model < pr->numberOfPartitions; model++)
+            {
+              if(pr->partitionData[model]->protModels == AUTO)
+                {
+                  pr->partitionData[model]->autoProtModels = oldIndex[model];
+                  initReversibleGTR(tr, pr, model);
+                }
+            }
+          
+          //this barrier needs to be called in the library        
+          //#ifdef _USE_PTHREADS        
+          //masterBarrier(THREAD_COPY_RATES, tr);          
+          //#endif 
 
-	  restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);	
-	  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
-	}
+          restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);  
+          evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
+        }
       
       assert(tr->likelihood >= startLH);
       /*printf("Exit: %f\n", tr->likelihood);*/
@@ -2262,6 +2301,22 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 
 /* iterative procedure for optimizing all model parameters */
 
+/* @brief Optimize all model parameters
+ *
+ * Iterative procedure for optimizing all model parameters
+ *
+ * @param tr
+ *   PLL instance
+ *
+ * @param pr
+ *   List of partitions
+ *
+ * @param likelihoodEpsilon
+ *   Optimize model parameters until we get a difference of \a likelihoodEpsilon
+ *
+ * @todo
+ *   Describe likelihoodEpsilon. Understand the TODO marked blocks.
+ */
 void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 { 
   int catOpt = 0; 
@@ -2322,6 +2377,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
   tr->start = tr->nodep[1];
 
+  /* TODO: Why is this check? here */
   inputLikelihood = tr->likelihood;
   evaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   assert (inputLikelihood == tr->likelihood);
@@ -2384,7 +2440,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
         break;
       case CAT:
         if(catOpt < 3)
-        {	      	     	     
+        {                            
           evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
           optimizeRateCategories(tr, pr, tr->categories);
 #ifdef _DEBUG_MOD_OPT
@@ -2393,7 +2449,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 #endif
           catOpt++;
         }
-        break;	  
+        break;    
       default:
         assert(0);
     }                   
@@ -2405,6 +2461,8 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     printAAmatrix(pr, fabs(currentLikelihood - tr->likelihood));
   }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
+  /* TODO: Why do we check the computed likelihood with the currentLikelihood which is the likelihood before THIS optimization loop? Why dont we
+     rather check it with the initial likelihood (the one before calling modOpt)? Isn't it possible to have a deadlock? */
 
   
 }

@@ -49,6 +49,9 @@
 #include "axml.h"
 
 
+/** @file topologies.c
+    @brief Miscellanous functions working with tree topology
+*/
 
 
 
@@ -128,7 +131,21 @@ static void restoreTopolRELL(pllInstance *tr, topolRELL *tpl, int numBranches)
 
 
 
-
+/** @brief Initializes space as large as the tree
+  *
+  * @param rl
+  *   RELL 
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param n
+  *   Number of
+  *
+  * @todo
+  *   Don't know what is this used for. Something with RELL?
+  *
+  */
 void initTL(topolRELL_LIST *rl, pllInstance *tr, int n)
 {
   int i;
@@ -144,7 +161,14 @@ void initTL(topolRELL_LIST *rl, pllInstance *tr, int n)
     }
 }
 
-
+/** @brief Deallocate the space associated with this structure
+  *
+  * @paral rl
+  *   This structure
+  *
+  * @todo
+  *   fill the description
+  */
 void freeTL(topolRELL_LIST *rl)
 {
   int i;
@@ -166,7 +190,16 @@ void restoreTL(topolRELL_LIST *rl, pllInstance *tr, int n, int numBranches)
 
 
 
-
+/** @brief Reset this structure
+  *
+  * Reset the likelihoods in this structure
+  *
+  * @param rl
+  *   This structure
+  *
+  * @todo
+  *   Complete this
+  */
 void resetTL(topolRELL_LIST *rl)
 {
   int i;
@@ -177,7 +210,13 @@ void resetTL(topolRELL_LIST *rl)
 
 
 
-
+/** @brief Save 
+  *
+  * Save this topology?
+  *
+  * @todo 
+  *  Complete this
+  */
 void saveTL(topolRELL_LIST *rl, pllInstance *tr, int index)
 { 
   assert(index >= 0 && index < rl->max);    
