@@ -1545,7 +1545,23 @@ void optRateCatPthreads(pllInstance *tr, partitionList *pr, double lower_spacing
 
 #else
 
-
+/** @brief Optimize rates for CAT model
+ *
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param model
+ *    Partition index
+ *
+ *  @param lower_specing
+ *
+ *  @param upper_spacing
+ *
+ *  @param lhs
+ */
 static void optRateCatModel(pllInstance *tr, partitionList *pr, int model, double lower_spacing, double upper_spacing, double *lhs)
 {
   int lower = pr->partitionData[model]->lower;
@@ -1863,6 +1879,19 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
 #endif               
 }
 
+/** @brief Optimize rate categories for CAT model
+ *
+ *  Optimize rate categories for CAT model
+ *
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param _maxCategories
+ *    Number of categories
+ */
 static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxCategories)
 {
   assert(_maxCategories > 0);
