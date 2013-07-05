@@ -3181,6 +3181,10 @@ static void makeEigen(double **_a, const int states, double *d, double *e)
   * @param tipVector
   *   Array where the computed tipVector will be stored
   *
+  * @todo
+  *   Perhaps we could change this also to the way optRatesGeneric and other functions are implemented.
+  *   That is, instead of passing all these parameters, pass the partition index instead and load the
+  *   values within the code. Will make the code more readable. 
 */
 static void initGeneric(const int states, 
                         const unsigned int *valueVector, 
@@ -3463,8 +3467,8 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 		 EI, 
 		 frequencies, 
 		 ext_initialRates,
-		 tipVector,
-		 model
+		 tipVector
+		 // model
 		);
      break;   
    case AA_DATA:
@@ -3530,8 +3534,8 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
                          pr->partitionData[model]->EI_LG4[i],
                          pr->partitionData[model]->frequencies_LG4[i],
                          pr->partitionData[model]->substRates_LG4[i],
-                         pr->partitionData[model]->tipVector_LG4[i], 
-                         model
+                         pr->partitionData[model]->tipVector_LG4[i]
+             //            model
                         );   
            }
 
@@ -3555,8 +3559,8 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
                    EI, 
                    frequencies, 
                    ext_initialRates,
-                   tipVector, 
-                   model
+                   tipVector
+       //            model
                   );
     break;  
    default:

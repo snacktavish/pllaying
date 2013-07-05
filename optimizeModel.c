@@ -49,10 +49,10 @@
 #include "axml.h"
 #include "utils.h"
 
-static const double MNBRAK_GOLD =    1.618034;
+static const double MNBRAK_GOLD =    1.618034;          /**< Golden ratio */
 static const double MNBRAK_TINY =      1.e-20;
 static const double MNBRAK_GLIMIT =     100.0;
-static const double BRENT_ZEPS  =      1.e-5;
+static const double BRENT_ZEPS  =       1.e-5;
 static const double BRENT_CGOLD =   0.3819660;
 
 extern int optimizeRatesInvocations;
@@ -81,6 +81,23 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
    in some of the secondary structure substitution models that 
    generally don't use GTR matrices but more restricted forms thereof */
 
+/** @brief Set a specific rate in the substitition matrix
+  *
+  * This function is used to set the \a position-th substitution rate of
+  * partition \a index to \a rate.
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param model
+  *   Index of partition
+  *
+  * @param rate
+  *   The new value to which to set the specific substition rate
+  *
+  * @param posititon
+  *   The number of the substition rate
+  */
 static void setRateModel(partitionList *pr, int model, double rate, int position)
 {
   int
@@ -159,7 +176,17 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
 
 */
    
-
+/** @brief Initialize linkage list for GTR models
+ *
+ * Constructs a linkage list with rate matrices unlinked in all partitions except 
+ * for GTR protein partitions.
+ *
+ * @param pr
+ *   List of partitions
+ *
+ * @return
+ *   Linkage list
+ */
 static linkageList* initLinkageListGTR(partitionList *pr)
 {
   int
@@ -249,6 +276,29 @@ static linkageList* initLinkageListGTR(partitionList *pr)
 #define RATE_F  1
 #define FREQ_F  2
 
+/** @brief Wrapper function for changing a specific model parameter to the specified value
+  *
+  * Change the \a rateNumber-th model parameter of the type specified by \a whichParameterType to
+  * the value \a value.
+  * This routine is usually called by model optimization routines to restore the original
+  * model parameter vlaue when optimization leads to worse likelihood than the original, or
+  * when optimizing routines and testing the new parameter.
+  * In case of changing a frequency or substitution rate the Q matrix is also decomposed (into
+  * eigenvalues and eigenvectors)
+  *
+  * @param index
+  *   Index of partition
+  *
+  * @param rateNumber
+  *   The index of the model parameter
+  *
+  * @param value
+  *   The value to which the parameter must be changed
+  *
+  * @param whichParameterType
+  *   Type of model parameter. Can be \b RATE_F, \b ALPHA_F or \b FREQ_F, that is substitution rates,
+  *   alpha rates, or base frequencies rates
+  */   
 static void changeModelParameters(int index, int rateNumber, double value, int whichParameterType, pllInstance *tr, partitionList * pr)
 {
   switch(whichParameterType)
@@ -286,7 +336,43 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
 }
 
 /* function that evaluates the change to a parameter */
-static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
+/** @brief Evaluate the change of a parameter
+ *
+ *  Evaluate the likelihood for each entry \a i in the linkage list when changing the
+ *  \a rateNumber-th parameter of type \a whichFunction (\b ALPHA_F, \b RATE_F 
+ *  or \b FREQ_F) to \a value[i]. The resulting likelihood for each entry list \a i in the
+ *  linkage list is then stored in \a result[i]
+ *
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param rateNumber
+ *    Index of the parameter to optimize 
+ *
+ *  @param value
+ *
+ *  @param result
+ *    An array where the total likelihood of each entry list \a i in the linkage list \a ll  is stored when evaluating the new \a i-th parameter of array \a value
+ *
+ *  @param converged
+ *
+ *  @param whichFunction
+ *    Type of the model parameter. Possible values are \b ALPHA_F, \b RATE_F and \b FREQ_F
+ *
+ *  @param numberOfModels
+ *    Number of partitions for which we are optimizing 
+ *
+ *  @param ll
+ *    Linkage list
+ *
+ *  @todo
+ *     Removed argument modelEpsilon as it is not used in this function. Maybe more things can be refactored.
+ */
+static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
+//static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
 { 
   int 
     i, 
@@ -373,6 +459,53 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 
 /* generic implementation of Brent's algorithm for one-dimensional parameter optimization */
 
+/** @brief Brent's algorithm
+ *
+ *  Generic implementation of Brent's algorithm for one-dimensional parameter optimization
+ *
+ *  @param ax
+ *
+ *  @param bx
+ *
+ *  @param cx
+ *
+ *  @param fb
+ *
+ *  @param tol
+ *
+ *  @param xmin
+ *
+ *  @param result
+ *
+ *  @param numberOfModels
+ *    Number of partitions for which we are optimizing 
+ *
+ *  @param whichFunction
+ *    Type of the model parameter. Possible values are \b ALPHA_F, \b RATE_F and \b FREQ_F
+ *
+ *  @param rateNumber
+ *     Index of the parameter to optimize 
+ *   
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param ll
+ *    Linkage list
+ *
+ *  @param lim_inf
+ *    Lower bound for the rate assignment
+ *
+ *  @param lim_sup
+ *    Upper bound for the rate assignment
+ *
+ *  @todo
+ *     Fill the rest of the entries. Also, why not preallocate all memory instead of allocating
+ *     at every call? We can save a lot of time which is lost due to function calls, finding free
+ *     memory blocks by allocation strategy, and also prevent mem fragmentation.
+ */
 static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double tol, double *xmin, double *result, int numberOfModels, 
                          int whichFunction, int rateNumber, pllInstance *tr, partitionList *pr, linkageList *ll, double lim_inf, double lim_sup)
 {
@@ -514,7 +647,8 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
             }
         }
                  
-      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
+      //evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
+      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll);
 
       for(i = 0; i < numberOfModels; i++)
         {
@@ -591,6 +725,56 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
 
 /* generic bracketing function required for Brent's algorithm. For details please see the corresponding chapter in the book Numerical Recipees in C */
 
+/** @brief Bracketing function
+ *
+ *  Generic bracketing function required for Brent's algorithm.
+ *  
+ *  @param param
+ *
+ *  @param ax
+ *
+ *  @param bx
+ *
+ *  @param cx
+ *
+ *  @param fa
+ *
+ *  @param fb
+ *
+ *  @param fc
+ *
+ *  @param lim_inf
+ *    Lower bound for the rate assignment
+ *
+ *  @param lim_sup
+ *    Upper bound for the rate assignment
+ *
+ *  @param numberOfModels
+ *    Number of partitions for which we are optimizing 
+ *
+ *  @param rateNumber
+ *     Index of the parameter to optimize 
+ *
+ *  @param whichFunction
+ *    Type of the model parameter. Possible values are \b ALPHA_F, \b RATE_F and \b FREQ_F
+ *
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param ll
+ *    Linkage list
+ *
+ *  @param modelEpsilon
+ *
+ *  @return
+ *    Fill this
+ *
+ *  @todo
+ *    Fill remaining details
+ */
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
                        double *fc, double lim_inf, double lim_sup, 
                        int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll, double modelEpsilon)
@@ -634,7 +818,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
    
   
-  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+  //evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll);
 
 
   for(i = 0; i < numberOfModels; i++)
@@ -648,7 +833,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
   
-  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+  //evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll);
 
   for(i = 0; i < numberOfModels; i++)  
     {
@@ -671,7 +857,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
   
  
-  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, modelEpsilon);
+  //evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, modelEpsilon);
+  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll);
 
    while(1) 
      {       
@@ -815,7 +1002,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
              }
          }
              
-       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+       //evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
+       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll);
 
        for(i = 0; i < numberOfModels; i++)
          {
@@ -910,6 +1098,25 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
 
 //this function is required for implementing the LG4X model later-on 
 
+/** @brief Optimize alpha rates
+  *
+  * Generic routine for alpha rates optimization
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param modelEpsilon
+  *   Don't know yet
+  *
+  * @param ll
+  *   Linkage list
+  *
+  * @todo
+  *   Implement the LG4X model
+  */
 static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
 {
   int 
@@ -997,6 +1204,42 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
     ll->ld[i].valid = PLL_TRUE;
 }
 
+/** @brief Optimize model parameters
+  *
+  * Function for optimizing the \a rateNumber-th model parameter of type \a whichParameterTYpe,
+  * i.e. alpha rate, substitution rate, or base frequency rate, in all partitions with the \a
+  * valid flag set to \b PLL_TRUE.
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *   
+  * @param modelEpsilon
+  *    A parameter passed for Brent / Brak
+  *
+  * @param ll
+  *   Linkage list
+  * 
+  * @param numberOfModels
+  *   Number of partitions for which we are optimizing 
+  *
+  * @param rateNumber
+  *  Index of the parameter to optimize 
+  *
+  * @param lim_inf
+  *  Lower bound for the rate assignment
+  *
+  * @param lim_sup
+  *  Upper bound for the rate assignment
+  *
+  * @param whichParameterType
+  *  Type of the model parameter. Possible values are \b ALPHA_F, \b RATE_F and \b FREQ_F
+  *
+  * @todo
+  *    Describe the modelEpsilon parameter in detail
+  */
 static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int rateNumber, double lim_inf, double lim_sup, int whichParameterType)
 {
   int
@@ -1030,6 +1273,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
      search 
   */
 
+  /* store in startValues the values of the old parameters */
   for(l = 0, pos = 0; ll && l < ll->entries; l++)
     {
       if(ll->ld[l].valid)
@@ -1166,6 +1410,30 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 
 //******************** rate optimization functions ***************************************************/
 
+/** @brief Wrapper function for optimizing base frequency rates
+  *
+  * Wrapper function for optimizing base frequency rates of \a numberOfModels partitions. 
+  * The function iteratively calls the function \a optParamGeneric for optimizing each of the \a states
+  * parameters
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param modelEpsilon
+  *   Dont know yet
+  *
+  * @param ll
+  *   Linkage list
+  *
+  * @param numberOfModels
+  *   Number of partitions that we are optimizing
+  *
+  * @param states
+  *   Number of states
+  */
 static void optFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 { 
   int 
@@ -1179,6 +1447,23 @@ static void optFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, l
     optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, rateNumber, freqMin, freqMax, FREQ_F);   
 }
 
+/** @brief Optimize base frequencies 
+ *  
+ *  Wrapper function for optimizing base frequencies
+ *
+ *  @param tr
+ *    PLL instance
+ *
+ *  @param pr
+ *    List of partitions
+ *
+ *  @param modelEpsilon
+ *    
+ *
+ *  @param ll
+ *    Linkage list
+ *
+ */
 static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
 {
   int 
@@ -1189,6 +1474,7 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
 
   /* first do DNA */
 
+  /* Set the valid flag in linkage list to PLL_TRUE for all DNA partitions */
   for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
@@ -1211,12 +1497,13 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
         }      
     }   
 
+  /* Optimize the frequency rates of all DNA partitions */
   if(dnaPartitions > 0)
     optFreqs(tr, pr, modelEpsilon, ll, dnaPartitions, states);
   
   /* then AA */
 
-  
+  /* find all partitions that have frequency optimization enabled */ 
   for(i = 0; ll && i < ll->entries; i++)
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
@@ -1249,7 +1536,30 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
 
 
 /* new version for optimizing rates, an external loop that iterates over the rates */
-
+/** @brief Wrapper function for optimizing substitution rates
+  *
+  * Wrapper function for optimizing substitution rates of \a numberOfModels partitions. 
+  * The function determines the  number of free parameters and iteratively calls the 
+  * function \a optParamGeneric for optimizing each parameter
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param modelEpsilon
+  *   Dont know yet
+  *
+  * @param ll
+  *   Linkage list
+  *
+  * @param numberOfModels
+  *   Number of partitions that we are optimizing
+  *
+  * @param states
+  *   Number of states
+  */
 static void optRates(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int states)
 {
   int
@@ -1263,6 +1573,18 @@ static void optRates(pllInstance *tr, partitionList * pr, double modelEpsilon, l
 
 /* figure out if all AA models have been assigned a joint GTR matrix */
 
+/** @brief Check whether all protein partitions have been assigned a joint GTR matrix
+  *
+  * Check whether there exists at least one protein partition and whether all
+  * protein partitions have been assigned a joint GTR matrix.
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @return
+  *   Return \b PLL_TRUE in case there exists at least one protein partition and all of
+  *   protein partitions are assigned a joint GTR matrix. Otherwise return \b PLL_FALSE
+  */
 static boolean AAisGTR(partitionList *pr)
 {
   int i, count = 0;
@@ -1286,6 +1608,22 @@ static boolean AAisGTR(partitionList *pr)
 
 /* generic substitiution matrix (Q matrix) optimization */
 
+/** @brief Optimize substitution rates
+  *
+  * Generic routine for substitution matrix (Q matrix) optimization
+  *
+  * @param tr
+  *   PLL instance
+  *
+  * @param pr
+  *   List of partitions
+  *
+  * @param modelEpsilon
+  *   Don't know yet
+  *
+  * @param ll
+  *   Linkage list
+  */
 static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
 {
   int 
@@ -1306,22 +1644,22 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-        case DNA_DATA:  
-          states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-          ll->ld[i].valid = PLL_TRUE;
-          dnaPartitions++;  
-          break;
-        case BINARY_DATA:
-        case AA_DATA:
-        case SECONDARY_DATA:
-        case SECONDARY_DATA_6:
-        case SECONDARY_DATA_7:
-        case GENERIC_32:
-        case GENERIC_64:
-          ll->ld[i].valid = PLL_FALSE;
-          break;
-        default:
-          assert(0);
+          case DNA_DATA:  
+            states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
+            ll->ld[i].valid = PLL_TRUE;
+            ++ dnaPartitions;  
+            break;
+          case BINARY_DATA:
+          case AA_DATA:
+          case SECONDARY_DATA:
+          case SECONDARY_DATA_6:
+          case SECONDARY_DATA_7:
+          case GENERIC_32:
+          case GENERIC_64:
+            ll->ld[i].valid = PLL_FALSE;
+            break;
+          default:
+            assert(0);
         }      
     }   
 
@@ -2282,6 +2620,9 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
           //masterBarrier(THREAD_COPY_RATES, tr);          
           //#endif 
 
+          /* Restore the topology. rl holds the topology before the optimization. However,
+             since the topology doesn't change - only the branch lengths do - maybe we
+             could write a new routine that will store only the branch lengths and restore them */
           restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);  
           evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
         }
@@ -2396,7 +2737,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 #ifdef _DEBUG_MOD_OPT
-      printf ("after rates %f\n", tr->likelihood);
+    printf ("after rates %f\n", tr->likelihood);
 #endif
 
     autoProtein(tr, pr);
@@ -2404,21 +2745,21 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     treeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
 
 #ifdef _DEBUG_MOD_OPT
-      evaluateGeneric(tr, tr->start, PLL_TRUE);
-      printf("after br-len 1 %f\n", tr->likelihood); 
+    evaluateGeneric(tr, tr->start, PLL_TRUE);
+    printf("after br-len 1 %f\n", tr->likelihood); 
 #endif
 
-      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-      optBaseFreqs(tr, pr, modelEpsilon, freqList);
-      
-      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-      
-      treeEvaluate(tr, pr, 0.0625);
+    optBaseFreqs(tr, pr, modelEpsilon, freqList);
+    
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    
+    treeEvaluate(tr, pr, 0.0625);
 
 #ifdef _DEBUG_MOD_OPT
-      evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
-      printf("after optBaseFreqs 1 %f\n", tr->likelihood);
+    evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
+    printf("after optBaseFreqs 1 %f\n", tr->likelihood);
 #endif 
 
     switch(tr->rateHetModel)
