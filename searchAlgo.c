@@ -60,15 +60,15 @@
 
 
 
-extern double accumulatedTime;
+extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
-extern char seq_file[1024];
-extern char resultFileName[1024];
-extern char tree_file[1024];
-extern char run_id[128];
-extern double masterTime;
+extern char seq_file[1024];      /**< Checkpointing related file */
+//extern char resultFileName[1024];
+//extern char tree_file[1024];
+//extern char run_id[128];
+extern double masterTime;        /**< Needed for checkpointing */
 extern partitionLengths pLengths[MAX_MODEL];
-extern char binaryCheckpointName[1024];
+extern char binaryCheckpointName[1024];  /**< Binary checkpointing file */
 extern char binaryCheckpointInputName[1024];
 
 boolean initrav (pllInstance *tr, partitionList *pr, nodeptr p)
@@ -160,9 +160,10 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
   #endif
 }
 
-/** @brief Branch length optimization of specific branches
+/** @brief Branch length optimization of subtree
 
-    Optimize the length of branches that have \a p as an endpoint 
+    Optimize the length of branch connected by \a p and \a p->back, and the
+    lengths of all branches in the subtrees rooted at \a p->next and \a p->next->next
 
     @param tr
       The library instance
@@ -226,7 +227,7 @@ static boolean allSmoothed(pllInstance *tr, int numBranches)
 }
 
 
-/** @brief Wrapper function for branch length optimization of the tree
+/** @brief Optimize all branch lenghts of a tree
   
     Perform \a maxtimes rounds of branch length optimization by running smooth()
     on all neighbour nodes of node \a tr->start.
@@ -392,10 +393,10 @@ static void freeInfoList(infoList *iList)
 
 /** @brief Insert a record in an \a infoList
 
-    Insert the pair \a likelihood and \node into the \a bestList \a list
-    of \a iList \b only if there already exists a pair in \a list 
-    which has the \a likelihood attribute smaller than the given \a 
-    likelihoodby. The insertion is done by replacing the smallest
+    Insert the pair \a likelihood and \node into list \a iList 
+    \b only if there already exists a pair in \a iList 
+    whose \a likelihood attribute is smaller than the given \a 
+    likelihood. The insertion is done by replacing the smallest
     likelihood pair with the new pair.
 
     @param node
@@ -429,18 +430,17 @@ static void insertInfoList(nodeptr node, double likelihood, infoList *iList)
   {
     iList->list[min].likelihood = likelihood;
     iList->list[min].node = node;
-    iList->valid += 1;
+    if(iList->valid < iList->n)
+      iList->valid += 1;
   }
-
-  if(iList->valid > iList->n)
-    iList->valid = iList->n;
 }
 
 
 /** @brief  Optimize branch lengths of region
 
     Optimize the branch lenghts of only a specific region. The branch optimization starts
-    at a node \a p and is carried out in all nodes with distance upto \a region from \a p.
+    at a node \a p and is carried out in all nodes with distance upto \a region edges from 
+    \a p.
 
     @param tr
       The library instance.
@@ -617,7 +617,16 @@ nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
   return  q;
 }
 
-/* @brief
+/* @brief Connect two disconnected tree components
+   
+   Connect two disconnected components by specifying an internal edge from one
+   component and a leaf from the other component. The internal edge \a e is the
+   edge between \a q and \a q->back. The leaf is specified by \a p.
+   Edge \a e is removed and two new edges are created. The first one is an edge
+   between \a p->next and \a q, and the second one is between \a p->next->next
+   and \a q->back. The new likelihood vector for node \a p is computed.
+
+   @note The function makes use of the \a thoroughInsertion flag
 
    @todo
      What is tr->lzi ? What is thorough insertion?
