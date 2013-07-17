@@ -4182,7 +4182,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     *scalerIncrement = addScale;
 }
 
-#ifndef (__APPLE__)
+#ifndef __APPLE__
 inline 
 #endif
 boolean isGap(unsigned int *x, int pos)
@@ -4190,7 +4190,7 @@ boolean isGap(unsigned int *x, int pos)
   return (x[pos / 32] & mask32[pos % 32]);
 }
 
-#ifndef (__APPLE__)
+#ifndef __APPLE__
 inline 
 #endif
 boolean noGap(unsigned int *x, int pos)
