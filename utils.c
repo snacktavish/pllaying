@@ -2988,6 +2988,8 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
 
   assert(model >= 0 && model < pr->numberOfPartitions);
 
+  assert(alpha >= ALPHA_MIN && alpha <= ALPHA_MAX);
+
   //set the alpha paremeter 
   
   pr->partitionData[model]->alpha = alpha;

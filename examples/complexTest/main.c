@@ -39,6 +39,37 @@ static nodeptr pickMyRandomSubtree(pllInstance *tr)
   return p;
 }
 
+static void printModelParameters(partitionList *pr)
+{
+  int 
+    i;
+  
+  for(i = 0; i < pr->numberOfPartitions; i++)
+    {
+      int 
+	j,
+	states = pr->partitionData[i]->states,
+	rates = (states * states - states) / 2;
+      
+      printf("Partition %d\n", i);
+
+      printf("alpha: %f\n", pr->partitionData[i]->alpha);
+      
+      printf("Frequencies: \n");
+
+      for(j = 0; j < states; j++)
+	printf("%f ",  pr->partitionData[i]->frequencies[j]);
+      printf("\n");
+
+      printf("SubstRates: \n");
+
+      for(j = 0; j < rates; j++)
+	printf("%f ",  pr->partitionData[i]->substRates[j]);
+      printf("\n\n");
+      
+    }
+
+}
 
 int main (int argc, char * argv[])
 {
@@ -180,8 +211,12 @@ int main (int argc, char * argv[])
 
 
 
-  for(i = 0; i < 4; i++)
+  for(i = 0; i < 5; i++)
     {
+      //write a simple partition file with 3 partitions 
+      //for dataset dna.phy.dat contained 
+      //in this source directory 
+      
       FILE *f = fopen("dummy", "w");
       
       fprintf(f, "DNA, p1 = 1-200\n");
@@ -253,10 +288,45 @@ int main (int argc, char * argv[])
 	  pllLinkFrequencies("0,1,2", partitions);
 	  pllLinkRates("0,1,2", partitions);    
 	  
-	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 0);
+	  //these are GTR models
+	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 0);	  
 	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 1);
+
+	  //this is a simpler model with 5 parameters, parameter a and f have 
+	  //the same value
 	  pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,0", partitions, 2);
-	  break;	
+	  break;
+
+	case 4:
+	  {
+	    //test case to show how the model parameters can be set to fixed values
+
+	    // set up arrays of user-defined base frequencies 
+	    // and a user defined q matrix 
+	    double 
+	      f[4] = {0.25, 0.25, 0.25, 0.25},
+	      q[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 0.5};
+	    
+	      //unlink alpha parameters base frequencies and Q matrices 
+	      //across all partitions
+	    pllLinkAlphaParameters("0,1,2", partitions);
+	    pllLinkFrequencies("0,0,1", partitions);
+	    pllLinkRates("0,1,2", partitions);
+	    
+	    //set alpha to a fixed value of 1.0 for partition 0 and 
+	    //parition 1
+	    pllSetFixedAlpha(1.0, 0, partitions, tr);
+	    pllSetFixedAlpha(1.0, 1, partitions, tr);
+
+	    //fix the base frequencies to 0.25 for 
+	    //partitions 0 and 1
+	    pllSetFixedBaseFrequencies(f, 4, 0, partitions, tr);
+	    pllSetFixedBaseFrequencies(f, 4, 1, partitions, tr);
+	    
+	    //set the Q matrix to fixed values for partition 
+	    //0
+	    pllSetFixedSubstitutionMatrix(q, 6, 0, partitions, tr);	    	    
+	  }	  
 	default:
 	  assert(0);
 	}
@@ -264,6 +334,11 @@ int main (int argc, char * argv[])
       evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
       printf("%f \n", tr->likelihood);
       pllOptimizeModelParameters(tr, partitions, 10.0);
+
+      //print the model parameters 
+
+      printModelParameters(partitions);
+
       printf("%f \n", tr->likelihood); 
       //cleanup
       pllPhylipDestroy (phylip);
