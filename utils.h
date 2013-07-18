@@ -6,7 +6,7 @@
 #include "parser/newick/newick.h"
 #include "queue.h"
 
-//linkageList* initLinkageList(int *linkList, partitionList *pr);
+linkageList* initLinkageList(int *linkList, partitionList *pr);
 //void freeLinkageList( linkageList* ll);
 
 void pllLinkAlphaParameters(char *string, partitionList *pr);

@@ -98,6 +98,9 @@ extern "C" {
 #define PLL_DEEP_COPY                           1 << 0
 #define PLL_SHALLOW_COPY                        1 << 1
 
+#define PLL_NNI_P_NEXT                          1       /**< Use p->next for the NNI move */
+#define PLL_NNI_P_NEXTNEXT                      2       /**< Use p->next->next for the NNI move */
+
 /* 18446744073709551616.0 */
 
 /*4294967296.0*/
@@ -1155,7 +1158,7 @@ typedef  struct  {
  
   node           **nodep;                /**< pointer to the list of nodes, which describe the current topology */
   nodeptr          nodeBaseAddress;
-  node            *start;                /**< starting node by default for full traversals */
+  node            *start;                /**< starting node by default for full traversals (must be a tip contained in the tree we are operating on) */
   int              mxtips;  /**< Number of tips in the topology */
 
   int              *constraintVector;   /**< @todo What is this? */
@@ -1203,7 +1206,7 @@ typedef  struct  {
 
   unsigned int vLength;
 
-  hashtable *h;
+  hashtable *h;                 /**< hashtable for ML convergence criterion */
  
   int optimizeRateCategoryInvocations;
 
@@ -1273,7 +1276,7 @@ typedef  struct {
     int              nextlink;    /**< index of next available connect */
                                   /**< tr->start = tpl->links->p */
     int              ntips;
-    int              nextnode;
+    int              nextnode;    /**< next available inner node for tree parsing */
     int              scrNum;      /**< position in sorted list of scores */
     int              tplNum;      /**< position in sorted list of trees */
     } topol;
@@ -1312,14 +1315,14 @@ typedef struct {
 /** @brief Parameters (raxml-specific)
 *   */
 typedef  struct {
-  int              bestTrav;
-  int              max_rearrange;
-  int              stepwidth;
-  int              initial;
-  boolean          initialSet;
-  int              mode; 
+  int              bestTrav;            /**< best rearrangement radius */
+  int              max_rearrange;       /**< max. rearrangemenent radius */
+  int              stepwidth;           /**< step in rearrangement radius */
+  int              initial;             /**< user defined rearrangement radius which also sets bestTrav if initialSet is set */
+  boolean          initialSet;          /**< set bestTrav according to initial */
+  int              mode;                /**< candidate for removal */
   boolean        perGeneBranchLengths;
-  boolean        permuteTreeoptimize; 
+  boolean        permuteTreeoptimize;   /**< randomly select subtrees for SPR moves */
   boolean        compressPatterns;
   double         likelihoodEpsilon;
   boolean        useCheckpoint;

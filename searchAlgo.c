@@ -44,6 +44,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
 
 
 
@@ -2435,28 +2436,61 @@ treeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)      
 /** @brief Perform an NNI move
 
     Modify the tree topology of instance \a tr by performing an NNI (Neighbour Neighbor
-    Interchange) move at node \a p. Perform one of the two possible NNI moves
-    based on whether \a swap is set to 1 or 2.
+    Interchange) move at node \a p. Let \a q be \a p->back. If \a swap is set to \b PLL_NNI_P_NEXT 
+    then the subtrees rooted at \a p->next->back and \a q->next->back will be swapped. Otherwise,
+    if \a swap is set to \b PLL_NNI_P_NEXTNEXT then the subtrees rooted at \a p->next->next->back and
+    \a q->next->back are swapped. For clarity, see the illustration.
+
+    @param tr
+      PLL instance
+
+    @param p
+      Node to use as origin for performing NNI
+
+    @param swap
+      Which node to use for the NNI move. \b PLL_NNI_P_NEXT uses node p->next while \b PLL_NNI_P_NEXTNEXT uses p->next->next
+
+    @return
+      In case of success \b PLL_TRUE, otherwise \b PLL_FALSE
+
+    @todo
+      Started error checking here. Instead of checking the errors in the specified way, implement a variadic
+      function where we pass the results of each check and the error code we want to assign if there is at
+      least one negative result
+
+    @image html nni.png "In case \a swap is set to \b PLL_NNI_P_NEXT then the dashed red edge between \a p and \a r is removed and the blue edges are created. If \a swap is set to \b PLL_INIT_P_NEXTNEXT then the dashed red edge between \a p and \a s is removed and the green edges are created. In both cases the black dashed edge is removed"
 */
 void NNI(pllInstance * tr, nodeptr p, int swap)
 {
-  nodeptr       q, tmp;
+  nodeptr       q, r;
 
   q = p->back;
+  if (isTip(q->number, tr->mxtips))
+   {
+     errno = PLL_NNI_Q_TIP;
+     return (0);
+   }
+  if (isTip(p->number, tr->mxtips))
+   {
+     errno = PLL_NNI_P_TIP;
+     return (0);
+   }
   assert(!isTip(q->number, tr->mxtips));
   assert(!isTip(p->number, tr->mxtips));
 
 
-  if(swap == 1)
+  if(swap == PLL_NNI_P_NEXT)
    {
-     tmp = p->next->back;
+     r = p->next->back;
      hookupFull(p->next, q->next->back, q->next->z);
-     hookupFull(q->next, tmp,           p->next->z);
+     hookupFull(q->next, r,           p->next->z);
    }
   else
    {
-      tmp = p->next->next->back;
+      r = p->next->next->back;
       hookupFull(p->next->next, q->next->back, q->next->z);
-      hookupFull(q->next,       tmp,           p->next->next->z);
+      hookupFull(q->next,       r,           p->next->next->z);
    }
+
+  return PLL_TRUE;
 }
