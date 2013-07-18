@@ -488,7 +488,7 @@ void smoothRegion (pllInstance *tr, partitionList *pr, nodeptr p, int region)
     @param maxtimes
       Number of times to perform branch optimization.
 
-    @pram region
+    @param region
       The allwed node distance from \p for which to still perform branch optimization.
 
     @todo
@@ -532,7 +532,7 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
 
 
 
-/* @brief Split the tree into two components and optimize new branch length
+/** @brief Split the tree into two components and optimize new branch length
 
    Split the tree into two components. The disconnection point is node \a p.
    First, a branch length is computed for the newly created branch between nodes
@@ -549,11 +549,13 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
    @param numBranches
      Number of branches per partition
 
-   @return q
+   @return
      Node from the disconnected component
 
    @todo
      Why do we return this node?
+
+   @image html removeBIG.png "The diagram shows in blue color the new edge that is created and in red the edges that are removed"
 */
 nodeptr  removeNodeBIG (pllInstance *tr, partitionList *pr, nodeptr p, int numBranches)
 {  
@@ -617,7 +619,7 @@ nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
   return  q;
 }
 
-/* @brief Connect two disconnected tree components
+/** @brief Connect two disconnected tree components
    
    Connect two disconnected components by specifying an internal edge from one
    component and a leaf from the other component. The internal edge \a e is the
@@ -629,7 +631,10 @@ nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
    @note The function makes use of the \a thoroughInsertion flag
 
    @todo
-     What is tr->lzi ? What is thorough insertion?
+     What is tr->lzi ? What is thorough insertion? Why do we optimize branch lengths
+     that will be removed? Add explanation
+
+   @image html pll.png "The diagram shows in blue colors the new edges that are created and in red the edge that is removed" 
 */
 boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
@@ -723,6 +728,20 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
   return  PLL_TRUE;
 }
 
+/** @brief Connect two disconnected tree components without optimizing branch lengths
+   
+   Connect two disconnected components by specifying an internal edge from one
+   component and a leaf from the other component. The internal edge \a e is the
+   edge between \a q and \a q->back. The leaf is specified by \a p.
+   Edge \a e is removed and two new edges are created. The first one is an edge
+   between \a p->next and \a q, and the second one is between \a p->next->next
+   and \a q->back. The new likelihood vector for node \a p is computed.
+
+   @note The function makes use of the \a thoroughInsertion flag
+
+   @todo
+     What is the difference between this and insertBIG? 
+*/
 boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
   nodeptr  r, s;
@@ -836,7 +855,8 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
   hookup(p->next->next, p2, p2z, numBranches);
 }
 
-
+/** @brief Test the insertion of
+*/
 boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
 
@@ -844,7 +864,6 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
   nodeptr  r;
-  boolean doIt = PLL_TRUE;
   double startLH = tr->endLH;
   int i;
 
@@ -855,61 +874,54 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     pz[i] = p->z[i];
   }
 
+  if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
+  evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
 
-  if(doIt)
-  {     
-    if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
-
-    evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
-
-    if(tr->likelihood > tr->bestOfNode)
+  if(tr->likelihood > tr->bestOfNode)
+  {
+    tr->bestOfNode = tr->likelihood;
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
     {
-      tr->bestOfNode = tr->likelihood;
-      tr->insertNode = q;
-      tr->removeNode = p;   
-      for(i = 0; i < numBranches; i++)
-      {
-        tr->currentZQR[i] = tr->zqr[i];           
-        tr->currentLZR[i] = tr->lzr[i];
-        tr->currentLZQ[i] = tr->lzq[i];
-        tr->currentLZS[i] = tr->lzs[i];      
-      }
+      tr->currentZQR[i] = tr->zqr[i];           
+      tr->currentLZR[i] = tr->lzr[i];
+      tr->currentLZQ[i] = tr->lzq[i];
+      tr->currentLZS[i] = tr->lzs[i];      
     }
+  }
 
-    if(tr->likelihood > tr->endLH)
-    {			  
-      tr->insertNode = q;
-      tr->removeNode = p;   
-      for(i = 0; i < numBranches; i++)
-        tr->currentZQR[i] = tr->zqr[i];      
-      tr->endLH = tr->likelihood;                      
-    }        
+  if(tr->likelihood > tr->endLH)
+  {			  
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
+      tr->currentZQR[i] = tr->zqr[i];      
+    tr->endLH = tr->likelihood;                      
+  }        
 
-    hookup(q, r, qz, numBranches);
+  hookup(q, r, qz, numBranches);
 
-    p->next->next->back = p->next->back = (nodeptr) NULL;
+  p->next->next->back = p->next->back = (nodeptr) NULL;
 
-    if(tr->thoroughInsertion)
-    {
-      nodeptr s = p->back;
-      hookup(p, s, pz, numBranches);
-    } 
+  if(tr->thoroughInsertion)
+  {
+    nodeptr s = p->back;
+    hookup(p, s, pz, numBranches);
+  } 
 
-    if((tr->doCutoff) && (tr->likelihood < startLH))
-    {
-      tr->lhAVG += (startLH - tr->likelihood);
-      tr->lhDEC++;
-      if((startLH - tr->likelihood) >= tr->lhCutoff)
-        return PLL_FALSE;	    
-      else
-        return PLL_TRUE;
-    }
+  if((tr->doCutoff) && (tr->likelihood < startLH))
+  {
+    tr->lhAVG += (startLH - tr->likelihood);
+    tr->lhDEC++;
+    if((startLH - tr->likelihood) >= tr->lhCutoff)
+      return PLL_FALSE;	    
     else
       return PLL_TRUE;
   }
   else
-    return PLL_TRUE;  
+    return PLL_TRUE;
 }
 
 
@@ -1819,7 +1831,23 @@ int determineRearrangementSetting(pllInstance *tr, partitionList *pr, analdef *a
 
 
 
+/** @brief Hill climbing search algorithm for exploring the tree space
 
+    Detailed description coming
+    
+    @param tr
+      Tree instance
+
+    @param pr
+      List of partitions
+
+    @todo
+      Remove adef
+
+    @param estimateModel
+      Dont know yet
+
+*/
 void computeBIGRAPID (pllInstance *tr, partitionList *pr, analdef *adef, boolean estimateModel)
 {   
   int
@@ -2118,7 +2146,7 @@ START_FAST_SPRS:
         lh = tr->likelihood;	       	     
         saveBestTree(bestT, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
-      }	   	   
+      }
     }
 #ifdef _DEBUG_CHECKPOINTING
     printBothOpen("FAST LH: %f\n", lh);
@@ -2143,9 +2171,9 @@ START_FAST_SPRS:
 cleanup_fast:  
   /*
      now we have jumped out of the loop that executes 
-     fast SPRs, and next we will execute a loop that executes throough SPR cycles (with SPR moves 
+     fast SPRs, and next we will execute a loop that executes thorough SPR cycles (with SPR moves 
      that optimize via newton-Raphson all adjacent branches to the insertion point) 
-     until no through SPR move can be found that improves the likelihood further. A classic 
+     until no thorough SPR move can be found that improves the likelihood further. A classic 
      hill climbing algo.
      */
 
@@ -2282,7 +2310,7 @@ START_SLOW_SPRS:
 
 
       thoroughIterations++;	  
-    }			  			
+    }
     else
     {
 
@@ -2376,6 +2404,24 @@ cleanup:
 
 
 /* The number of maximum smoothing iterations is given explicitely */
+/** @brief Optimize branch lenghts and evaluate likelihood of topology
+    
+    Optimize the branch lengths \a maxSmoothIterations times and evaluate
+    the likelihood of tree. The resulting likelihood is placed in
+    \a tr->likelihood
+
+    @param tr
+      The PLL instance
+
+    @param pr
+      List of partitions
+
+    @param maxSmoothIterations
+      Number of times to optimize branch lengths
+
+    @return
+      \b PLL_TRUE
+*/
 boolean 
 treeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)       /* Evaluate a user tree */
 {

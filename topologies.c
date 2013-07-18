@@ -244,6 +244,17 @@ static int  cmpTipVal (void *v1, void *v2)
 
 /*  These are the only routines that need to UNDERSTAND topologies */
 
+/** @brief Allocate and initialize space for a tree topology
+    
+    Allocate and initialize a \a topol structure for a tree topology of
+    \a maxtips tips
+
+    @param
+      Number of tips of topology
+
+    @return
+      Pointer to the allocated \a topol structure
+*/
 static topol  *setupTopol (int maxtips)
 {
   topol   *tpl;
@@ -269,6 +280,13 @@ static topol  *setupTopol (int maxtips)
 } 
 
 
+/** @brief Deallocate the space occupied by a \a topol structure
+    
+    Deallocate the space occupied by a \a topol structure
+
+    @param tpl
+      The \a topol structure that is to be deallocated
+*/
 static void  freeTopol (topol *tpl)
 {
   rax_free(tpl->links);
@@ -321,7 +339,21 @@ static int saveSubtree (nodeptr p, topol *tpl, int numsp, int numBranches)
   return  (r - r0);
 }
 
+/** @brief Get the node with the smallest tip value
+    
+    Recursively finds and returns the tip with the smallest value around a node
+    \a p0, or returns \a p0 if it is a tip.
 
+    @param p0
+      Node around which to at which the recursion starts
+
+    @param numsp
+      Number of species (tips) in the tree
+
+    @todo
+      Why do we return p0 immediately if it is a tip? Perhaps one of the two other nodes,
+      i.e. p0->next and p0->next->next, is a tip as well with a smaller number than p0.
+*/
 static nodeptr minSubtreeTip (nodeptr  p0, int numsp)
 { 
   nodeptr  minTip, p, testTip;
@@ -343,6 +375,8 @@ static nodeptr minSubtreeTip (nodeptr  p0, int numsp)
 } 
 
 
+/** @brief
+*/
 static nodeptr  minTreeTip (nodeptr  p, int numsp)
 {
   nodeptr  minp, minpb;
@@ -352,7 +386,11 @@ static nodeptr  minTreeTip (nodeptr  p, int numsp)
   return (cmpTipVal(tipValPtr(minp), tipValPtr(minpb)) < 0 ? minp : minpb);
 }
 
+/** @brief Save the tree topology in a \a topol structure
+    
+    Save the current tree topology in \a topol structure \a tpl.
 
+*/
 static void saveTree (pllInstance *tr, topol *tpl, int numBranches)
 /*  Save a tree topology in a standard order so that first branches
  *  from a node contain lower value tips than do second branches from
@@ -373,12 +411,31 @@ static void saveTree (pllInstance *tr, topol *tpl, int numBranches)
 } /* saveTree */
 
 
+/* @brief Transform tree to a given topology and evaluate likelihood
+
+   Transform our current tree topology to the one stored in \a tpl and
+   evaluates the likelihood
+
+   @param tr
+     PLL instance
+
+   @param pr
+     List of partitions
+
+   @return
+     \b PLL_TRUE
+
+   @todo
+     Remove the return value, unnecessary
+
+*/
 static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
 { 
   connptr  r;
   nodeptr  p, p0;    
   int  i;
 
+  /* first of all set all backs to NULL so that tips do not point anywhere */
   for (i = 1; i <= 2*(tr->mxtips) - 2; i++) 
     {  
       /* Uses p = p->next at tip */
@@ -393,6 +450,7 @@ static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
 
   /*  Copy connections from topology */
 
+  /* then connect the nodes together */
   for (r = tpl->links, i = 0; i < tpl->nextlink; r++, i++)     
     hookup(r->p, r->q, r->z, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
@@ -408,7 +466,30 @@ static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
 
 
 
+/** @brief Initialize a list of best trees
+    
+    Initialize a list that will contain the best \a newkeep tree topologies,
+    i.e. the ones that yield the best likelihood. Inside the list initialize
+    space for \a newkeep + 1 topologies of \a numsp tips. The additional
+    topology is the starting one
 
+    @param bt
+      Pointer to \a bestlist to be initialized
+
+    @param newkeep
+      Number of new topologies to keep
+
+    @param numsp
+      Number of species (tips)
+
+    @return
+      number of tree topology slots in the list (minus the starting one)
+
+    @todo
+      Is there a reason that this function is so complex? Many of the checks
+      are unnecessary as the function is called only at two places in the
+      code with newkeep=1 and newkeep=20
+*/
 int initBestTree (bestlist *bt, int newkeep, int numsp)
 { /* initBestTree */
   int  i;
@@ -423,8 +504,8 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
       bt->numtrees = 0;
       bt->best     = PLL_UNLIKELY;
       bt->improved = PLL_FALSE;
-      bt->byScore  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
-      bt->byTopol  = (topol **) rax_malloc((newkeep+1) * sizeof(topol *));
+      bt->byScore  = (topol **) rax_malloc((newkeep + 1) * sizeof(topol *));
+      bt->byTopol  = (topol **) rax_malloc((newkeep + 1) * sizeof(topol *));
       if (! bt->byScore || ! bt->byTopol) {
         printf( "initBestTree: malloc failure\n");
         return 0;
@@ -591,6 +672,25 @@ static int  findTreeInList (bestlist *bt, pllInstance *tr, int numBranches)
 } 
 
 
+/** @brief Save the current tree in the \a bestlist structure
+    
+    Save the current tree topology in \a bestlist structure \a bt.
+
+    @param tr
+      The PLL instance
+    
+    @param bt
+      The \a bestlist structure
+    
+    @param numBranches
+      Number of branches u
+
+    @return
+      it is never used
+
+    @todo
+      What to do with the return value? Should we simplify the code?
+*/
 int  saveBestTree (bestlist *bt, pllInstance *tr, int numBranches)
 {    
   topol  *tpl, *reuse;
@@ -655,6 +755,25 @@ int  saveBestTree (bestlist *bt, pllInstance *tr, int numBranches)
 } 
 
 
+/** @brief Restore the best tree from \a bestlist structure
+    
+    Restore the \a rank-th best tree from the \a bestlist structure \a bt.
+
+    @param bt
+      The \a bestlist structure containing the stored best trees
+
+    @param rank
+      The rank (by score) of the tree we want to retrieve
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @return
+      Index (rank) of restored topology in \a bestlist
+*/
 int  recallBestTree (bestlist *bt, int rank, pllInstance *tr, partitionList *pr)
 { 
   if (rank < 1)  rank = 1;
