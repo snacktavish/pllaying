@@ -1140,7 +1140,7 @@ typedef  struct  {
   int              *secondaryStructurePairs;
 
 
-  double            fracchange;
+  double            fracchange;      /**< Average substitution rate */
   double            lhCutoff;
   double            lhAVG;
   unsigned long     lhDEC;

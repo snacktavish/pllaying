@@ -52,7 +52,8 @@ PROJECT_LOGO           =
 # If a relative path is entered, it will be relative to the location
 # where doxygen was started. If left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       = /scratch/sco/exelixis-lab/tomas/doc
+#OUTPUT_DIRECTORY       = /scratch/sco/exelixis-lab/tomas/doc
+OUTPUT_DIRECTORY       = /var/www/pll
 #OUTPUT_DIRECTORY       = doc
 
 # If the CREATE_SUBDIRS tag is set to YES, then doxygen will create
