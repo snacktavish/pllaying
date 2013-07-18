@@ -893,6 +893,8 @@ typedef struct {
   /* specific for secondary structures ?? */
   boolean nonGTR;
   boolean optimizeBaseFrequencies;
+  boolean optimizeAlphaParameter;
+  boolean optimizeSubstitutionRates;
   int    *symmetryVector;
   int    *frequencyGrouping;
 
@@ -949,6 +951,7 @@ typedef struct
    pInfo **partitionData;
    int numberOfPartitions;
    boolean perGeneBranchLengths;
+   boolean dirty;
    linkageList *alphaList;
    linkageList *rateList;
    linkageList *freqList;

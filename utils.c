@@ -1661,6 +1661,16 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->upper = bounds[(i << 1) + 1];
      pl->partitionData[i]->width = bounds[(i << 1) + 1] - bounds[i << 1];
 
+     //the two flags below are required to allow users to set 
+     //alpha parameters and substitution rates in the Q matrix 
+     //to fixed values. These parameters will then not be optimized 
+     //in the model parameter optimization functions
+     //by default we assume that all parameters are being optimized, i.e., 
+     //this has to be explicitly set by the user 
+     
+     pl->partitionData[i]->optimizeAlphaParameter    = PLL_TRUE;
+     pl->partitionData[i]->optimizeSubstitutionRates = PLL_TRUE;
+
      if (pi->dataType == DNA_DATA)
       {
         pl->partitionData[i]->protModels                = -1;
@@ -1729,6 +1739,8 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
   int * newBounds;
   int k, nparts;
 
+ 
+
   dst = k = 0;
   oi  = (int *) rax_malloc (phylip->seqLen * sizeof (int));
   for (i = 0; i < phylip->seqLen; ++ i) oi[i] = i;
@@ -1767,7 +1779,8 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
    }
   pl = createPartitions (parts, newBounds);
   pl->numberOfPartitions = nparts;
-
+  pl->dirty = PLL_FALSE;
+  
   rax_free (newBounds);
   rax_free (oi);
 
@@ -2798,47 +2811,130 @@ static void init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int
   rax_free(list);
 }
 
-static void checkMatrixSymnmetriesAndLinkage(partitionList *pr, linkageList *ll)
+/* @brief Check parameter linkage across partitions for consistency
+ *
+ * Checks that linked alpha, substitution rate and frequency model parameters 
+ * across several partitions are consistent. E.g., when two partitions are linked 
+ * via the alpha parameter, the alpha parameter should either be set to the same 
+ * fixed value or it should be estimated!
+ *
+ * @param pr
+ *   List of partitions
+ *
+ * @todo
+ *   Call this in more functions, right now it's only invoked in the wrapper 
+ *   for modOpt() 
+ */
+static void checkLinkageConsistency(partitionList *pr)
 {
-  int 
-    i;
-  
-  for(i = 0; i < ll->entries; i++)
+  if(pr->dirty)
     {
-      int
-	partitions = ll->ld[i].partitions;
+      int 
+	i;
+      
+      linkageList 
+	*ll;
 
-      if(partitions > 1)
+      /* first deal with rates */
+
+      ll = pr->rateList;
+	
+      for(i = 0; i < ll->entries; i++)
 	{
 	  int
-	    k, 
-	    reference = ll->ld[i].partitionList[0];
-
-	  for(k = 1; k < partitions; k++)
+	    partitions = ll->ld[i].partitions;
+	  
+	  if(partitions > 1)
 	    {
-	      int 
-		index = ll->ld[i].partitionList[k];
-
 	      int
-		states = pr->partitionData[index]->states,
-		rates = ((states * states - states) / 2);
+		j,
+		k, 
+		reference = ll->ld[i].partitionList[0];
 	      
-	      if(pr->partitionData[reference]->nonGTR != pr->partitionData[index]->nonGTR)
-		assert(0);
-	      
-	      if(pr->partitionData[reference]->nonGTR)
+	      for(k = 1; k < partitions; k++)
 		{
 		  int 
-		    j;
+		    index = ll->ld[i].partitionList[k];
 		  
-		  for(j = 0; j < rates; j++)
-		    {
-		      if(pr->partitionData[reference]->symmetryVector[j] != pr->partitionData[index]->symmetryVector[j])
-			assert(0);
+		  int
+		    states = pr->partitionData[index]->states,
+		    rates = ((states * states - states) / 2);
+		  
+		  assert(pr->partitionData[reference]->nonGTR == pr->partitionData[index]->nonGTR);		 
+		  assert(pr->partitionData[reference]->optimizeSubstitutionRates == pr->partitionData[index]->optimizeSubstitutionRates);
+		
+		  
+		  if(pr->partitionData[reference]->nonGTR)
+		    {		   
+		      
+		      for(j = 0; j < rates; j++)			
+			assert(pr->partitionData[reference]->symmetryVector[j] == pr->partitionData[index]->symmetryVector[j]);		    
 		    }
-		}
-	    }	    
+		  
+		 
+		  for(j = 0; j < rates; j++)			
+		    assert(pr->partitionData[reference]->substRates[j] == pr->partitionData[index]->substRates[j]);			    
+		}	    
+	    }
 	}
+      
+      /* then deal with alpha parameters */
+
+      ll = pr->alphaList;
+
+      for(i = 0; i < ll->entries; i++)
+	{
+	  int
+	    partitions = ll->ld[i].partitions;
+	  
+	  if(partitions > 1)
+	    {
+	      int
+		k, 
+		reference = ll->ld[i].partitionList[0];
+	      
+	      for(k = 1; k < partitions; k++)
+		{
+		  int 
+		    index = ll->ld[i].partitionList[k];		  		 
+
+		  assert(pr->partitionData[reference]->optimizeAlphaParameter == pr->partitionData[index]->optimizeAlphaParameter);
+		  assert(pr->partitionData[reference]->alpha == pr->partitionData[index]->alpha);		  
+		}	    
+	    }
+	}
+
+      /* and then deal with base frequencies */
+
+      ll = pr->freqList;
+
+      for(i = 0; i < ll->entries; i++)
+	{
+	  int	  
+	    partitions = ll->ld[i].partitions;
+	  
+	  if(partitions > 1)
+	    {
+	      int		
+		k, 
+		reference = ll->ld[i].partitionList[0];
+	      
+	      for(k = 1; k < partitions; k++)
+		{
+		  int
+		    j,
+		    index = ll->ld[i].partitionList[k],
+		    states = pr->partitionData[index]->states;		  		 
+
+		  assert(pr->partitionData[reference]->optimizeBaseFrequencies == pr->partitionData[index]->optimizeBaseFrequencies);		 
+
+		  for(j = 0; j < states; j++)
+		    assert(pr->partitionData[reference]->frequencies[j] == pr->partitionData[index]->frequencies[j]);
+		}	    
+	    }
+	}
+
+      pr->dirty = PLL_FALSE;
     }
 }
 /** @brief Set symmetries among parameters in the Q matrix
@@ -2862,7 +2958,196 @@ void pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, in
 {
   init_Q_MatrixSymmetries(string, pr, model);
 
-  checkMatrixSymnmetriesAndLinkage(pr, pr->rateList);
+  pr->dirty = PLL_TRUE;
+}
+
+/** @brief Set the alpha parameter of the Gamma model to a fixed value for a partition
+    
+    Sets the alpha parameter of the gamma model of rate heterogeneity to a fixed value
+    and disables the optimization of this parameter 
+
+    @param alpha
+      alpha value
+
+    @param model
+      Index of the partition for which we want to set the alpha value
+
+    @param pr
+      List of partitions
+      
+    @param tr
+      Library instance for which we want to fix alpha 
+
+    @todo
+      test if this works with the parallel versions
+*/
+void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr)
+{
+  //make sure that we are swetting alpha for a partition within the current range 
+  //of partitions
+
+  assert(model >= 0 && model < pr->numberOfPartitions);
+
+  //set the alpha paremeter 
+  
+  pr->partitionData[model]->alpha = alpha;
+
+  //do the discretization of the gamma curve
+
+  makeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
+
+  //broadcast the changed parameters to all threads/MPI processes 
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  masterBarrier(THREAD_COPY_ALPHA, tr, pr);
+#endif
+
+  pr->partitionData[model]->optimizeAlphaParameter = PLL_FALSE;
+
+  pr->dirty = PLL_FALSE;
+}
+
+/** @brief Set all base freuqncies to a fixed value for a partition
+    
+    Sets all base freuqencies of a partition to fixed values and disables 
+    ML optimization of these parameters 
+
+    @param f
+      array containing the base frequencies
+
+    @param 
+      length of array f, this needs to be as long as the number of 
+      states in the model, otherwise an assertion will fail!
+
+    @param model
+      Index of the partition for which we want to set the frequencies 
+
+    @param pr
+      List of partitions
+      
+    @param tr
+      Library instance for which we want to fix the base frequencies
+
+    @todo
+      test if this works with the parallel versions
+*/
+void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr)
+{
+  int 
+    i;
+
+  double 
+    acc = 0.0;
+
+  //make sure that we are setting the base frequencies for a partition within the current range 
+  //of partitions
+  assert(model >= 0 && model < pr->numberOfPartitions);
+
+  //make sure that the length of the input array f containing the frequencies 
+  //is as long as the number of states in the model 
+  assert(length == pr->partitionData[model]->states);
+
+
+  //make sure that the base frequencies sum approximately to 1.0
+  
+  for(i = 0; i < length; i++)
+    acc += f[i];
+
+  if(fabs(acc - 1.0) > 0.000001)
+    assert(0);
+
+  //copy the base frequencies 
+  memcpy(pr->partitionData[model]->frequencies, f, sizeof(double) * length);
+
+  //re-calculate the Q matrix 
+  initReversibleGTR(tr, pr, model);
+
+
+  //broadcast the new Q matrix to all threads/processes 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  masterBarrier(THREAD_COPY_RATES, tr, pr);
+#endif
+  
+  pr->partitionData[model]->optimizeBaseFrequencies = PLL_FALSE;
+
+  pr->dirty = PLL_TRUE;
+}
+
+/** @brief Set all substitution rates to a fixed value for a specific partition
+    
+    Sets all substitution rates of a partition to fixed values and disables 
+    ML optimization of these parameters. It will automatically re-scale the relative rates  
+    such that the last rate is 1.0 
+
+    @param f
+      array containing the substitution rates
+
+    @param 
+      length of array f, this needs to be as long as: (s * s - s) / 2,
+      i.e., the number of upper diagonal entries of the Q matrix
+
+    @param model
+      Index of the partition for which we want to set/fix the substitution rates
+
+    @param pr
+      List of partitions
+      
+    @param tr
+      Library instance for which we want to fix the substitution rates 
+
+    @todo
+      test if this works with the parallel versions
+*/
+void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr)
+{
+  int 
+    i,
+    numberOfRates; 
+
+  double
+    scaler;
+
+  //make sure that we are setting the Q matrix for a partition within the current range 
+  //of partitions
+  assert(model >= 0 && model < pr->numberOfPartitions);
+
+  numberOfRates = (pr->partitionData[model]->states * pr->partitionData[model]->states - pr->partitionData[model]->states) / 2;
+
+  //  make sure that the length of the array containing the subsitution rates 
+  //  corresponds to the number of states in the model
+
+  assert(length == numberOfRates);
+
+  //automatically scale the last rate to 1.0 if this is not already the case
+
+  if(q[length - 1] != 1.0)    
+    scaler = 1.0 / q[length - 1]; 
+  else
+    scaler = 1.0;
+
+  //set the rates for the partition and make sure that they are within the allowed bounds 
+
+  for(i = 0; i < length; i++)
+    {
+      double
+	r = q[i] * scaler;
+      
+      assert(r >= RATE_MIN && r <= RATE_MAX);
+      
+      pr->partitionData[model]->substRates[i] = r;
+    }
+
+  //re-calculate the Q matrix 
+  initReversibleGTR(tr, pr, model);
+
+  //broadcast the new Q matrix to all threads/processes 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  masterBarrier(THREAD_COPY_RATES, tr, pr);
+#endif
+  
+  pr->partitionData[model]->optimizeSubstitutionRates = PLL_FALSE;
+
+  pr->dirty = PLL_TRUE;
 }
 
 /* initializwe a parameter linkage list for a certain parameter type (can be whatever).
@@ -3007,6 +3292,8 @@ void pllLinkAlphaParameters(char *string, partitionList *pr)
   freeLinkageList(pr->alphaList);
   
   pr->alphaList = initLinkageListString(string, pr);
+
+  pr->dirty = PLL_TRUE;
 }
 
 /** @brief Link base frequency parameters across partitions
@@ -3032,6 +3319,8 @@ void pllLinkFrequencies(char *string, partitionList *pr)
   freeLinkageList(pr->freqList);
 
   pr->freqList = initLinkageListString(string, pr);
+
+  pr->dirty = PLL_TRUE;
 }
 
 /** @brief Link Substitution matrices across partitions
@@ -3055,12 +3344,7 @@ void pllLinkRates(char *string, partitionList *pr)
   
   pr->rateList = initLinkageListString(string, pr);
   
-  //check if the per-partition Q matrix symmetries are 
-  //identical to each other if the partitions are linked
-  //we need to do this check here as well because 
-  //we don't know in which order users might call
-  //these functions
-  checkMatrixSymnmetriesAndLinkage(pr, pr->rateList);
+  pr->dirty = PLL_TRUE;  
 }
 
 
@@ -3132,5 +3416,7 @@ void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, struct pllPhylip * phy
 */
 void pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 {
+  checkLinkageConsistency(pr);
+
   modOpt(tr, pr, likelihoodEpsilon);
 }

@@ -1140,8 +1140,13 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
         case SECONDARY_DATA_7:
         case GENERIC_32:
         case GENERIC_64:
-          ll->ld[i].valid = PLL_TRUE;
-          non_LG4X_Partitions++;
+	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
+	    {
+	      ll->ld[i].valid = PLL_TRUE;
+	      non_LG4X_Partitions++;
+	    }
+	  else
+	     ll->ld[i].valid = PLL_FALSE;
           break;
         case AA_DATA:     
           //to be implemented later-on 
@@ -1150,11 +1155,14 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
               LG4X_Partitions++;              
               ll->ld[i].valid = FALSE;
             }
-            else*/
+            else*/ 
+	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
             {
               ll->ld[i].valid = PLL_TRUE;
               non_LG4X_Partitions++;
             }
+	  else
+	    ll->ld[i].valid = PLL_FALSE;
           break;
         default:
           assert(0);
@@ -1646,8 +1654,13 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
         {
           case DNA_DATA:  
             states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-            ll->ld[i].valid = PLL_TRUE;
-            ++ dnaPartitions;  
+	    if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeSubstitutionRates)
+	      {
+		ll->ld[i].valid = PLL_TRUE;
+		++ dnaPartitions;  
+	      }
+	    else	      
+	      ll->ld[i].valid = PLL_FALSE;	      
             break;
           case BINARY_DATA:
           case AA_DATA:
@@ -1674,6 +1687,8 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
    /* now if all AA partitions share a joint GTR subst matrix, let's do a joint estimate 
       of the 189 rates across all of them. Otherwise we don't need to optimize anything since 
       we will be using one of the fixed models like WAG, JTT, etc */
+
+  
 
   if(AAisGTR(pr))
     {

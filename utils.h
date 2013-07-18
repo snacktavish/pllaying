@@ -14,6 +14,10 @@ void pllLinkFrequencies(char *string, partitionList *pr);
 void pllLinkRates(char *string, partitionList *pr);
 void pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
 
+void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
+void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
+void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
+
 //void read_msa(pllInstance *tr, const char *filename);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int, int);
