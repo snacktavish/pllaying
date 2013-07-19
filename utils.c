@@ -52,6 +52,7 @@
 #include <stdarg.h>
 #include <limits.h>
 #include <assert.h>
+#include <errno.h>
 #include "cycle.h"
 #include "parser/phylip/ssort.h"
 
@@ -3074,6 +3075,77 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 
   pr->dirty = PLL_TRUE;
 }
+
+/** @brief Set that the base freuqencies are optimized under ML
+    
+    The base freuqencies for partition model will be optimized under ML    
+
+    @param model
+      Index of the partition for which we want to optimize base frequencies 
+
+    @param pr
+      List of partitions
+      
+    @param tr
+      Library instance for which we want to fix the base frequencies
+
+    @todo
+      test if this works with the parallel versions
+*/
+int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr)
+{
+  int
+    states,
+    i;
+
+  double 
+    initialFrequency,
+    acc = 0.0;
+
+  //make sure that we are setting the base frequencies for a partition within the current range 
+  //of partitions
+  if(!(model >= 0 && model < pr->numberOfPartitions))
+    {
+      errno = PLL_PARTITION_OUT_OF_BOUNDS;
+      return PLL_FALSE;
+    }
+
+  //set the number of states/ferquencies in this partition 
+  states = pr->partitionData[model]->states;
+
+  //set all frequencies to 1/states
+  
+  initialFrequency = 1.0 / (double)states;
+
+  for(i = 0; i < states; i++)
+    pr->partitionData[model]->frequencies[i] = initialFrequency;
+
+  //make sure that the base frequencies sum approximately to 1.0
+  
+  for(i = 0; i < states; i++)
+    acc += pr->partitionData[model]->frequencies[i];
+
+  if(fabs(acc - 1.0) > 0.000001)
+    {
+      errno = PLL_BASE_FREQUENCIES_DO_NOT_SUM_TO_1;
+      return PLL_FALSE;
+    }
+
+  //re-calculate the Q matrix 
+  initReversibleGTR(tr, pr, model);
+
+  //broadcast the new Q matrix to all threads/processes 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  masterBarrier(THREAD_COPY_RATES, tr, pr);
+#endif
+  
+  pr->partitionData[model]->optimizeBaseFrequencies = PLL_TRUE;
+
+  pr->dirty = PLL_TRUE;
+
+  return PLL_TRUE;
+}
+
 
 /** @brief Set all substitution rates to a fixed value for a specific partition
     
