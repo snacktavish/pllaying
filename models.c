@@ -3498,7 +3498,11 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
              if(pr->partitionData[model]->protModels == AUTO)
 	       initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates, 0);
 	     else	  
-	       initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates, 0);
+	       {
+		 //TODO Tomas regardless of the partition file I always get 0 here !
+		 printf("prot model %d\n",  pr->partitionData[model]->protModels);
+		 initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates, 0);
+	       }
 
 	     /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
 	       assert(tr->partitionData[model].protFreqs);*/
@@ -4268,9 +4272,11 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
    }                   		       
   
    
-   printf ("Fracchange: %f\n", tr->fracchange);
-   printf ("originalCrunchedLength: %d\n", tr->originalCrunchedLength);
-   printf ("num of parts: %d\n", partitions->numberOfPartitions);
+  /* 
+     printf ("Fracchange: %f\n", tr->fracchange);
+     printf ("originalCrunchedLength: %d\n", tr->originalCrunchedLength);
+     printf ("num of parts: %d\n", partitions->numberOfPartitions);
+  */
 
   if(partitions->numberOfPartitions > 1)
     {

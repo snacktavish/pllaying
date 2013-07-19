@@ -100,14 +100,14 @@ static void testProteinStuff()
 	  fprintf(f, "WAG, p3 = 601-1104\n");
 	  break;
 	case 1:
-	  fprintf(f, "LGX, p1 = 1-200\n");
-	  fprintf(f, "LGX, p2 = 201-600\n");
-	  fprintf(f, "LGX, p3 = 601-1104\n");
+	  fprintf(f, "LG, p1 = 1-200\n");
+	  fprintf(f, "LG, p2 = 201-600\n");
+	  fprintf(f, "LG, p3 = 601-1104\n");
 	  break;
 	case 2:
-	  fprintf(f, "LG4, p1 = 1-200\n");
-	  fprintf(f, "LG4, p2 = 201-600\n");
-	  fprintf(f, "LG4, p3 = 601-1104\n");
+	  fprintf(f, "JTT, p1 = 1-200\n");
+	  fprintf(f, "JTT, p2 = 201-600\n");
+	  fprintf(f, "JTT, p3 = 601-1104\n");
 	  break;
 	case 3:	  
 	case 4:
