@@ -44,7 +44,11 @@
 
 struct ltoken_t
  {
+#ifdef __cplusplus
+   int 	        __class;
+#else
    int          class;
+#endif
    const char * lexeme;
    int          len;
  };

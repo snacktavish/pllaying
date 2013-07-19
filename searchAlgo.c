@@ -1060,7 +1060,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
 
 
 
-static double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
+double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
 {
   int i, index,
       *perm = (int*)NULL;   
@@ -2493,4 +2493,297 @@ void NNI(pllInstance * tr, nodeptr p, int swap)
    }
 
   return PLL_TRUE;
+}
+
+/** @brief Compares 2 NNI moves */
+int cmp_nni(const void* nni1, const void* nni2) {
+	nniMove* myNNI1 = (nniMove*) nni1;
+	nniMove* myNNI2 = (nniMove*) nni2;
+	return (int) (1000000.f * myNNI1->deltaLH - 1000000.f * myNNI2->deltaLH);
+}
+
+/** @brief Gets the best NNI move for a branch
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node to use as origin for performing NNI
+
+    @param curLH
+      The current likelihood
+
+    @return
+      The best NNI move
+
+*/
+nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
+		double curLH) {
+	nodeptr q = p->back;
+	assert( ! isTip(p->number, tr->mxtips));
+	assert( ! isTip(q->number, tr->mxtips));
+#ifdef _DEBUG_NNI
+	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	fprintf(stderr, "%s\n", tr->tree_string);
+#endif
+
+	/* Backup the current branch length */
+	double z0[NUM_BRANCHES];
+	int i;
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		z0[i] = p->z[i];
+	}
+#ifdef _DEBUG_NNI
+	double lhOld = tr->likelihood;
+	printf("lhOld: %f \n", lhOld);
+#endif
+	double lh0 = curLH;
+
+
+#ifdef _DEBUG_NNI
+	printf("lh0: %f \n", lh0);
+#endif
+	nniMove nni0; // nni0 means no NNI move is done
+	nni0.p = p;
+	nni0.nniType = 0;
+	nni0.deltaLH = 0;
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		nni0.z[i] = p->z[i];
+	}
+
+	/* Save the scaling factor */
+	// Now try to do an NNI move of type 1
+	NNI(tr, p, PLL_NNI_P_NEXT);
+	double lh1 = tr->likelihood;
+	/* Update branch lengths */
+	newviewGeneric(tr, pr, p, PLL_FALSE);
+	newviewGeneric(tr, pr, q, PLL_FALSE);
+	update(tr, pr, p);
+	evaluateGeneric(tr, pr, p, PLL_FALSE, PLL_FALSE);
+
+	nniMove nni1;
+	nni1.p = p;
+	nni1.nniType = 1;
+	// Store the optimized und unoptimized central branch length
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		nni1.z[i] = p->z[i];
+		nni1.z0[i] = z0[i];
+	}
+	nni1.likelihood = lh1;
+	nni1.deltaLH = lh1 - lh0;
+#ifdef _DEBUG_NNI
+	printf("Delta likelihood of the 1.NNI move: %f\n", nni1.deltaLH);
+#endif
+
+	/* Restore previous NNI move */
+	NNI(tr, p, PLL_NNI_P_NEXT);
+	/* Restore the old branch length */
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		p->z[i] = z0[i];
+		p->back->z[i] = z0[i];
+	}
+
+#ifdef _DEBUG_NNI
+	printf("Restore topology\n");
+	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	fprintf(stderr, "%s\n", tr->tree_string);
+	evaluateGeneric(tr, tr->start, TRUE);
+	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);
+#endif
+	/* Try to do an NNI move of type 2 */
+	NNI(tr, p, 2);
+	double lh2 = tr->likelihood;
+	/* Update branch lengths */
+	newviewGeneric(tr, pr, p, PLL_FALSE);
+	newviewGeneric(tr, pr, q, PLL_FALSE);
+	update(tr, pr, p);
+	evaluateGeneric(tr, pr, p, PLL_FALSE, PLL_FALSE);
+
+	// Create the nniMove struct to store this move
+	nniMove nni2;
+	nni2.p = p;
+	nni2.nniType = 2;
+
+	// Store the optimized and unoptimized central branch length
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		nni2.z[i] = p->z[i];
+		nni2.z0[i] = z0[i];
+	}
+	nni2.likelihood = lh2;
+	nni2.deltaLH = lh2 - lh0;
+#ifdef _DEBUG_NNI
+	printf("Delta likelihood of the 2.NNI move: %f\n", nni2.deltaLH);
+#endif
+
+	/* Restore previous NNI move */
+	NNI(tr, p, 2);
+	newviewGeneric(tr, pr, p, PLL_FALSE);
+	newviewGeneric(tr, pr, p->back, PLL_FALSE);
+	/* Restore the old branch length */
+	for (i = 0; i < pr->numberOfPartitions; i++) {
+		p->z[i] = z0[i];
+		p->back->z[i] = z0[i];
+	}
+	if (nni1.deltaLH > 0 && nni1.deltaLH >= nni2.deltaLH) {
+		return nni1;
+	} else if (nni1.deltaLH > 0 && nni1.deltaLH < nni2.deltaLH) {
+		return nni2;
+	} else if (nni1.deltaLH < 0 && nni2.deltaLH > 0) {
+		return nni2;
+	} else {
+		return nni0;
+	}
+}
+
+/** @brief ??? Not sure */
+void evalNNIForSubtree(pllInstance* tr, partitionList *pr, nodeptr p,
+		nniMove* nniList, int* cnt, int* cnt_nni, double curLH) {
+	if (!isTip(p->number, tr->mxtips)) {
+		nniList[*cnt] = getBestNNIForBran(tr, pr, p, curLH);
+		if (nniList[*cnt].deltaLH != 0.0) {
+			*cnt_nni = *cnt_nni + 1;
+		}
+		*cnt = *cnt + 1;
+		nodeptr q = p->next;
+		while (q != p) {
+			evalNNIForSubtree(tr, pr, q->back, nniList, cnt, cnt_nni, curLH);
+			q = q->next;
+		}
+	}
+}
+
+/** @brief Perform an NNI search
+
+    Modify the tree topology of instance and model parameters \a tr by performing a NNI (Neighbour Neighbor
+    Interchange) moves \a p.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param estimateModel
+      Determine wheter the model parameters should be optimized
+
+    @return
+      In case of success \b PLL_TRUE, otherwise \b PLL_FALSE
+
+*/
+int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
+
+	double curScore = tr->likelihood;
+
+	/* Initialize the NNI list */
+	nniMove* nniList = (nniMove*) malloc((tr->mxtips - 3) * sizeof(nniMove));
+	int i;
+	/* fill up the NNI list */
+	nodeptr p = tr->start->back;
+	nodeptr q = p->next;
+	int cnt = 0; // number of visited internal branches during NNI evaluation
+	int cnt_nni = 0; // number of positive NNI found
+	while (q != p) {
+		evalNNIForSubtree(tr, pr, q->back, nniList, &cnt, &cnt_nni, curScore);
+		q = q->next;
+	}
+	if (cnt_nni == 0)
+		return 0.0;
+
+	nniMove* impNNIList = (nniMove*) malloc(cnt_nni * sizeof(nniMove));
+	int j = 0;
+	for (i = 0; i < tr->mxtips - 3; i++) {
+		if (nniList[i].deltaLH > 0.0) {
+			impNNIList[j] = nniList[i];
+			j++;
+		}
+	}
+	// sort impNNIList
+	qsort(impNNIList, cnt_nni, sizeof(nniMove), cmp_nni);
+
+	// creating a list of non-conflicting positive NNI
+	nniMove* nonConfNNIList = (nniMove*) calloc(cnt_nni, sizeof(nniMove));
+
+	// the best NNI will always be taken
+	nonConfNNIList[0] = impNNIList[cnt_nni - 1];
+
+	// Filter out conflicting NNI
+	int numNonConflictNNI = 1; // size of the non-conflicting NNI list;
+	int k;
+	for (k = cnt_nni - 2; k >= 0; k--) {
+		int conflict = PLL_FALSE;
+		int j;
+		for (j = 0; j < numNonConflictNNI; j++) {
+			if (impNNIList[k].p->number == nonConfNNIList[j].p->number
+					|| impNNIList[k].p->number
+							== nonConfNNIList[j].p->back->number) {
+				conflict = PLL_TRUE;
+				break;
+			}
+		}
+		if (conflict) {
+			continue;
+		} else {
+			nonConfNNIList[numNonConflictNNI] = impNNIList[k];
+			numNonConflictNNI++;
+		}
+	}
+
+	// Applying non-conflicting NNI moves
+	double delta = 1.0; // portion of NNI moves to apply
+	int notImproved;
+	do {
+		notImproved = PLL_FALSE;
+		int numNNI2Apply = ceil(numNonConflictNNI * delta);
+		for (i = 0; i < numNNI2Apply; i++) {
+			// Just do the topological change
+			NNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
+			newviewGeneric(tr, pr, nonConfNNIList[i].p, PLL_FALSE);
+			newviewGeneric(tr, pr, nonConfNNIList[i].p->back, PLL_FALSE);
+			// Apply the store branch length
+			int j;
+			for (j = 0; j < pr->numberOfPartitions; j++) {
+				nonConfNNIList[i].p->z[j] = nonConfNNIList[i].z[j];
+				nonConfNNIList[i].p->back->z[j] = nonConfNNIList[i].z[j];
+			}
+		}
+		// Re-optimize all branches
+		smoothTree(tr, pr, 2);
+		evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+		if (estimateModel) {
+			modOpt(tr, pr, 0.1);
+		}
+		evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+		if (tr->likelihood < curScore) {
+#ifdef _DEBUG_NNI
+			printf("Tree likelihood gets worse after applying NNI\n");
+			printf("curScore = %30.20f\n", curScore);
+			printf("newScore = %30.20f\n", tr->likelihood);
+			printf("Rolling back the tree\n");
+#endif
+			for (i = 0; i < numNNI2Apply; i++) {
+				NNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
+				// Restore the branch length
+				int j;
+				for (j = 0; j < pr->numberOfPartitions; j++) {
+					nonConfNNIList[i].p->z[j] = nonConfNNIList[i].z0[j];
+					nonConfNNIList[i].p->back->z[j] = nonConfNNIList[i].z0[j];
+				}
+			}
+			evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+#ifdef _DEBUG_NNI
+			printf("Tree likelihood after rolling back = %f \n",
+					tr->likelihood);
+#endif
+			notImproved = PLL_TRUE & (numNNI2Apply > 1);
+			delta = delta * 0.5;
+		}
+	} while (notImproved);
+	free(nniList);
+	free(impNNIList);
+	free(nonConfNNIList);
+
+	return PLL_TRUE;
 }
