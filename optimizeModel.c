@@ -119,8 +119,6 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
         i, 
         index    = pr->partitionData[model]->symmetryVector[position],
         lastRate = pr->partitionData[model]->symmetryVector[numRates - 1];
-
-
            
       for(i = 0; i < numRates; i++)
         {       
@@ -176,97 +174,6 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
 
 */
    
-/** @brief Initialize linkage list for GTR models
- *
- * Constructs a linkage list with rate matrices unlinked in all partitions except 
- * for GTR protein partitions.
- *
- * @param pr
- *   List of partitions
- *
- * @return
- *   Linkage list
- */
-static linkageList* initLinkageListGTR(partitionList *pr)
-{
-  int
-    i,
-    *links = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
-    firstAA = pr->numberOfPartitions + 2,
-    countGTR = 0,
-    countOtherModel = 0;
-  
-  linkageList
-    * ll;
-
-  /* here we only want to figure out if either all prot data partitions 
-     are supposed to use a joint GTR prot subst matrix or not 
-
-    We either allow ALL prot partitions to use a shared/joint estimate of the GTR matrix or not,
-    things like having one prot partition evolving under WAG and the others under a joint GTR estimate are 
-    not allowed.
-  */
-
-  for(i = 0; i < pr->numberOfPartitions; i++)
-    {     
-      if(pr->partitionData[i]->dataType == AA_DATA)
-        {
-          if(pr->partitionData[i]->protModels == GTR)
-            {
-              if(i < firstAA)
-                firstAA = i;
-              countGTR++;
-            }
-          else
-            countOtherModel++;
-        }
-    }
-  
-  assert((countGTR > 0 && countOtherModel == 0) || (countGTR == 0 && countOtherModel > 0) ||  (countGTR == 0 && countOtherModel == 0));
-
-  /* if there is no joint GTR matrix optimization for protein data partitions we can unlink rate matrix calculations for all partitions */
-
-  if(countGTR == 0)
-    {
-      for(i = 0; i < pr->numberOfPartitions; i++)
-        links[i] = i;
-    }
-  else
-    {
-      /* otherwise we let all partitions, except for the protein partitions use 
-         unlinked rate matrices while we link the GTR rate matrices of all 
-         protein data partitions */
-      for(i = 0; i < pr->numberOfPartitions; i++)
-        {
-          switch(pr->partitionData[i]->dataType)
-            {      
-            case DNA_DATA:
-            case BINARY_DATA:
-            case GENERIC_32:
-            case GENERIC_64:
-            case SECONDARY_DATA:
-            case SECONDARY_DATA_6:
-            case SECONDARY_DATA_7: 
-              links[i] = i;
-              break;
-            case AA_DATA:         
-              links[i] = firstAA;
-              break;
-            default:
-              assert(0);
-            }
-        }
-    }
-  
-
-  /* we can now pass an appropriate integer vector to the linkage list initialization function :-) */
-
-  ll = initLinkageList(links, pr);
-
-  rax_free(links);
-  
-  return ll;
-}
 
 /* free linkage list data structure */
 
@@ -1681,42 +1588,38 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
   if(dnaPartitions > 0)
     optRates(tr, pr, modelEpsilon, ll, dnaPartitions, states);
   
-
-  /* then AA for GTR */
-
-   /* now if all AA partitions share a joint GTR subst matrix, let's do a joint estimate 
-      of the 189 rates across all of them. Otherwise we don't need to optimize anything since 
-      we will be using one of the fixed models like WAG, JTT, etc */
-
+  /* AA partitions evolving under a GTR model do not need to be linked any more, this responsibility now remains 
+     with the library user !
+   */
   
-
-  if(AAisGTR(pr))
+  for(i = 0; ll && i < ll->entries; i++)
     {
-      for(i = 0; ll && i < ll->entries; i++)
-        {
-          switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
-            {
-            case AA_DATA:
-              states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
-              ll->ld[i].valid = PLL_TRUE;
-              aaPartitions++;
-              break;
-            case DNA_DATA:          
-            case BINARY_DATA:
-            case SECONDARY_DATA:        
-            case SECONDARY_DATA_6:
-            case SECONDARY_DATA_7:
-              ll->ld[i].valid = PLL_FALSE;
-              break;
-            default:
-              assert(0);
-            }    
-        }
-
-      assert(aaPartitions == 1);     
-      
-      optRates(tr, pr, modelEpsilon, ll, aaPartitions, states);
+      switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
+	{
+	case AA_DATA:
+	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
+	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeSubstitutionRates)
+	    {
+	      ll->ld[i].valid = PLL_TRUE;
+	      aaPartitions++;
+	    }
+	  else
+	    ll->ld[i].valid = PLL_FALSE;
+	  break;
+	case DNA_DATA:          
+	case BINARY_DATA:
+	case SECONDARY_DATA:        
+	case SECONDARY_DATA_6:
+	case SECONDARY_DATA_7:
+	  ll->ld[i].valid = PLL_FALSE;
+	  break;
+	default:
+	  assert(0);
+	}    
     }
+  
+  if(aaPartitions > 0)
+    optRates(tr, pr, modelEpsilon, ll, aaPartitions, states); 
 
   /* done with all partitions, so we can set all entries in the linkage list to valid again :-) */
 
@@ -2762,7 +2665,12 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
   tr->start = tr->nodep[1];
 
-  /* TODO: Why is this check? here */
+  /* This check is here to make sure that the likelihood 
+     computed prior to entering modOpt() is consistent 
+     with the likelihood when entering modOpt().
+     This allows us to ensure that we didn't forget to update anything prior 
+     to entereing this function.
+   */
   inputLikelihood = tr->likelihood;
   evaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   assert (inputLikelihood == tr->likelihood);

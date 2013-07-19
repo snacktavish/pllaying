@@ -3940,7 +3940,11 @@ void initRateMatrix(pllInstance *tr, partitionList *pr)
 	  break;
 	case AA_DATA:
 	  if(pr->partitionData[model]->protModels == GTR)
-	    putWAG(pr->partitionData[model]->substRates);
+	    {
+	      //set optimizeSubstRates to true !
+	      pr->partitionData[model]->optimizeSubstitutionRates = PLL_TRUE;
+	      putWAG(pr->partitionData[model]->substRates);
+	    }
 	  break;
 	default:
 	  assert(0);

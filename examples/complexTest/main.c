@@ -39,6 +39,7 @@ static nodeptr pickMyRandomSubtree(pllInstance *tr)
   return p;
 }
 
+
 static void printModelParameters(partitionList *pr)
 {
   int 
@@ -69,6 +70,180 @@ static void printModelParameters(partitionList *pr)
       
     }
 
+}
+
+static void testProteinStuff()
+{
+  struct pllPhylip * phylip;
+  pllInstance * tr;
+  struct pllNewickTree * newick;
+  
+  partitionList * partitions;
+  
+  struct pllQueue * parts;
+  
+  int i;
+  
+  for(i = 0; i < 5; i++)
+    {
+      //write a simple partition file with 3 partitions 
+      //for dataset dna.phy.dat contained 
+      //in this source directory 
+      
+      FILE *f = fopen("proteinPartitions", "w");
+      
+      switch(i)
+	{
+	case 0:
+	  fprintf(f, "WAG, p1 = 1-200\n");
+	  fprintf(f, "WAG, p2 = 201-600\n");
+	  fprintf(f, "WAG, p3 = 601-1104\n");
+	  break;
+	case 1:
+	  fprintf(f, "LGX, p1 = 1-200\n");
+	  fprintf(f, "LGX, p2 = 201-600\n");
+	  fprintf(f, "LGX, p3 = 601-1104\n");
+	  break;
+	case 2:
+	  fprintf(f, "LG4, p1 = 1-200\n");
+	  fprintf(f, "LG4, p2 = 201-600\n");
+	  fprintf(f, "LG4, p3 = 601-1104\n");
+	  break;
+	case 3:	  
+	case 4:
+	  fprintf(f, "GTR, p1 = 1-200\n");
+	  fprintf(f, "GTR, p2 = 201-600\n");
+	  fprintf(f, "GTR, p3 = 601-1104\n");
+	  break;
+	default:
+	  assert(0);
+	}
+      
+      fclose(f);
+      
+      tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
+      
+      phylip = pllPhylipParse ("prot.phy");
+      
+      newick = pllNewickParseFile("parsimonyTree");
+      
+      parts = pllPartitionParse ("proteinPartitions");
+      
+      /* Validate the partitions */
+      if (!pllPartitionsValidate (parts, phylip))
+	{
+	  fprintf (stderr, "Error: Partitions do not cover all sites\n");
+	  return (EXIT_FAILURE);
+	}
+      
+      /* commit the partitions and build a partitions structure */
+      partitions = pllPartitionsCommit (parts, phylip);
+      
+      /* destroy the  intermedia partition queue structure */
+      pllQueuePartitionsDestroy (&parts);
+      
+      /* eliminate duplicate sites from the alignment and update weights vector */
+      pllPhylipRemoveDuplicate (phylip, partitions);
+      
+      pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
+      if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
+	{
+	  fprintf (stderr, "Incompatible tree/alignment combination\n");
+	  return (EXIT_FAILURE);
+	}
+      pllInitModel(tr, PLL_TRUE, phylip, partitions);
+      
+      switch(i)
+	{
+	case 0:
+	  //all params unlinked 
+	  
+	  pllLinkAlphaParameters("0,1,2", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);	
+	  break;
+	case 1:
+	  //link params in another way 
+	  
+	  pllLinkAlphaParameters("0,0,0", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);    
+	  break;
+	case 2:
+	  //link params in yet another way 
+	  
+	  pllLinkAlphaParameters("0,0,0", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,0", partitions);    	
+	  break;
+
+	case 3:
+	  //also fiddle around with the Q matrices, make them to be non-GTR, but simpler
+	  
+	  pllLinkAlphaParameters("0,1,2", partitions);
+	  pllLinkFrequencies("0,1,2", partitions);
+	  pllLinkRates("0,1,2", partitions);    
+	  
+	  //these are GTR models
+	  //pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 0);	  
+	  //pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,5", partitions, 1);
+
+	  //this is a simpler model with 5 parameters, parameter a and f have 
+	  //the same value
+	  //pllSetSubstitutionRateMatrixSymmetries("0,1,2,3,4,0", partitions, 2);
+	  break;
+
+	case 4:
+	  {
+	    //test case to show how the model parameters can be set to fixed values
+
+	    // set up arrays of user-defined base frequencies 
+	    // and a user defined q matrix 
+	    double 
+	      f[4] = {0.25, 0.25, 0.25, 0.25},
+	      q[6] = {1.0, 1.0, 1.0, 1.0, 1.0, 0.5};
+	    
+	      //unlink alpha parameters base frequencies and Q matrices 
+	      //across all partitions
+	    pllLinkAlphaParameters("0,1,2", partitions);
+	    pllLinkFrequencies("0,1,2", partitions);
+	    pllLinkRates("0,0,0", partitions);
+	    
+	    //set alpha to a fixed value of 1.0 for partition 0 and 
+	    //parition 1
+	    //pllSetFixedAlpha(1.0, 0, partitions, tr);
+	    //pllSetFixedAlpha(1.0, 1, partitions, tr);
+
+	    //fix the base frequencies to 0.25 for 
+	    //partitions 0 and 1
+	    //pllSetFixedBaseFrequencies(f, 4, 0, partitions, tr);
+	    //pllSetFixedBaseFrequencies(f, 4, 1, partitions, tr);
+	    
+	    //set the Q matrix to fixed values for partition 
+	    //0
+	    //pllSetFixedSubstitutionMatrix(q, 6, 0, partitions, tr);	    	    
+	  }	  
+	  break;
+	default:
+	  assert(0);
+	}
+      
+      evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+      printf("%f \n", tr->likelihood);
+      pllOptimizeModelParameters(tr, partitions, 1.0);
+
+      //print the model parameters 
+
+      //printModelParameters(partitions);
+
+      printf("%f \n", tr->likelihood); 
+      //cleanup
+      pllPhylipDestroy (phylip);
+      pllNewickParseDestroy (&newick);
+      
+      pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+      pllTreeDestroy (tr);      
+    }
 }
 
 int main (int argc, char * argv[])
@@ -326,7 +501,8 @@ int main (int argc, char * argv[])
 	    //set the Q matrix to fixed values for partition 
 	    //0
 	    pllSetFixedSubstitutionMatrix(q, 6, 0, partitions, tr);	    	    
-	  }	  
+	  }	
+	  break;
 	default:
 	  assert(0);
 	}
@@ -348,6 +524,7 @@ int main (int argc, char * argv[])
       pllTreeDestroy (tr);      
     }
   
+  testProteinStuff();
 
   return (EXIT_SUCCESS);
 }

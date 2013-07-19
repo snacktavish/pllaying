@@ -1548,8 +1548,8 @@ pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
 
   /* check if the list contains at least one partition */
   nparts = pllQueueSize (parts);
-  if (!nparts) return (0);
-
+  if (!nparts)          
+    return (0);   
 
   /* boolean array for marking that a site was assigned a partition */
   used = (char *) rax_calloc (phylip->seqLen, sizeof (char));
@@ -1684,6 +1684,8 @@ createPartitions (struct pllQueue * parts, int * bounds)
       {
         pl->partitionData[i]->dataType                  = AA_DATA; 
         pl->partitionData[i]->protModels                = pi->protModels;
+	if(pl->partitionData[i]->protModels != GTR)
+	  pl->partitionData[i]->optimizeSubstitutionRates = PLL_FALSE;
         pl->partitionData[i]->maxTipStates              = 23;
         pl->partitionData[i]->protFreqs                 = pi->protFreqs;
         pl->partitionData[i]->protModels                = pi->protModels;
@@ -2809,6 +2811,8 @@ static void init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int
   if(max < numberOfRates - 1)    
     pr->partitionData[model]->nonGTR = PLL_TRUE;
 
+  pr->partitionData[model]->optimizeSubstitutionRates = PLL_TRUE;
+
   rax_free(list);
 }
 
@@ -2843,14 +2847,22 @@ static void checkLinkageConsistency(partitionList *pr)
       for(i = 0; i < ll->entries; i++)
 	{
 	  int
-	    partitions = ll->ld[i].partitions;
+	    partitions = ll->ld[i].partitions,
+	    reference = ll->ld[i].partitionList[0];
 	  
+	  if(pr->partitionData[reference]->dataType == AA_DATA)
+	    {
+	      if(pr->partitionData[reference]->protModels == GTR || pr->partitionData[reference]->nonGTR)				  
+		assert(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_TRUE);	    		
+	      else		
+		assert(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_FALSE);
+	    }
+
 	  if(partitions > 1)
 	    {
 	      int
 		j,
-		k, 
-		reference = ll->ld[i].partitionList[0];
+		k;
 	      
 	      for(k = 1; k < partitions; k++)
 		{
@@ -3147,6 +3159,10 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
 }
 
 
+
+
+
+
 /** @brief Set all substitution rates to a fixed value for a specific partition
     
     Sets all substitution rates of a partition to fixed values and disables 
@@ -3223,6 +3239,9 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 
   pr->dirty = PLL_TRUE;
 }
+
+
+
 
 /* initializwe a parameter linkage list for a certain parameter type (can be whatever).
    the input is an integer vector that contaions NumberOfModels (numberOfPartitions) elements.
@@ -3490,6 +3509,10 @@ void pllInitModel (pllInstance * tr, int bEmpiricalFreqs, struct pllPhylip * phy
 */
 void pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 {
+  //force the consistency check
+
+  pr->dirty = PLL_TRUE;
+
   checkLinkageConsistency(pr);
 
   modOpt(tr, pr, likelihoodEpsilon);
