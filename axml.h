@@ -384,9 +384,6 @@ typedef struct
 } recompVectors;
 /* E recomp */
 
-
-
-
 /** @brief ???Expected likelihood weight
  * @todo add explanation, is this ever used?  */
 typedef struct {
@@ -1220,6 +1217,16 @@ typedef  struct  {
 
 } pllInstance;
 
+/** @brief Stores data related to a NNI move  */
+typedef struct {
+	pllInstance * tr;
+	nodeptr p;
+	int nniType;
+	double z[NUM_BRANCHES]; // optimize branch lengths
+	double z0[NUM_BRANCHES]; // unoptimized branch lengths
+	double likelihood;
+	double deltaLH;
+} nniMove;
 
 /***************************************************************/
 
@@ -1457,6 +1464,7 @@ extern void smooth ( pllInstance *tr, partitionList *pr, nodeptr p );
 extern void smoothTree ( pllInstance *tr, partitionList *pr, int maxtimes );
 extern void localSmooth ( pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(pllInstance *tr, nodeptr p, int maxtimes, int model);
+extern int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel);
 extern void NNI(pllInstance * tr, nodeptr p, int swap);
 
 extern void smoothRegion ( pllInstance *tr, partitionList *pr, nodeptr p, int region );
