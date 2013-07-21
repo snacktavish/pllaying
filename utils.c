@@ -75,6 +75,7 @@
 //#include "phylip_parser/xalloc.h"
 //#include "phylip_parser/msa_sites.h"
 
+#define GLOBAL_VARIABLES_DEFINITION
 
 #include "globalVariables.h"
 #include "mem_alloc.h"
@@ -85,7 +86,7 @@
 #include "utils.h"
 
 
-extern unsigned int mask32[32];
+//extern unsigned int mask32[32];
 
 
 /***************** UTILITY FUNCTIONS **************************/

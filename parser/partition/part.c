@@ -6,8 +6,10 @@
 #include <ctype.h>
 #include "part.h"
 
-#define GLOBAL_VARIABLES_DEFINITION
-#include "../../globalVariables.h"
+//#define GLOBAL_VARIABLES_DEFINITION
+//#include "../../globalVariables.h"
+
+extern const char *protModels[NUM_PROT_MODELS];
 
 static struct pllHashTable * hashTable;
 
