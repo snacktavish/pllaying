@@ -1697,7 +1697,6 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->numberOfCategories    =        1;
      pl->partitionData[i]->autoProtModels        =        0;
      pl->partitionData[i]->nonGTR                =        0;
-     pl->partitionData[i]->protFreqs             =        0;
      pl->partitionData[i]->partitionContribution =     -1.0;
      pl->partitionData[i]->partitionLH           =      0.0;
      pl->partitionData[i]->fracchange            =      1.0;

@@ -116,54 +116,55 @@ parse_partition (char * rawdata, int * inp)
     pi->partitionModel[token.len] = 0;
     for (i = 0; i < token.len; ++i) pi->partitionModel[i] = toupper(pi->partitionModel[i]);
     // check partition model
-    pi->protModels = 0;
-
-    /* if the partition model ends with an 'X' then set maximum-likelihood frequencies estimation */
-    if (pi->partitionModel[token.len - 1] == 'X' || pi->partitionModel[token.len - 1] == 'x')
-     {
-       pi->partitionModel[token.len - 1] = 0;
-       pi->optimizeBaseFrequencies = PLL_TRUE;
-     }
-    else
+    pi->protModels = -1;
 
     if (!strcmp (pi->partitionModel, "DNA"))
      {
+       pi->protModels = -1;
+       pi->protFreqs  = -1;
+       pi->dataType   = DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_FALSE; 
-       pi->dataType                = DNA_DATA;
      }
     else if (!strcmp (pi->partitionModel, "DNAX"))
      {
+       pi->protModels = -1;
+       pi->protFreqs  = -1;
+       pi->dataType   = DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_TRUE; 
-       pi->dataType                = DNA_DATA;
      }
     else
-     {
+     {                  /* check for protein data */
        pi->dataType  = AA_DATA;
-       pi->protFreqs = PLL_FALSE;
-       pi->optimizeBaseFrequencies = PLL_FALSE;
-       if (! pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
+
+       if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
         {
-          if (pi->partitionModel[token.len - 1] == 'X' || pi->partitionModel[token.len - 1] == 'x')
+          pi->protModels = *item;
+          pi->protFreqs  = -1;
+          pi->optimizeBaseFrequencies = PLL_FALSE;
+        }
+       else
+        {
+          if (pi->partitionModel[token.len - 1] == 'X')
            {
-             if (! pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
+             pi->partitionModel[token.len - 1] = '\0';
+             if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
-                pllQueuePartitionsDestroy (&partitions);
-                return (0);
+                pi->protModels = *item;
+                pi->protFreqs  = -1;
+                pi->optimizeBaseFrequencies = PLL_TRUE;
               }
-             pi->partitionModel[token.len - 1] = 0;
-             pi->optimizeBaseFrequencies = PLL_TRUE;
-             pi->protModels = *item;
+             pi->partitionModel[token.len - 1] = 'X';
            }
-          else if (pi->partitionModel[token.len - 1] == 'f' || pi->partitionModel[token.len - 1] == 'F')
+          else if (pi->partitionModel[token.len - 1] == 'F')
            {
-             if (! pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
+             pi->partitionModel[token.len - 1] = '\0';
+             if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
-                pllQueuePartitionsDestroy (&partitions);
-                return (0);
+                pi->protModels = *item;
+                pi->protFreqs  = 1;
+                pi->optimizeBaseFrequencies = PLL_FALSE;
               }
-             pi->partitionModel[token.len - 1] = 0;
-             pi->protFreqs = PLL_TRUE;
-             pi->protModels = *item;
+             pi->partitionModel[token.len - 1] = 'F';
            }
           else
            {

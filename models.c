@@ -3499,8 +3499,6 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	       initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates, 0);
 	     else	  
 	       {
-		 //TODO Tomas regardless of the partition file I always get 0 here !
-		 printf("prot model %d\n",  pr->partitionData[model]->protModels);
 		 initProtMat(f, pr->partitionData[model]->protModels, ext_initialRates, 0);
 	       }
 
