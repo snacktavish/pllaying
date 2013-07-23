@@ -1,29 +1,20 @@
-# Makefile August 2006 by Alexandros Stamatakis
-# Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
-
 CC = gcc 
+AR = ar
 
 CFLAGS = -O2  -DRAXML_USE_LLALLOC -D_USE_PTHREADS -D_OPTIMIZED_FUNCTIONS -D__SIM_SSE3 -D_GNU_SOURCE -msse3 -fomit-frame-pointer -funroll-loops -Wall #  -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused  -Wunused-function  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wdeclaration-after-statement -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-function -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wundef -Wbad-function-cast #-D_DEBUG_RECOMPUTATION   -pedantic
-
-
-LIBRARIES = -lm -pthread
+ARFLAGS = rvs
 
 RM = rm -f
 
-objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o
+objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o phylip.o newick.o part.o
 
-all : raxmlLight-PTHREADS
-
-
-# check_malloc: raxmlLight-PTHREADS
-# 	sh check_malloc.sh  raxmlLight-PTHREADS
-
+all: libpll-SSE3-PTHREADS.a
 
 GLOBAL_DEPS = axml.h globalVariables.h mem_alloc.h
 
-raxmlLight-PTHREADS : $(objs)
-	sh check_malloc.sh $(objs)
-	$(CC) -o raxmlLight-PTHREADS $(objs) $(LIBRARIES) 
+libpll-SSE3-PTHREADS.a : $(objs)
+	@echo "==> Building PLL Library (SSE-PTHREADS version)"
+	$(AR) $(ARFLAGS) $@ $(objs)
 
 bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 evaluatePartialSpecialGeneric.o : evaluatePartialSpecialGeneric.c $(GLOBAL_DEPS)
@@ -48,6 +39,15 @@ stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
 ssort.o : parser/phylip/ssort.c
 	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
+phylip.o: parser/phylip/phylip.c
+	$(CC) $(CFLAGS) -c -o $@ $+
+newick.o: parser/newick/newick.c
+	$(CC) $(CFLAGS) -c -o $@ $+
+part.o: parser/partition/part.c
+	$(CC) $(CFLAGS) -c -o $@ $+
 
 clean:
-	$(RM) *.o lockless_allocator/*.o raxmlLight-PTHREADS
+	$(RM) *.o libpll-SSE3-PTHREADS.a
+
+.PHONY: all clean
+.INTERMEDIATE: $(objs)

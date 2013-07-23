@@ -1,13 +1,13 @@
 CC = gcc 
 MAKE = make
 LIBPATH = ../../
-LIBRARIES = -lpll-SSE3 -lm
+LIBRARIES = -lpll-SSE3-PTHREADS -lm -lpthread
 RM = rm -f
 
 all: pll
 
 pll: main.c
-	$(MAKE) -C $(LIBPATH) -f Makefile.SSE3.gcc
+	$(MAKE) -C $(LIBPATH) -f Makefile.SSE3.PTHREADS.gcc
 	@echo "==> Building PLL example"
 	$(CC) $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
 

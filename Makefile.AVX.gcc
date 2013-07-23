@@ -1,30 +1,22 @@
-# Makefile August 2006 by Alexandros Stamatakis
-# Makefile cleanup October 2006, Courtesy of Peter Cordes <peter@cordes.ca>
-
 CC = gcc
 AR = ar
 
 CFLAGS = -D__SIM_SSE3 -msse3 -D_OPTIMIZED_FUNCTIONS -D_GNU_SOURCE -O2 -fomit-frame-pointer -funroll-loops -D__AVX -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wbad-function-cast #-Wunused-function -Wundef -Wunused
 
-
-LIBRARIES = -lm -mavx
+ARFLAGS = rvs
 
 RM = rm -f
 
-objs = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o mem_alloc.o optimizeModel.o recom.o trash.o lexer.o parser/phylip/phylip.o parser/phylip/ssort.o parser/newick/newick.o parser/partition/part.o
+objs = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o mem_alloc.o optimizeModel.o recom.o trash.o lexer.o parser/phylip/phylip.o ssort.o parser/newick/newick.o parser/partition/part.o
+GLOBAL_DEPS = axml.h globalVariables.h
 #objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o recom.o mem_alloc.o
 
 #all : raxmlLight-AVX
-all = libpll-AVX.a
-
-
-GLOBAL_DEPS = axml.h globalVariables.h
+all: libpll-AVX.a
 
 libpll-AVX.a: $(objs)
-	$(AR) rvs $@ $(objs)
-
-raxmlLight-AVX : $(objs)
-	$(CC) -o raxmlLight-AVX $(objs) $(LIBRARIES) 
+	@echo "==> Building PLL Library (AVX version)"
+	$(AR) $(ARFLAGS) $@ $(objs)
 
 avxLikelihood.o : avxLikelihood.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -mavx -c -o avxLikelihood.o avxLikelihood.c
@@ -51,7 +43,11 @@ recom.o : recom.c  $(GLOBAL_DEPS)
 queue.o : queue.c $(GLOBAL_DEPS)
 stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
+lexer.o : lexer.c $(GLOBAL_DEPS)
 ssort.o : parser/phylip/ssort.c
 	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
 clean : 
-	$(RM) *.o raxmlLight-AVX
+	$(RM) *.o libpll-AVX.a
+
+.PHONY: all libpll-AVX clean
+.INTERMEDIATE: $(objs)

@@ -1256,7 +1256,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
     {
       double 
 	likelihood = 0;
-      int i,j ; 
+      int i; 
 
       /* note that in tr->lhs, we just store the likelihood of 
 	 one representative of a potentially compressed pattern,
