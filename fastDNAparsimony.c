@@ -1496,8 +1496,6 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
       }
     }    
   
-  printf("ADD: %d\n", tr->bestParsimony); 
-  
   nodeRectifierPars(tr);
   
   randomMP = tr->bestParsimony;        
@@ -1518,8 +1516,6 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
     }
   while(randomMP < startMP);
   
-  printf("OPT: %d\n", tr->bestParsimony);
-
   rax_free(perm);
 } 
 
