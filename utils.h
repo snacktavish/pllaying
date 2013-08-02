@@ -2,8 +2,11 @@
 #define __pll_UTILS__
 
 #include "axml.h"
-#include "parser/phylip/phylip.h"
+//#include "parser/phylip/phylip.h"
+#include "parser/alignment/alignment.h"
+#include "parser/alignment/phylip.h"
 #include "parser/newick/newick.h"
+#include "parser/partition/part.h"
 #include "queue.h"
 
 linkageList* initLinkageList(int *linkList, partitionList *pr);
@@ -22,19 +25,19 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 //void read_msa(pllInstance *tr, const char *filename);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int, int);
-int pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip);
-partitionList * pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip);
-void pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl);
-double ** pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip);
+int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData);
+partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
+void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
+double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
 void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUseDefaultZ);
-int pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList *, int);
+int pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
-void pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip);
-void pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions);
+void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
+void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
 void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed);
-int pllInitModel (pllInstance *, int, struct pllPhylip *, partitionList *);
+int pllInitModel (pllInstance *, int, pllAlignmentData *, partitionList *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 #endif /* UTILS_H_ */

@@ -5,10 +5,6 @@
 #include "../../utils.h"
 #include "../../lexer.h"
 #include "../../hash.h"
-#include "../../parser/phylip/phylip.h"
-#include "../../parser/newick/newick.h"
-#include "../../parser/partition/part.h"
-#include "../../globalVariables.h"
 
 static nodeptr pickMyRandomSubtree(pllInstance *tr)
 {
@@ -74,7 +70,7 @@ static void printModelParameters(partitionList *pr)
 
 static void testProteinStuff()
 {
-  struct pllPhylip * phylip;
+  pllAlignmentData * alignmentData;
   pllInstance * tr;
   struct pllNewickTree * newick;
   
@@ -123,35 +119,35 @@ static void testProteinStuff()
       
       tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
       
-      phylip = pllPhylipParse ("prot.phy");
+      alignmentData = pllParsePHYLIP ("prot.phy");
       
       newick = pllNewickParseFile("parsimonyTree");
       
       parts = pllPartitionParse ("proteinPartitions");
       
       /* Validate the partitions */
-      if (!pllPartitionsValidate (parts, phylip))
+      if (!pllPartitionsValidate (parts, alignmentData))
 	{
 	  fprintf (stderr, "Error: Partitions do not cover all sites\n");
 	  return (EXIT_FAILURE);
 	}
       
       /* commit the partitions and build a partitions structure */
-      partitions = pllPartitionsCommit (parts, phylip);
+      partitions = pllPartitionsCommit (parts, alignmentData);
       
       /* destroy the  intermedia partition queue structure */
       pllQueuePartitionsDestroy (&parts);
       
       /* eliminate duplicate sites from the alignment and update weights vector */
-      pllPhylipRemoveDuplicate (phylip, partitions);
+      pllPhylipRemoveDuplicate (alignmentData, partitions);
       
       pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
-      if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
+      if (!pllLoadAlignment (tr, alignmentData, partitions, PLL_DEEP_COPY))
 	{
 	  fprintf (stderr, "Incompatible tree/alignment combination\n");
 	  return (EXIT_FAILURE);
 	}
-      pllInitModel(tr, PLL_TRUE, phylip, partitions);
+      pllInitModel(tr, PLL_TRUE, alignmentData, partitions);
       
       switch(i)
 	{
@@ -238,7 +234,7 @@ static void testProteinStuff()
 
       printf("%f \n", tr->likelihood); 
       //cleanup
-      pllPhylipDestroy (phylip);
+      pllAlignmentDataDestroy (alignmentData);
       pllNewickParseDestroy (&newick);
       
       pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
@@ -248,7 +244,7 @@ static void testProteinStuff()
 
 int main (int argc, char * argv[])
 {
-  struct pllPhylip * phylip, *phylip2;
+  pllAlignmentData *alignmentData1, *alignmentData2;
   pllInstance * tr, *tr2;
   struct pllNewickTree * newick;
   partitionList * partitions, *partitions2;
@@ -266,10 +262,10 @@ int main (int argc, char * argv[])
   tr2 = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
   /* Parse a PHYLIP file */
-  phylip = pllPhylipParse (argv[1]);
-  phylip2 = pllPhylipParse (argv[1]);
+  alignmentData1= pllParsePHYLIP (argv[1]);
+  alignmentData2 = pllParsePHYLIP (argv[1]);
 
-  if (!phylip)
+  if (!alignmentData1)
    {
      fprintf (stderr, "Error while parsing %s\n", argv[1]);
      return (EXIT_FAILURE);
@@ -294,22 +290,22 @@ int main (int argc, char * argv[])
   parts = pllPartitionParse (argv[3]);
 
   /* Validate the partitions */
-  if (!pllPartitionsValidate (parts, phylip))
+  if (!pllPartitionsValidate (parts, alignmentData1))
    {
      fprintf (stderr, "Error: Partitions do not cover all sites\n");
      return (EXIT_FAILURE);
    }
 
   /* commit the partitions and build a partitions structure */
-  partitions = pllPartitionsCommit (parts, phylip);
-  partitions2 =  pllPartitionsCommit (parts, phylip2);
+  partitions = pllPartitionsCommit (parts, alignmentData1);
+  partitions2 =  pllPartitionsCommit (parts, alignmentData2);
 
   /* destroy the  intermedia partition queue structure */
   pllQueuePartitionsDestroy (&parts);
 
   /* eliminate duplicate sites from the alignment and update weights vector */
-  pllPhylipRemoveDuplicate (phylip, partitions);
-  pllPhylipRemoveDuplicate (phylip2, partitions2);
+  pllPhylipRemoveDuplicate (alignmentData1, partitions);
+  pllPhylipRemoveDuplicate (alignmentData2, partitions2);
 
 
   /* Set the topology of the PLL tree from a parsed newick tree */
@@ -318,17 +314,17 @@ int main (int argc, char * argv[])
      a random tree topology
   pllTreeInitTopologyRandom (tr, phylip->nTaxa, phylip->label); */
 
-  pllTreeInitTopologyForAlignment(tr, phylip);
+  pllTreeInitTopologyForAlignment(tr, alignmentData1);
 
   /* Connect the alignment with the tree structure */
-  if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
+  if (!pllLoadAlignment (tr, alignmentData1, partitions, PLL_DEEP_COPY))
    {
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
    }
 
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
- pllInitModel(tr, PLL_TRUE, phylip, partitions);
+ pllInitModel(tr, PLL_TRUE, alignmentData1, partitions);
 
   /* TODO transform into pll functions !*/
 
@@ -352,12 +348,12 @@ int main (int argc, char * argv[])
   //pllInitModel(tr, PLL_TRUE, phylip, partitions);
 
   pllTreeInitTopologyNewick (tr2, newick, PLL_TRUE);
-  if (!pllLoadAlignment (tr2, phylip2, partitions2, PLL_DEEP_COPY))
+  if (!pllLoadAlignment (tr2, alignmentData2, partitions2, PLL_DEEP_COPY))
    {
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
    }
-  pllInitModel(tr2, PLL_TRUE, phylip2, partitions2);
+  pllInitModel(tr2, PLL_TRUE, alignmentData2, partitions2);
 
   Tree2String (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);
@@ -374,13 +370,13 @@ int main (int argc, char * argv[])
 
   printf("%f \n", tr2->likelihood);
 
-  pllPhylipDestroy (phylip);
+  pllAlignmentDataDestroy (alignmentData1);
   pllNewickParseDestroy (&newick);
 
   pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
   pllTreeDestroy (tr);
 
-  pllPhylipDestroy (phylip2); 
+  pllAlignmentDataDestroy (alignmentData2); 
   pllPartitionsDestroy (&partitions2, partitions2->numberOfPartitions, tr2->mxtips);
   pllTreeDestroy (tr2);
 
@@ -402,35 +398,35 @@ int main (int argc, char * argv[])
       
       tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
       
-      phylip = pllPhylipParse (argv[1]);
+      alignmentData1= pllParsePHYLIP (argv[1]);
       
       newick = pllNewickParseFile (argv[2]);
       
       parts = pllPartitionParse ("dummy");
       
       /* Validate the partitions */
-      if (!pllPartitionsValidate (parts, phylip))
+      if (!pllPartitionsValidate (parts, alignmentData1))
 	{
 	  fprintf (stderr, "Error: Partitions do not cover all sites\n");
 	  return (EXIT_FAILURE);
 	}
       
       /* commit the partitions and build a partitions structure */
-      partitions = pllPartitionsCommit (parts, phylip);
+      partitions = pllPartitionsCommit (parts, alignmentData1);
       
       /* destroy the  intermedia partition queue structure */
       pllQueuePartitionsDestroy (&parts);
       
       /* eliminate duplicate sites from the alignment and update weights vector */
-      pllPhylipRemoveDuplicate (phylip, partitions);
+      pllPhylipRemoveDuplicate (alignmentData1, partitions);
       
       pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
-      if (!pllLoadAlignment (tr, phylip, partitions, PLL_DEEP_COPY))
+      if (!pllLoadAlignment (tr, alignmentData1, partitions, PLL_DEEP_COPY))
 	{
 	  fprintf (stderr, "Incompatible tree/alignment combination\n");
 	  return (EXIT_FAILURE);
 	}
-      pllInitModel(tr, PLL_TRUE, phylip, partitions);
+      pllInitModel(tr, PLL_TRUE, alignmentData1, partitions);
       
       switch(i)
 	{
@@ -517,7 +513,7 @@ int main (int argc, char * argv[])
 
       printf("%f \n", tr->likelihood); 
       //cleanup
-      pllPhylipDestroy (phylip);
+      pllAlignmentDataDestroy (alignmentData1);
       pllNewickParseDestroy (&newick);
       
       pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);

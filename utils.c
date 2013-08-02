@@ -81,7 +81,9 @@
 #include "mem_alloc.h"
 #include "queue.h"
 #include "parser/partition/part.h"
-#include "parser/phylip/phylip.h"
+//#include "parser/phylip/phylip.h"
+#include "parser/alignment/alignment.h"
+#include "parser/alignment/phylip.h"
 #include "parser/newick/newick.h"
 #include "utils.h"
 
@@ -1530,14 +1532,14 @@ pllPartitionsDestroy (partitionList ** partitions, int models, int tips)
     @param parts
       A list of partitions suggested by the caller
 
-    @param phylip
+    @param alignmentData
       The multiple sequence alignment
     
     @return
       Returns \a 1 in case of success, otherwise \a 0
 */
 int
-pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
+pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData)
 {
   int nparts;
   char * used;
@@ -1553,7 +1555,7 @@ pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
     return (0);   
 
   /* boolean array for marking that a site was assigned a partition */
-  used = (char *) rax_calloc (phylip->seqLen, sizeof (char));
+  used = (char *) rax_calloc (alignmentData->sequenceLength, sizeof (char));
 
   /* traverse all partitions and their respective regions and mark sites */
   for (elm = parts->head; elm; elm = elm->next)
@@ -1577,7 +1579,7 @@ pllPartitionsValidate (struct pllQueue * parts, struct pllPhylip * phylip)
    }
 
   /* check whether all sites were assigned a partition */
-  for (i = 0; i < phylip->seqLen; ++ i)
+  for (i = 0; i < alignmentData->sequenceLength; ++ i)
     if (used[i] != 1)
      {
        rax_free (used);
@@ -1696,7 +1698,7 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->states                = pLengths[pl->partitionData[i]->dataType].states;
      pl->partitionData[i]->numberOfCategories    =        1;
      pl->partitionData[i]->autoProtModels        =        0;
-     pl->partitionData[i]->nonGTR                =        0;
+     pl->partitionData[i]->nonGTR                =        PLL_FALSE;
      pl->partitionData[i]->partitionContribution =     -1.0;
      pl->partitionData[i]->partitionLH           =      0.0;
      pl->partitionData[i]->fracchange            =      1.0;
@@ -1723,14 +1725,14 @@ createPartitions (struct pllQueue * parts, int * bounds)
     @param parts
       A list of partitions suggested by the caller
 
-    @param phylip
+    @param alignmentData
       The multiple sequence alignment
 
     @return
       Returns a pointer to \a partitionList structure of partitions in case of success, \b NULL otherwise
 */
 partitionList *
-pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
+pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData)
 {
   int * oi;
   int i, j, dst;
@@ -1745,8 +1747,8 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
  
 
   dst = k = 0;
-  oi  = (int *) rax_malloc (phylip->seqLen * sizeof (int));
-  for (i = 0; i < phylip->seqLen; ++ i) oi[i] = i;
+  oi  = (int *) rax_malloc (alignmentData->sequenceLength * sizeof (int));
+  for (i = 0; i < alignmentData->sequenceLength; ++ i) oi[i] = i;
 
   nparts = pllQueueSize (parts);
   newBounds = (int *) rax_malloc (2 * nparts * sizeof (int));
@@ -1765,7 +1767,7 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
          {
            if (oi[i] == i)
             {
-              swapSite (phylip->seq, dst, i, phylip->nTaxa);
+              swapSite (alignmentData->sequenceData, dst, i, alignmentData->sequenceCount);
               oi[dst++] = i;
             }
            else if (oi[i] < i)
@@ -1773,7 +1775,7 @@ pllPartitionsCommit (struct pllQueue * parts, struct pllPhylip * phylip)
               j = oi[i];
               while (j < i) j = oi[j];
 
-              swapSite (phylip->seq, dst, j, phylip->nTaxa);
+              swapSite (alignmentData->sequenceData, dst, j, alignmentData->sequenceCount);
               oi[dst++] = j;
             }
          }
@@ -1828,15 +1830,15 @@ copySite (unsigned char ** dst, unsigned char ** src, int to, int from, int nTax
     and updates the weight vector of the alignment and the boundaries
     (upper, lower, width) for each partition.
 
-    @param phylip
-      The phylip alignment
+    @param alignmentData
+      The multiple sequence alignment
     
     @param pl
       List of partitions
 
 */
 void 
-pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
+pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl)
 {
   int i, j, k, p;
   char *** sites;
@@ -1854,18 +1856,18 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
   for (p = 0; p < pl->numberOfPartitions; ++ p)
    {
      sites[p]  = (char **) rax_malloc (pl->partitionData[p]->width * sizeof (char *));
-     memptr[p] = rax_malloc ((phylip->nTaxa + 1) * pl->partitionData[p]->width * sizeof (char));
+     memptr[p] = rax_malloc ((alignmentData->sequenceCount + 1) * pl->partitionData[p]->width * sizeof (char));
 
      for (i = 0; i < pl->partitionData[p]->width; ++ i)
       {
-        sites[p][i] = (char *) (memptr[p] + i * (phylip->nTaxa + 1) * sizeof (char));
+        sites[p][i] = (char *) (memptr[p] + i * (alignmentData->sequenceCount + 1) * sizeof (char));
       }
 
      for (i = 0; i < pl->partitionData[p]->width; ++ i)
       {
-        for (j = 0; j < phylip->nTaxa; ++ j)
+        for (j = 0; j < alignmentData->sequenceCount; ++ j)
          {
-           sites[p][i][j] = phylip->seq[j + 1][pl->partitionData[p]->lower + i]; 
+           sites[p][i][j] = alignmentData->sequenceData[j + 1][pl->partitionData[p]->lower + i]; 
          }
         sites[p][i][j] = 0;
       }
@@ -1885,19 +1887,19 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
    }
 
   /* allocate memory for the alignment without duplicates*/
-  rax_free (phylip->seq[1]);
-  rax_free (phylip->weights);
+  rax_free (alignmentData->sequenceData[1]);
+  rax_free (alignmentData->siteWeights);
 
-  phylip->seqLen = phylip->seqLen - dups;
-  phylip->seq[0] = (unsigned char *) rax_malloc ((phylip->seqLen + 1) * sizeof (unsigned char) * phylip->nTaxa);
-  for (i = 0; i < phylip->nTaxa; ++ i)
+  alignmentData->sequenceLength = alignmentData->sequenceLength - dups;
+  alignmentData->sequenceData[0] = (unsigned char *) rax_malloc ((alignmentData->sequenceLength + 1) * sizeof (unsigned char) * alignmentData->sequenceCount);
+  for (i = 0; i < alignmentData->sequenceCount; ++ i)
    {
-     phylip->seq[i + 1] = (unsigned char *) (phylip->seq[0] + i * (phylip->seqLen + 1) * sizeof (unsigned char));
-     phylip->seq[i + 1][phylip->seqLen] = 0;
+     alignmentData->sequenceData[i + 1] = (unsigned char *) (alignmentData->sequenceData[0] + i * (alignmentData->sequenceLength + 1) * sizeof (unsigned char));
+     alignmentData->sequenceData[i + 1][alignmentData->sequenceLength] = 0;
    }
 
-  phylip->weights    = (int *) rax_malloc ((phylip->seqLen) * sizeof (int));
-  phylip->weights[0] = 1;
+  alignmentData->siteWeights    = (int *) rax_malloc ((alignmentData->sequenceLength) * sizeof (int));
+  alignmentData->siteWeights[0] = 1;
 
   /* transpose sites back to alignment */
   for (p = 0, k = 0; p < pl->numberOfPartitions; ++ p)
@@ -1907,14 +1909,14 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
       {
         if (!oi[p][i])
          {
-           ++ phylip->weights[k - 1];
+           ++ alignmentData->siteWeights[k - 1];
          }
         else
          {
-           phylip->weights[k] = 1;
-           for (j = 0; j < phylip->nTaxa; ++ j)
+           alignmentData->siteWeights[k] = 1;
+           for (j = 0; j < alignmentData->sequenceCount; ++ j)
             {
-              phylip->seq[j + 1][k] = sites[p][i][j];
+              alignmentData->sequenceData[j + 1][k] = sites[p][i][j];
             }
            ++ k;
          }
@@ -1938,7 +1940,7 @@ pllPhylipRemoveDuplicate (struct pllPhylip * phylip, partitionList * pl)
 
 
 static void
-genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
+genericBaseFrequencies (const int numFreqs, pllAlignmentData * alignmentData, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
 {
   double 
     wj, 
@@ -1962,9 +1964,9 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
       for(l = 0; l < numFreqs; l++)
 	sumf[l] = 0.0;
 	      
-      for (i = 1; i <= phylip->nTaxa; i++) 
+      for (i = 1; i <= alignmentData->sequenceCount; i++) 
 	{		 
-          yptr = phylip->seq[i];
+          yptr = alignmentData->sequenceData[i];
 	  
 	  for(j = lower; j < upper; j++) 
 	    {
@@ -1985,7 +1987,7 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 		    acc += temp[l];
 		}
 	      
-	      wj = phylip->weights[j] / acc;
+	      wj = alignmentData->siteWeights[j] / acc;
 	      
 	      for(l = 0; l < numFreqs; l++)
 		{
@@ -2046,7 +2048,7 @@ genericBaseFrequencies (const int numFreqs, struct pllPhylip * phylip, int lower
 }
 
 double **
-pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
+pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
 {
   int
     model,
@@ -2069,7 +2071,7 @@ pllBaseFrequenciesGTR (partitionList * pl, struct pllPhylip * phylip)
         case AA_DATA:
         case DNA_DATA:
           genericBaseFrequencies (states, 
-                                  phylip, 
+                                  alignmentData, 
                                   lower, 
                                   upper, 
                                   pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
@@ -2170,68 +2172,68 @@ pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
 
 /** @brief Load alignment to the PLL instance
     
-    Loads the parsed phylip alignment to the PLL instance.
-    In case the deep switch is specified, the phylip structure
-    will be used as the alignment.
+    Loads (copies) the parsed alignment to the PLL instance. Depending
+    on how the \a bDeep flag is set, the alignment in the PLL instance
+    is a deep or shallow copy of \a alignmentData
 
     @param tr
       The library instance
 
-    @param phylip
-      The phylip alignment
+    @param alignmentData 
+      The multiple sequence alignment
 
     @param partitions
       List of partitions
 
     @param bDeep
-      Controls how the alignment is used within the library instance.
-      If PLL_DEEP_COPY is specified, new memory will be allocated
+      Controls how the alignment is used within the PLL instance.
+      If it is set to \b PLL_DEEP_COPY, then new memory will be allocated
       and the alignment will be copied there (deep copy). On the other
-      hand, if PLL_SHALLOW_COPY is specified, only the pointers will be
+      hand, if \b PLL_SHALLOW_COPY is specified, only the pointers will be
       copied and therefore, the alignment will be shared between the 
-      phylip structure and the library instance (shallow copy).
+      alignment structure and the library instance (shallow copy).
 
     @return
       Returns 1 in case of success, 0 otherwise.
 */
 int
-pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList * partitions, int bDeep)
+pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList * partitions, int bDeep)
 {
   int i;
   nodeptr node;
 
-  if (tr->mxtips != phylip->nTaxa) return (0);
+  if (tr->mxtips != alignmentData->sequenceCount) return (0);
 
   /* Do the base substitution (from A,C,G....  ->   0,1,2,3....)*/
-  pllBaseSubstitute (phylip, partitions);
+  pllBaseSubstitute (alignmentData, partitions);
 
-  tr->aliaswgt = (int *) rax_malloc (phylip->seqLen * sizeof (int));
-  memcpy (tr->aliaswgt, phylip->weights, phylip->seqLen * sizeof (int));
+  tr->aliaswgt = (int *) rax_malloc (alignmentData->sequenceLength * sizeof (int));
+  memcpy (tr->aliaswgt, alignmentData->siteWeights, alignmentData->sequenceLength * sizeof (int));
 
-  tr->originalCrunchedLength = phylip->seqLen;
+  tr->originalCrunchedLength = alignmentData->sequenceLength;
   tr->rateCategory           = (int *)   rax_calloc (tr->originalCrunchedLength, sizeof (int));
   tr->patrat                 = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
   tr->patratStored           = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
   tr->lhs                    = (double*) rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
 
   /* allocate memory for the alignment */
-  tr->yVector    = (unsigned char **) rax_malloc ((phylip->nTaxa + 1) * sizeof (unsigned char *));                                                                                                                                                                      
+  tr->yVector    = (unsigned char **) rax_malloc ((alignmentData->sequenceCount + 1) * sizeof (unsigned char *));                                                                                                                                                                      
   tr->bDeep = bDeep;
 
   if (bDeep == PLL_DEEP_COPY)
    {
-     tr->yVector[0] = (unsigned char *)  rax_malloc (sizeof (unsigned char) * (phylip->seqLen + 1) * phylip->nTaxa);
-     for (i = 1; i <= phylip->nTaxa; ++ i)                      
+     tr->yVector[0] = (unsigned char *)  rax_malloc (sizeof (unsigned char) * (alignmentData->sequenceLength + 1) * alignmentData->sequenceCount);
+     for (i = 1; i <= alignmentData->sequenceCount; ++ i) 
       {                     
-        tr->yVector[i] = (unsigned char *) (tr->yVector[0] + (i - 1) * (phylip->seqLen + 1) * sizeof (unsigned char));
-        tr->yVector[i][phylip->seqLen] = 0;
+        tr->yVector[i] = (unsigned char *) (tr->yVector[0] + (i - 1) * (alignmentData->sequenceLength + 1) * sizeof (unsigned char));
+        tr->yVector[i][alignmentData->sequenceLength] = 0;
       }                     
    }
                          
   /* place sequences to tips */                              
-  for (i = 1; i <= phylip->nTaxa; ++ i)                      
+  for (i = 1; i <= alignmentData->sequenceCount; ++ i)                      
    {                     
-     if (!pllHashSearch (tr->nameHash, phylip->label[i],(void **)&node)) 
+     if (!pllHashSearch (tr->nameHash, alignmentData->sequenceLabels[i],(void **)&node)) 
       {
         //rax_free (tr->originalCrunchedLength);
         rax_free (tr->rateCategory);
@@ -2243,9 +2245,9 @@ pllLoadAlignment (pllInstance * tr, struct pllPhylip * phylip, partitionList * p
         return (0);
       }
      if (bDeep == PLL_DEEP_COPY)
-       memcpy (tr->yVector[node->number], phylip->seq[i], phylip->seqLen );
+       memcpy (tr->yVector[node->number], alignmentData->sequenceData[i], alignmentData->sequenceLength );
      else
-       tr->yVector[node->number] = phylip->seq[i];
+       tr->yVector[node->number] = alignmentData->sequenceData[i];
    }
 
   return (1);
@@ -2549,18 +2551,18 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
     @param tr
       The PLL instance
 
-    @param phylip
+    @param alignmentData
       Parsed alignment
 */
 void 
-pllTreeInitTopologyForAlignment (pllInstance * tr, struct pllPhylip * phylip)
+pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData)
 {
   int
-    tips = phylip->nTaxa,
+    tips = alignmentData->sequenceCount,
     i;
 
   char 
-    **nameList = phylip->label;
+    **nameList = alignmentData->sequenceLabels;
   
   pllTreeInitDefaults (tr, 2 * tips - 1, tips);
 
@@ -2594,7 +2596,7 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
 }
 
 void
-pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)
+pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
 {
   char meaningDNA[256];
   char  meaningAA[256];
@@ -2706,11 +2708,11 @@ pllBaseSubstitute (struct pllPhylip * phylip, partitionList * partitions)
    {
      d = (partitions->partitionData[i]->dataType == DNA_DATA) ? meaningDNA : meaningAA;
      
-     for (j = 1; j <= phylip->nTaxa; ++ j)
+     for (j = 1; j <= alignmentData->sequenceCount; ++ j)
       {
         for (k = partitions->partitionData[i]->lower; k < partitions->partitionData[i]->upper; ++ k)
          {
-           phylip->seq[j][k] = d[phylip->seq[j][k]];
+           alignmentData->sequenceData[j][k] = d[alignmentData->sequenceData[j][k]];
          }
       }
    }
@@ -3551,8 +3553,8 @@ int pllLinkRates(char *string, partitionList *pr)
     @param bResetBranches
       Reset branch lengths to default lengths
 
-    @param phylip
-      The alignment
+    @param alignmentData
+      The parsed alignment
 
     @param partitions
       List of partitions
@@ -3560,14 +3562,14 @@ int pllLinkRates(char *string, partitionList *pr)
     @todo
       implement the bEmpiricalFreqs flag
 */
-int pllInitModel (pllInstance * tr, int bEmpiricalFreqs, struct pllPhylip * phylip, partitionList * partitions)
+int pllInitModel (pllInstance * tr, int bEmpiricalFreqs, pllAlignmentData * alignmentData, partitionList * partitions)
 {
   double ** ef;
   int
     i,
     *unlinked = (int *)rax_malloc(sizeof(int) * partitions->numberOfPartitions);
 
-  ef = pllBaseFrequenciesGTR (partitions, phylip);
+  ef = pllBaseFrequenciesGTR (partitions, alignmentData);
 
   if(!ef)
     return PLL_FALSE;

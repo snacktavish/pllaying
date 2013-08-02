@@ -8,7 +8,7 @@ ARFLAGS = rvs
 
 RM = rm -f
 
-objs    = hash.o stack.o ssort.o queue.o utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o lexer.o mem_alloc.o phylip.o newick.o part.o
+objs    = hash.o stack.o ssort.o queue.o utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o lexer.o mem_alloc.o alignment.o phylip.o newick.o part.o
 GLOBAL_DEPS = axml.h globalVariables.h
 
 all: libpll-SSE3.a
@@ -38,7 +38,9 @@ queue.o : queue.c $(GLOBAL_DEPS)
 stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
 lexer.o : lexer.c $(GLOBAL_DEPS)
-phylip.o: parser/phylip/phylip.c
+alignment.o: parser/alignment/alignment.c
+	$(CC) $(CFLAGS) -c -o $@ $+
+phylip.o: parser/alignment/phylip.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 newick.o: parser/newick/newick.c
 	$(CC) $(CFLAGS) -c -o $@ $+
