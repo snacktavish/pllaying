@@ -1785,7 +1785,7 @@ boolean modelExists(char *model, pllInstance *tr);
 
 /* declarations from utils.c */
 void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile);
-boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions);
+static boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions);
 void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr);
 void initializePartitionData(pllInstance *localTree, partitionList * localPartitions);
 void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr);

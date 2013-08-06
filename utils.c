@@ -70,10 +70,6 @@
 #endif
 
 #include "axml.h"
-//#include "phylip_parser/lexer.h"
-//#include "phylip_parser/phylip.h"
-//#include "phylip_parser/xalloc.h"
-//#include "phylip_parser/msa_sites.h"
 
 #define GLOBAL_VARIABLES_DEFINITION
 
@@ -81,14 +77,10 @@
 #include "mem_alloc.h"
 #include "queue.h"
 #include "parser/partition/part.h"
-//#include "parser/phylip/phylip.h"
 #include "parser/alignment/alignment.h"
 #include "parser/alignment/phylip.h"
 #include "parser/newick/newick.h"
 #include "utils.h"
-
-
-//extern unsigned int mask32[32];
 
 
 /***************** UTILITY FUNCTIONS **************************/
@@ -109,327 +101,6 @@ void storeValuesInTraversalDescriptor(pllInstance *tr, partitionList *pr, double
   for(model = 0; model < pr->numberOfPartitions; model++)
     tr->td[0].parameterValues[model] = value[model];
 }
-
-#ifdef EXPERIMENTAL
-void read_phylip_msa(pllInstance * tr, const char * filename, int format, int type)
-{
-    size_t
-      i, j,
-      model;
-
-  struct phylip_data * pd;
-  struct msa_sites * ms;
-  double **empiricalFrequencies;
-
-  pd = pl_phylip_parse (filename, format);
-
-  ms = construct_msa_sites (pd, SITES_CREATE | SITES_COMPUTE_WEIGHTS);
-
-  free_phylip_struct (pd);
-  pd = transpose (ms);
-  free_sites_struct (ms);
-
-
-
-  tr->mxtips                 = pd->taxa;
-  tr->originalCrunchedLength = pd->seqlen;
-  pr->numberOfPartitions         = 1;
-
-  setupTree(tr, PLL_TRUE);
-
-  tr->gapyness               = 0.03;   /* number of undetermined chars / alignment size */
-
-  /* TODO: The next two lines were commented in model-sep branch */
-  tr->aliaswgt = pl_phylip_deldups (&pd);
-  tr->originalCrunchedLength = pd->seqlen;
-  pr->perGeneBranchLengths = PLL_FALSE;
-
-  pl_phylip_subst (pd, DNA_DATA);          /* TODO: Change to reflect the input type */
-
-  tr->rateCategory           =  (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-
-  tr->patrat                 =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->patratStored           =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-  tr->lhs                    =  (double *) rax_malloc ((size_t)tr->originalCrunchedLength * sizeof (double));
-
-  tr->executeModel   = (boolean *)rax_malloc(sizeof(boolean) * (size_t)pr->numberOfPartitions);
-
-
-
-        
-  for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
-    tr->executeModel[i] = PLL_TRUE;
-
-
-
-  /* data structures for convergence criterion need to be initialized after! setupTree */
-  if(tr->searchConvergenceCriterion)
-  {
-    tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
-    tr->h = initHashTable(tr->mxtips * 4);
-  }
-
-  /* read tip names */
-  for(i = 1; i <= (size_t)tr->mxtips; i++)
-  {
-    tr->nameList[i] = pd->label[i - 1];
-  }
-
-  for(i = 1; i <= (size_t)tr->mxtips; i++)
-    addword(tr->nameList[i], tr->nameHash, i);
-
-  /* read partition info (boudaries, data type) */
-  empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
-  for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
-  {
-    int
-      len;
-
-    pInfo
-      *p = &(pr->partitionData[model]);
-
-    p->states             =  4;   /* TODO: according to the type */
-    p->maxTipStates       = 16;   /* TODO: according to the type */
-    p->lower              =  0;
-    p->upper              = pd->seqlen;
-    p->width              = p->upper - p->lower;
-    p->dataType           =   DNA_DATA; /* TODO: dna type */
-    p->protModels         =   2;
-    p->autoProtModels     =   0;
-    p->protFreqs          =   0;
-    p->nonGTR             =   PLL_FALSE;
-    p->numberOfCategories =   0;
-    
-    /* later on if adding secondary structure data
-
-       int    *symmetryVector;
-       int    *frequencyGrouping;
-       */
-
-    p->partitionName = strdup ("PartName");
-
-//    empiricalFrequencies[model] = (double *)malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
-//    empiricalfrequencies[model][0] = 0.2036082474;
-//    empiricalfrequencies[model][1] = 0.2268041237;
-//    empiricalfrequencies[model][2] = 0.2731958763;
-//    empiricalfrequencies[model][3] = 0.2963917526;
-  }
-  /* Read all characters from tips */
-//  y = (unsigned char *)malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
-
-  tr->yVector = (char **) rax_malloc(sizeof(char*) * (tr->mxtips+1));
- for (i=0; i < tr->mxtips; ++i)
-        tr->yVector[i+1] = pd->seq[i]; //(unsigned char **)malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
- 
- #ifndef _USE_PTHREADS
- #ifndef _FINE_GRAIN_MPI
-  //initializePartitionsSequential(tr); 
-  initializePartitions (tr, tr, 0, 0);
- #endif
- #endif
-}
-#endif
-
-/** @brief Read MSA from a file and setup the tree
- *
- *  Reads the MSA from \a filename and constructs
- *  the tree \a tr and sets up partition and model data
- *
- *  @todo This will be soon replaced by \a read_phylip_msa
- *
- *  @param tr
- *    Pointer to the tree instance to be set up
- *
- *  @param filename
- *    Filename containing the MSA
- *
- */
-void read_msa(pllInstance *tr, partitionList *pr, const char *filename)
-  {
-    size_t
-      i,
-      model;
-
-    unsigned char *y;
-  double **empiricalFrequencies;
-
-    FILE
-      *byteFile = myfopen(filename, "rb");
-
-
-    /* read the alignment info */
-    myBinFread(&(tr->mxtips),                 sizeof(int), 1, byteFile);
-    myBinFread(&(tr->originalCrunchedLength), sizeof(int), 1, byteFile);
-    myBinFread(&(pr->numberOfPartitions),         sizeof(int), 1, byteFile);
-
-    /* initialize topology */
-
-    /* Joint branch length estimate is activated by default */
-    /*
-    if(adef->perGeneBranchLengths)
-      tr->numBranches = pr->numberOfPartitions;
-    else
-      tr->numBranches = 1;
-    */
-    pr->perGeneBranchLengths = PLL_FALSE;
-    setupTree(tr, PLL_TRUE, pr);
-    
-    myBinFread(&(tr->gapyness),            sizeof(double), 1, byteFile);
-
-    /* If we use the RF-based convergence criterion we will need to allocate some hash tables.
-       let's not worry about this right now, because it is indeed RAxML-specific */
-
-    tr->aliaswgt                   = (int *)rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-    myBinFread(tr->aliaswgt, sizeof(int), tr->originalCrunchedLength, byteFile);
-
-    tr->rateCategory    = (int *)    rax_malloc((size_t)tr->originalCrunchedLength * sizeof(int));
-    tr->patrat          = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->patratStored    = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-    tr->lhs             = (double*)  rax_malloc((size_t)tr->originalCrunchedLength * sizeof(double));
-
-    for(i = 0; i < (size_t)pr->numberOfPartitions; i++)
-      pr->partitionData[i]->executeModel = PLL_TRUE;
-
-
-
-    /* data structures for convergence criterion need to be initialized after! setupTree */
-    if(tr->searchConvergenceCriterion)
-    {
-      tr->bitVectors = initBitVector(tr->mxtips, &(tr->vLength));
-      tr->h = initHashTable(tr->mxtips * 4);
-    }
-
-    /* read tip names */
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
-    {
-      int len;
-      myBinFread(&len, sizeof(int), 1, byteFile);
-      tr->nameList[i] = (char*)rax_malloc(sizeof(char) * (size_t)len);
-      myBinFread(tr->nameList[i], sizeof(char), len, byteFile);
-      /*printf("%s \n", tr->nameList[i]);*/
-    }
-
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
-      addword(tr->nameList[i], tr->nameHash, i);
-
-    /* read partition info (boudaries, data type) */
-    empiricalFrequencies = (double **)rax_malloc(sizeof(double *) * (size_t)pr->numberOfPartitions);
-    for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
-    {
-      int
-        len;
-
-      pInfo
-        *p = pr->partitionData[model];
-
-      myBinFread(&(p->states),             sizeof(int), 1, byteFile);
-      myBinFread(&(p->maxTipStates),       sizeof(int), 1, byteFile);
-      myBinFread(&(p->lower),              sizeof(int), 1, byteFile);
-      myBinFread(&(p->upper),              sizeof(int), 1, byteFile);
-      myBinFread(&(p->width),              sizeof(int), 1, byteFile);
-      myBinFread(&(p->dataType),           sizeof(int), 1, byteFile);
-      myBinFread(&(p->protModels),         sizeof(int), 1, byteFile);
-      myBinFread(&(p->autoProtModels),     sizeof(int), 1, byteFile);
-      myBinFread(&(p->protFreqs),          sizeof(int), 1, byteFile);
-      myBinFread(&(p->nonGTR),             sizeof(boolean), 1, byteFile);
-      myBinFread(&(p->numberOfCategories), sizeof(int), 1, byteFile);
-
-      /* later on if adding secondary structure data
-
-         int    *symmetryVector;
-         int    *frequencyGrouping;
-         */
-
-      myBinFread(&len, sizeof(int), 1, byteFile);
-      p->partitionName = (char*)rax_malloc(sizeof(char) * (size_t)len);
-      myBinFread(p->partitionName, sizeof(char), len, byteFile);
-
-      empiricalFrequencies[model] = (double *)rax_malloc(sizeof(double) * (size_t)pr->partitionData[model]->states);
-      myBinFread(empiricalFrequencies[model], sizeof(double), pr->partitionData[model]->states, byteFile);
-    }
-    /* Read all characters from tips */
-    y = (unsigned char *)rax_malloc(sizeof(unsigned char) * ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips));
-
-    tr->yVector = (unsigned char **)rax_malloc(sizeof(unsigned char *) * ((size_t)(tr->mxtips + 1)));
-
-    for(i = 1; i <= (size_t)tr->mxtips; i++)
-      tr->yVector[i] = &y[(i - 1) *  (size_t)tr->originalCrunchedLength];
-
-    myBinFread(y, sizeof(unsigned char), ((size_t)tr->originalCrunchedLength) * ((size_t)tr->mxtips), byteFile);
-
-    /* Initialize the model */
-    //printf("Here 1!\n");
-    initializePartitionsSequential(tr, pr);
-    //printf("Here 2!\n");
-    initModel(tr, empiricalFrequencies, pr);
-    fclose(byteFile);
-  }
-
-
-
-void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
-{  
-  size_t
-    bytes_read;
-
-  bytes_read = fread(ptr, size, nmemb, byteFile);
-
-  assert(bytes_read == nmemb);
-}
-
-#if 0
-void *malloc_aligned(size_t size) 
-{
-  void 
-    *ptr = (void *)NULL;
-
-  int 
-    res;
-
-
-#if defined (__APPLE__)
-  /* 
-     presumably malloc on MACs always returns 
-     a 16-byte aligned pointer
-     */
-
-  ptr = rax_malloc(size);
-
-  if(ptr == (void*)NULL) 
-    assert(0);
-
-#ifdef __AVX
-  assert(0);
-#endif
-
-#else
-  res = posix_memalign( &ptr, BYTE_ALIGNMENT, size );
-
-  if(res != 0) 
-    assert(0);
-#endif 
-
-  return ptr;
-}
-#endif
-
-
-
-/* Marked for deletion 
-static void printBoth(FILE *f, const char* format, ... )
-{
-  va_list args;
-  va_start(args, format);
-  vfprintf(f, format, args );
-  va_end(args);
-
-  va_start(args, format);
-  vprintf(format, args );
-  va_end(args);
-}
-
-*/
-
 
 void printBothOpen(const char* format, ... )
 {
@@ -553,15 +224,6 @@ int getUndetermined(int dataType)
 
   return pLengths[dataType].undetermined;
 }
-
-/*
-char getInverseMeaning(int dataType, unsigned char state)
-{
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
-
-  return  pLengths[dataType].inverseMeaning[state];
-}
-*/
 
 const partitionLengths *getPartitionLengths(pInfo *p)
 {
@@ -847,7 +509,7 @@ static unsigned int KISS32(void)
 }
 
 /* removed the static keyword for using this function in the examples */
-boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
+static boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions)
 {
   nodeptr  p0, p, q;
   int
@@ -1375,6 +1037,24 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
   /* E recom */
 }
 
+/** @brief Get the length of a specific branch
+
+    Get the length of the branch specified by node \a p and \a p->back
+    of partition \a partition_id.
+    The branch length is decoded from the PLL representation.
+
+    @param tr
+      PLL instance
+
+    @param p
+      Specifies one end-point of the branch. The other one is \a p->back
+
+    @param partition_id
+      Specifies the partition
+
+    @return
+      The branch length
+*/
 double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
 {
   //assert(partition_id < tr->numBranches);
@@ -1386,6 +1066,25 @@ double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
   if(z > PLL_ZMAX) z = PLL_ZMAX;
   return (-log(z) * tr->fracchange);
 }
+
+/** @brief Set the length of a specific branch
+
+    Set the length of the branch specified by node \a p and \a p->back
+    of partition \a partition_id.
+    The function encodes the branch length to the PLL representation.
+
+    @param tr
+      PLL instance
+
+    @param p
+      Specifies one end-point of the branch. The other one is \a p->back
+
+    @param partition_id
+      Specifies the partition
+
+    @param bl
+      Branch length
+*/
 void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
 {
   //assert(partition_id < tr->numBranches);
@@ -2089,72 +1788,6 @@ pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
   
   return (freqs);
 }
-/*
-double ** pllBaseFrequenciesGTR(rawdata *rdta, cruncheddata *cdta, pllInstance *tr)
-{  
-  int 
-    model,
-    lower,
-    upper,
-    states;
-
-  for(model = 0; model < tr->NumberOfModels; model++)
-    {      
-      lower = tr->partitionData[model].lower;
-      upper = tr->partitionData[model].upper;	  	 
-      states = tr->partitionData[model].states;
-	
-      switch(tr->partitionData[model].dataType)
-	{
-	case GENERIC_32:
-	  switch(tr->multiStateModel)
-	    {
-	    case ORDERED_MULTI_STATE:
-	    case MK_MULTI_STATE:	   
-	      {	       
-		int i;
-		double 
-		  freq = 1.0 / (double)states,
-		  acc = 0.0;
-
-		for(i = 0; i < states; i++)
-		  {
-		    acc += freq;
-		    tr->partitionData[model].frequencies[i] = freq;
-		    // printf("%f \n", freq);
-		  }
-		// printf("Frequency Deviation: %1.60f\n", acc);
-	      }
-	      break;
-	     case GTR_MULTI_STATE:
-	      genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, PLL_TRUE,
-				     bitVector32);
-	      break;
-	    default:
-	      assert(0);
-	    }
-	  break;
-	case GENERIC_64:	 
-	  assert(0);
-	  break;
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
-	case SECONDARY_DATA:
-	case AA_DATA:
-	case DNA_DATA:
-	case BINARY_DATA:	  
-	  genericBaseFrequencies(tr, states, rdta, cdta, lower, upper, model, 
-				 getSmoothFreqs(tr->partitionData[model].dataType),
-				 getBitVector(tr->partitionData[model].dataType));	  	 
-	  break;	
-	default:
-	  assert(0);     
-	}      
-    }
-  
-  return;
-}
-*/
 
 void
 pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)

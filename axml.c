@@ -74,6 +74,16 @@
 #include "axml.h"
 #include "globalVariables.h"
 
+void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile)
+{  
+  size_t
+    bytes_read;
+
+  bytes_read = fread(ptr, size, nmemb, byteFile);
+
+  assert(bytes_read == nmemb);
+}
+
 static void finalizeInfoFile(pllInstance *tr, analdef *adef)
 {
   double t;
