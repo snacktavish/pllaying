@@ -219,6 +219,12 @@ lex_table_amend_phylip (void)
 }
 
 void
+lex_table_amend_fasta (void)
+{
+  lex_table['-'] = lex_table['.'] = lex_table['>'] = SYMBOL_CHAR; 
+}
+
+void
 lex_table_restore (void)
 {
   lex_table['-'] = SYMBOL_DASH;

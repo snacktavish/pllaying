@@ -5,7 +5,7 @@ ARFLAGS = rvs
 
 RM = rm -f
 
-objs    = hash.o stack.o ssort.o queue.o utils.o axml.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o alignment.o phylip.o newick.o part.o
+objs    = hash.o stack.o ssort.o queue.o utils.o axml.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o lockless_allocator/ll_alloc.o mem_alloc.o alignment.o fasta.o phylip.o newick.o part.o
 
 
 all: libpll-AVX-PTHREADS.a
@@ -47,6 +47,8 @@ ssort.o : parser/phylip/ssort.c
 alignment.o: parser/alignment/alignment.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 phylip.o: parser/alignment/phylip.c
+	$(CC) $(CFLAGS) -c -o $@ $+
+fasta.o: parser/alignment/fasta.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 newick.o: parser/newick/newick.c
 	$(CC) $(CFLAGS) -c -o $@ $+

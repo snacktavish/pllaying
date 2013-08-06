@@ -57,7 +57,11 @@ int main (int argc, char * argv[])
   tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
   /* Parse a PHYLIP file */
-  alignmentData = pllParsePHYLIP (argv[1]);
+//  alignmentData = pllParsePHYLIP (argv[1]);
+
+  /* Parse a FASTA file */
+  alignmentData = pllParseFASTA (argv[1]);
+
   if (!alignmentData)
    {
      fprintf (stderr, "Error while parsing %s\n", argv[1]);

@@ -120,6 +120,9 @@ static void testProteinStuff()
       tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
       
       alignmentData = pllParsePHYLIP ("prot.phy");
+
+      /* or alternatively, parse a FASTA file */
+      // alignmentData = pllParseFASTA ("prot.phy");
       
       newick = pllNewickParseFile("parsimonyTree");
       

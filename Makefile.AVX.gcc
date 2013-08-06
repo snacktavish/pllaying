@@ -7,7 +7,7 @@ ARFLAGS = rvs
 
 RM = rm -f
 
-objs = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o mem_alloc.o optimizeModel.o recom.o trash.o lexer.o alignment.o phylip.o ssort.o newick.o part.o
+objs = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o mem_alloc.o optimizeModel.o recom.o trash.o lexer.o alignment.o fasta.o phylip.o ssort.o newick.o part.o
 GLOBAL_DEPS = axml.h globalVariables.h
 #objs    = hash.o stack.o ssort.o queue.o utils.o axml.o  optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o randomTree.o avxLikelihood.o fastDNAparsimony.o recom.o mem_alloc.o
 
@@ -47,6 +47,8 @@ lexer.o : lexer.c $(GLOBAL_DEPS)
 alignment.o: parser/alignment/alignment.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 phylip.o: parser/alignment/phylip.c
+	$(CC) $(CFLAGS) -c -o $@ $+
+fasta.o: parser/alignment/fasta.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 newick.o: parser/newick/newick.c
 	$(CC) $(CFLAGS) -c -o $@ $+
