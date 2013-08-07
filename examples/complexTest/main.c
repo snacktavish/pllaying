@@ -150,7 +150,8 @@ static void testProteinStuff()
 	  fprintf (stderr, "Incompatible tree/alignment combination\n");
 	  return (EXIT_FAILURE);
 	}
-      pllInitModel(tr, PLL_TRUE, alignmentData, partitions);
+      //pllInitModel(tr, PLL_TRUE, alignmentData, partitions);
+      pllInitModel(tr, alignmentData, partitions);
       
       switch(i)
 	{

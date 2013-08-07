@@ -1450,7 +1450,6 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       break; 
     case THREAD_EVALUATE_PER_SITE_LIKES: 
       {
-	int i ; 
 	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_TRUE);
       }
       break;

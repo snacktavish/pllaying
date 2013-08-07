@@ -994,7 +994,7 @@ pllPartitionsDestroy (partitionList ** partitions, int tips)
   freeLinkageList(pl->freqList); 
   freeLinkageList(pl->rateList);
 
-  for (i = 0; i < partitions->numberOfPartitions; ++ i)
+  for (i = 0; i < pl->numberOfPartitions; ++ i)
    {
      rax_free (pl->partitionData[i]->gammaRates);
      rax_free (pl->partitionData[i]->perSiteRates);
@@ -1456,8 +1456,28 @@ pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl)
 }
 
 
+/** @brief Compute the empirical frequencies of a partition
+  
+    Compute the empirical frequencies of partition \a partition and store them in
+    \a pfreqs.
+
+    @param partition
+      The partition for which to compute empirical frequencies
+
+    @param alignmentData
+      The multiple sequence alignment
+
+    @param smoothFrequencies
+      Not needed?
+
+    @param bitMask
+      The bitmask
+
+    @param pfreqs
+      Array of size \a partition->states where the empirical frequencies for this partition are stored
+*/
 static void
-genericBaseFrequencies (const int numFreqs, pllAlignmentData * alignmentData, int lower, int upper, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
+genericBaseFrequencies (pInfo * partition, pllAlignmentData * alignmentData, boolean smoothFrequencies, const unsigned int * bitMask, double * pfreqs)
 {
   double 
     wj, 
@@ -1469,9 +1489,16 @@ genericBaseFrequencies (const int numFreqs, pllAlignmentData * alignmentData, in
     i, 
     j, 
     k, 
-    l;
+    l,
+    numFreqs,
+    lower,
+    upper;
 
   unsigned char  *yptr;  
+
+  numFreqs = partition->states;
+  lower    = partition->lower;
+  upper    = partition->upper;
 
   for(l = 0; l < numFreqs; l++)	    
     pfreqs[l] = 1.0 / ((double)numFreqs);
@@ -1564,33 +1591,40 @@ genericBaseFrequencies (const int numFreqs, pllAlignmentData * alignmentData, in
   
 }
 
+/** @brief Compute the empirical base frequencies for all partitions
+
+    Compute the empirical base frequencies for all partitions in the list \a pl.
+
+    @param pl
+      Partition list
+    
+    @param alignmentData
+      Multiple sequence alignment
+
+    @return
+      A list of \a pl->numberOfPartitions arrays each of size \a pl->partitionData[i]->states,
+      where \a i is the \a i-th partition
+*/
 double **
 pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
 {
   int
-    model,
-    lower,
-    upper,
-    states;
+    i,
+    model;
 
   double 
     **freqs = (double **) rax_malloc (pl->numberOfPartitions * sizeof (double *));
 
   for (model = 0; model < pl->numberOfPartitions; ++ model)
     {
-      lower    = pl->partitionData[model]->lower;
-      upper    = pl->partitionData[model]->upper;
-      states   = pl->partitionData[model]->states;
-      freqs[model] = (double *) rax_malloc (states * sizeof (double));
+      freqs[model] = (double *) rax_malloc (pl->partitionData[model]->states * sizeof (double));
       
       switch  (pl->partitionData[model]->dataType)
 	{
         case AA_DATA:
         case DNA_DATA:
-          genericBaseFrequencies (states, 
+          genericBaseFrequencies (pl->partitionData[model], 
                                   alignmentData, 
-                                  lower, 
-                                  upper, 
                                   pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
                                   pLengths[pl->partitionData[model]->dataType].bitVector,
                                   freqs[model]
@@ -1598,7 +1632,9 @@ pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
           break;
 	default:
 	  {
-	    errno = PLL_UNLKNWON_MOLECYULAR_DATA_TYPE;
+	    errno = PLL_UNKNOWN_MOLECULAR_DATA_TYPE;
+            for (i = 0; i <= model; ++ i) rax_free (freqs[i]);
+            rax_free (freqs);
 	    return (double **)NULL;
 	  }
 	}
@@ -1718,10 +1754,14 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
       explain saveMemory here
 
     @param useRecom
-      explain useRecom
+      If set to \b PLL_TRUE, enables ancestral state recomputation
     
     @todo
       Document fastScaling, rate heterogeneity and saveMemory and useRecom
+
+    @note
+      Do not set \a saveMemory to when using \a useRecom as memory saving techniques 
+      are not yet implemented for ancestral state recomputation
 
     @return
       On success returns an instance to PLL, otherwise \b NULL
@@ -1857,9 +1897,6 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
   tr->td[0].executeModel[0]  = PLL_TRUE;                                                                                                                                                                                                                                    
   for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
-
-
-  
 }
 
 
@@ -1873,12 +1910,12 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
     @param nt
       The \a pllNewickTree wrapper structure that contains the parsed newick tree
 
-    @param bDefaultZ
+    @param useDefaultz
       If set to \b PLL_TRUE then the branch lengths will be reset to the default
       value.
 */
 void
-pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUseDefaultZ)
+pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int useDefaultz)
 {
   struct pllStack * nodeStack = NULL;
   struct pllStack * head;
@@ -1954,7 +1991,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUse
   
   pllStackClear (&nodeStack);
 
-  if (bUseDefaultZ == PLL_TRUE) 
+  if (useDefaultz == PLL_TRUE) 
     resetBranches (tr);
 }
 
@@ -2046,6 +2083,17 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
   freeParsimonyDataStructures(tr, partitions);
 }
 
+/** @brief Encode the alignment data to the PLL numerical representation
+    
+    Transforms the alignment to the PLL internal representation by substituting each base 
+    with a specific digit.
+
+    @param alignmentData
+      Multiple sequence alignment
+
+    @param partitions
+      List of partitions
+*/
 void
 pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
 {
@@ -3009,11 +3057,8 @@ int pllLinkRates(char *string, partitionList *pr)
 
     @param partitions
       List of partitions
-
-    @todo
-      implement the bEmpiricalFreqs flag
 */
-int pllInitModel (pllInstance * tr, int bEmpiricalFreqs, pllAlignmentData * alignmentData, partitionList * partitions)
+int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionList * partitions)
 {
   double ** ef;
   int

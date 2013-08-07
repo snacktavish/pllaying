@@ -114,7 +114,8 @@ int main (int argc, char * argv[])
    }
   
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
-  pllInitModel(tr, PLL_TRUE, alignmentData, partitions);
+  //pllInitModel(tr, TRUE, alignmentData, partitions);
+  pllInitModel(tr, alignmentData, partitions);
 
   /* TODO: evaluate likelihood, create interface calls */
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);

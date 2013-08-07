@@ -13,7 +13,7 @@
 #define PLL_INVALID_Q_MATRIX_SYMMETRY       1 << 1 /**< specifyng an invalid parameter symmetry in the Q matrix */
 #define PLL_Q_MATRIX_SYMMETRY_OUT_OF_BOUNDS 1 << 2 /**<specifying a Q matrix symmetry that is out of bounds */
 
-#define PLL_UNLKNWON_MOLECYULAR_DATA_TYPE 1 << 0 /**<PLL is trying to do something for an unknown data type */
+#define PLL_UNKNOWN_MOLECULAR_DATA_TYPE 1 << 0 /**<PLL is trying to do something for an unknown data type */
 
 #define PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING 1 << 0 /**<PLL detected an inconsistent setting for the Q matrix rate optimization */
 #define PLL_INCONSISTENT_Q_MATRIX_SYMMETRIES_ACROSS_LINKED_PARTITIONS 1 << 1 /**<Q matrix symmetry vector is not identical for linked partitions */

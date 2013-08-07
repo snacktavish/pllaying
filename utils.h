@@ -37,7 +37,7 @@ void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * align
 void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
 void  pllTreeDestroy (pllInstance * t);
 pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed);
-int pllInitModel (pllInstance *, int, pllAlignmentData *, partitionList *);
+int pllInitModel (pllInstance *, pllAlignmentData *, partitionList *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 #endif /* UTILS_H_ */
