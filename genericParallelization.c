@@ -1423,7 +1423,6 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	/* cleans up the workers memory */
 
 	int numTaxa = tr->mxtips; 
-	int numPart = pr->numberOfPartitions; 
 
 #ifdef _USE_PTHREADS
 	/* TODO destroying the tree does not work yet in a highly
@@ -1431,16 +1430,16 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 
 	if(NOT MASTER_P)
 	  {
-	    pllPartitionsDestroy (&localPr, numPart, numTaxa);
+	    pllPartitionsDestroy (&localPr, numTaxa);
 	    /* pllTreeDestroy (localTree); */
 	  }
 	else 
 	  {
-	    pllPartitionsDestroy (&pr, numPart, numTaxa);
+	    pllPartitionsDestroy (&pr, numTaxa);
 	    /* pllTreeDestroy (tr); */
 	  }
 #else 
-	pllPartitionsDestroy (&pr, numPart, numTaxa);
+	pllPartitionsDestroy (&pr, numTaxa);
 	/* pllTreeDestroy (tr); */
 	
 	MPI_Finalize();

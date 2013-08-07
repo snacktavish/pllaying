@@ -22,9 +22,9 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 
-//void read_msa(pllInstance *tr, const char *filename);
+nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
-void pllPartitionsDestroy (partitionList **, int, int);
+void pllPartitionsDestroy (partitionList **, int);
 int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData);
 partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
 void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);

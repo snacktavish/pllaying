@@ -179,7 +179,7 @@ int main (int argc, char * argv[])
   pllAlignmentDataDestroy (alignmentData);
   pllNewickParseDestroy (&newick);
 
-  pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+  pllPartitionsDestroy (&partitions, tr->mxtips);
   pllTreeDestroy (tr);
 
 

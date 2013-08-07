@@ -240,7 +240,7 @@ static void testProteinStuff()
       pllAlignmentDataDestroy (alignmentData);
       pllNewickParseDestroy (&newick);
       
-      pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+      pllPartitionsDestroy (&partitions, tr->mxtips);
       pllTreeDestroy (tr);      
     }
 }
@@ -376,11 +376,11 @@ int main (int argc, char * argv[])
   pllAlignmentDataDestroy (alignmentData1);
   pllNewickParseDestroy (&newick);
 
-  pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+  pllPartitionsDestroy (&partitions, tr->mxtips);
   pllTreeDestroy (tr);
 
   pllAlignmentDataDestroy (alignmentData2); 
-  pllPartitionsDestroy (&partitions2, partitions2->numberOfPartitions, tr2->mxtips);
+  pllPartitionsDestroy (&partitions2, tr2->mxtips);
   pllTreeDestroy (tr2);
 
 
@@ -519,7 +519,7 @@ int main (int argc, char * argv[])
       pllAlignmentDataDestroy (alignmentData1);
       pllNewickParseDestroy (&newick);
       
-      pllPartitionsDestroy (&partitions, partitions->numberOfPartitions, tr->mxtips);
+      pllPartitionsDestroy (&partitions, tr->mxtips);
       pllTreeDestroy (tr);      
     }
   
