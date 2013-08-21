@@ -5,12 +5,12 @@
 #include "../../lexer.h"
 #include "../../axml.h"
 
-struct pllNewickTree
+typedef struct
 {
   int nodes;
   int tips;
   struct pllStack * tree;
-};
+} pllNewickTree;
 
 struct item_t
 {
@@ -22,8 +22,9 @@ struct item_t
 };
 
 
-struct pllNewickTree * pllNewickParseString (char * newick);
-struct pllNewickTree * pllNewickParseFile (const char * filename);
-int pllValidateNewick (struct pllNewickTree *);
-void pllNewickParseDestroy (struct pllNewickTree ** tree);
+pllNewickTree * pllNewickParseString (char * newick);
+pllNewickTree * pllNewickParseFile (const char * filename);
+int pllValidateNewick (pllNewickTree *);
+void pllNewickParseDestroy (pllNewickTree **);
+char * pllReadFile (const char *, int *);
 #endif

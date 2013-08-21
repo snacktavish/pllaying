@@ -5,71 +5,45 @@
 #include <math.h>
 #include "newick.h"
 
-static char * 
-readFile (const char * filename, int * n)
-{
-  FILE * fp;
-  char * rawdata;
-
-  fp = fopen (filename, "r");
-  if (!fp) return (NULL);
-
-  /* obtain file size */
-  if (fseek (fp, 0, SEEK_END) == -1) return (NULL);
-  *n = ftell (fp);
-  if (*n == -1) return (NULL);
-  rewind (fp);
-
-  rawdata = (char *) rax_malloc (((*n)  + 1)* sizeof (char));
-  rawdata[*n] = 0;
-  if (!rawdata) return (NULL);
-
-  if (fread (rawdata, sizeof (char), *n, fp) != *n) return (NULL);
-
-  fclose (fp);
-
-  return (rawdata);
-}
-
 static int
-parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
+parse_newick (struct pllStack ** stack, int * inp)
 {
   struct item_t * item = NULL;
   int item_active = 0;
-  struct ltoken_t token;
+  pllLexToken token;
   int input;
-  struct ltoken_t prev_token;
+  pllLexToken prev_token;
   int nop = 0;          /* number of open parentheses */
   int depth = 0;
 
-  prev_token.class = LEX_UNKNOWN;
+  prev_token.tokenType = PLL_TOKEN_UNKNOWN;
 
   input = *inp;
 
   NEXT_TOKEN
   
-  while (token.class != LEX_EOF && token.class != LEX_UNKNOWN)
+  while (token.tokenType != PLL_TOKEN_EOF && token.tokenType != PLL_TOKEN_UNKNOWN)
   {
-    switch (token.class)
+    switch (token.tokenType)
      {
-       case LEX_OPAREN:
-       //printf ("LEX_OPAREN\n");
+       case PLL_TOKEN_OPAREN:
+       //printf ("PLL_TOKEN_OPAREN\n");
         ++nop;
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
         ++depth;
         break;
 
-       case LEX_CPAREN:
-       //printf ("LEX_CPAREN\n");
-        if (prev_token.class != LEX_CPAREN  &&
-            prev_token.class != LEX_UNKNOWN &&
-            prev_token.class != LEX_STRING  &&
-            prev_token.class != LEX_NUMBER  &&
-            prev_token.class != LEX_FLOAT) return (0);
+       case PLL_TOKEN_CPAREN:
+       //printf ("PLL_TOKEN_CPAREN\n");
+        if (prev_token.tokenType != PLL_TOKEN_CPAREN  &&
+            prev_token.tokenType != PLL_TOKEN_UNKNOWN &&
+            prev_token.tokenType != PLL_TOKEN_STRING  &&
+            prev_token.tokenType != PLL_TOKEN_NUMBER  &&
+            prev_token.tokenType != PLL_TOKEN_FLOAT) return (0);
 
         if (!nop) return (0);
         --nop;
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
 
         /* push to the stack */
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t)); // possibly not nec
@@ -93,12 +67,12 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
         --depth;
         break;
 
-       case LEX_STRING:
-       //printf ("LEX_STRING\n");
-        if (prev_token.class != LEX_OPAREN &&
-            prev_token.class != LEX_CPAREN &&
-            prev_token.class != LEX_UNKNOWN &&
-            prev_token.class != LEX_COMMA) return (0);
+       case PLL_TOKEN_STRING:
+       //printf ("PLL_TOKEN_STRING\n");
+        if (prev_token.tokenType != PLL_TOKEN_OPAREN &&
+            prev_token.tokenType != PLL_TOKEN_CPAREN &&
+            prev_token.tokenType != PLL_TOKEN_UNKNOWN &&
+            prev_token.tokenType != PLL_TOKEN_COMMA) return (0);
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t));
         //item->name = strndup (token.lexeme, token.len);
         item->name = (char *) rax_malloc ((token.len + 1) * sizeof (char));
@@ -107,22 +81,22 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
 
         item_active = 1;
         item->depth = depth;
-        if (prev_token.class == LEX_COMMA  ||
-            prev_token.class == LEX_OPAREN ||
-            prev_token.class == LEX_UNKNOWN) item->leaf = 1;
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+        if (prev_token.tokenType == PLL_TOKEN_COMMA  ||
+            prev_token.tokenType == PLL_TOKEN_OPAREN ||
+            prev_token.tokenType == PLL_TOKEN_UNKNOWN) item->leaf = 1;
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
         break;
 
-       case LEX_FLOAT:
-       case LEX_NUMBER:
-       //if (token.class == LEX_FLOAT) printf ("LEX_FLOAT\n"); else printf ("LEX_NUMBER\n");
-         if  (prev_token.class != LEX_OPAREN &&
-              prev_token.class != LEX_CPAREN &&
-              prev_token.class != LEX_COLON  &&
-              prev_token.class != LEX_UNKNOWN &&
-              prev_token.class != LEX_COMMA) return (0);
+       case PLL_TOKEN_FLOAT:
+       case PLL_TOKEN_NUMBER:
+       //if (token.tokenType == PLL_TOKEN_FLOAT) printf ("PLL_TOKEN_FLOAT\n"); else printf ("PLL_TOKEN_NUMBER\n");
+         if  (prev_token.tokenType != PLL_TOKEN_OPAREN &&
+              prev_token.tokenType != PLL_TOKEN_CPAREN &&
+              prev_token.tokenType != PLL_TOKEN_COLON  &&
+              prev_token.tokenType != PLL_TOKEN_UNKNOWN &&
+              prev_token.tokenType != PLL_TOKEN_COMMA) return (0);
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t));
-        if (prev_token.class == LEX_COLON)
+        if (prev_token.tokenType == PLL_TOKEN_COLON)
          {
            //item->branch = strndup (token.lexeme, token.len);
            item->branch = (char *) rax_malloc ((token.len + 1) * sizeof (char));
@@ -131,10 +105,10 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
          }
         else
          {
-           if (prev_token.class == LEX_COMMA  ||
-               prev_token.class == LEX_OPAREN ||
-               prev_token.class == LEX_UNKNOWN) item->leaf = 1;
-           //if (prev_token.class != LEX_UNKNOWN) ++ indent;
+           if (prev_token.tokenType == PLL_TOKEN_COMMA  ||
+               prev_token.tokenType == PLL_TOKEN_OPAREN ||
+               prev_token.tokenType == PLL_TOKEN_UNKNOWN) item->leaf = 1;
+           //if (prev_token.tokenType != PLL_TOKEN_UNKNOWN) ++ indent;
            //item->name = strndup (token.lexeme, token.len);
            item->name = (char *) rax_malloc ((token.len + 1) * sizeof (char));
            strncpy (item->name, token.lexeme, token.len);
@@ -142,25 +116,25 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
          }
         item_active = 1;
         item->depth = depth;
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
         break;
 
-       case LEX_COLON:
-       //printf ("LEX_COLON\n");
-        if (prev_token.class != LEX_CPAREN &&
-            prev_token.class != LEX_STRING &&
-            prev_token.class != LEX_FLOAT  &&
-            prev_token.class != LEX_NUMBER) return (0);
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+       case PLL_TOKEN_COLON:
+       //printf ("PLL_TOKEN_COLON\n");
+        if (prev_token.tokenType != PLL_TOKEN_CPAREN &&
+            prev_token.tokenType != PLL_TOKEN_STRING &&
+            prev_token.tokenType != PLL_TOKEN_FLOAT  &&
+            prev_token.tokenType != PLL_TOKEN_NUMBER) return (0);
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
         break;
 
-       case LEX_COMMA:
-       //printf ("LEX_COMMA\n");
-        if (prev_token.class != LEX_CPAREN &&
-             prev_token.class != LEX_STRING &&
-             prev_token.class != LEX_FLOAT && 
-             prev_token.class != LEX_NUMBER) return (0);
-        memcpy (&prev_token, &token, sizeof (struct ltoken_t));
+       case PLL_TOKEN_COMMA:
+       //printf ("PLL_TOKEN_COMMA\n");
+        if (prev_token.tokenType != PLL_TOKEN_CPAREN &&
+             prev_token.tokenType != PLL_TOKEN_STRING &&
+             prev_token.tokenType != PLL_TOKEN_FLOAT && 
+             prev_token.tokenType != PLL_TOKEN_NUMBER) return (0);
+        memcpy (&prev_token, &token, sizeof (pllLexToken));
         
         /* push to the stack */
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t)); // possibly not nece
@@ -182,8 +156,8 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
         item = NULL;
         break;
 
-       case LEX_SEMICOLON:
-        //printf ("LEX_SEMICOLON\n");
+       case PLL_TOKEN_SEMICOLON:
+        //printf ("PLL_TOKEN_SEMICOLON\n");
         /* push to the stack */
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t));
         //if (item->name   == NULL) item->name   = strdup ("ROOT_NODE");
@@ -202,9 +176,12 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
         item_active  = 0;
         item = NULL;
         break;
+       default:
+       // TODO: Finish this part and add error codes
+        break;
      }
     NEXT_TOKEN
-    CONSUME(LEX_WHITESPACE | LEX_NEWLINE);
+    CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE);
   }
   if (item_active)
    {
@@ -225,7 +202,8 @@ parse_newick (char * rawdata, struct pllStack ** stack, int * inp)
      item_active  = 0;
    }
 
-  if (nop) return (0);
+  if (nop || token.tokenType == PLL_TOKEN_UNKNOWN) return (0);
+
   return (1);
 }
 
@@ -349,7 +327,7 @@ assign_ranks (struct pllStack * stack, int * nodes, int * leaves)
       Returns \b 1 in case of success, otherwise \b 0
 */
 int
-pllValidateNewick (struct pllNewickTree * t)
+pllValidateNewick (pllNewickTree * t)
 {
   struct pllStack * head;
   struct item_t * item;
@@ -388,21 +366,21 @@ pllValidateNewick (struct pllNewickTree * t)
     @return
       Returns a pointer to the created \a pllNewickTree structure in case of success, otherwise \b NULL
 */
-struct pllNewickTree *
+pllNewickTree *
 pllNewickParseString (char * newick)
 {
   int n, input, rc;
-  struct pllNewickTree * t;
+  pllNewickTree * t;
   int nodes, leaves;
   
-  t = (struct pllNewickTree *) calloc (1, sizeof (struct pllNewickTree));
+  t = (pllNewickTree *) calloc (1, sizeof (pllNewickTree));
 
   n = strlen (newick);
 
   init_lexan (newick, n);
   input = get_next_symbol();
 
-  rc = parse_newick (newick, &(t->tree), &input);
+  rc = parse_newick (&(t->tree), &input);
   if (!rc)
    {
      /* TODO: properly clean t->tree */
@@ -427,7 +405,7 @@ pllNewickParseString (char * newick)
     @param tree
       The tree stack structure
 */
-void pllNewickParseDestroy (struct pllNewickTree ** t)
+void pllNewickParseDestroy (pllNewickTree ** t)
 {
   struct item_t *  item;
 
@@ -455,21 +433,21 @@ void pllNewickParseDestroy (struct pllNewickTree ** t)
     @return
       Returns a pointer to the created \a pllNewickTree structure in case of success, otherwise \b NULL
 */
-struct pllNewickTree *
+pllNewickTree *
 pllNewickParseFile (const char * filename)
 {
   int n;
   char * rawdata;
-  struct pllNewickTree * t;
+  pllNewickTree * t;
 
-  rawdata = readFile (filename, &n);
+  rawdata = pllReadFile (filename, &n);
   if (!rawdata)
    {
      fprintf (stderr, "Error while opening/reading file %s\n", filename);
      return (0);
    }
 
-  printf ("%s\n\n", rawdata);
+   printf ("%s\n\n", rawdata);
 
   t = pllNewickParseString (rawdata);
 

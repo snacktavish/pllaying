@@ -27,4 +27,5 @@ struct pllPartitionInfo
 void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);
 struct pllQueue * pllPartitionParse (const char * filename);
 void pllPartitionDump (struct pllQueue * partitions);
+char * pllReadFile (const char *, int *);
 #endif

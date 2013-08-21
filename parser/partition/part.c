@@ -53,37 +53,11 @@ pllQueuePartitionsDestroy (struct pllQueue ** partitions)
   rax_free (*partitions);
 }
 
-static char * 
-readFile (const char * filename, int * n)
-{
-  FILE * fp;
-  char * rawdata;
-
-  fp = fopen (filename, "r");
-  if (!fp) return (NULL);
-
-  /* obtain file size */
-  if (fseek (fp, 0, SEEK_END) == -1) return (NULL);
-  *n = ftell (fp);
-  if (*n == -1) return (NULL);
-  rewind (fp);
-
-  rawdata = (char *) rax_malloc (((*n)  + 1)* sizeof (char));
-  rawdata[*n] = 0;
-  if (!rawdata) return (NULL);
-
-  if (fread (rawdata, sizeof (char), *n, fp) != *n) return (NULL);
-
-  fclose (fp);
-
-  return (rawdata);
-}
-
 static struct pllQueue *
-parse_partition (char * rawdata, int * inp)
+parse_partition (int * inp)
 {
   int input, i;
-  struct ltoken_t token;
+  pllLexToken token;
   int lines = 0;
   struct pllQueue * partitions;
   struct pllPartitionInfo * pi;
@@ -95,17 +69,17 @@ parse_partition (char * rawdata, int * inp)
   NEXT_TOKEN
 
   pllQueueInit (&partitions);
-  while (token.class != LEX_EOF)
+  while (token.tokenType != PLL_TOKEN_EOF)
   {
     ++ lines;
     pi = (struct pllPartitionInfo *) rax_calloc (1, sizeof (struct pllPartitionInfo));
     pllQueueInit (&(pi->regionList));
     pllQueueAppend (partitions, (void *)pi);
-    CONSUME (LEX_WHITESPACE | LEX_NEWLINE)
+    CONSUME (PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
 
     /* read partition type */
-    if (token.class != LEX_STRING) 
+    if (token.tokenType != PLL_TOKEN_STRING) 
      {
        pllQueuePartitionsDestroy (&partitions);
        return (0);
@@ -175,18 +149,18 @@ parse_partition (char * rawdata, int * inp)
      }
 
     NEXT_TOKEN
-    CONSUME(LEX_WHITESPACE)
+    CONSUME(PLL_TOKEN_WHITESPACE)
 
-    if (token.class != LEX_COMMA) 
+    if (token.tokenType != PLL_TOKEN_COMMA) 
      {
        pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
-    CONSUME(LEX_WHITESPACE)
+    CONSUME(PLL_TOKEN_WHITESPACE)
 
     /* read partition name */
-    if (token.class != LEX_STRING) 
+    if (token.tokenType != PLL_TOKEN_STRING) 
      {
        pllQueuePartitionsDestroy (&partitions);
        return (0);
@@ -197,22 +171,22 @@ parse_partition (char * rawdata, int * inp)
     pi->partitionName[token.len] = 0;
 
     NEXT_TOKEN
-    CONSUME(LEX_WHITESPACE)
+    CONSUME(PLL_TOKEN_WHITESPACE)
 
     /* read equal sign */
-    if (token.class != LEX_EQUAL)
+    if (token.tokenType != PLL_TOKEN_EQUAL)
      {
        pllQueuePartitionsDestroy (&partitions);
        return (0);
      }
     NEXT_TOKEN
-    CONSUME(LEX_WHITESPACE)
+    CONSUME(PLL_TOKEN_WHITESPACE)
 
     /* read rhs */
     while (1)
     {
       region = (struct pllPartitionRegion *) rax_malloc (sizeof (struct pllPartitionRegion));
-      if (token.class != LEX_NUMBER) 
+      if (token.tokenType != PLL_TOKEN_NUMBER) 
        {
          pllQueuePartitionsDestroy (&partitions);
          return (0);
@@ -220,13 +194,13 @@ parse_partition (char * rawdata, int * inp)
       region->start  = region->end = atoi (token.lexeme);  
       region->stride = 1;
       NEXT_TOKEN
-      CONSUME(LEX_WHITESPACE)
+      CONSUME(PLL_TOKEN_WHITESPACE)
       
-      if  (token.class == LEX_DASH)
+      if  (token.tokenType == PLL_TOKEN_DASH)
        {
          NEXT_TOKEN
-         CONSUME(LEX_WHITESPACE)
-         if (token.class != LEX_NUMBER) 
+         CONSUME(PLL_TOKEN_WHITESPACE)
+         if (token.tokenType != PLL_TOKEN_NUMBER) 
           {
             pllQueuePartitionsDestroy (&partitions);
             return (0);
@@ -238,12 +212,12 @@ parse_partition (char * rawdata, int * inp)
             return (0);
           }
          NEXT_TOKEN
-         CONSUME(LEX_WHITESPACE)
-         if (token.class == LEX_SLASH)
+         CONSUME(PLL_TOKEN_WHITESPACE)
+         if (token.tokenType == PLL_TOKEN_SLASH)
           {
             NEXT_TOKEN
-            CONSUME(LEX_WHITESPACE)
-            if (token.class != LEX_NUMBER) 
+            CONSUME(PLL_TOKEN_WHITESPACE)
+            if (token.tokenType != PLL_TOKEN_NUMBER) 
              {
                pllQueuePartitionsDestroy (&partitions);
                return (0);
@@ -251,15 +225,15 @@ parse_partition (char * rawdata, int * inp)
             region->stride = atoi (token.lexeme);
             NEXT_TOKEN
           }
-         CONSUME(LEX_WHITESPACE)
+         CONSUME(PLL_TOKEN_WHITESPACE)
        }
        pllQueueAppend (pi->regionList, (void *)region);
       
-      if (token.class != LEX_COMMA) break;
+      if (token.tokenType != PLL_TOKEN_COMMA) break;
       NEXT_TOKEN
-      CONSUME(LEX_WHITESPACE)
+      CONSUME(PLL_TOKEN_WHITESPACE)
     }
-   CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+   CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
   }
  
  return (partitions);
@@ -306,7 +280,7 @@ pllPartitionParse (const char * filename)
   int input;
   struct pllQueue * partitions;
 
-  rawdata = readFile (filename, &n);
+  rawdata = pllReadFile (filename, &n);
   if (!rawdata)
    {
      fprintf (stderr, "Error while opening/reading file %s\n", filename);
@@ -321,7 +295,7 @@ pllPartitionParse (const char * filename)
   input = get_next_symbol();
 
   init_model_names();
-  partitions = parse_partition (rawdata, &input);
+  partitions = parse_partition (&input);
   destroy_model_names();
   
   rax_free (rawdata);

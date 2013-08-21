@@ -4,24 +4,24 @@
 #include "phylip.h"
 
 static int
-read_phylip_header (char * rawdata, int * inp, int * sequenceCount, int * sequenceLength)
+read_phylip_header (int * inp, int * sequenceCount, int * sequenceLength)
 {
-  struct ltoken_t token;
+  pllLexToken token;
   int input;
 
   input = *inp;
 
 
   NEXT_TOKEN
-  CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
-  if (token.class != LEX_NUMBER) return (0);
+  if (token.tokenType != PLL_TOKEN_NUMBER) return (0);
 
   *sequenceCount = atoi (token.lexeme);
 
   NEXT_TOKEN
-  CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
-  if (token.class != LEX_NUMBER) return (0);
+  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
+  if (token.tokenType != PLL_TOKEN_NUMBER) return (0);
 
   *sequenceLength = atoi (token.lexeme);
 
@@ -45,10 +45,10 @@ parsedOk (int * actLen, int sequenceCount, int sequenceLength)
 
 
 static int
-parse_phylip (char * rawdata, pllAlignmentData * alignmentData, int input)
+parse_phylip (pllAlignmentData * alignmentData, int input)
 {
   int i,j;
-  struct ltoken_t token;
+  pllLexToken token;
   int * sequenceLength;
   int rc;
 
@@ -60,50 +60,50 @@ parse_phylip (char * rawdata, pllAlignmentData * alignmentData, int input)
     j = i % alignmentData->sequenceCount;
     if (i < alignmentData->sequenceCount) 
      {
-       if (token.class == LEX_EOF)
+       if (token.tokenType == PLL_TOKEN_EOF)
         {
           rc = parsedOk (sequenceLength, alignmentData->sequenceCount, alignmentData->sequenceLength);
           rax_free (sequenceLength);
           return (rc);
         }
 
-       if (token.class == LEX_UNKNOWN)
+       if (token.tokenType == PLL_TOKEN_UNKNOWN)
         {
           rax_free (sequenceLength);
           return (0);
         }
 
-       CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+       CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
 
-       if (token.class != LEX_STRING && token.class != LEX_NUMBER && token.class != LEX_FLOAT)
+       if (token.tokenType != PLL_TOKEN_STRING && token.tokenType != PLL_TOKEN_NUMBER && token.tokenType != PLL_TOKEN_FLOAT)
         {
           rax_free (sequenceLength);
           return (0);
         }
        alignmentData->sequenceLabels[i + 1] = strndup (token.lexeme, token.len);
        NEXT_TOKEN
-       CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+       CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
      }
     
     while (1)
      {
-       if (token.class == LEX_EOF)
+       if (token.tokenType == PLL_TOKEN_EOF)
         {
           rc = parsedOk (sequenceLength, alignmentData->sequenceCount, alignmentData->sequenceLength);
           rax_free (sequenceLength);
           return (rc);
         }
 
-       if (token.class == LEX_UNKNOWN)
+       if (token.tokenType == PLL_TOKEN_UNKNOWN)
         {
          rax_free (sequenceLength);
          return (0);
         }
        
-       if (token.class == LEX_NEWLINE) break;
+       if (token.tokenType == PLL_TOKEN_NEWLINE) break;
 
-       if (token.class != LEX_STRING)
+       if (token.tokenType != PLL_TOKEN_STRING)
         {
           rax_free (sequenceLength);
           return (0);
@@ -119,22 +119,22 @@ parse_phylip (char * rawdata, pllAlignmentData * alignmentData, int input)
        sequenceLength[j + 1] += token.len;
 
        NEXT_TOKEN
-       CONSUME (LEX_WHITESPACE)
+       CONSUME (PLL_TOKEN_WHITESPACE)
      }
-    CONSUME(LEX_WHITESPACE | LEX_NEWLINE);
+    CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE);
   }
 }
 
 /* Phylip parsers. Use the following attributed grammar 
  * 
  *        S -> HEADER ENDL DATA
- *   HEADER -> LEX_NUMBER LEX_WHITESPACE LEX_NUMBER ENDL |
- *             LEX_WHITESPACE LEX_NUMBER LEX_WHITESPACE LEX_NUMBER ENDL
- *     ENDL -> LEX_WHITESPACE LEX_NEWLINE | LEX_NEWLINE
- *     DATA -> LEX_STRING LEX_WHITESPACE LEX_STRING ENDL DATA |
- *             LEX_WHITESPACE LEX_STRING LEX_WHITESPACE LEX_STRING ENDL DATA | 
- *             LEX_STRING LEX_WHITESPACE LEX_STRING LEX_EOF |
- *             LEX_WHITESPACE LEX_STRING LEX_WHITESPACE LEX_STRING LEX_EOF
+ *   HEADER -> PLL_TOKEN_NUMBER PLL_TOKEN_WHITESPACE PLL_TOKEN_NUMBER ENDL |
+ *             PLL_TOKEN_WHITESPACE PLL_TOKEN_NUMBER PLL_TOKEN_WHITESPACE PLL_TOKEN_NUMBER ENDL
+ *     ENDL -> PLL_TOKEN_WHITESPACE PLL_TOKEN_NEWLINE | PLL_TOKEN_NEWLINE
+ *     DATA -> PLL_TOKEN_STRING PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING ENDL DATA |
+ *             PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING ENDL DATA | 
+ *             PLL_TOKEN_STRING PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING PLL_TOKEN_EOF |
+ *             PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING PLL_TOKEN_WHITESPACE PLL_TOKEN_STRING PLL_TOKEN_EOF
  */
 //struct pllPhylip *
 //pllPhylipParse (const char * filename)
@@ -146,7 +146,7 @@ pllParsePHYLIP (const char * filename)
   char * rawdata;
   pllAlignmentData * alignmentData;
 
-  rawdata = __pllReadFile (filename, &filesize);
+  rawdata = pllReadFile (filename, &filesize);
   if (!rawdata)
    {
      fprintf (stderr, "Error while opening/reading file %s\n", filename);
@@ -157,7 +157,7 @@ pllParsePHYLIP (const char * filename)
   input = get_next_symbol();
 
   /* parse the header to obtain the number of taxa and sequence length */
-  if (!read_phylip_header (rawdata, &input, &sequenceCount, &sequenceLength))
+  if (!read_phylip_header (&input, &sequenceCount, &sequenceLength))
    {
      rax_free (rawdata);
      fprintf (stderr, "Error while parsing PHYLIP header (number of taxa and sequence length)\n");
@@ -169,7 +169,7 @@ pllParsePHYLIP (const char * filename)
   /* allocate alignment structure */
   alignmentData = pllInitAlignmentData (sequenceCount, sequenceLength);
 
-  if (! parse_phylip (rawdata, alignmentData, input))
+  if (! parse_phylip (alignmentData, input))
    {
      printf ("Finished with error in parsing ...\n");
      pllAlignmentDataDestroy (alignmentData);

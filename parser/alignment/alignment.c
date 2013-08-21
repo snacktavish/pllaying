@@ -6,81 +6,48 @@
 #include "../../lexer.h"
 //#include "ssort.h"
 
-char * 
-__pllReadFile (const char * filename, int * filesize)
-{
-  FILE * fp;
-  char * rawdata;
-
-  fp = fopen (filename, "r");
-  if (!fp) return (NULL);
-
-  /* obtain file size */
-  if (fseek (fp, 0, SEEK_END) == -1) return (NULL);
-  *filesize = ftell (fp);
-  if (*filesize == -1) return (NULL);
-  rewind (fp);
-
-  /* allocate buffer and read file contents */
-  rawdata = (char *) rax_malloc ((*filesize) * sizeof (char));
-  if (rawdata) 
-   {
-     if (fread (rawdata, sizeof (char), *filesize, fp) != *filesize) 
-      {
-        rax_free (rawdata);
-        rawdata = NULL;
-      }
-   }
-
-  fclose (fp);
-
-  return (rawdata);
-}
-
 static int
 printTokens (int input)
 {
-  struct ltoken_t token;
+  pllLexToken token;
 
   do
    {
      NEXT_TOKEN
 
      /* begin of parser */
-     switch (token.class)
+     switch (token.tokenType)
       {
-        case LEX_NUMBER:
-          printf ("LEX_NUMBER (%.*s, %d)\n", token.len, token.lexeme, token.len);
+        case PLL_TOKEN_NUMBER:
+          printf ("PLL_TOKEN_NUMBER (%.*s, %d)\n", token.len, token.lexeme, token.len);
           break;
-        case LEX_STRING:
-          printf ("LEX_STRING (%.*s, %d)\n", token.len, token.lexeme, token.len);
+        case PLL_TOKEN_STRING:
+          printf ("PLL_TOKEN_STRING (%.*s, %d)\n", token.len, token.lexeme, token.len);
           break;
-        case LEX_EOF:
-          printf ("LEX_EOF\n");
+        case PLL_TOKEN_EOF:
+          printf ("PLL_TOKEN_EOF\n");
           break;
-        case LEX_WHITESPACE:
-          printf ("LEX_WHITESPACE\n");
+        case PLL_TOKEN_WHITESPACE:
+          printf ("PLL_TOKEN_WHITESPACE\n");
           break;
-        case LEX_NEWLINE:
-          printf ("LEX_NEWLINE\n");
+        case PLL_TOKEN_NEWLINE:
+          printf ("PLL_TOKEN_NEWLINE\n");
           break;
-        case LEX_UNKNOWN:
-          printf ("LEX_UNKNOWN (%.*s, %d)\n", token.len, token.lexeme, token.len);
+        case PLL_TOKEN_UNKNOWN:
+          printf ("PLL_TOKEN_UNKNOWN (%.*s, %d)\n", token.len, token.lexeme, token.len);
           break;
       }
      /* end of parser */
 
 
    }
-  while (token.class != LEX_EOF && token.class != LEX_UNKNOWN);
+  while (token.tokenType != PLL_TOKEN_EOF && token.tokenType != PLL_TOKEN_UNKNOWN);
 
-  if (token.class == LEX_UNKNOWN) return (0);
+  if (token.tokenType == PLL_TOKEN_UNKNOWN) return (0);
 
   return (1);
 }
 
-//static struct pllPhylip *
-//alloc_phylip_struct (int nTaxa, int seqLen)
 pllAlignmentData *
 pllInitAlignmentData (int sequenceCount, int sequenceLength)
  {

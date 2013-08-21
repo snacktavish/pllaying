@@ -7,30 +7,29 @@
 
 /* only check whether it is a valid alignment in fasta format */
 static int
-getFastaAlignmentInfo (char * rawdata, int * inp, int * seqCount, int * seqLen)
+getFastaAlignmentInfo (int * inp, int * seqCount, int * seqLen)
 {
-  struct ltoken_t token;
+  pllLexToken token;
   int input;
-  char *tmp;
 
   input = *inp;
 
   *seqCount = *seqLen = 0;
 
   NEXT_TOKEN
-  CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
-  if (token.class != LEX_NUMBER && token.class != LEX_STRING) return (0);
+  if (token.tokenType != PLL_TOKEN_NUMBER && token.tokenType != PLL_TOKEN_STRING) return (0);
 
   while (1)
    {
-     switch (token.class)
+     switch (token.tokenType)
       {
-        case LEX_EOF:
+        case PLL_TOKEN_EOF:
           return (1);
 
-        case LEX_NUMBER:
-        case LEX_STRING:
+        case PLL_TOKEN_NUMBER:
+        case PLL_TOKEN_STRING:
           if (token.len < 2 || token.lexeme[0] != '>') return (0);
           break;
         default:
@@ -38,17 +37,17 @@ getFastaAlignmentInfo (char * rawdata, int * inp, int * seqCount, int * seqLen)
       }
      
      NEXT_TOKEN
-     CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
      /* read second token (sequence) */
-     switch (token.class)
+     switch (token.tokenType)
       {
-        case LEX_EOF:
+        case PLL_TOKEN_EOF:
           return (0);
           break;
 
-        case LEX_NUMBER:
-        case LEX_STRING:
+        case PLL_TOKEN_NUMBER:
+        case PLL_TOKEN_STRING:
           if (!*seqLen)
             *seqLen = token.len;
           else
@@ -60,34 +59,34 @@ getFastaAlignmentInfo (char * rawdata, int * inp, int * seqCount, int * seqLen)
           return (0);
       }
      NEXT_TOKEN
-     CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
      ++ (*seqCount);
    }
 }
 
 static int
-parseFastaAlignment (char * rawdata, pllAlignmentData * alignmentData, int input)
+parseFastaAlignment (pllAlignmentData * alignmentData, int input)
 {
-  struct ltoken_t token;
+  pllLexToken token;
   int i;
 
   NEXT_TOKEN
-  CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
-  if (token.class != LEX_NUMBER && token.class != LEX_STRING) return (0);
+  if (token.tokenType != PLL_TOKEN_NUMBER && token.tokenType != PLL_TOKEN_STRING) return (0);
 
   i = 1;
   while (1)
    {
      /* first parse the sequence label */
-     switch (token.class)
+     switch (token.tokenType)
       {
-        case LEX_EOF:
+        case PLL_TOKEN_EOF:
           return (1);
           break;
 
-        case LEX_NUMBER:
-        case LEX_STRING:
+        case PLL_TOKEN_NUMBER:
+        case PLL_TOKEN_STRING:
           alignmentData->sequenceLabels[i] = strndup (token.lexeme + 1, token.len - 1);
           break;
         default:
@@ -95,24 +94,24 @@ parseFastaAlignment (char * rawdata, pllAlignmentData * alignmentData, int input
       }
      
      NEXT_TOKEN
-     CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
 
      /* now parse the sequence itself */
-     switch (token.class)
+     switch (token.tokenType)
       {
-        case LEX_EOF:
+        case PLL_TOKEN_EOF:
           return (0);
           break;
 
-        case LEX_NUMBER:
-        case LEX_STRING:
+        case PLL_TOKEN_NUMBER:
+        case PLL_TOKEN_STRING:
           memmove (alignmentData->sequenceData[i], token.lexeme, token.len);
           break;
         default:
           return (0);
       }
      NEXT_TOKEN
-     CONSUME(LEX_WHITESPACE | LEX_NEWLINE)
+     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
      ++ i;
    }
 }
@@ -131,7 +130,7 @@ pllParseFASTA (const char * filename)
   char * rawdata;
   pllAlignmentData * alignmentData;
 
-  rawdata = __pllReadFile (filename, &filesize);
+  rawdata = pllReadFile (filename, &filesize);
   if (!rawdata)
    {
      fprintf (stderr, "Error while opening/reading file %s\n", filename);
@@ -144,7 +143,7 @@ pllParseFASTA (const char * filename)
   input = get_next_symbol ();
 
 
-  if (!getFastaAlignmentInfo (rawdata, &input, &seqCount, &seqLen))
+  if (!getFastaAlignmentInfo (&input, &seqCount, &seqLen))
    {
      fprintf (stderr, "Finished with error in parsing...\n");
      lex_table_restore ();
@@ -152,9 +151,6 @@ pllParseFASTA (const char * filename)
      return (NULL);
    }
   
-  printf ("HERE!\n");
-
-  printf ("Number of sequences: %d\n", seqCount);
   alignmentData = pllInitAlignmentData (seqCount, seqLen);
   
   printf ("\n---------------\n\n");
@@ -162,7 +158,7 @@ pllParseFASTA (const char * filename)
   init_lexan (rawdata, filesize);
   input = get_next_symbol ();
 
-  if (!parseFastaAlignment (rawdata, alignmentData, input))
+  if (!parseFastaAlignment (alignmentData, input))
    {
      printf ("Finished with error in parsing ...\n");
      pllAlignmentDataDestroy (alignmentData);

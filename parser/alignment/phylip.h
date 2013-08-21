@@ -5,5 +5,6 @@
 #include "../../lexer.h"
 
 pllAlignmentData * pllParsePHYLIP (const char *);
+char * pllReadFile (const char *, int *);
 
 #endif

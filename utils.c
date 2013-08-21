@@ -85,6 +85,64 @@
 
 /***************** UTILITY FUNCTIONS **************************/
 
+
+/** @brief Read the contents of a file
+    
+    Reads the ile \a filename and return its content. In addition
+    the size of the file is stored in the input variable \a filesize.
+    The content of the variable \a filesize can be anything and will
+    be overwritten.
+
+    @param filename
+      Name of the input file
+
+    @param filesize
+      Input parameter where the size of the file (in bytes) will be stored
+
+    @return
+      Contents of the file
+*/
+char * 
+pllReadFile (const char * filename, int * filesize)
+{
+  FILE * fp;
+  char * rawdata;
+
+  fp = fopen (filename, "r");
+  if (!fp) return (NULL);
+
+  /* obtain file size */
+  if (fseek (fp, 0, SEEK_END) == -1)
+   {
+     fclose (fp);
+     return (NULL);
+   }
+
+  *filesize = ftell (fp);
+
+  if (*filesize == -1) 
+   {
+     fclose (fp);
+     return (NULL);
+   }
+  rewind (fp);
+
+  /* allocate buffer and read file contents */
+  rawdata = (char *) rax_malloc ((*filesize) * sizeof (char));
+  if (rawdata) 
+   {
+     if (fread (rawdata, sizeof (char), *filesize, fp) != *filesize) 
+      {
+        rax_free (rawdata);
+        rawdata = NULL;
+      }
+   }
+
+  fclose (fp);
+
+  return (rawdata);
+}
+
 void storeExecuteMaskInTraversalDescriptor(pllInstance *tr, partitionList *pr)
 {
   int model;
@@ -1915,7 +1973,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
       value.
 */
 void
-pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int useDefaultz)
+pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz)
 {
   struct pllStack * nodeStack = NULL;
   struct pllStack * head;

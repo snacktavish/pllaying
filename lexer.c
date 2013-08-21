@@ -5,39 +5,39 @@ static const char * rawtext;
 static int          rawtext_size;
 static int          pos = 0;
 
-int lex_table[SIZE_ASCII] = {
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN,     SYMBOL_TAB,      SYMBOL_CR,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN,      SYMBOL_LF, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*      */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/*  !"# */   SYMBOL_SPACE, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/* $%&' */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/* ()*+ */  SYMBOL_OPAREN,  SYMBOL_CPAREN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN,
-/* ,-./ */   SYMBOL_COMMA,    SYMBOL_DASH,     SYMBOL_DOT,     SYMBOL_SLASH,
-/* 0123 */   SYMBOL_DIGIT,   SYMBOL_DIGIT,   SYMBOL_DIGIT,     SYMBOL_DIGIT,
-/* 4567 */   SYMBOL_DIGIT,   SYMBOL_DIGIT,   SYMBOL_DIGIT,     SYMBOL_DIGIT,
-/* 89:; */   SYMBOL_DIGIT,   SYMBOL_DIGIT,   SYMBOL_COLON, SYMBOL_SEMICOLON,
-/* <=>? */ SYMBOL_UNKNOWN,   SYMBOL_EQUAL, SYMBOL_UNKNOWN,      SYMBOL_CHAR,
-/* @ABC */ SYMBOL_UNKNOWN,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* DEFG */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* HIJK */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* LMNO */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* PQRS */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* TUVW */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* XYZ[ */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,   SYMBOL_UNKNOWN,
-/* \]^_ */ SYMBOL_UNKNOWN, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,      SYMBOL_CHAR,
-/* `abc */ SYMBOL_UNKNOWN,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* defg */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* hijk */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* lmno */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* pqrs */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* tuvw */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,      SYMBOL_CHAR,
-/* xyz{ */    SYMBOL_CHAR,    SYMBOL_CHAR,    SYMBOL_CHAR,   SYMBOL_UNKNOWN,
-/* |}~  */    SYMBOL_CHAR, SYMBOL_UNKNOWN, SYMBOL_UNKNOWN,   SYMBOL_UNKNOWN
+int lex_table[PLL_ASCII_SIZE] = {
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN,     PLL_SYM_TAB,      PLL_SYM_CR,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN,      PLL_SYM_LF, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/*  !"# */   PLL_SYM_SPACE, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/* $%&' */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/* ()*+ */  PLL_SYM_OPAREN,  PLL_SYM_CPAREN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
+/* ,-./ */   PLL_SYM_COMMA,    PLL_SYM_DASH,     PLL_SYM_DOT,     PLL_SYM_SLASH,
+/* 0123 */   PLL_SYM_DIGIT,   PLL_SYM_DIGIT,   PLL_SYM_DIGIT,     PLL_SYM_DIGIT,
+/* 4567 */   PLL_SYM_DIGIT,   PLL_SYM_DIGIT,   PLL_SYM_DIGIT,     PLL_SYM_DIGIT,
+/* 89:; */   PLL_SYM_DIGIT,   PLL_SYM_DIGIT,   PLL_SYM_COLON, PLL_SYM_SEMICOLON,
+/* <=>? */ PLL_SYM_UNKNOWN,   PLL_SYM_EQUAL, PLL_SYM_UNKNOWN,      PLL_SYM_CHAR,
+/* @ABC */ PLL_SYM_UNKNOWN,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* DEFG */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* HIJK */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* LMNO */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* PQRS */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* TUVW */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* XYZ[ */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,   PLL_SYM_UNKNOWN,
+/* \]^_ */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,      PLL_SYM_CHAR,
+/* `abc */ PLL_SYM_UNKNOWN,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* defg */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* hijk */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* lmno */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* pqrs */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* tuvw */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,      PLL_SYM_CHAR,
+/* xyz{ */    PLL_SYM_CHAR,    PLL_SYM_CHAR,    PLL_SYM_CHAR,   PLL_SYM_UNKNOWN,
+/* |}~  */    PLL_SYM_CHAR, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN
  };
 
 int 
@@ -46,7 +46,7 @@ get_next_byte (void)
   if (pos == rawtext_size) 
    {
      ++pos;
-     return (EOS);
+     return (PLL_EOS);
    }
 
   return (rawtext[pos++]);
@@ -59,16 +59,16 @@ get_next_symbol ()
 
   ch = get_next_byte ();
 
-  if (ch == EOS) return (SYMBOL_EOF);
-  if (ch >= SIZE_ASCII) return SYMBOL_UNKNOWN;
+  if (ch == PLL_EOS) return (PLL_SYM_EOF);
+  if (ch >= PLL_ASCII_SIZE) return (PLL_SYM_UNKNOWN);
 
   sym = lex_table[ch];
 
-  if (sym == SYMBOL_LF)
+  if (sym == PLL_SYM_LF)
    {
      if (get_next_byte() == '\n')
       {
-        sym = SYMBOL_LFCR;
+        sym = PLL_SYM_LFCR;
       }
      else
       {
@@ -79,10 +79,10 @@ get_next_symbol ()
   return sym;
 }
 
-struct ltoken_t
+pllLexToken
 get_token (int * input)
 {
-  struct ltoken_t   token;
+  pllLexToken       token;
   int               start_pos;
   int               floating = 0;
 
@@ -91,121 +91,121 @@ get_token (int * input)
 
   switch (*input)
    {
-     case SYMBOL_SLASH:
-       token.class = LEX_SLASH;
+     case PLL_SYM_SLASH:
+       token.tokenType = PLL_TOKEN_SLASH;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_DASH:
-       token.class = LEX_DASH;
+     case PLL_SYM_DASH:
+       token.tokenType = PLL_TOKEN_DASH;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_EQUAL:
-       token.class = LEX_EQUAL;
+     case PLL_SYM_EQUAL:
+       token.tokenType = PLL_TOKEN_EQUAL;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_SEMICOLON:
-       token.class = LEX_SEMICOLON;
+     case PLL_SYM_SEMICOLON:
+       token.tokenType = PLL_TOKEN_SEMICOLON;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_COMMA:
-       token.class = LEX_COMMA;
+     case PLL_SYM_COMMA:
+       token.tokenType = PLL_TOKEN_COMMA;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_COLON:
-       token.class = LEX_COLON;
+     case PLL_SYM_COLON:
+       token.tokenType = PLL_TOKEN_COLON;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_OPAREN:
-       token.class = LEX_OPAREN;
+     case PLL_SYM_OPAREN:
+       token.tokenType = PLL_TOKEN_OPAREN;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_CPAREN:
-       token.class = LEX_CPAREN;
+     case PLL_SYM_CPAREN:
+       token.tokenType = PLL_TOKEN_CPAREN;
        *input = get_next_symbol();
        break;
 
-     case SYMBOL_SPACE:
-     case SYMBOL_TAB:
+     case PLL_SYM_SPACE:
+     case PLL_SYM_TAB:
        do
         {
           *input = get_next_symbol();
-        } while (*input == SYMBOL_SPACE || *input == SYMBOL_TAB);
+        } while (*input == PLL_SYM_SPACE || *input == PLL_SYM_TAB);
        token.len   = pos - start_pos;
-       token.class = LEX_WHITESPACE; 
-       if (*input == SYMBOL_LFCR) --token.len;
+       token.tokenType = PLL_TOKEN_WHITESPACE; 
+       if (*input == PLL_SYM_LFCR) --token.len;
        break;
        
-     case SYMBOL_DIGIT:
+     case PLL_SYM_DIGIT:
        do
         {
           *input = get_next_symbol();   
-        } while (*input == SYMBOL_DIGIT);
+        } while (*input == PLL_SYM_DIGIT);
 
-       if (*input == SYMBOL_DOT)
+       if (*input == PLL_SYM_DOT)
         {
           floating = 1;
           do
            {
              *input = get_next_symbol ();
-           } while (*input == SYMBOL_DIGIT);
+           } while (*input == PLL_SYM_DIGIT);
         }
 
-       if (*input != SYMBOL_CHAR)
+       if (*input != PLL_SYM_CHAR)
         {
           token.len   = pos - start_pos;
           if (!floating)
-            token.class = LEX_NUMBER;
+            token.tokenType = PLL_TOKEN_NUMBER;
           else
-            token.class = LEX_FLOAT;
+            token.tokenType = PLL_TOKEN_FLOAT;
         }
        else
         {
           do {
             *input = get_next_symbol();
-          } while (*input == SYMBOL_CHAR || *input == SYMBOL_DIGIT || *input == SYMBOL_DOT);
+          } while (*input == PLL_SYM_CHAR || *input == PLL_SYM_DIGIT || *input == PLL_SYM_DOT);
           token.len   = pos - start_pos;
-          token.class = LEX_STRING;
+          token.tokenType = PLL_TOKEN_STRING;
         }
 
-       if (*input == SYMBOL_LFCR) --token.len;
+       if (*input == PLL_SYM_LFCR) --token.len;
        break;
 
-     case SYMBOL_CHAR:
+     case PLL_SYM_CHAR:
        do
         {
           *input = get_next_symbol();
         } 
-       while (*input == SYMBOL_CHAR  || 
-              *input == SYMBOL_DIGIT || 
-              *input == SYMBOL_DASH  ||
-              *input == SYMBOL_DOT);
+       while (*input == PLL_SYM_CHAR  || 
+              *input == PLL_SYM_DIGIT || 
+              *input == PLL_SYM_DASH  ||
+              *input == PLL_SYM_DOT);
        token.len   = pos - start_pos;
-       token.class = LEX_STRING;
-       if (*input == SYMBOL_LFCR) --token.len;
+       token.tokenType = PLL_TOKEN_STRING;
+       if (*input == PLL_SYM_LFCR) --token.len;
        break;
        
-     case SYMBOL_EOF:
-       token.class = LEX_EOF;
+     case PLL_SYM_EOF:
+       token.tokenType = PLL_TOKEN_EOF;
        break;
 
-     case SYMBOL_CR:
-     case SYMBOL_LF:
-     case SYMBOL_LFCR:
+     case PLL_SYM_CR:
+     case PLL_SYM_LF:
+     case PLL_SYM_LFCR:
        do
         {
           *input = get_next_symbol();
-        } while (*input == SYMBOL_CR || *input == SYMBOL_LFCR || *input == SYMBOL_LF);
-       token.class = LEX_NEWLINE;
+        } while (*input == PLL_SYM_CR || *input == PLL_SYM_LFCR || *input == PLL_SYM_LF);
+       token.tokenType = PLL_TOKEN_NEWLINE;
        break;
-     case SYMBOL_UNKNOWN:
-       token.class = LEX_UNKNOWN;
+     case PLL_SYM_UNKNOWN:
+       token.tokenType = PLL_TOKEN_UNKNOWN;
        break;
    }
 
@@ -215,20 +215,20 @@ get_token (int * input)
 void
 lex_table_amend_phylip (void)
 {
-  lex_table['-'] = lex_table['.'] = SYMBOL_CHAR; 
+  lex_table['-'] = lex_table['.'] = PLL_SYM_CHAR; 
 }
 
 void
 lex_table_amend_fasta (void)
 {
-  lex_table['-'] = lex_table['.'] = lex_table['>'] = SYMBOL_CHAR; 
+  lex_table['-'] = lex_table['.'] = lex_table['>'] = PLL_SYM_CHAR; 
 }
 
 void
 lex_table_restore (void)
 {
-  lex_table['-'] = SYMBOL_DASH;
-  lex_table['.'] = SYMBOL_DOT; 
+  lex_table['-'] = PLL_SYM_DASH;
+  lex_table['.'] = PLL_SYM_DOT; 
 }
 
 void

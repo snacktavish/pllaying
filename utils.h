@@ -22,6 +22,7 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 
+char * pllReadFile (const char *, int *);
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int);
@@ -29,7 +30,7 @@ int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignment
 partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
 void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
-void pllTreeInitTopologyNewick (pllInstance * tr, struct pllNewickTree * nt, int bUseDefaultZ);
+void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
 int pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
