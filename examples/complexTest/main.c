@@ -72,7 +72,7 @@ static void testProteinStuff()
 {
   pllAlignmentData * alignmentData;
   pllInstance * tr;
-  struct pllNewickTree * newick;
+  pllNewickTree * newick;
   
   partitionList * partitions;
   
@@ -250,7 +250,7 @@ int main (int argc, char * argv[])
 {
   pllAlignmentData *alignmentData1, *alignmentData2;
   pllInstance * tr, *tr2;
-  struct pllNewickTree * newick;
+  pllNewickTree * newick;
   partitionList * partitions, *partitions2;
   struct pllQueue * parts;
   int i;
@@ -328,7 +328,7 @@ int main (int argc, char * argv[])
    }
 
   /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
- pllInitModel(tr, PLL_TRUE, alignmentData1, partitions);
+ pllInitModel(tr, alignmentData1, partitions);
 
   /* TODO transform into pll functions !*/
 
@@ -357,7 +357,7 @@ int main (int argc, char * argv[])
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
    }
-  pllInitModel(tr2, PLL_TRUE, alignmentData2, partitions2);
+  pllInitModel(tr2, alignmentData2, partitions2);
 
   Tree2String (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);
@@ -430,7 +430,7 @@ int main (int argc, char * argv[])
 	  fprintf (stderr, "Incompatible tree/alignment combination\n");
 	  return (EXIT_FAILURE);
 	}
-      pllInitModel(tr, PLL_TRUE, alignmentData1, partitions);
+      pllInitModel(tr, alignmentData1, partitions);
       
       switch(i)
 	{

@@ -3104,12 +3104,6 @@ int pllLinkRates(char *string, partitionList *pr)
     @param tr
       The PLL instance
 
-    @param bEmpiricalFreqs
-      Use empirical frequencies
-    
-    @param bResetBranches
-      Reset branch lengths to default lengths
-
     @param alignmentData
       The parsed alignment
 

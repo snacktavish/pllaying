@@ -43,7 +43,7 @@ int main (int argc, char * argv[])
 {
   pllAlignmentData * alignmentData;
   pllInstance * tr;
-  struct pllNewickTree * newick;
+  pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
 
