@@ -128,13 +128,17 @@ pllReadFile (const char * filename, int * filesize)
   rewind (fp);
 
   /* allocate buffer and read file contents */
-  rawdata = (char *) rax_malloc ((*filesize) * sizeof (char));
+  rawdata = (char *) rax_malloc (((*filesize) + 1) * sizeof (char));
   if (rawdata) 
    {
      if (fread (rawdata, sizeof (char), *filesize, fp) != *filesize) 
       {
         rax_free (rawdata);
         rawdata = NULL;
+      }
+     else
+      {
+        rawdata[*filesize] = 0;
       }
    }
 
@@ -3167,3 +3171,280 @@ int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likeli
 
   return PLL_TRUE;
 }
+
+void pllInitListSPR (pllListSPR ** bestListSPR, int max)
+{
+  pllListSPR * bl;
+  *bestListSPR = (pllListSPR *) malloc (sizeof (pllListSPR));
+
+  bl = *bestListSPR;
+  bl->max_entries = max;
+  bl->entries     = 0;
+  bl->sprInfo     = (pllInfoSPR *) malloc (max * sizeof (pllInfoSPR));
+}
+
+void pllDestroyListSPR (pllListSPR ** bestListSPR)
+{
+  pllListSPR * bl;
+
+  bl = *bestListSPR;
+
+  free (bl->sprInfo);
+  free (bl);
+
+  *bestListSPR = NULL;
+}
+
+int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
+ {
+   /* naive implementation of saving SPR moves */
+   int i;
+
+   for (i = 0; i < bestListSPR->entries; ++ i)
+    {
+      /* Does the new SPR yield a better likelihood that the current in the list */
+      if (sprInfo->likelihood > bestListSPR->sprInfo[i].likelihood)
+       {
+         /* is there enough space in the array ? */
+         if (bestListSPR->entries < bestListSPR->max_entries)
+          {
+            /* slide the entries to the right and overwrite the i-th element with the new item */
+            memmove (&(bestListSPR->sprInfo[i + 1]), &(bestListSPR->sprInfo[i]), (bestListSPR->entries - i ) * sizeof (pllInfoSPR));
+            ++ bestListSPR->entries;
+          }
+         else
+          {
+            memmove (&(bestListSPR->sprInfo[i + 1]), &(bestListSPR->sprInfo[i]), (bestListSPR->entries - i - 1 ) * sizeof (pllInfoSPR));
+          }
+         memcpy (&(bestListSPR->sprInfo[i]), sprInfo, sizeof (pllInfoSPR));
+         return (PLL_TRUE);
+       }
+    }
+   if (bestListSPR->entries < bestListSPR->max_entries)
+    {
+      memcpy (&(bestListSPR->sprInfo[bestListSPR->entries]), sprInfo, sizeof (pllInfoSPR));
+      ++ bestListSPR->entries;
+      return (PLL_TRUE);
+    }
+
+   return (PLL_FALSE);
+ }
+
+pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR)
+{
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  pllInfoSPR sprInfo;
+
+  double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
+  nodeptr  r;
+  //double startLH = tr->endLH;
+  int i;
+
+  r = q->back; 
+  for(i = 0; i < numBranches; i++)
+  {
+    qz[i] = q->z[i];
+    pz[i] = p->z[i];
+  }
+
+  if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
+
+  evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
+  
+  sprInfo.removeNode = p;
+  sprInfo.insertNode = q;
+  sprInfo.likelihood = tr->likelihood;
+  for (i = 0; i < numBranches; ++ i)
+   {
+     sprInfo.zqr[i] = tr->zqr[i];
+   }
+
+  pllStoreSPR (bestListSPR, &sprInfo);
+
+/*
+  if(tr->likelihood > tr->bestOfNode)
+  {
+    pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
+    tr->bestOfNode = tr->likelihood;
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
+    {
+      tr->currentZQR[i] = tr->zqr[i];           
+      tr->currentLZR[i] = tr->lzr[i];
+      tr->currentLZQ[i] = tr->lzq[i];
+      tr->currentLZS[i] = tr->lzs[i];      
+    }
+  }
+
+  if(tr->likelihood > tr->endLH)
+  {			  
+    
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
+      tr->currentZQR[i] = tr->zqr[i];      
+    tr->endLH = tr->likelihood;                      
+  }        
+*/
+  /* reset the topology so that it is the same as it was before calling insertBIG */
+  hookup(q, r, qz, numBranches);
+
+  p->next->next->back = p->next->back = (nodeptr) NULL;
+
+  if(tr->thoroughInsertion)
+  {
+    nodeptr s = p->back;
+    hookup(p, s, pz, numBranches);
+  } 
+
+/*
+  if((tr->doCutoff) && (tr->likelihood < startLH))
+  {
+    tr->lhAVG += (startLH - tr->likelihood);
+    tr->lhDEC++;
+    if((startLH - tr->likelihood) >= tr->lhCutoff)
+      return PLL_FALSE;	    
+    else
+      return PLL_TRUE;
+  }
+  else
+    return PLL_TRUE;
+  */
+  return (PLL_TRUE);
+}
+
+static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllListSPR * bestListSPR)
+{  
+  if (--mintrav <= 0) 
+  {              
+    if (! pllTestInsertBIG(tr, pr, p, q, bestListSPR))  return;
+
+  }
+
+  if ((!isTip(q->number, tr->mxtips)) && (--maxtrav > 0)) 
+  {    
+    pllTraverseUpdate(tr, pr, p, q->next->back, mintrav, maxtrav, bestListSPR);
+    pllTraverseUpdate(tr, pr, p, q->next->next->back, mintrav, maxtrav, bestListSPR);
+  }
+} 
+/** @brief Compute an SPR move
+*/
+int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR)
+{
+  nodeptr 
+    p1, p2, q, q1, q2;
+  double 
+    p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
+  int
+    mintrav2, i;
+  int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  if (maxtrav < 1 || mintrav > maxtrav) return (PLL_FALSE);
+  q = p->back;
+
+  if (!isTip (p->number, tr->mxtips))
+   {
+     p1 = p->next->back;
+     p2 = p->next->next->back;
+
+     if (!isTip (p1->number, tr->mxtips) || !isTip (p2->number, tr->mxtips))
+      {
+        /* save branch lengths before splitting the tree in two components */
+        for (i = 0; i < numBranches; ++ i)
+         {
+           p1z[i] = p1->z[i];
+           p2z[i] = p2->z[i];
+         }
+
+        /* split the tree in two components */
+        if (! removeNodeBIG (tr, pr, p, numBranches)) return PLL_BADREAR;
+
+        /* recursively traverse and perform SPR on the subtree rooted at p1 */
+        if (!isTip (p1->number, tr->mxtips))
+         {
+           pllTraverseUpdate (tr, pr, p, p1->next->back,       mintrav, maxtrav, bestListSPR);
+           pllTraverseUpdate (tr, pr, p, p1->next->next->back, mintrav, maxtrav, bestListSPR);
+         }
+
+        /* recursively traverse and perform SPR on the subtree rooted at p2 */
+        if (!isTip (p2->number, tr->mxtips))
+         {
+           pllTraverseUpdate (tr, pr, p, p2->next->back,       mintrav, maxtrav, bestListSPR);
+           pllTraverseUpdate (tr, pr, p, p2->next->next->back, mintrav, maxtrav, bestListSPR);
+         }
+
+        /* restore the topology as it was before the split */
+        hookup (p->next,       p1, p1z, numBranches);
+        hookup (p->next->next, p2, p2z, numBranches);
+        newviewGeneric (tr, pr, p, PLL_FALSE);
+      }
+   }
+
+  if (!isTip (q->number, tr->mxtips) && maxtrav > 0)
+   {
+     q1 = q->next->back;
+     q2 = q->next->next->back;
+
+    /* why so many conditions? Why is it not analogous to the previous if for node p? */
+    if (
+        (
+         ! isTip(q1->number, tr->mxtips) && 
+         (! isTip(q1->next->back->number, tr->mxtips) || ! isTip(q1->next->next->back->number, tr->mxtips))
+        )
+        ||
+        (
+         ! isTip(q2->number, tr->mxtips) && 
+         (! isTip(q2->next->back->number, tr->mxtips) || ! isTip(q2->next->next->back->number, tr->mxtips))
+        )
+       )
+     {
+       for (i = 0; i < numBranches; ++ i)
+        {
+          q1z[i] = q1->z[i];
+          q2z[i] = q2->z[i];
+        }
+
+       if (! removeNodeBIG (tr, pr, q, numBranches)) return PLL_BADREAR;
+
+       mintrav2 = mintrav > 2 ? mintrav : 2;
+
+       if (!isTip (q1->number, tr->mxtips))
+        {
+          pllTraverseUpdate (tr, pr, q, q1->next->back,       mintrav2, maxtrav, bestListSPR);
+          pllTraverseUpdate (tr, pr, q, q1->next->next->back, mintrav2, maxtrav, bestListSPR);
+        }
+
+       if (!isTip (q2->number, tr->mxtips))
+        {
+          pllTraverseUpdate (tr, pr, q, q2->next->back,       mintrav2, maxtrav, bestListSPR);
+          pllTraverseUpdate (tr, pr, q, q2->next->next->back, mintrav2, maxtrav, bestListSPR);
+        }
+
+       hookup (q->next,       q1, q1z, numBranches);
+       hookup (q->next->next, q2, q2z, numBranches);
+       newviewGeneric (tr, pr, q, PLL_FALSE);
+     }
+   }
+  return (PLL_TRUE);
+}
+
+pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max)
+{
+  int i, index;
+  pllListSPR * bestListSPR;
+
+  pllInitListSPR (&bestListSPR, max);
+
+  tr->startLH = tr->endLH = tr->likelihood;
+
+  /* TODO: Add cutoff code */
+
+  tr->bestOfNode = PLL_UNLIKELY;
+
+  pllTestSPR (tr, pr, p, mintrav, maxtrav, bestListSPR);
+
+  return (bestListSPR);
+}
+
+

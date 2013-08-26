@@ -177,7 +177,7 @@ parsedOk (int * actLen, int nTaxa, int seqLen  )
 
 
 static int
-parse_phylip (char * rawdata, struct pllPhylip * phylip, int input)
+parse_phylip (struct pllPhylip * phylip, int input)
 {
   int i,j;
   struct ltoken_t token;
@@ -297,7 +297,7 @@ pllPhylipParse (const char * filename)
   /* allocate the phylip structure */
   phylip = alloc_phylip_struct (nTaxa, seqLen);
 
-  if (! parse_phylip (rawdata, phylip, input))
+  if (! parse_phylip (phylip, input))
    {
      printf ("Finished with error in parsing ...\n");
      pllPhylipDestroy (phylip);

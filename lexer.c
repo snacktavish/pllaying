@@ -229,6 +229,7 @@ lex_table_restore (void)
 {
   lex_table['-'] = PLL_SYM_DASH;
   lex_table['.'] = PLL_SYM_DOT; 
+  lex_table['>'] = PLL_SYM_UNKNOWN;
 }
 
 void

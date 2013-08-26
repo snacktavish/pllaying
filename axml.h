@@ -1373,6 +1373,21 @@ typedef struct
 
 } partitionLengths;
 
+typedef struct
+ {
+   nodeptr removeNode;
+   nodeptr insertNode;
+   double likelihood;
+   double zqr[NUM_BRANCHES];
+ } pllInfoSPR;
+
+typedef struct
+ {
+   int max_entries;
+   int entries;
+   pllInfoSPR * sprInfo;
+ } pllListSPR;
+
 /****************************** FUNCTIONS ****************************************************/
 
 

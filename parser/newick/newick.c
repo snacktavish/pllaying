@@ -27,14 +27,18 @@ parse_newick (struct pllStack ** stack, int * inp)
     switch (token.tokenType)
      {
        case PLL_TOKEN_OPAREN:
-       //printf ("PLL_TOKEN_OPAREN\n");
+#ifdef PLLDEBUG
+       printf ("PLL_TOKEN_OPAREN\n");
+#endif
         ++nop;
         memcpy (&prev_token, &token, sizeof (pllLexToken));
         ++depth;
         break;
 
        case PLL_TOKEN_CPAREN:
-       //printf ("PLL_TOKEN_CPAREN\n");
+#ifdef PLLDEBUG
+       printf ("PLL_TOKEN_CPAREN\n");
+#endif
         if (prev_token.tokenType != PLL_TOKEN_CPAREN  &&
             prev_token.tokenType != PLL_TOKEN_UNKNOWN &&
             prev_token.tokenType != PLL_TOKEN_STRING  &&
@@ -68,7 +72,9 @@ parse_newick (struct pllStack ** stack, int * inp)
         break;
 
        case PLL_TOKEN_STRING:
-       //printf ("PLL_TOKEN_STRING\n");
+#ifdef PLLDEBUG
+       printf ("PLL_TOKEN_STRING      %.*s\n", token.len, token.lexeme);
+#endif
         if (prev_token.tokenType != PLL_TOKEN_OPAREN &&
             prev_token.tokenType != PLL_TOKEN_CPAREN &&
             prev_token.tokenType != PLL_TOKEN_UNKNOWN &&
@@ -89,7 +95,9 @@ parse_newick (struct pllStack ** stack, int * inp)
 
        case PLL_TOKEN_FLOAT:
        case PLL_TOKEN_NUMBER:
-       //if (token.tokenType == PLL_TOKEN_FLOAT) printf ("PLL_TOKEN_FLOAT\n"); else printf ("PLL_TOKEN_NUMBER\n");
+#ifdef PLLDEBUG
+       if (token.tokenType == PLL_TOKEN_FLOAT) printf ("PLL_TOKEN_FLOAT\n"); else printf ("PLL_TOKEN_NUMBER\n");
+#endif
          if  (prev_token.tokenType != PLL_TOKEN_OPAREN &&
               prev_token.tokenType != PLL_TOKEN_CPAREN &&
               prev_token.tokenType != PLL_TOKEN_COLON  &&
@@ -120,7 +128,9 @@ parse_newick (struct pllStack ** stack, int * inp)
         break;
 
        case PLL_TOKEN_COLON:
-       //printf ("PLL_TOKEN_COLON\n");
+#ifdef PLLDEBUG
+       printf ("PLL_TOKEN_COLON\n");
+#endif
         if (prev_token.tokenType != PLL_TOKEN_CPAREN &&
             prev_token.tokenType != PLL_TOKEN_STRING &&
             prev_token.tokenType != PLL_TOKEN_FLOAT  &&
@@ -129,7 +139,9 @@ parse_newick (struct pllStack ** stack, int * inp)
         break;
 
        case PLL_TOKEN_COMMA:
-       //printf ("PLL_TOKEN_COMMA\n");
+#ifdef PLLDEBUG
+       printf ("PLL_TOKEN_COMMA\n");
+#endif
         if (prev_token.tokenType != PLL_TOKEN_CPAREN &&
              prev_token.tokenType != PLL_TOKEN_STRING &&
              prev_token.tokenType != PLL_TOKEN_FLOAT && 
@@ -157,7 +169,9 @@ parse_newick (struct pllStack ** stack, int * inp)
         break;
 
        case PLL_TOKEN_SEMICOLON:
-        //printf ("PLL_TOKEN_SEMICOLON\n");
+#ifdef PLLDEBUG
+        printf ("PLL_TOKEN_SEMICOLON\n");
+#endif
         /* push to the stack */
         if (!item) item = (struct item_t *) rax_calloc (1, sizeof (struct item_t));
         //if (item->name   == NULL) item->name   = strdup ("ROOT_NODE");
@@ -177,6 +191,9 @@ parse_newick (struct pllStack ** stack, int * inp)
         item = NULL;
         break;
        default:
+#ifdef PLLDEBUG
+         printf ("Unknown token: %d\n", token.tokenType);
+#endif
        // TODO: Finish this part and add error codes
         break;
      }
@@ -202,7 +219,10 @@ parse_newick (struct pllStack ** stack, int * inp)
      item_active  = 0;
    }
 
-  if (nop || token.tokenType == PLL_TOKEN_UNKNOWN) return (0);
+  if (nop || token.tokenType == PLL_TOKEN_UNKNOWN) 
+   {
+     return (0);
+   }
 
   return (1);
 }
@@ -447,7 +467,7 @@ pllNewickParseFile (const char * filename)
      return (0);
    }
 
-   printf ("%s\n\n", rawdata);
+  printf ("%s\n\n", rawdata);
 
   t = pllNewickParseString (rawdata);
 

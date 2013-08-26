@@ -56,9 +56,9 @@ pllInitAlignmentData (int sequenceCount, int sequenceLength)
    void * mem;
    
    /** TODO */
-   alignmentData               =  (pllAlignmentData *) rax_malloc (sizeof (pllAlignmentData));
-   alignmentData->sequenceData = (unsigned char **) rax_malloc ((sequenceCount + 1) * sizeof (unsigned char *));
-   mem = (void *) rax_malloc (sizeof (unsigned char) * (sequenceLength + 1) * sequenceCount);
+   alignmentData               =  (pllAlignmentData *) malloc (sizeof (pllAlignmentData));
+   alignmentData->sequenceData = (unsigned char **) malloc ((sequenceCount + 1) * sizeof (unsigned char *));
+   mem = (void *) malloc (sizeof (unsigned char) * (sequenceLength + 1) * sequenceCount);
    for (i = 1; i <= sequenceCount; ++i)
     {
       alignmentData->sequenceData[i]                 = (unsigned char *) (mem + (i - 1) * (sequenceLength + 1) * sizeof (unsigned char));
@@ -66,7 +66,7 @@ pllInitAlignmentData (int sequenceCount, int sequenceLength)
     }
    alignmentData->sequenceData[0] = NULL;
     
-   alignmentData->sequenceLabels = (char **) rax_calloc ((sequenceCount + 1), sizeof (char *));
+   alignmentData->sequenceLabels = (char **) calloc ((sequenceCount + 1), sizeof (char *));
 
    alignmentData->sequenceCount  = sequenceCount;
    alignmentData->sequenceLength = sequenceLength;
