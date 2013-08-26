@@ -20,6 +20,26 @@
 
  
   
+/** @brief Reorder nodes in PLL tree
+
+    Re-order the internal nodes of the tree of PLL instance \a tr in a preorder
+    traversal such that they start from \a p
+    
+    @param tr
+      PLL instance
+
+    @param np
+      Array of node pointers
+
+    @param p
+      Node from where the preorder traversal should start
+
+    @param count
+
+    @todo
+      why not insert a break in the for loop when the node is found?
+
+*/
 static void reorderNodes(pllInstance *tr, nodeptr *np, nodeptr p, int *count)
 {
   int i, found = 0;

@@ -856,7 +856,7 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
   hookup(p->next->next, p2, p2z, numBranches);
 }
 
-/** @brief Test the insertion of
+/** @brief Test the 
 */
 boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 {
@@ -902,6 +902,7 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     tr->endLH = tr->likelihood;                      
   }        
 
+  /* reset the topology so that it is the same as it was before calling insertBIG */
   hookup(q, r, qz, numBranches);
 
   p->next->next->back = p->next->back = (nodeptr) NULL;
@@ -926,8 +927,29 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 }
 
 
+/** @brief Recursively traverse tree and test insertion
 
+    Recursively traverses the tree structure starting from node \a q and
+    tests the insertion of the component specified by leaf \a p at the edge
+    between \a q and \a q->back.
 
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+    @param p
+      Leaf node of one tree component
+
+    @param q
+      Endpoint node of the edge to test the insertion
+
+    @param mintrav
+      Minimum radius around \a q to test the insertion
+
+    @param maxtrav
+      Maximum radius around \a q to test the insertion\
+*/
 void addTraverseBIG(pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav)
 {  
   if (--mintrav <= 0) 
@@ -946,16 +968,41 @@ void addTraverseBIG(pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, in
 
 
 
+/** @brief  Compute the  best SPR movement
 
+    Compute all SPR moves starting from \a p in the space defined by \a mintrav and
+    \a maxtrav and store the best in the \a tr structure.
+
+    @param tr
+      PLL instancve
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node from which to start the SPR moves testing
+
+    @param mintrav
+      Minimum distance from \a p where to start testing SPRs
+
+    @param maxtrav
+      Maximum distance from \a p where to test SPRs
+
+    @return
+       0,1 or \b PLL_BADREAR
+
+    @todo
+      fix the return value
+*/
 int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav)
 {  
   double   p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
   nodeptr  p1, p2, q, q1, q2;
   int      mintrav2, i;  
   boolean doP = PLL_TRUE, doQ = PLL_TRUE;
-  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
 
-  if (maxtrav < 1 || mintrav > maxtrav)  return 0;
+  if (maxtrav < 1 || mintrav > maxtrav)  return (0);
   q = p->back;
 
 
@@ -1059,7 +1106,25 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
 
 
 
+/** @brief Perform an SPR move?
 
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param mintrav
+
+    @param maxtrav
+
+    @param adef
+
+    @param bt
+
+    @param iList
+
+*/
 double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList)
 {
   int i, index,
@@ -1123,8 +1188,9 @@ double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int ma
       if(tr->thoroughInsertion)
       {
         if(tr->endLH > tr->startLH)                 	
-        {			   	     
-          restoreTreeFast(tr, pr);
+        {			   
+          /* commit the best SPR found by rearrangeBIG */
+          restoreTreeFast(tr, pr);    
           tr->startLH = tr->endLH = tr->likelihood;	 
           saveBestTree(bt, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
         }
