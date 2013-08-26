@@ -46,6 +46,7 @@ int main (int argc, char * argv[])
   pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
+  pllListSPR * bestList;
 
   if (argc != 4)
    {
@@ -57,10 +58,11 @@ int main (int argc, char * argv[])
   tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
   /* Parse a PHYLIP file */
-//  alignmentData = pllParsePHYLIP (argv[1]);
+  alignmentData = pllParsePHYLIP (argv[1]);
+
 
   /* Parse a FASTA file */
-  alignmentData = pllParseFASTA (argv[1]);
+  //alignmentData = pllParseFASTA (argv[1]);
 
   if (!alignmentData)
    {
@@ -127,6 +129,13 @@ int main (int argc, char * argv[])
   double computed_lh = tr->likelihood;
   evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   assert(computed_lh == tr->likelihood);
+
+  bestList = pllComputeSPR (tr, partitions, tr->nodep[tr->mxtips + 1], 1, 20, 20);
+
+  printf ("Number of SPRs: %d\n", bestList->entries);
+
+  pllDestroyListSPR (&bestList);
+
   //printf ("Likelihood: %f\n", tr->likelihood);
   
 //  /* optimize BL */
