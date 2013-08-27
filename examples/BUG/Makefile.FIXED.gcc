@@ -8,7 +8,7 @@ RM = rm -f
 all: pll
 
 pll: libpll-AVX-PTHREADS.a main.c
-	$(CC) -g main.c -L $(LIBPATH) $(LIBRARIES) -o $@ 
+	$(CC) -D_USE_PTHREADS -g main.c -L $(LIBPATH) $(LIBRARIES) -o $@ 
 
 libpll-AVX-PTHREADS.a: avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o bipartitionList.o fastDNAparsimony.o optimizeModel.o recom.o trash.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o utils.o genericParallelization.o
 	$(AR) $(ARFLAGS) $@ $+
