@@ -1,0 +1,17 @@
+CC = gcc 
+MAKE = make
+LIBPATH = ../../
+LIBRARIES = -lpll-AVX-PTHREADS -lpthread -lm
+RM = rm -f
+
+all: pll
+
+pll: main.c
+	$(MAKE) -C $(LIBPATH) -f Makefile.AVX.PTHREADS.gcc
+	@echo "==> Building PLL example"
+	$(CC) -g $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+
+clean : 
+	$(RM) pll 
+
+.PHONY: all clean
