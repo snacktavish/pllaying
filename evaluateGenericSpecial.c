@@ -52,9 +52,9 @@
 /*#include <tmmintrin.h>*/
 #endif
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
-#endif
+//#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+//void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
+//#endif
 
 
 /* 
@@ -1293,6 +1293,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
 
 void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikelihoods)
 {
+#if (!defined(_USE_PTHREADS) && !defined(_FINE_GRAIN_MPI))
   double 
     //likelihood,
     accumulatedPerSiteLikelihood = 0.0;
@@ -1304,7 +1305,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
     lower,
     upper;
   int model;
-
+#endif
   /* compute the likelihood of the tree with the standard function to:
      1. obtain the current score for error checking
      2. store a full tree traversal in the traversal descriptor that 

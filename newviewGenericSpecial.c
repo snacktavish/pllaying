@@ -247,6 +247,8 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
     }  
 }
 
+#ifndef __AVX
+
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
    I provide generic, slow but readable function implementations for computing the 
    conditional likelihood arrays at p, given child nodes q and r. Once again we need 
@@ -263,7 +265,6 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
  *
  *
  */
-
 static void newviewCAT_FLEX(int tipCase, double *extEV,
 			    int *cptr,
 			    double *x1, double *x2, double *x3, double *tipVector,
@@ -757,7 +758,7 @@ static void newviewGAMMA_FLEX(int tipCase,
   if(fastScaling)
     *scalerIncrement = addScale;
 }
-
+#endif
 
 
 
@@ -1006,7 +1007,7 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
    for computing the conditional likelihood at p given child nodes q and r. The actual implementation is located at the end/bottom of this 
    file.
    */
-#if 1
+#ifndef __AVX
 //#ifdef _OPTIMIZED_FUNCTIONS
 
 static void newviewGTRGAMMAPROT_LG4(int tipCase,
@@ -1553,7 +1554,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             {
 	      
               if(tr->saveMemory)
-#ifdef ___AVX
+#ifdef __AVX
 		newviewGTRGAMMA_AVX_GAPPED_SAVE(tInfo->tipCase,
 						x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
 						ex3, tipX1, tipX2,
@@ -2313,7 +2314,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
  *  This is the optimized functions group
  */
 
-#if 1
+#ifndef __AVX 
 //#ifdef _OPTIMIZED_FUNCTIONS
 
 /** @ingroup group1
@@ -3226,7 +3227,6 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
   if(fastScaling)
     *scalerIncrement = addScale;
 }
-
 
 /** @ingroup group1
     @brief Brief function description
@@ -4181,6 +4181,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
   if(fastScaling)
     *scalerIncrement = addScale;
 }
+#endif
 
 #ifndef __APPLE__
 inline 
@@ -4198,6 +4199,7 @@ boolean noGap(unsigned int *x, int pos)
   return (!(x[pos / 32] & mask32[pos % 32]));
 }
 
+#ifndef __AVX
 static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 				double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
 				int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -6682,7 +6684,6 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
     *scalerIncrement = addScale;
 
 }
-
 #endif
 
 

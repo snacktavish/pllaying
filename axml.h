@@ -1392,7 +1392,7 @@ typedef struct
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 boolean isThisMyPartition(partitionList *pr, int tid, int model);
-void printParallelTimePerRegion(); 
+void printParallelTimePerRegion(void); 
 #endif
 
 extern void computePlacementBias(pllInstance *tr, analdef *adef);
@@ -1479,7 +1479,7 @@ extern void smoothTree ( pllInstance *tr, partitionList *pr, int maxtimes );
 extern void localSmooth ( pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes );
 extern boolean localSmoothMulti(pllInstance *tr, nodeptr p, int maxtimes, int model);
 extern int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel);
-extern void NNI(pllInstance * tr, nodeptr p, int swap);
+extern int NNI(pllInstance * tr, nodeptr p, int swap);
 
 extern void smoothRegion ( pllInstance *tr, partitionList *pr, nodeptr p, int region );
 extern void regionalSmooth ( pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes, int region );
@@ -1650,7 +1650,7 @@ extern boolean compatible(entry* e1, entry* e2, unsigned int bvlen);
 extern void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikelihoods);
 
 extern int *permutationSH(pllInstance *tr, int nBootstrap, long _randomSeed);
-extern void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
+//extern void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
 extern void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates);
 
 extern void restart(pllInstance *tr, partitionList *pr);
@@ -1799,7 +1799,7 @@ boolean modelExists(char *model, pllInstance *tr);
 
 /* declarations from utils.c */
 void myBinFread(void *ptr, size_t size, size_t nmemb, FILE *byteFile);
-static boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions);
+//static boolean setupTree (pllInstance *tr, boolean doInit, partitionList *partitions);
 void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr);
 void initializePartitionData(pllInstance *localTree, partitionList * localPartitions);
 void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr);

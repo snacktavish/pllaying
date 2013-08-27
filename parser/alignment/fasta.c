@@ -123,10 +123,10 @@ pllParseFASTA (const char * filename)
 {
   int
     i,
-    filesize,
     seqLen,
     seqCount,
     input;
+  long filesize;
 
   char * rawdata;
   pllAlignmentData * alignmentData;

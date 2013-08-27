@@ -10,11 +10,15 @@ extern double *globalResult;
 /**********/
 
 /* #define MEASURE_TIME_PARALLEL */
-#define _PORTABLE_PTHREADS
+//#define _PORTABLE_PTHREADS
 /* #define DEBUG_PARALLEL */ 
 /* #define DEBUG_MPI_EACH_SEND */
 /* #define _REPRODUCIBLE_MPI_OR_PTHREADS */
-
+#ifdef _USE_PTHREADS
+#ifndef _PORTABLE_PTHREADS
+void pinToCore(int tid);
+#endif
+#endif
 
 
 #define NOT ! 

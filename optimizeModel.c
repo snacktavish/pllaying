@@ -329,6 +329,8 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
       case FREQ_F:
         masterBarrier(THREAD_OPT_RATE, tr, pr);
         break;
+      default:
+        break;
     }
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */

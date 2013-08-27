@@ -2,8 +2,8 @@
 #include "lexer.h"
 
 static const char * rawtext;
-static int          rawtext_size;
-static int          pos = 0;
+static long rawtext_size;
+static long pos = 0;
 
 int lex_table[PLL_ASCII_SIZE] = {
 /*      */ PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN, PLL_SYM_UNKNOWN,   PLL_SYM_UNKNOWN,
@@ -53,7 +53,7 @@ get_next_byte (void)
 }
 
 int
-get_next_symbol ()
+get_next_symbol (void)
 {
   int ch, sym;
 
@@ -207,6 +207,8 @@ get_token (int * input)
      case PLL_SYM_UNKNOWN:
        token.tokenType = PLL_TOKEN_UNKNOWN;
        break;
+     default:
+       break;
    }
 
   return (token);
@@ -233,7 +235,7 @@ lex_table_restore (void)
 }
 
 void
-init_lexan (const char * text, int n)
+init_lexan (const char * text, long n)
 {
   rawtext      = text;
   rawtext_size = n;

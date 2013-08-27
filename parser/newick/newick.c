@@ -456,7 +456,7 @@ void pllNewickParseDestroy (pllNewickTree ** t)
 pllNewickTree *
 pllNewickParseFile (const char * filename)
 {
-  int n;
+  long n;
   char * rawdata;
   pllNewickTree * t;
 

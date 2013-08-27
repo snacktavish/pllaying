@@ -4,6 +4,7 @@
 #include "../../stack.h"
 #include "../../lexer.h"
 #include "../../axml.h"
+#include "../common.h"
 
 typedef struct
 {
@@ -26,5 +27,4 @@ pllNewickTree * pllNewickParseString (char * newick);
 pllNewickTree * pllNewickParseFile (const char * filename);
 int pllValidateNewick (pllNewickTree *);
 void pllNewickParseDestroy (pllNewickTree **);
-char * pllReadFile (const char *, int *);
 #endif

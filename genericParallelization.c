@@ -27,6 +27,14 @@
 
 
 
+void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
+void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionList *pr, int n, int tid);
+void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches );
+boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
+void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr);
+void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
+void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
+
 /* extern unsigned int* mask32;  */
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
@@ -38,10 +46,10 @@ double timeBuffer[NUM_PAR_JOBS];
 double timePerRegion[NUM_PAR_JOBS]; 
 #endif
 
-extern void initializePartitionData(pllInstance *localTree, partitionList *localPr);
+//extern void initializePartitionData(pllInstance *localTree, partitionList *localPr);
 extern char* getJobName(int tmp); 
 
-extern double *globalResult; 
+//extern double *globalResult; 
 extern volatile char *barrierBuffer;
 
 
@@ -309,7 +317,7 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
     model, 
     i;
 
-  for(model = 0; model < pr->numberOfPartitions; model++)
+  for(model = 0; model < (size_t)pr->numberOfPartitions; model++)
     {      
       size_t 
 	localIndex = 0;
@@ -325,13 +333,13 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
 	 we need to compute some per-site log likelihoods with thread tid for this partition */
 
       if(execute)
-	for(i = pr->partitionData[model]->lower;  i < pr->partitionData[model]->upper; i++)
+	for(i = (size_t)(pr->partitionData[model]->lower);  i < (size_t)(pr->partitionData[model]->upper); i++)
 	  {
 	    /* if -Q is active we compute all per-site log likelihoods for the partition,
 	       othwerise we only compute those that have been assigned to thread tid 
 	       using the cyclic distribution scheme */
 
-	    if(tr->manyPartitions || (i % n == tid))
+	    if(tr->manyPartitions || (i % n == (size_t)tid))
 	      {
 		double 
 		  l;
@@ -818,7 +826,7 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
     @param tr library instance
     @param tid worker id 
  */
-static void broadCastAlpha(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int tid)
+static void broadCastAlpha(partitionList *localPr, partitionList *pr)
 {
   int  i, 
     model; 
@@ -845,7 +853,7 @@ static void broadCastAlpha(pllInstance *localTree, pllInstance *tr, partitionLis
     @param tr library instance
     @param tid worker id     
  */ 
-static void broadCastRates(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int tid)
+static void broadCastRates(partitionList *localPr, partitionList *pr)
 {
   int 
     model;
@@ -894,7 +902,7 @@ static void broadCastRates(pllInstance *localTree, pllInstance *tr, partitionLis
     @param tid worker id 
     @todo Please comment remaining parameters
  */ 
-static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
+static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
 {
   int model;
 
@@ -992,7 +1000,7 @@ static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, par
   @param tr library instance
 */
 /* TODO: we should reset this at some point, the excplicit copy is just done for testing */
-inline static void broadcastTraversalInfo(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
+inline static void broadcastTraversalInfo(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
 {
   /* @todo these two regions could be joined */
 #ifdef _USE_PTHREADS
@@ -1135,7 +1143,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 #endif
 
   /* here the master sends and all threads/processes receive the traversal descriptor */
-  broadcastTraversalInfo(localTree, tr, localPr, pr);
+  broadcastTraversalInfo(localTree, tr, localPr);
 
 #ifdef _USE_PTHREADS
   /* make sure that nothing is going wrong */
@@ -1157,7 +1165,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       newviewIterative(localTree, localPr, 0);
       break;     
     case THREAD_EVALUATE: 
-      reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
+      reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
       break;	
     case THREAD_MAKENEWZ_FIRST:
 
@@ -1218,11 +1226,11 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
       
       /* distribute the new discrete gamma rates to the threads */
-      broadCastAlpha(localTree,tr, localPr,pr, tid);
+      broadCastAlpha(localPr,pr);
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
       if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
+	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
 
       break;           
     case THREAD_OPT_RATE:
@@ -1236,13 +1244,13 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	 need to broadcast all eigenvectors, eigenvalues etc to each thread 
       */
 
-      broadCastRates(localTree, tr, localPr, pr, tid);
+      broadCastRates(localPr, pr);
 
       /* now evaluate the likelihood of the new Q matrix, this always requires a full tree traversal because the changes need
 	 to be propagated throughout the entire tree */
 
       if(localTree->td[0].functionType == THREAD_OPT_RATE)
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_FALSE);
+	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
 
       break;                       
     case THREAD_COPY_INIT_MODEL:
@@ -1251,8 +1259,8 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	/* need to be very careful here ! THREAD_COPY_INIT_MODEL is also used when the program is restarted 
 	   it is hence not sufficient to just initialize everything by the default values ! */
 
-	broadCastRates(localTree, tr, localPr, pr, tid);
-	broadCastAlpha(localTree, tr, localPr, pr, tid); /* isnt that only executed when we are on gamma?  */
+	broadCastRates(localPr, pr);
+	broadCastAlpha(localPr, pr); /* isnt that only executed when we are on gamma?  */
 
 	/*
 	  copy initial model parameters, the Q matrix and alpha are initially, when we start our likelihood search 
@@ -1450,7 +1458,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       break; 
     case THREAD_EVALUATE_PER_SITE_LIKES: 
       {
-	reduceEvaluateIterative(tr, localTree, pr, localPr, tid, PLL_TRUE);
+	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_TRUE);
       }
       break;
     default:
@@ -1725,7 +1733,7 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
    @param tr library instance
    @param localTree local library instance
  */ 
-void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
+void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
 {
   size_t 
     i,
@@ -1793,7 +1801,7 @@ void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *
    @param tr library instance
    @param localTree local library instance
  */ 
-void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr)
+void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
 {
   int tid = localTree->threadID; 
   int n = localTree->numberOfThreads; 
@@ -1906,9 +1914,9 @@ void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partiti
 
     /* figure in data */
 
-    distributeWeights(localTree, tr, localPr, pr);
+    distributeWeights(localTree, tr, localPr);
 
-    distributeYVectors(localTree, tr, localPr, pr);
+    distributeYVectors(localTree, tr, localPr);
 
   }
 

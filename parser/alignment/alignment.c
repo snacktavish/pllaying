@@ -37,6 +37,8 @@ printTokens (int input)
         case PLL_TOKEN_UNKNOWN:
           printf ("PLL_TOKEN_UNKNOWN (%.*s, %d)\n", token.len, token.lexeme, token.len);
           break;
+        default:
+          break;
       }
      /* end of parser */
 

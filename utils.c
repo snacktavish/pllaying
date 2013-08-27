@@ -82,70 +82,10 @@
 #include "parser/newick/newick.h"
 #include "utils.h"
 
+static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 
 /***************** UTILITY FUNCTIONS **************************/
 
-
-/** @brief Read the contents of a file
-    
-    Reads the ile \a filename and return its content. In addition
-    the size of the file is stored in the input variable \a filesize.
-    The content of the variable \a filesize can be anything and will
-    be overwritten.
-
-    @param filename
-      Name of the input file
-
-    @param filesize
-      Input parameter where the size of the file (in bytes) will be stored
-
-    @return
-      Contents of the file
-*/
-char * 
-pllReadFile (const char * filename, int * filesize)
-{
-  FILE * fp;
-  char * rawdata;
-
-  fp = fopen (filename, "r");
-  if (!fp) return (NULL);
-
-  /* obtain file size */
-  if (fseek (fp, 0, SEEK_END) == -1)
-   {
-     fclose (fp);
-     return (NULL);
-   }
-
-  *filesize = ftell (fp);
-
-  if (*filesize == -1) 
-   {
-     fclose (fp);
-     return (NULL);
-   }
-  rewind (fp);
-
-  /* allocate buffer and read file contents */
-  rawdata = (char *) rax_malloc (((*filesize) + 1) * sizeof (char));
-  if (rawdata) 
-   {
-     if (fread (rawdata, sizeof (char), *filesize, fp) != *filesize) 
-      {
-        rax_free (rawdata);
-        rawdata = NULL;
-      }
-     else
-      {
-        rawdata[*filesize] = 0;
-      }
-   }
-
-  fclose (fp);
-
-  return (rawdata);
-}
 
 void storeExecuteMaskInTraversalDescriptor(pllInstance *tr, partitionList *pr)
 {
@@ -546,7 +486,7 @@ boolean whitechar (int ch)
 {
   return (ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r');
 }
-
+/*
 static unsigned int KISS32(void)
 {
   static unsigned int 
@@ -569,6 +509,7 @@ static unsigned int KISS32(void)
 
   return (x+y+w);
 }
+*/
 /*********************************** *********************************************************/
 
 
@@ -1871,7 +1812,6 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 
   
 
-printf ("=> Call to pllTreeInitDefaults\n");
   /* TODO: make a proper static setupTree function */
 
   inner = tips - 1;
@@ -3287,6 +3227,7 @@ int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
    return (PLL_FALSE);
  }
 
+int
 pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR)
 {
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
@@ -3488,7 +3429,6 @@ int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, in
 
 pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max)
 {
-  int i, index;
   pllListSPR * bestListSPR;
 
   pllInitListSPR (&bestListSPR, max);
@@ -3507,8 +3447,9 @@ pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int
 void pllDummy (pllInstance * tr)
 {
   tr->nodep = (node **) malloc (1000000);
-  tr->start = 0xDEADBEEF;
+  tr->start = (node *) 0xDEADBEEF;
 
+  printf ("Inside pllDummy address of tr is %p\n", tr);
   printf ("Inside pllDummy address of tr->nodep is %p\n", tr->nodep);
   printf ("Inside pllDummy address of tr->start is %p\n", tr->start);
 }

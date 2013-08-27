@@ -1,6 +1,8 @@
 #ifndef __pll_ALIGNMENT__
 #define __pll_ALIGNMENT__
 
+#include "../common.h"
+
 typedef struct
  {
    int              sequenceCount;
@@ -10,7 +12,6 @@ typedef struct
    int            * siteWeights;
  } pllAlignmentData;
 
-char * __pllReadFile (const char *, int *);
 void pllAlignmentDataDestroy (pllAlignmentData *);
 void pllAlignmentDataDump (pllAlignmentData *);
 pllAlignmentData * pllInitAlignmentData (int, int);

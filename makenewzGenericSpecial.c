@@ -65,7 +65,7 @@
 
 #if IS_PARALLEL
 void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches ) ;
-extern double *globalResult;
+//extern double *globalResult;
 #endif
 
 
@@ -179,6 +179,7 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
    So if we want to do a Newton-Rpahson optimization we only execute this function once in the beginning for each new branch we are considering !
    */
 
+#ifndef _OPTIMIZED_FUNCTIONS
 static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
     unsigned char *tipX1, unsigned char *tipX2, int n, const int states)
 {
@@ -248,6 +249,7 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
       assert(0);
   }
 }
+#endif
 
 
 
@@ -403,6 +405,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
    the first and second derivative of the likelihood given a new proposed branch length lz */
 
 
+#ifndef __AVX
 static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz, const int states)
@@ -608,6 +611,7 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
   *ext_d2lnLdlz2 = d2lnLdlz2;
 
 }
+#endif
 
 void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
     unsigned char *tipX1, unsigned char *tipX2, int n, const int states);

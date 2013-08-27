@@ -52,8 +52,8 @@ typedef struct
 int get_next_byte (void);
 int get_next_symbol (void);
 pllLexToken get_token (int * input);
-void init_lexan (const char * text, int n);
+void init_lexan (const char * text, long n);
 void lex_table_amend_phylip (void);
+void lex_table_amend_fasta (void);
 void lex_table_restore (void);
-
 #endif

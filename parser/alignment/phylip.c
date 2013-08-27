@@ -142,8 +142,9 @@ pllAlignmentData *
 pllParsePHYLIP (const char * filename)
 {
   int 
-    i, filesize, input, sequenceCount, sequenceLength;
+    i, input, sequenceCount, sequenceLength;
   char * rawdata;
+  long filesize;
   pllAlignmentData * alignmentData;
 
   rawdata = pllReadFile (filename, &filesize);

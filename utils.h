@@ -27,7 +27,6 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 
-char * pllReadFile (const char *, int *);
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (partitionList **, int);
@@ -46,4 +45,12 @@ pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemo
 int pllInitModel (pllInstance *, pllAlignmentData *, partitionList *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
+
+void pllInitListSPR (pllListSPR ** bestListSPR, int max);
+void pllDestroyListSPR (pllListSPR ** bestListSPR);
+int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
+int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
+int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
+pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
+void pllDummy (pllInstance * tr);
 #endif /* UTILS_H_ */

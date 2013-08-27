@@ -59,6 +59,10 @@
 */
 
 
+double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, analdef *adef, bestlist *bt, infoList *iList);
+int cmp_nni(const void* nni1, const void* nni2);
+nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p, double curLH);
+void evalNNIForSubtree(pllInstance* tr, partitionList *pr, nodeptr p, nniMove* nniList, int* cnt, int* cnt_nni, double curLH);
 
 
 extern double accumulatedTime;   /**< Accumulated time for checkpointing */
@@ -2526,7 +2530,7 @@ treeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)      
 
     @image html nni.png "In case \a swap is set to \b PLL_NNI_P_NEXT then the dashed red edge between \a p and \a r is removed and the blue edges are created. If \a swap is set to \b PLL_INIT_P_NEXTNEXT then the dashed red edge between \a p and \a s is removed and the green edges are created. In both cases the black dashed edge is removed"
 */
-void NNI(pllInstance * tr, nodeptr p, int swap)
+int NNI(pllInstance * tr, nodeptr p, int swap)
 {
   nodeptr       q, r;
 
@@ -2534,12 +2538,12 @@ void NNI(pllInstance * tr, nodeptr p, int swap)
   if (isTip(q->number, tr->mxtips))
    {
      errno = PLL_NNI_Q_TIP;
-     return (0);
+     return (PLL_FALSE);
    }
   if (isTip(p->number, tr->mxtips))
    {
      errno = PLL_NNI_P_TIP;
-     return (0);
+     return (PLL_FALSE);
    }
   assert(!isTip(q->number, tr->mxtips));
   assert(!isTip(p->number, tr->mxtips));

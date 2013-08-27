@@ -81,7 +81,7 @@ pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item)
       In case of success, returns a pointer to the created hash table, otherwise returns \b NULL
 */
 struct pllHashTable *
-pllHashInit (int n)
+pllHashInit (unsigned int n)
 { 
   struct pllHashTable * hTable;
   unsigned int i;
@@ -169,7 +169,7 @@ pllHashSearch (struct pllHashTable * hTable, char * s, void ** item)
 void 
 pllHashDestroy (struct pllHashTable ** hTable, int freeData)
 {
-  int i;
+  unsigned int i;
   struct pllHashItem * hItem;
   struct pllHashItem * tmp;
 

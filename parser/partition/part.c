@@ -275,7 +275,7 @@ pllPartitionDump (struct pllQueue * partitions)
 struct pllQueue *
 pllPartitionParse (const char * filename)
 {
-  int n;
+  long n;
   char * rawdata;
   int input;
   struct pllQueue * partitions;
