@@ -65,7 +65,6 @@ extern "C" {
 
 
 #include "genericParallelization.h"
-#include "mem_alloc.h"
 #include "errcodes.h"
 
 #define PLL_MAX_TIP_EV                          0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
@@ -1810,7 +1809,5 @@ void init_default(pllInstance *tr);
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
-
-#include "mem_alloc.h" /* sneak in mem_alloc.h to increase the chance that the XXX_BIG_FAT_MALLOC_ERRORS_XXX work */
 
 #endif

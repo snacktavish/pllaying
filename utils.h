@@ -9,6 +9,11 @@
 #include "parser/partition/part.h"
 #include "queue.h"
 
+typedef struct {
+  int * Item1;
+  int * Item2;
+} Wrapper;
+
 linkageList* initLinkageList(int *linkList, partitionList *pr);
 //void freeLinkageList( linkageList* ll);
 

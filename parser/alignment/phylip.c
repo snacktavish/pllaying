@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "phylip.h"
-
+#include "../../mem_alloc.h"
 static int
 read_phylip_header (int * inp, int * sequenceCount, int * sequenceLength)
 {

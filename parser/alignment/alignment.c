@@ -5,6 +5,7 @@
 #include "alignment.h"
 #include "../../lexer.h"
 //#include "ssort.h"
+#include "../../mem_alloc.h"
 
 static int
 printTokens (int input)

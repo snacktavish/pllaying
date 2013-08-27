@@ -1835,7 +1835,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
 
   if (rateHetModel != GAMMA && rateHetModel != CAT) return NULL;
 
-  tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
+  tr = (pllInstance *) calloc (1, sizeof (pllInstance));
 
   tr->threadID     = 0;
   tr->rateHetModel = rateHetModel;
@@ -1849,6 +1849,8 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
   tr->useMedian    = PLL_FALSE;
 
   tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
+
+  tr->numberOfThreads = 1;
   
   return (tr);
 }
@@ -1869,6 +1871,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 
   
 
+printf ("=> Call to pllTreeInitDefaults\n");
   /* TODO: make a proper static setupTree function */
 
   inner = tips - 1;
@@ -1890,6 +1893,7 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->nameList         = (char **)   rax_malloc ((tips + 1) * sizeof (char *));
   tr->nodep            = (nodeptr *) rax_malloc ((2 * tips) * sizeof (nodeptr));
   assert (tr->nameList && tr->nodep);
+  printf ("!! After allocation in pllTreeInitDefaults tr->nodep: %p\n", tr->nodep);
 
   tr->nodep[0] = NULL;          
 
@@ -1959,6 +1963,8 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
   tr->td[0].executeModel[0]  = PLL_TRUE;                                                                                                                                                                                                                                    
   for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
+  
+  printf ("!! Before exiting pllTreeInitDefaults tr->nodep: %p\n", tr->nodep);
 }
 
 
@@ -1995,6 +2001,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
 */
   
   pllTreeInitDefaults (tr, nt->nodes, nt->tips);
+  printf ("!! After pllTreeInitDefaults (in pllTreeInitTopologyNewick) tr->nodep : %p\n", tr->nodep);
 
   i = nt->tips + 1;
   j = 1;
@@ -2055,6 +2062,9 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
 
   if (useDefaultz == PLL_TRUE) 
     resetBranches (tr);
+  
+  tr->nodep = 0;
+  printf ("!! Before exiting pllTreeInitTopologyNewick tr->nodep : %p\n", tr->nodep);
 }
 
 /** @brief Initialize PLL tree with a random topology
@@ -3126,8 +3136,49 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
   if(!ef)
     return PLL_FALSE;
   
+#if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
+  _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
+#endif 
 
-  initializePartitions (tr, tr, partitions, partitions, 0, 0);
+  masterTime = gettime();         
+#ifdef _USE_PTHREADS
+  tr->threadID = 0;
+#ifndef _PORTABLE_PTHREADS
+  /* not very portable thread to core pinning if PORTABLE_PTHREADS is not defined
+     by defualt the cod ebelow is deactivated */
+  pinToCore(0);
+#endif
+#endif
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+  /* 
+     this main function is the master thread, so if we want to run RAxML with n threads,
+     we use startPthreads to start the n-1 worker threads */
+  
+#ifdef _USE_PTHREADS
+  startPthreads(tr, partitions);
+#endif
+
+  /* via masterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 
+     computations. Have a look at execFunction() in axml.c where we siwtch of the different types of parallel regions.
+
+     Although not necessary, below we copy the info stored on tr->partitionData to corresponding copies in each thread.
+     While this is shared memory and we don't really need to copy stuff, it was implemented like this to allow for an easier 
+     transition to a distributed memory implementation (MPI).
+     */
+  
+  /* mpi version now also uses the generic barrier */
+  masterBarrier(THREAD_INIT_PARTITION, tr, partitions);
+#else  /* SEQUENTIAL */
+  /* 
+     allocate the required data structures for storing likelihood vectors etc 
+     */
+
+  initializePartitions(tr, tr, partitions, partitions, 0, 0);
+#endif
+  
+  //initializePartitions (tr, tr, partitions, partitions, 0, 0);
+  
   initModel (tr, ef, partitions);
   pllEmpiricalFrequenciesDestroy (&ef, partitions->numberOfPartitions);
 
@@ -3140,6 +3191,12 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
   partitions->rateList  = initLinkageList(unlinked, partitions);
 
   rax_free(unlinked);
+  if (tr->start == NULL ) 
+    printf ("Before exiting pllInitModel -> tr->start == NULL\n");
+  else
+    printf ("Before exiting pllInitModel -> tr->start != NULL\n");
+
+  printf ("\tAddress of tr within pllInitModel : %p \n", tr);
 
   return PLL_TRUE;
 }
@@ -3447,4 +3504,11 @@ pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int
   return (bestListSPR);
 }
 
+void pllDummy (pllInstance * tr)
+{
+  tr->nodep = (node **) malloc (1000000);
+  tr->start = 0xDEADBEEF;
 
+  printf ("Inside pllDummy address of tr->nodep is %p\n", tr->nodep);
+  printf ("Inside pllDummy address of tr->start is %p\n", tr->start);
+}

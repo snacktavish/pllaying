@@ -1,7 +1,7 @@
 CC = gcc 
 MAKE = make
 LIBPATH = ../../
-LIBRARIES = -lpll-AVX-PTHREADS -lm -lpthread
+LIBRARIES = -lpll-AVX-PTHREADS -lpthread -lm
 RM = rm -f
 
 all: pll
@@ -9,7 +9,7 @@ all: pll
 pll: main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.AVX.PTHREADS.gcc
 	@echo "==> Building PLL example"
-	$(CC) $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+	$(CC) $+ -g -L $(LIBPATH) $(LIBRARIES) -o $@
 
 clean : 
 	$(RM) pll 

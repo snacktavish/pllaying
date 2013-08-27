@@ -1852,6 +1852,7 @@ void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partiti
   treeIsInitialized = PLL_TRUE; 
 
   ASSIGN_INT(localTree->manyPartitions, tr->manyPartitions);
+  ASSIGN_INT(localTree->numberOfThreads, tr->numberOfThreads);
   ASSIGN_INT(localPr->numberOfPartitions, pr->numberOfPartitions);
 
 #ifdef _USE_PTHREADS
