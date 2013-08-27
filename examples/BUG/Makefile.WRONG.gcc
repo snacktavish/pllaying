@@ -1,0 +1,78 @@
+AR = ar
+CC = gcc
+LIBPATH = ./
+LIBRARIES = -lpll-AVX-PTHREADS -lpthread -lm
+ARFLAGS = rvs
+RM = rm -f
+
+all: pll
+
+pll: libpll-AVX-PTHREADS.a main.c
+	$(CC) -g main.c -L $(LIBPATH) $(LIBRARIES) -o $@ 
+
+libpll-AVX-PTHREADS.a: avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o optimizeModel.o recom.o trash.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o genericParallelization.o
+	$(AR) $(ARFLAGS) $@ $+
+
+avxLikelihood.o: ../../avxLikelihood.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 -mavx $+
+bipartitionList.o: ../../bipartitionList.c
+	$(CC) -c $+
+evaluateGenericSpecial.o: ../../evaluateGenericSpecial.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 $+
+evaluatePartialGenericSpecial.o: ../../evaluatePartialGenericSpecial.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 $+
+fastDNAparsimony.o: ../../fastDNAparsimony.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 -mavx $+
+hash.o: ../../hash.c
+	$(CC) -c $+
+lexer.o: ../../lexer.c
+	$(CC) -c $+
+makenewzGenericSpecial.o: ../../makenewzGenericSpecial.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 $+
+models.o: ../../models.c
+	$(CC) -c $+
+newviewGenericSpecial.o: ../../newviewGenericSpecial.c
+	$(CC) -c -D__AVX -D_OPTIMIZED_FUNCTIONS -msse3 -D__SIM_SSE3 $+
+optimizeModel.o: ../../optimizeModel.c
+	$(CC) -c -D_USE_PTHREADS $+
+queue.o: ../../queue.c
+	$(CC) -c $+
+randomTree.o: ../../randomTree.c
+	$(CC) -c $+
+recom.o: ../../recom.c
+	$(CC) -c $+
+restartHashTable.o: ../../restartHashTable.c
+	$(CC) -c $+
+searchAlgo.o: ../../searchAlgo.c
+	$(CC) -c $+
+stack.o: ../../stack.c
+	$(CC) -c $+
+topologies.o: ../../topologies.c
+	$(CC) -c $+
+trash.o: ../../trash.c
+	$(CC) -c $+
+treeIO.o: ../../treeIO.c
+	$(CC) -c $+
+utils.o: ../../utils.c
+	$(CC) -c -D_USE_PTHREADS $+
+ssort.o: ../../parser/phylip/ssort.c
+	$(CC) -c $+
+common.o: ../../parser/common.c
+	$(CC) -c $+
+alignment.o: ../../parser/alignment/alignment.c
+	$(CC) -c $+
+phylip.o: ../../parser/alignment/phylip.c
+	$(CC) -c $+
+fasta.o: ../../parser/alignment/fasta.c
+	$(CC) -c $+
+newick.o: ../../parser/newick/newick.c
+	$(CC) -c $+
+part.o: ../../parser/partition/part.c
+	$(CC) -c $+
+genericParallelization.o: ../../genericParallelization.c
+	$(CC) -c -D_USE_PTHREADS $+
+
+clean:
+	$(RM) *.o *.a pll
+
+.PHONY: all clean
