@@ -247,7 +247,7 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
     }  
 }
 
-#ifndef __AVX
+#if (!defined(__AVX) && !defined(__SIM_SSE3))
 
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
    I provide generic, slow but readable function implementations for computing the 

@@ -405,7 +405,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
    the first and second derivative of the likelihood given a new proposed branch length lz */
 
 
-#ifndef __AVX
+#if (!defined(__AVX) && !defined(__SIM_SSE3))
 static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz, const int states)
