@@ -9,7 +9,7 @@ all: pll
 pll: main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.SSE3.PTHREADS.gcc
 	@echo "==> Building PLL example"
-	$(CC) $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+	$(CC) -D_USE_PTHREADS $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
 
 clean : 
 	$(RM) pll 
