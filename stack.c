@@ -2,9 +2,9 @@
 #include "stack.h"
 #include "mem_alloc.h"
 
-int pllStackSize (struct pllStack ** stack)
+int pllStackSize (pllStack ** stack)
 {
-  struct pllStack * top;
+  pllStack * top;
   int size = 0;
   top = *stack;
  
@@ -18,11 +18,11 @@ int pllStackSize (struct pllStack ** stack)
 }
 
 int 
-pllStackPush (struct pllStack ** head, void * item)
+pllStackPush (pllStack ** head, void * item)
 {
-  struct pllStack * new;
+  pllStack * new;
  
-  new = (struct pllStack *) rax_malloc (sizeof (struct pllStack));
+  new = (pllStack *) rax_malloc (sizeof (pllStack));
   if (!new) return (0);
  
   new->item = item;
@@ -32,10 +32,10 @@ pllStackPush (struct pllStack ** head, void * item)
   return (1);
 }
 
-void * pllStackPop (struct pllStack ** head)
+void * pllStackPop (pllStack ** head)
 {
   struct item_t * item;
-  struct pllStack * tmp;
+  pllStack * tmp;
   if (!*head) return (NULL);
  
   tmp     = (*head);
@@ -47,7 +47,7 @@ void * pllStackPop (struct pllStack ** head)
 }
  
 void 
-pllStackClear (struct pllStack ** stack)
+pllStackClear (pllStack ** stack)
 {
   while (*stack) pllStackPop (stack);
 }

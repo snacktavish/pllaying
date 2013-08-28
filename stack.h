@@ -7,9 +7,11 @@ struct pllStack
   struct pllStack * next;
 };
 
-void  pllStackClear (struct pllStack ** stack);
-void * pllStackPop (struct pllStack ** head);
-int pllStackPush (struct pllStack ** head, void * item);
-int pllStackSize (struct pllStack ** stack);
+typedef struct pllStack pllStack;
+
+void  pllStackClear (pllStack ** stack);
+void * pllStackPop (pllStack ** head);
+int pllStackPush (pllStack ** head, void * item);
+int pllStackSize (pllStack ** stack);
 
 #endif

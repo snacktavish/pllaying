@@ -6,7 +6,7 @@
 #include "newick.h"
 
 static int
-parse_newick (struct pllStack ** stack, int * inp)
+parse_newick (pllStack ** stack, int * inp)
 {
   struct item_t * item = NULL;
   int item_active = 0;
@@ -227,10 +227,10 @@ parse_newick (struct pllStack ** stack, int * inp)
   return (1);
 }
 
-void stack_dump(struct pllStack ** stack)
+void stack_dump(pllStack ** stack)
 {
   struct item_t * item;
-  struct pllStack * head;
+  pllStack * head;
   int i;
 
   head = *stack;
@@ -247,11 +247,11 @@ void stack_dump(struct pllStack ** stack)
 }
 
 static void
-assign_ranks (struct pllStack * stack, int * nodes, int * leaves)
+assign_ranks (pllStack * stack, int * nodes, int * leaves)
 {
-  struct pllStack * head;
+  pllStack * head;
   struct item_t * item, * tmp;
-  struct pllStack * preorder = NULL;
+  pllStack * preorder = NULL;
   int children;
   int depth;
 
@@ -349,7 +349,7 @@ assign_ranks (struct pllStack * stack, int * nodes, int * leaves)
 int
 pllValidateNewick (pllNewickTree * t)
 {
-  struct pllStack * head;
+  pllStack * head;
   struct item_t * item;
  
  item = t->tree->item;
