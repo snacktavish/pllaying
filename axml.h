@@ -66,6 +66,7 @@ extern "C" {
 
 #include "genericParallelization.h"
 #include "errcodes.h"
+#include "stack.h"
 
 #define PLL_MAX_TIP_EV                          0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define PLL_MAX_LOCAL_SMOOTHING_ITERATIONS      32          /** @brief maximum iterations of smoothings per insert in the */
@@ -1213,6 +1214,8 @@ typedef  struct  {
   checkPointState ckp;
   boolean thoroughInsertion; /**< true if the neighbor branches should be optimized when a subtree is inserted (slower)*/
   boolean useMedian;
+
+  pllStack * sprHistory;
 
 } pllInstance;
 

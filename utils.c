@@ -1792,6 +1792,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
   tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
 
   tr->numberOfThreads = 1;
+  tr->sprHistory = NULL;
   
   return (tr);
 }
@@ -1833,7 +1834,6 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->nameList         = (char **)   rax_malloc ((tips + 1) * sizeof (char *));
   tr->nodep            = (nodeptr *) rax_malloc ((2 * tips) * sizeof (nodeptr));
   assert (tr->nameList && tr->nodep);
-  printf ("!! After allocation in pllTreeInitDefaults tr->nodep: %p\n", tr->nodep);
 
   tr->nodep[0] = NULL;          
 
@@ -1903,8 +1903,6 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
   tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
   tr->td[0].executeModel[0]  = PLL_TRUE;                                                                                                                                                                                                                                    
   for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
-  
-  printf ("!! Before exiting pllTreeInitDefaults tr->nodep: %p\n", tr->nodep);
 }
 
 
@@ -1925,8 +1923,8 @@ void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
 void
 pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz)
 {
-  struct pllStack * nodeStack = NULL;
-  struct pllStack * head;
+  pllStack * nodeStack = NULL;
+  pllStack * head;
   struct item_t * item;
   int i, j, k;
   
@@ -1941,7 +1939,6 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
 */
   
   pllTreeInitDefaults (tr, nt->nodes, nt->tips);
-  printf ("!! After pllTreeInitDefaults (in pllTreeInitTopologyNewick) tr->nodep : %p\n", tr->nodep);
 
   i = nt->tips + 1;
   j = 1;
@@ -2002,9 +1999,6 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
 
   if (useDefaultz == PLL_TRUE) 
     resetBranches (tr);
-  
-  tr->nodep = 0;
-  printf ("!! Before exiting pllTreeInitTopologyNewick tr->nodep : %p\n", tr->nodep);
 }
 
 /** @brief Initialize PLL tree with a random topology
@@ -2229,6 +2223,16 @@ pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
    }
 }
 
+void pllClearSprHistory (pllInstance * tr)
+{
+  sprInfoRollback * sprRb;
+
+  while ((sprRb = (sprInfoRollback *)pllStackPop (&(tr->sprHistory))))
+   {
+     rax_free (sprRb);
+   }
+}
+
 /** @brief Deallocate the PLL instance
 
     Deallocates the library instance and all its elements.
@@ -2266,7 +2270,11 @@ pllTreeDestroy (pllInstance * tr)
   rax_free (tr->tree_string);
   rax_free (tr->tree0);
   rax_free (tr->tree1);
+  
+  pllClearSprHistory (tr);
+
   rax_free (tr);
+
 }
 
 /* initializwe a parameter linkage list for a certain parameter type (can be whatever).
@@ -3131,12 +3139,6 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
   partitions->rateList  = initLinkageList(unlinked, partitions);
 
   rax_free(unlinked);
-  if (tr->start == NULL ) 
-    printf ("Before exiting pllInitModel -> tr->start == NULL\n");
-  else
-    printf ("Before exiting pllInitModel -> tr->start != NULL\n");
-
-  printf ("\tAddress of tr within pllInitModel : %p \n", tr);
 
   return PLL_TRUE;
 }
@@ -3444,12 +3446,70 @@ pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int
   return (bestListSPR);
 }
 
-void pllDummy (pllInstance * tr)
+void pllCreateSprInfoRollback (pllInstance * tr, nodeptr p, nodeptr q, int numBranches)
 {
-  tr->nodep = (node **) malloc (1000000);
-  tr->start = (node *) 0xDEADBEEF;
+  sprInfoRollback * sprRb;
+  int i;
 
-  printf ("Inside pllDummy address of tr is %p\n", tr);
-  printf ("Inside pllDummy address of tr->nodep is %p\n", tr->nodep);
-  printf ("Inside pllDummy address of tr->start is %p\n", tr->start);
+  sprRb = (sprInfoRollback *) rax_malloc (sizeof (sprInfoRollback) + 4 * numBranches * sizeof (double));
+  sprRb->zp   = (double *) ((void *)sprRb + sizeof (sprInfoRollback));
+  sprRb->zpn  = (double *) ((void *)sprRb + sizeof (sprInfoRollback) + numBranches * sizeof (double));
+  sprRb->zpnn = (double *) ((void *)sprRb + sizeof (sprInfoRollback) + 2 * numBranches * sizeof (double));
+  sprRb->zqr  = (double *) ((void *)sprRb + sizeof (sprInfoRollback) + 3 * numBranches * sizeof (double));
+
+  for (i = 0; i < numBranches; ++ i)
+   {
+     sprRb->zp[i]   = p->z[i];
+     sprRb->zpn[i]  = p->next->z[i];
+     sprRb->zpnn[i] = p->next->next->z[i];
+     sprRb->zqr[i]  = q->z[i];
+   }
+
+  sprRb->pn  = p->next->back;
+  sprRb->pnn = p->next->next->back;
+  sprRb->r   = q->back;
+  sprRb->q   = q;
+  sprRb->p   = p;
+
+  pllStackPush (&(tr->sprHistory), (void *) sprRb);
+
+
+}
+
+int pllRollbackSPR (pllInstance * tr, int numBranches)
+{
+  sprInfoRollback * sprRb;
+
+
+  sprRb = (sprInfoRollback *) pllStackPop (&(tr->sprHistory));
+  if (sprRb)
+   {
+     hookup (sprRb->p->next,       sprRb->pn,      sprRb->zpn,  numBranches);
+     hookup (sprRb->p->next->next, sprRb->pnn,     sprRb->zpnn, numBranches); 
+     hookup (sprRb->p,             sprRb->p->back, sprRb->zp,   numBranches);
+     hookup (sprRb->q,             sprRb->r,       sprRb->zqr,  numBranches);
+   }
+  else
+   return (PLL_FALSE);
+  rax_free (sprRb);
+
+  return (PLL_TRUE);
+}
+
+int 
+pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo)
+{
+  int numBranches;
+  nodeptr p, q;
+
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  p = sprInfo->removeNode;
+  q = sprInfo->insertNode;
+
+  if (saveRollbackInfo)
+     pllCreateSprInfoRollback (tr, p, q, numBranches);
+
+  removeNodeBIG (tr, pr, sprInfo->removeNode, numBranches);
+  insertBIG     (tr, pr, sprInfo->removeNode, sprInfo->insertNode);
 }

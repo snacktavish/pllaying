@@ -10,9 +10,16 @@
 #include "queue.h"
 
 typedef struct {
-  int * Item1;
-  int * Item2;
-} Wrapper;
+  double * zp;
+  double * zpn;
+  double * zpnn;
+  double * zqr;
+  nodeptr pn;
+  nodeptr pnn;
+  nodeptr r;
+  nodeptr p;
+  nodeptr q;
+} sprInfoRollback;
 
 linkageList* initLinkageList(int *linkList, partitionList *pr);
 //void freeLinkageList( linkageList* ll);
@@ -52,5 +59,5 @@ int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
 int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
 int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
-void pllDummy (pllInstance * tr);
+pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
 #endif /* UTILS_H_ */
