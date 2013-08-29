@@ -26,8 +26,6 @@ fastDNAparsimony.o : fastDNAparsimony.c $(GLOBAL_DEPS)
 genericParallelization.o : genericParallelization.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -c -o genericParallelization.o genericParallelization.c
 
-utils.o : hash.c $(GLOBAL_DEPS)
-	$(CC) $(CFLAGS) -c -o utils.o utils.c 
 bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 evaluatePartialSpecialGeneric.o : evaluatePartialSpecialGeneric.c $(GLOBAL_DEPS)
 optimizeModel.o : optimizeModel.c $(GLOBAL_DEPS)
