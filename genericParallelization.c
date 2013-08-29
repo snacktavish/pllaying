@@ -255,6 +255,8 @@ void stopPthreads (pllInstance * tr)
  
   rax_free (threads);
   rax_free (tData);
+  rax_free (barrierBuffer);
+  rax_free (globalResult);
 
 }
 
@@ -1529,6 +1531,14 @@ void *likelihoodThread(void *tData)
 
       barrierBuffer[tid] = 1;     
     }
+    rax_free (localTree->td[0].executeModel); //localTree->td[0].executeModel = NULL;
+    rax_free (localTree->td[0].parameterValues); //localTree->td[0].parameterValues = NULL;
+    rax_free (localTree->rateCategory); //localTree->rateCategory = NULL;
+    rax_free (localTree->lhs); //localTree->lhs = NULL;
+    rax_free (localTree->patrat); //localTree->patrat = NULL;
+    rax_free (localTree->patratStored); //localTree->patratStored = NULL;
+    rax_free (localTree->td[0].ti); //localTree->td[0].ti = NULL;
+    rax_free (localTree);
 #else 
   const int
     n = processes, 
@@ -1705,9 +1715,9 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
   if(NOT MASTER_P)
     {
       localTree->lhs                     = (double*)rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(double));     
-      localPr->partitionData           = (pInfo**)rax_malloc(NUM_BRANCHES*sizeof(pInfo*));
+      localPr->partitionData           = (pInfo**)rax_calloc(NUM_BRANCHES,sizeof(pInfo*));
       for(model = 0; model < (size_t)localPr->numberOfPartitions; model++) {
-    	localPr->partitionData[model] = (pInfo*)rax_malloc(sizeof(pInfo));
+    	localPr->partitionData[model] = (pInfo*)rax_calloc(1,sizeof(pInfo));
       }
       localTree->td[0].ti              = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)localTree->mxtips);
       localTree->td[0].executeModel    = (boolean *)rax_malloc(sizeof(boolean) * NUM_BRANCHES);
