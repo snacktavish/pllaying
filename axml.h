@@ -1375,21 +1375,6 @@ typedef struct
 
 } partitionLengths;
 
-typedef struct
- {
-   nodeptr removeNode;
-   nodeptr insertNode;
-   double likelihood;
-   double zqr[NUM_BRANCHES];
- } pllInfoSPR;
-
-typedef struct
- {
-   int max_entries;
-   int entries;
-   pllInfoSPR * sprInfo;
- } pllListSPR;
-
 /****************************** FUNCTIONS ****************************************************/
 
 
@@ -1702,7 +1687,7 @@ extern void masterBarrier(int jobType, pllInstance *tr, partitionList *pr);
 
 boolean workerTrap(pllInstance *tr, partitionList *pr);
 void initMPI(int argc, char *argv[]); 
-void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
+//void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid);
 void computeFraction(partitionList *localPr, int tid, int n);
 void computeFractionMany(partitionList *localPr, int tid);

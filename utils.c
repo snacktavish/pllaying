@@ -957,14 +957,14 @@ void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
 
 
 /* interface to outside  */
-void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
-{
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  initializePartitionsMaster(tr,localTree,pr,localPr,tid,n);
-#else
-  initializePartitionsSequential(tr, pr);
-#endif
-}
+//void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+//{
+//#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+//  initializePartitionsMaster(tr,localTree,pr,localPr,tid,n);
+//#else
+//  initializePartitionsSequential(tr, pr);
+//#endif
+//}
 
 static void freeLinkageList( linkageList* ll)
 {
@@ -1805,7 +1805,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
     @todo
       STILL NOT FINISHED
 */
-void pllTreeInitDefaults (pllInstance * tr, int nodes, int tips)
+void pllTreeInitDefaults (pllInstance * tr, int tips)
 {
   nodeptr p0, p, q;
   int i, j;
@@ -1938,7 +1938,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
    }
 */
   
-  pllTreeInitDefaults (tr, nt->nodes, nt->tips);
+  pllTreeInitDefaults (tr, nt->tips);
 
   i = nt->tips + 1;
   j = 1;
@@ -2021,7 +2021,7 @@ void
 pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
 {
   int i;
-  pllTreeInitDefaults (tr, 2 * tips - 1, tips);
+  pllTreeInitDefaults (tr, tips);
 
   for (i = 1; i <= tips; ++ i)
    {
@@ -2058,7 +2058,7 @@ pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentD
   char 
     **nameList = alignmentData->sequenceLabels;
   
-  pllTreeInitDefaults (tr, 2 * tips - 1, tips);
+  pllTreeInitDefaults (tr, tips);
 
   for (i = 1; i <= tips; ++ i)
    {
@@ -2223,6 +2223,13 @@ pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
    }
 }
 
+/** Clear SPR history from PLL instance
+    
+    Clear the SPR rollback information (history) from the PLL instance \a tr.
+
+    @param tr
+      PLL instance
+*/
 void pllClearSprHistory (pllInstance * tr)
 {
   sprInfoRollback * sprRb;
@@ -3122,7 +3129,8 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
      allocate the required data structures for storing likelihood vectors etc 
      */
 
-  initializePartitions(tr, tr, partitions, partitions, 0, 0);
+  //initializePartitions(tr, tr, partitions, partitions, 0, 0);
+  initializePartitionsSequential (tr, partitions);
 #endif
   
   //initializePartitions (tr, tr, partitions, partitions, 0, 0);
@@ -3171,6 +3179,20 @@ int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likeli
   return PLL_TRUE;
 }
 
+/** Initialize a list of SPR moves
+ 
+    Allocates space and initializes the list structure \a bestListSPR that will record information
+    of at most \a max best SPR moves.
+
+    @param bestListSPR
+      The list structure of best SPR moves
+
+    @param max
+      Maximum number of elements that the structure should hold
+    
+    @note This is called from \a pllComputeSPR. The user does not need (and should not)
+    call this function.
+*/
 void pllInitListSPR (pllListSPR ** bestListSPR, int max)
 {
   pllListSPR * bl;
@@ -3182,6 +3204,13 @@ void pllInitListSPR (pllListSPR ** bestListSPR, int max)
   bl->sprInfo     = (pllInfoSPR *) malloc (max * sizeof (pllInfoSPR));
 }
 
+/** Deallocator for the list of SPR moves
+    
+    Call this to destroy (deallocate) the memory taken by the best SPR list \a bestListSPR
+
+    @parm bestListSPR
+      The list of SPR to be deallocated
+*/
 void pllDestroyListSPR (pllListSPR ** bestListSPR)
 {
   pllListSPR * bl;
@@ -3194,7 +3223,23 @@ void pllDestroyListSPR (pllListSPR ** bestListSPR)
   *bestListSPR = NULL;
 }
 
-int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
+/**  Internal function for storing an SPR move the list of best SPR moves
+
+     Checks if the likelihood yielded by the SPR move described in \a sprInfo
+     is better than any in the sorted list \a bestListSPR. If it is, or
+     if there is still space in \a bestListSPR, then the info about the SPR
+     move is inserted in the list
+
+     @param bestListSPR
+       The list of information about the best SPR moves
+
+     @paran sprInfo
+       Info about the current SPR move
+
+     @return
+       Returns \b PLL_FALSE if the SPR move doesn't make it in the list, otherwise \b PLL_TRUE
+*/
+static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
  {
    /* naive implementation of saving SPR moves */
    int i;
@@ -3229,7 +3274,34 @@ int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo)
    return (PLL_FALSE);
  }
 
-int
+/** @brief Internal function for testing and saving an SPR move
+    
+    Checks the likelihood of the placement of the pruned subtree specified by \a p
+    to node \a q. If the likelihood is better than some in the sorted list 
+    \a bestListSPR, or if there is still free space in \a bestListSPR, then the SPR 
+    move is recorded (in \a bestListSPR)
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Root of the subtree that is to be pruned
+
+    @param q
+      Where to place the pruned subtree (between \a q and \a q->back
+
+    @param bestListSPR
+      Where to store the SPR move
+
+    @note Internal function which is not part of the PLL API and therefore should not be
+    called by the user
+
+    @return
+*/
+static int
 pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR)
 {
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
@@ -3314,6 +3386,15 @@ pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pl
   return (PLL_TRUE);
 }
 
+/** @brief Internal function for recursively traversing a tree and testing a possible subtree insertion
+
+    Recursively traverses the tree rooted at \a q in the direction of \a q->next->back and \a q->next->next->back
+    and at each node tests the placement of the pruned subtree rooted at \a p by calling the function
+    \a pllTestInsertBIG, which in turn saves the computed SPR in \a bestListSPR if a) there is still space in
+    the \a bestListSPR or b) if the likelihood of the SPR is better than any of the ones in \a bestListSPR.
+
+    @note This function is not part of the API and should not be called by the user.
+*/
 static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllListSPR * bestListSPR)
 {  
   if (--mintrav <= 0) 
@@ -3328,9 +3409,36 @@ static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, no
     pllTraverseUpdate(tr, pr, p, q->next->next->back, mintrav, maxtrav, bestListSPR);
   }
 } 
-/** @brief Compute an SPR move
+
+/** @brief Internal function for computing SPR moves
+
+    Compute a list of at most \a max SPR moves that can be performed by pruning
+    the subtree rooted at node \a p and testing all possible placements in a
+    radius of at least \a mintrav nodes and at most \a maxtrav nodes from \a p.
+    Note that \a tr->thoroughInsertion affects the behaviour of the function (see note).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node specifying the root of the pruned subtree, i.e. where to prune.
+
+    @param mintrav
+      Minimum distance from \a p where to try inserting the pruned subtree
+
+    @param maxtrav
+      Maximum distance from \a p where to try inserting the pruned subtree
+
+    @note This function is not part of the API and should not be called by the user
+    as it is called internally by the API function \a pllComputeSPR. 
+    Also, setting \a tr->thoroughInsertion affects this function. For each tested SPR
+    the new branch lengths will also be optimized. This computes better likelihoods
+    but also slows down the method considerably.
 */
-int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR)
+static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR)
 {
   nodeptr 
     p1, p2, q, q1, q2;
@@ -3429,6 +3537,39 @@ int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, in
   return (PLL_TRUE);
 }
 
+/** @brief Compute a list of possible SPR moves
+    
+    Compute a list of at most \a max SPR moves that can be performed by pruning
+    the subtree rooted at node \a p and testing all possible placements in a
+    radius of at least \a mintrav nodes and at most \a maxtrav nodes from \a p.
+    Note that \a tr->thoroughInsertion affects the behaviour of the function (see note).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node specifying the root of the pruned subtree, i.e. where to prune.
+
+    @param mintrav
+      Minimum distance from \a p where to try inserting the pruned subtree
+
+    @param maxtrav
+      Maximum distance from \a p where to try inserting the pruned subtree
+
+    @param max
+      Max size of possible SPRs to keep.
+
+    @note
+      Setting \a tr->thoroughInsertion affects this function. For each tested SPR
+      the new branch lengths will also be optimized. This computes better likelihoods
+      but also slows down the method considerably.
+
+    @return
+      A list of at most \a max best SPR moves
+*/
 pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max)
 {
   pllListSPR * bestListSPR;
@@ -3446,10 +3587,30 @@ pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int
   return (bestListSPR);
 }
 
-void pllCreateSprInfoRollback (pllInstance * tr, nodeptr p, nodeptr q, int numBranches)
+/** @brief Create rollback information for an SPR move
+    
+    Creates a structure of type \a sprInfoRollback and fills it with rollback
+    information about the SPR move described in \a sprInfo. The rollback info
+    is stored in the PLL instance in a LIFO manner.
+
+    @param tr
+      PLL instance
+
+    @param sprInfo
+      Description of the SPR move
+
+    @pram numBranches
+      Number of partitions
+*/
+static void 
+pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches)
 {
   sprInfoRollback * sprRb;
+  nodeptr p, q;
   int i;
+
+  p = sprInfo->removeNode;
+  q = sprInfo->insertNode;
 
   sprRb = (sprInfoRollback *) rax_malloc (sizeof (sprInfoRollback) + 4 * numBranches * sizeof (double));
   sprRb->zp   = (double *) ((void *)sprRb + sizeof (sprInfoRollback));
@@ -3472,14 +3633,29 @@ void pllCreateSprInfoRollback (pllInstance * tr, nodeptr p, nodeptr q, int numBr
   sprRb->p   = p;
 
   pllStackPush (&(tr->sprHistory), (void *) sprRb);
-
-
 }
 
-int pllRollbackSPR (pllInstance * tr, int numBranches)
+/** @brief Rollback an SPR move
+
+    Perform a rollback (undo) on the last SPR move.
+    
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @return
+      Returns \b PLL_TRUE is the rollback was successful, otherwise \b PLL_FALSE
+      (if no rollback was done)
+*/
+int 
+pllRollbackSPR (pllInstance * tr, partitionList * pr)
 {
   sprInfoRollback * sprRb;
+  int numBranches;
 
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
 
   sprRb = (sprInfoRollback *) pllStackPop (&(tr->sprHistory));
   if (sprRb)
@@ -3496,19 +3672,34 @@ int pllRollbackSPR (pllInstance * tr, int numBranches)
   return (PLL_TRUE);
 }
 
-int 
+/** Commit an SPR move
+
+    Applies the SPR move specified in \a sprInfo to the tree topology in \a tr. If
+    \a tr->thoroughInsertion is set to \b PLL_TRUE then it also optimizes the new
+    branch lengths. Also, in case \a saveRollbackInfo is set to \b PLL_TRUE then
+    it also keeps rollback info about the SPR move so that it can be undone (rolled back).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param sprInfo
+      An element of a \a pllListSPR structure that contains information about the possible SPR
+
+    @param saveRollbackInfo
+      If set to \b PLL_TRUE, rollback info will be kept for undoing the SPR.
+*/
+void
 pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo)
 {
   int numBranches;
-  nodeptr p, q;
 
   numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
 
-  p = sprInfo->removeNode;
-  q = sprInfo->insertNode;
-
   if (saveRollbackInfo)
-     pllCreateSprInfoRollback (tr, p, q, numBranches);
+     pllCreateSprInfoRollback (tr, sprInfo, numBranches);
 
   removeNodeBIG (tr, pr, sprInfo->removeNode, numBranches);
   insertBIG     (tr, pr, sprInfo->removeNode, sprInfo->insertNode);

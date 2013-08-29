@@ -147,8 +147,8 @@ int main (int argc, char * argv[])
    }
 
 
-  printf ("Committing bestList->sprInfo[0]                   [thoroughInsertion = enabled]\n");
-  tr->thoroughInsertion = 1;
+  printf ("Committing bestList->sprInfo[0]                   [thoroughInsertion = disabled]\n");
+  tr->thoroughInsertion = 0;
   pllCommitSPR (tr, partitions, &(bestList->sprInfo[0]), PLL_TRUE);
 
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
@@ -173,12 +173,12 @@ int main (int argc, char * argv[])
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   printf ("Rolling back...\n");
-  pllRollbackSPR (tr, numBranches);
+  pllRollbackSPR (tr, partitions);
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   printf ("Rolling back...\n");
-  pllRollbackSPR (tr, numBranches);
+  pllRollbackSPR (tr, partitions);
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 

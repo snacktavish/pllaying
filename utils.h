@@ -21,6 +21,21 @@ typedef struct {
   nodeptr q;
 } sprInfoRollback;
 
+typedef struct
+ {
+   nodeptr removeNode;
+   nodeptr insertNode;
+   double likelihood;
+   double zqr[NUM_BRANCHES];
+ } pllInfoSPR;
+
+typedef struct
+ {
+   int max_entries;
+   int entries;
+   pllInfoSPR * sprInfo;
+ } pllListSPR;
+
 linkageList* initLinkageList(int *linkList, partitionList *pr);
 //void freeLinkageList( linkageList* ll);
 
@@ -55,9 +70,12 @@ int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likeli
 
 void pllInitListSPR (pllListSPR ** bestListSPR, int max);
 void pllDestroyListSPR (pllListSPR ** bestListSPR);
-int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
-int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
-int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
+static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
+static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
+static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
-pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
+void pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
+static void pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches);
+int pllRollbackSPR (pllInstance * tr, partitionList * pr);
+void pllClearSprHistory (pllInstance * tr);
 #endif /* UTILS_H_ */
