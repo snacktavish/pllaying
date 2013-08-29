@@ -83,6 +83,10 @@
 #include "utils.h"
 
 static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllListSPR * bestListSPR);
+static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
+static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
+static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
+static void pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches);
 
 /***************** UTILITY FUNCTIONS **************************/
 
@@ -704,6 +708,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       localPartitions->partitionData[model]->freqExponents     = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      localPartitions->partitionData[model]->partitionName      = NULL;   // very imporatant since it is deallocated in pllPartitionDestroy
       
        if(localPartitions->partitionData[model]->dataType == AA_DATA && localPartitions->partitionData[model]->protModels == LG4)      
 	{	  	  
@@ -988,15 +993,32 @@ static void freeLinkageList( linkageList* ll)
        number of tips in the tree      
 */
 void 
-pllPartitionsDestroy (partitionList ** partitions, int tips)
+pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 {
-  int i, j;
+  int i, j, tips;
   partitionList * pl = *partitions;
 
+#ifdef _USE_PTHREADS
+  int tid = tr->threadID;
+  if (MASTER_P) {
+     printf ("Calling stopPthreads!\n");
+     masterBarrier (THREAD_EXIT_GRACEFULLY, tr, partitions);
+     stopPthreads (tr);
+    }
+#endif
+
+  tips = tr->mxtips;
+
+#ifdef _USE_PTHREADS
+  if (MASTER_P) {
+#endif
   freeLinkageList(pl->alphaList);
   freeLinkageList(pl->freqList); 
   freeLinkageList(pl->rateList);
 
+#ifdef _USE_PTHREADS
+  }
+#endif
   for (i = 0; i < pl->numberOfPartitions; ++ i)
    {
      rax_free (pl->partitionData[i]->gammaRates);
@@ -1041,6 +1063,13 @@ pllPartitionsDestroy (partitionList ** partitions, int tips)
   rax_free (pl);
 
   *partitions = NULL;
+
+#ifdef _USE_PTHREADS
+  if (!MASTER_P)
+   {
+     rax_free (tr->y_ptr);
+   }
+#endif
 }
 
 /** @brief Correspondance check between partitions and alignment
@@ -1791,7 +1820,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
 
   tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
 
-  tr->numberOfThreads = 1;
+  tr->numberOfThreads = 8;
   tr->sprHistory = NULL;
   
   return (tr);
@@ -2251,6 +2280,7 @@ void
 pllTreeDestroy (pllInstance * tr)
 {
   int i;
+
   for (i = 1; i <= tr->mxtips; ++ i)
     rax_free (tr->nameList[i]);
   

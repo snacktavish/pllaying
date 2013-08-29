@@ -51,7 +51,7 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
-void pllPartitionsDestroy (partitionList **, int);
+void pllPartitionsDestroy (pllInstance *, partitionList **);
 int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData);
 partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
 void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
@@ -70,12 +70,8 @@ int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likeli
 
 void pllInitListSPR (pllListSPR ** bestListSPR, int max);
 void pllDestroyListSPR (pllListSPR ** bestListSPR);
-static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
-static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
-static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
 void pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
-static void pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches);
 int pllRollbackSPR (pllInstance * tr, partitionList * pr);
 void pllClearSprHistory (pllInstance * tr);
 #endif /* UTILS_H_ */

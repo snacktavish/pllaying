@@ -52,11 +52,12 @@ extern char* getJobName(int tmp);
 //extern double *globalResult; 
 extern volatile char *barrierBuffer;
 
+static pthread_t *threads;
+static threadData *tData;
+
 
 #ifdef _FINE_GRAIN_MPI
 extern MPI_Datatype TRAVERSAL_MPI; 
-
-
 
 
 
@@ -203,10 +204,8 @@ void pinToCore(int tid)
  */ 
 void startPthreads(pllInstance *tr, partitionList *pr)
 {
-  pthread_t *threads;
   pthread_attr_t attr;
   int rc, t;
-  threadData *tData;
   treeIsInitialized = PLL_FALSE; 
 
   jobCycle        = 0;
@@ -219,7 +218,7 @@ void startPthreads(pllInstance *tr, partitionList *pr)
 #endif
 
   pthread_attr_init(&attr);
-  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+  pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
   threads    = (pthread_t *)rax_malloc((size_t)tr->numberOfThreads * sizeof(pthread_t));
   tData      = (threadData *)rax_malloc((size_t)tr->numberOfThreads * sizeof(threadData));
@@ -241,8 +240,23 @@ void startPthreads(pllInstance *tr, partitionList *pr)
 	  exit(-1);
 	}
     }
+  pthread_attr_destroy (&attr);
 }
 #endif
+
+void stopPthreads (pllInstance * tr)
+{
+  int i;
+
+  for (i = 1; i < tr->numberOfThreads; ++ i)
+   {
+     pthread_join (threads[i], NULL);
+   }
+ 
+  rax_free (threads);
+  rax_free (tData);
+
+}
 
 #ifdef MEASURE_TIME_PARALLEL
 static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs)
@@ -1217,7 +1231,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 
       /* broadcast data and initialize and allocate arrays in partitions */
       
-      initializePartitions(tr, localTree, pr, localPr, tid, n);
+      initializePartitionsMaster(tr, localTree, pr, localPr, tid, n);
 
       break;          
     case THREAD_COPY_ALPHA: 
@@ -1430,24 +1444,23 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
       {
 	/* cleans up the workers memory */
 
-	int numTaxa = tr->mxtips; 
-
 #ifdef _USE_PTHREADS
 	/* TODO destroying the tree does not work yet in a highly
 	   generic manner. */
 
 	if(NOT MASTER_P)
 	  {
-	    pllPartitionsDestroy (&localPr, numTaxa);
+	    pllPartitionsDestroy (localTree, &localPr);
 	    /* pllTreeDestroy (localTree); */
 	  }
 	else 
 	  {
-	    pllPartitionsDestroy (&pr, numTaxa);
+	    //pllPartitionsDestroy (tr, &pr);
 	    /* pllTreeDestroy (tr); */
 	  }
+
 #else 
-	pllPartitionsDestroy (&pr, numTaxa);
+	pllPartitionsDestroy (tr, &pr);
 	/* pllTreeDestroy (tr); */
 	
 	MPI_Finalize();
@@ -1480,6 +1493,7 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 void *likelihoodThread(void *tData)
 {
   threadData *td = (threadData*)tData;
+  int localTrap = 1;
   pllInstance 
     *tr = td->tr;
   partitionList *pr = td->pr;
@@ -1501,7 +1515,7 @@ void *likelihoodThread(void *tData)
 
   /* printf("\nThis is RAxML Worker Pthread Number: %d\n", tid); */
 
-  while(1)
+  while(localTrap)
     {
 
       while (myCycle == threadJob);
@@ -1511,14 +1525,14 @@ void *likelihoodThread(void *tData)
     	  localPr->perGeneBranchLengths = pr->perGeneBranchLengths;
       	  localPr->numberOfPartitions = pr->numberOfPartitions;
       }
-      execFunction(tr, localTree, pr, localPr, tid, n);
+      localTrap = execFunction(tr, localTree, pr, localPr, tid, n);
 
       barrierBuffer[tid] = 1;     
     }
 #else 
   const int
     n = processes, 
-    tid = ((threadData*)tData)->threadNumber;
+    tid = td->threadNumber;
 
   /* printf("\nThis is RAxML Worker Process Number: %d\n", tid); */
 
@@ -1587,7 +1601,6 @@ void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr)
     } 
 }
 
-
 /**
    @brief a generic master barrier that serves as an entry point for parallel parts of the code.
 
@@ -1596,6 +1609,7 @@ void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr)
  */ 
 void masterBarrier(int jobType, pllInstance *tr, partitionList *pr)
 {
+
 #ifdef MEASURE_TIME_PARALLEL
   assert(jobType < NUM_PAR_JOBS); 
   timePerRegion[NUM_PAR_JOBS]  += gettime()- masterTimePerPhase ; 
