@@ -242,7 +242,6 @@ void startPthreads(pllInstance *tr, partitionList *pr)
     }
   pthread_attr_destroy (&attr);
 }
-#endif
 
 void stopPthreads (pllInstance * tr)
 {
@@ -257,8 +256,8 @@ void stopPthreads (pllInstance * tr)
   rax_free (tData);
   rax_free (barrierBuffer);
   rax_free (globalResult);
-
 }
+#endif
 
 #ifdef MEASURE_TIME_PARALLEL
 static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs)
