@@ -136,7 +136,7 @@ static inline unsigned int vectorPopcount(INT_TYPE v)
 
   for(i = 0; i < LONG_INTS_PER_VECTOR; i++)
     sum += __builtin_popcountl(counts[i]);
- 	     
+             
   return ((unsigned int)sum);
 }
 #endif
@@ -158,15 +158,15 @@ static int checkerPars(pllInstance *tr, nodeptr p)
   else
     {
       if(group != -9) 
-	return group;
+        return group;
 
       group = checkerPars(tr, p->next->back);
       if(group != -9) 
-	return group;
+        return group;
 
       group = checkerPars(tr, p->next->next->back);
       if(group != -9) 
-	return group;
+        return group;
 
       return -9;
     }
@@ -177,9 +177,9 @@ static boolean tipHomogeneityCheckerPars(pllInstance *tr, nodeptr p, int groupin
   if(isTip(p->number, tr->mxtips))
     {
       if(tr->constraintVector[p->number] != grouping) 
-	return PLL_FALSE;
+        return PLL_FALSE;
       else 
-	return PLL_TRUE;
+        return PLL_TRUE;
     }
   else
     {   
@@ -213,18 +213,18 @@ static void computeTraversalInfoParsimony(nodeptr p, int *ti, int *counter, int 
   if(full)
     {
        if(q->number > maxTips) 
-	 computeTraversalInfoParsimony(q, ti, counter, maxTips, full);
+         computeTraversalInfoParsimony(q, ti, counter, maxTips, full);
       
       if(r->number > maxTips) 
-	computeTraversalInfoParsimony(r, ti, counter, maxTips, full);
+        computeTraversalInfoParsimony(r, ti, counter, maxTips, full);
     }
   else
     {
       if(q->number > maxTips && !q->xPars) 
-	computeTraversalInfoParsimony(q, ti, counter, maxTips, full);
+        computeTraversalInfoParsimony(q, ti, counter, maxTips, full);
       
       if(r->number > maxTips && !r->xPars) 
-	computeTraversalInfoParsimony(r, ti, counter, maxTips, full);
+        computeTraversalInfoParsimony(r, ti, counter, maxTips, full);
     }
   
   
@@ -256,210 +256,210 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList *pr)
   for(index = 4; index < count; index += 4)
     {      
       unsigned int
-	totalScore = 0;
+        totalScore = 0;
 
       size_t
-	pNumber = (size_t)ti[index],
-	qNumber = (size_t)ti[index + 1],
-	rNumber = (size_t)ti[index + 2];
+        pNumber = (size_t)ti[index],
+        qNumber = (size_t)ti[index + 1],
+        rNumber = (size_t)ti[index + 2];
       
       for(model = 0; model < pr->numberOfPartitions; model++)
-	{
-	  size_t
-	    k,
-	    states = pr->partitionData[model]->states,
-	    width = pr->partitionData[model]->parsimonyLength;
+        {
+          size_t
+            k,
+            states = pr->partitionData[model]->states,
+            width = pr->partitionData[model]->parsimonyLength;
             
-	  unsigned int	
-	    i;      
+          unsigned int  
+            i;      
                  
-	  switch(states)
-	    {
-	    case 2:       
-	      {
-		parsimonyNumber
-		  *left[2],
-		  *right[2],
-		  *this[2];
+          switch(states)
+            {
+            case 2:       
+              {
+                parsimonyNumber
+                  *left[2],
+                  *right[2],
+                  *this[2];
 
-		for(k = 0; k < 2; k++)
-		  {
-		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
-		    right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * rNumber) + width * k]);
-		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
-		  }
+                for(k = 0; k < 2; k++)
+                  {
+                    left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
+                    right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * rNumber) + width * k]);
+                    this[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
+                  }
 
-		for(i = 0; i < width; i += INTS_PER_VECTOR)
-		  {	 	  
-		    INT_TYPE
-		      s_r, s_l, v_N,
-		      l_A, l_C,
-		      v_A, v_C;	    	 
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[0][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[0][i]));
-		    l_A = VECTOR_BIT_AND(s_l, s_r);
-		    v_A = VECTOR_BIT_OR(s_l, s_r);
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[1][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[1][i]));
-		    l_C = VECTOR_BIT_AND(s_l, s_r);
-		    v_C = VECTOR_BIT_OR(s_l, s_r);		  		  		  		  
-		    
-		    v_N = VECTOR_BIT_OR(l_A, l_C);
-		    
-		    VECTOR_STORE((CAST)(&this[0][i]), VECTOR_BIT_OR(l_A, VECTOR_AND_NOT(v_N, v_A)));
-		    VECTOR_STORE((CAST)(&this[1][i]), VECTOR_BIT_OR(l_C, VECTOR_AND_NOT(v_N, v_C)));		 	  	 	 	  	  	  	
-		    
-		    v_N = VECTOR_AND_NOT(v_N, allOne);
-		    
-		    totalScore += vectorPopcount(v_N);		  
-		  }
-	      }
-	      break;
-	    case 4:
-	      {
-		parsimonyNumber
-		  *left[4],
-		  *right[4],
-		  *this[4];
+                for(i = 0; i < width; i += INTS_PER_VECTOR)
+                  {               
+                    INT_TYPE
+                      s_r, s_l, v_N,
+                      l_A, l_C,
+                      v_A, v_C;          
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[0][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[0][i]));
+                    l_A = VECTOR_BIT_AND(s_l, s_r);
+                    v_A = VECTOR_BIT_OR(s_l, s_r);
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[1][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[1][i]));
+                    l_C = VECTOR_BIT_AND(s_l, s_r);
+                    v_C = VECTOR_BIT_OR(s_l, s_r);                                                                
+                    
+                    v_N = VECTOR_BIT_OR(l_A, l_C);
+                    
+                    VECTOR_STORE((CAST)(&this[0][i]), VECTOR_BIT_OR(l_A, VECTOR_AND_NOT(v_N, v_A)));
+                    VECTOR_STORE((CAST)(&this[1][i]), VECTOR_BIT_OR(l_C, VECTOR_AND_NOT(v_N, v_C)));                                                                    
+                    
+                    v_N = VECTOR_AND_NOT(v_N, allOne);
+                    
+                    totalScore += vectorPopcount(v_N);            
+                  }
+              }
+              break;
+            case 4:
+              {
+                parsimonyNumber
+                  *left[4],
+                  *right[4],
+                  *this[4];
 
-		for(k = 0; k < 4; k++)
-		  {
-		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
-		    right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * rNumber) + width * k]);
-		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
-		  }
+                for(k = 0; k < 4; k++)
+                  {
+                    left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
+                    right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * rNumber) + width * k]);
+                    this[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
+                  }
 
-		for(i = 0; i < width; i += INTS_PER_VECTOR)
-		  {	 	  
-		    INT_TYPE
-		      s_r, s_l, v_N,
-		      l_A, l_C, l_G, l_T,
-		      v_A, v_C, v_G, v_T;	    	 
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[0][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[0][i]));
-		    l_A = VECTOR_BIT_AND(s_l, s_r);
-		    v_A = VECTOR_BIT_OR(s_l, s_r);
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[1][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[1][i]));
-		    l_C = VECTOR_BIT_AND(s_l, s_r);
-		    v_C = VECTOR_BIT_OR(s_l, s_r);
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[2][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[2][i]));
-		    l_G = VECTOR_BIT_AND(s_l, s_r);
-		    v_G = VECTOR_BIT_OR(s_l, s_r);
-		    
-		    s_l = VECTOR_LOAD((CAST)(&left[3][i]));
-		    s_r = VECTOR_LOAD((CAST)(&right[3][i]));
-		    l_T = VECTOR_BIT_AND(s_l, s_r);
-		    v_T = VECTOR_BIT_OR(s_l, s_r);
-		    
-		    v_N = VECTOR_BIT_OR(VECTOR_BIT_OR(l_A, l_C), VECTOR_BIT_OR(l_G, l_T));	  	 	    	  
-		    
-		    VECTOR_STORE((CAST)(&this[0][i]), VECTOR_BIT_OR(l_A, VECTOR_AND_NOT(v_N, v_A)));
-		    VECTOR_STORE((CAST)(&this[1][i]), VECTOR_BIT_OR(l_C, VECTOR_AND_NOT(v_N, v_C)));
-		    VECTOR_STORE((CAST)(&this[2][i]), VECTOR_BIT_OR(l_G, VECTOR_AND_NOT(v_N, v_G)));
-		    VECTOR_STORE((CAST)(&this[3][i]), VECTOR_BIT_OR(l_T, VECTOR_AND_NOT(v_N, v_T)));	  	 	 	  	  	  	
-		    
-		    v_N = VECTOR_AND_NOT(v_N, allOne);
-		    
-		    totalScore += vectorPopcount(v_N);	
-		  }
-	      }
-	      break;
-	    case 20:
-	      {
-		parsimonyNumber
-		  *left[20],
-		  *right[20],
-		  *this[20];
+                for(i = 0; i < width; i += INTS_PER_VECTOR)
+                  {               
+                    INT_TYPE
+                      s_r, s_l, v_N,
+                      l_A, l_C, l_G, l_T,
+                      v_A, v_C, v_G, v_T;                
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[0][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[0][i]));
+                    l_A = VECTOR_BIT_AND(s_l, s_r);
+                    v_A = VECTOR_BIT_OR(s_l, s_r);
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[1][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[1][i]));
+                    l_C = VECTOR_BIT_AND(s_l, s_r);
+                    v_C = VECTOR_BIT_OR(s_l, s_r);
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[2][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[2][i]));
+                    l_G = VECTOR_BIT_AND(s_l, s_r);
+                    v_G = VECTOR_BIT_OR(s_l, s_r);
+                    
+                    s_l = VECTOR_LOAD((CAST)(&left[3][i]));
+                    s_r = VECTOR_LOAD((CAST)(&right[3][i]));
+                    l_T = VECTOR_BIT_AND(s_l, s_r);
+                    v_T = VECTOR_BIT_OR(s_l, s_r);
+                    
+                    v_N = VECTOR_BIT_OR(VECTOR_BIT_OR(l_A, l_C), VECTOR_BIT_OR(l_G, l_T));                                
+                    
+                    VECTOR_STORE((CAST)(&this[0][i]), VECTOR_BIT_OR(l_A, VECTOR_AND_NOT(v_N, v_A)));
+                    VECTOR_STORE((CAST)(&this[1][i]), VECTOR_BIT_OR(l_C, VECTOR_AND_NOT(v_N, v_C)));
+                    VECTOR_STORE((CAST)(&this[2][i]), VECTOR_BIT_OR(l_G, VECTOR_AND_NOT(v_N, v_G)));
+                    VECTOR_STORE((CAST)(&this[3][i]), VECTOR_BIT_OR(l_T, VECTOR_AND_NOT(v_N, v_T)));                                                    
+                    
+                    v_N = VECTOR_AND_NOT(v_N, allOne);
+                    
+                    totalScore += vectorPopcount(v_N);  
+                  }
+              }
+              break;
+            case 20:
+              {
+                parsimonyNumber
+                  *left[20],
+                  *right[20],
+                  *this[20];
 
-		for(k = 0; k < 20; k++)
-		  {
-		    left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
-		    right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * rNumber) + width * k]);
-		    this[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
-		  }
+                for(k = 0; k < 20; k++)
+                  {
+                    left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
+                    right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * rNumber) + width * k]);
+                    this[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
+                  }
 
-		for(i = 0; i < width; i += INTS_PER_VECTOR)
-		  {	 	  
-		    size_t j;
-		    
-		    INT_TYPE
-		      s_r, s_l, 
-		      v_N = SET_ALL_BITS_ZERO,
-		      l_A[20], 
-		      v_A[20];	    	 
-		    
-		    for(j = 0; j < 20; j++)
-		      {
-			s_l = VECTOR_LOAD((CAST)(&left[j][i]));
-			s_r = VECTOR_LOAD((CAST)(&right[j][i]));
-			l_A[j] = VECTOR_BIT_AND(s_l, s_r);
-			v_A[j] = VECTOR_BIT_OR(s_l, s_r);
-			
-			v_N = VECTOR_BIT_OR(v_N, l_A[j]);
-		      }
-		    
-		    for(j = 0; j < 20; j++)		    
-		      VECTOR_STORE((CAST)(&this[j][i]), VECTOR_BIT_OR(l_A[j], VECTOR_AND_NOT(v_N, v_A[j])));		 	  	 	 	  	  	  	
-		    
-		    v_N = VECTOR_AND_NOT(v_N, allOne);
-		    
-		    totalScore += vectorPopcount(v_N);
-		  }
-	      }
-	      break;
-	    default:
-	      {
-		parsimonyNumber
-		  *left[32], 
-		  *right[32],
-		  *this[32];
+                for(i = 0; i < width; i += INTS_PER_VECTOR)
+                  {               
+                    size_t j;
+                    
+                    INT_TYPE
+                      s_r, s_l, 
+                      v_N = SET_ALL_BITS_ZERO,
+                      l_A[20], 
+                      v_A[20];           
+                    
+                    for(j = 0; j < 20; j++)
+                      {
+                        s_l = VECTOR_LOAD((CAST)(&left[j][i]));
+                        s_r = VECTOR_LOAD((CAST)(&right[j][i]));
+                        l_A[j] = VECTOR_BIT_AND(s_l, s_r);
+                        v_A[j] = VECTOR_BIT_OR(s_l, s_r);
+                        
+                        v_N = VECTOR_BIT_OR(v_N, l_A[j]);
+                      }
+                    
+                    for(j = 0; j < 20; j++)                 
+                      VECTOR_STORE((CAST)(&this[j][i]), VECTOR_BIT_OR(l_A[j], VECTOR_AND_NOT(v_N, v_A[j])));                                                                    
+                    
+                    v_N = VECTOR_AND_NOT(v_N, allOne);
+                    
+                    totalScore += vectorPopcount(v_N);
+                  }
+              }
+              break;
+            default:
+              {
+                parsimonyNumber
+                  *left[32], 
+                  *right[32],
+                  *this[32];
 
-		assert(states <= 32);
-		
-		for(k = 0; k < states; k++)
-		  {
-		    left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
-		    right[k] = &(pr->partitionData[model]->parsVect[(width * states * rNumber) + width * k]);
-		    this[k]  = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
-		  }
+                assert(states <= 32);
+                
+                for(k = 0; k < states; k++)
+                  {
+                    left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
+                    right[k] = &(pr->partitionData[model]->parsVect[(width * states * rNumber) + width * k]);
+                    this[k]  = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
+                  }
 
-		for(i = 0; i < width; i += INTS_PER_VECTOR)
-		  {	 	  
-		    size_t j;
-		    
-		    INT_TYPE
-		      s_r, s_l, 
-		      v_N = SET_ALL_BITS_ZERO,
-		      l_A[32], 
-		      v_A[32];	    	 
-		    
-		    for(j = 0; j < states; j++)
-		      {
-			s_l = VECTOR_LOAD((CAST)(&left[j][i]));
-			s_r = VECTOR_LOAD((CAST)(&right[j][i]));
-			l_A[j] = VECTOR_BIT_AND(s_l, s_r);
-			v_A[j] = VECTOR_BIT_OR(s_l, s_r);
-			
-			v_N = VECTOR_BIT_OR(v_N, l_A[j]);
-		      }
-		    
-		    for(j = 0; j < states; j++)		    
-		      VECTOR_STORE((CAST)(&this[j][i]), VECTOR_BIT_OR(l_A[j], VECTOR_AND_NOT(v_N, v_A[j])));		 	  	 	 	  	  	  	
-		    
-		    v_N = VECTOR_AND_NOT(v_N, allOne);
-		    
-		    totalScore += vectorPopcount(v_N);
-		  }	  			
-	      }
-	    }	  	 
-	}
+                for(i = 0; i < width; i += INTS_PER_VECTOR)
+                  {               
+                    size_t j;
+                    
+                    INT_TYPE
+                      s_r, s_l, 
+                      v_N = SET_ALL_BITS_ZERO,
+                      l_A[32], 
+                      v_A[32];           
+                    
+                    for(j = 0; j < states; j++)
+                      {
+                        s_l = VECTOR_LOAD((CAST)(&left[j][i]));
+                        s_r = VECTOR_LOAD((CAST)(&right[j][i]));
+                        l_A[j] = VECTOR_BIT_AND(s_l, s_r);
+                        v_A[j] = VECTOR_BIT_OR(s_l, s_r);
+                        
+                        v_N = VECTOR_BIT_OR(v_N, l_A[j]);
+                      }
+                    
+                    for(j = 0; j < states; j++)             
+                      VECTOR_STORE((CAST)(&this[j][i]), VECTOR_BIT_OR(l_A[j], VECTOR_AND_NOT(v_N, v_A[j])));                                                                    
+                    
+                    v_N = VECTOR_AND_NOT(v_N, allOne);
+                    
+                    totalScore += vectorPopcount(v_N);
+                  }                             
+              }
+            }            
+        }
 
       tr->parsimonyScore[pNumber] = totalScore + tr->parsimonyScore[rNumber] + tr->parsimonyScore[qNumber];      
     }
@@ -491,145 +491,145 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
   for(model = 0; model < pr->numberOfPartitions; model++)
     {
       size_t
-	k,
-	states = pr->partitionData[model]->states,
-	width = pr->partitionData[model]->parsimonyLength,
-	i;
+        k,
+        states = pr->partitionData[model]->states,
+        width = pr->partitionData[model]->parsimonyLength,
+        i;
 
        switch(states)
-	 {
-	 case 2:
-	   {
-	     parsimonyNumber
-	       *left[2],
-	       *right[2];
-	     
-	     for(k = 0; k < 2; k++)
-	       {
-		 left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
-		 right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
-	       }     
-	     
-	     for(i = 0; i < width; i += INTS_PER_VECTOR)
-	       {                	                       
-		 INT_TYPE      
-		   l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[0][i])), VECTOR_LOAD((CAST)(&right[0][i]))),
-		   l_C = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[1][i])), VECTOR_LOAD((CAST)(&right[1][i]))),		 
-		   v_N = VECTOR_BIT_OR(l_A, l_C);
-		 
-		 v_N = VECTOR_AND_NOT(v_N, allOne);
-		 
-		 sum += vectorPopcount(v_N);
-		 
-		 if(sum >= bestScore)
-		   return sum;		   	       
-	       }
-	   }
-	   break;
-	 case 4:
-	   {
-	     parsimonyNumber
-	       *left[4],
-	       *right[4];
+         {
+         case 2:
+           {
+             parsimonyNumber
+               *left[2],
+               *right[2];
+             
+             for(k = 0; k < 2; k++)
+               {
+                 left[k]  = &(pr->partitionData[model]->parsVect[(width * 2 * qNumber) + width * k]);
+                 right[k] = &(pr->partitionData[model]->parsVect[(width * 2 * pNumber) + width * k]);
+               }     
+             
+             for(i = 0; i < width; i += INTS_PER_VECTOR)
+               {                                               
+                 INT_TYPE      
+                   l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[0][i])), VECTOR_LOAD((CAST)(&right[0][i]))),
+                   l_C = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[1][i])), VECTOR_LOAD((CAST)(&right[1][i]))),            
+                   v_N = VECTOR_BIT_OR(l_A, l_C);
+                 
+                 v_N = VECTOR_AND_NOT(v_N, allOne);
+                 
+                 sum += vectorPopcount(v_N);
+                 
+                 if(sum >= bestScore)
+                   return sum;                         
+               }
+           }
+           break;
+         case 4:
+           {
+             parsimonyNumber
+               *left[4],
+               *right[4];
       
-	     for(k = 0; k < 4; k++)
-	       {
-		 left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
-		 right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
-	       }        
+             for(k = 0; k < 4; k++)
+               {
+                 left[k]  = &(pr->partitionData[model]->parsVect[(width * 4 * qNumber) + width * k]);
+                 right[k] = &(pr->partitionData[model]->parsVect[(width * 4 * pNumber) + width * k]);
+               }        
 
-	     for(i = 0; i < width; i += INTS_PER_VECTOR)
-	       {                	                        
-		 INT_TYPE      
-		   l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[0][i])), VECTOR_LOAD((CAST)(&right[0][i]))),
-		   l_C = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[1][i])), VECTOR_LOAD((CAST)(&right[1][i]))),
-		   l_G = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[2][i])), VECTOR_LOAD((CAST)(&right[2][i]))),
-		   l_T = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[3][i])), VECTOR_LOAD((CAST)(&right[3][i]))),
-		   v_N = VECTOR_BIT_OR(VECTOR_BIT_OR(l_A, l_C), VECTOR_BIT_OR(l_G, l_T));     
-		 
-		 v_N = VECTOR_AND_NOT(v_N, allOne);
-		 
-		 sum += vectorPopcount(v_N);
-		 
-		 if(sum >= bestScore)		 
-		   return sum;	        
-	       }	   	 
-	   }
-	   break;
-	 case 20:
-	   {
-	     parsimonyNumber
-	       *left[20],
-	       *right[20];
-	     
-	      for(k = 0; k < 20; k++)
-		{
-		  left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
-		  right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
-		}  
-	   
-	      for(i = 0; i < width; i += INTS_PER_VECTOR)
-		{                	       
-		  int 
-		    j;
-		  
-		  INT_TYPE      
-		    l_A,
-		    v_N = SET_ALL_BITS_ZERO;     
-		  
-		  for(j = 0; j < 20; j++)
-		    {
-		      l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[j][i])), VECTOR_LOAD((CAST)(&right[j][i])));
-		      v_N = VECTOR_BIT_OR(l_A, v_N);
-		    }
-		  
-		  v_N = VECTOR_AND_NOT(v_N, allOne);
-		  
-		  sum += vectorPopcount(v_N);	       
-		  
-		  if(sum >= bestScore)	    
-		    return sum;		    	       
-		}
-	   }
-	   break;
-	 default:
-	   {
-	     parsimonyNumber
-	       *left[32],  
-	       *right[32]; 
+             for(i = 0; i < width; i += INTS_PER_VECTOR)
+               {                                                
+                 INT_TYPE      
+                   l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[0][i])), VECTOR_LOAD((CAST)(&right[0][i]))),
+                   l_C = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[1][i])), VECTOR_LOAD((CAST)(&right[1][i]))),
+                   l_G = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[2][i])), VECTOR_LOAD((CAST)(&right[2][i]))),
+                   l_T = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[3][i])), VECTOR_LOAD((CAST)(&right[3][i]))),
+                   v_N = VECTOR_BIT_OR(VECTOR_BIT_OR(l_A, l_C), VECTOR_BIT_OR(l_G, l_T));     
+                 
+                 v_N = VECTOR_AND_NOT(v_N, allOne);
+                 
+                 sum += vectorPopcount(v_N);
+                 
+                 if(sum >= bestScore)            
+                   return sum;          
+               }                 
+           }
+           break;
+         case 20:
+           {
+             parsimonyNumber
+               *left[20],
+               *right[20];
+             
+              for(k = 0; k < 20; k++)
+                {
+                  left[k]  = &(pr->partitionData[model]->parsVect[(width * 20 * qNumber) + width * k]);
+                  right[k] = &(pr->partitionData[model]->parsVect[(width * 20 * pNumber) + width * k]);
+                }  
+           
+              for(i = 0; i < width; i += INTS_PER_VECTOR)
+                {                              
+                  int 
+                    j;
+                  
+                  INT_TYPE      
+                    l_A,
+                    v_N = SET_ALL_BITS_ZERO;     
+                  
+                  for(j = 0; j < 20; j++)
+                    {
+                      l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[j][i])), VECTOR_LOAD((CAST)(&right[j][i])));
+                      v_N = VECTOR_BIT_OR(l_A, v_N);
+                    }
+                  
+                  v_N = VECTOR_AND_NOT(v_N, allOne);
+                  
+                  sum += vectorPopcount(v_N);          
+                  
+                  if(sum >= bestScore)      
+                    return sum;                        
+                }
+           }
+           break;
+         default:
+           {
+             parsimonyNumber
+               *left[32],  
+               *right[32]; 
 
-	     assert(states <= 32);
+             assert(states <= 32);
 
-	     for(k = 0; k < states; k++)
-	       {
-		 left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
-		 right[k] = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
-	       }  
-	   
-	     for(i = 0; i < width; i += INTS_PER_VECTOR)
-	       {                	       
-		 size_t
-		   j;
-		 
-		 INT_TYPE      
-		   l_A,
-		   v_N = SET_ALL_BITS_ZERO;     
-		 
-		 for(j = 0; j < states; j++)
-		   {
-		     l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[j][i])), VECTOR_LOAD((CAST)(&right[j][i])));
-		     v_N = VECTOR_BIT_OR(l_A, v_N);
-		   }
-		 
-		 v_N = VECTOR_AND_NOT(v_N, allOne);
-		 
-		 sum += vectorPopcount(v_N);	       
-		 
-		 if(sum >= bestScore)	      
-		   return sum;		       
-	       }
-	   }
-	 }
+             for(k = 0; k < states; k++)
+               {
+                 left[k]  = &(pr->partitionData[model]->parsVect[(width * states * qNumber) + width * k]);
+                 right[k] = &(pr->partitionData[model]->parsVect[(width * states * pNumber) + width * k]);
+               }  
+           
+             for(i = 0; i < width; i += INTS_PER_VECTOR)
+               {                               
+                 size_t
+                   j;
+                 
+                 INT_TYPE      
+                   l_A,
+                   v_N = SET_ALL_BITS_ZERO;     
+                 
+                 for(j = 0; j < states; j++)
+                   {
+                     l_A = VECTOR_BIT_AND(VECTOR_LOAD((CAST)(&left[j][i])), VECTOR_LOAD((CAST)(&right[j][i])));
+                     v_N = VECTOR_BIT_OR(l_A, v_N);
+                   }
+                 
+                 v_N = VECTOR_AND_NOT(v_N, allOne);
+                 
+                 sum += vectorPopcount(v_N);           
+                 
+                 if(sum >= bestScore)         
+                   return sum;                 
+               }
+           }
+         }
     }
   
   return sum;
@@ -658,16 +658,16 @@ static unsigned int evaluateParsimony(pllInstance *tr, partitionList *pr, nodept
   if(full)
     {
       if(p->number > tr->mxtips)
-	computeTraversalInfoParsimony(p, ti, &counter, tr->mxtips, full);
+        computeTraversalInfoParsimony(p, ti, &counter, tr->mxtips, full);
       if(q->number > tr->mxtips)
-	computeTraversalInfoParsimony(q, ti, &counter, tr->mxtips, full); 
+        computeTraversalInfoParsimony(q, ti, &counter, tr->mxtips, full); 
     }
   else
     {
       if(p->number > tr->mxtips && !p->xPars)
-	computeTraversalInfoParsimony(p, ti, &counter, tr->mxtips, full);
+        computeTraversalInfoParsimony(p, ti, &counter, tr->mxtips, full);
       if(q->number > tr->mxtips && !q->xPars)
-	computeTraversalInfoParsimony(q, ti, &counter, tr->mxtips, full); 
+        computeTraversalInfoParsimony(q, ti, &counter, tr->mxtips, full); 
     }
 
   ti[0] = counter;
@@ -758,57 +758,57 @@ static void testInsertParsimony (pllInstance *tr, partitionList *pr, nodeptr p, 
   if(tr->grouped)
     {
       int 
-	rNumber = tr->constraintVector[r->number],
-	qNumber = tr->constraintVector[q->number],
-	pNumber = tr->constraintVector[p->number];
+        rNumber = tr->constraintVector[r->number],
+        qNumber = tr->constraintVector[q->number],
+        pNumber = tr->constraintVector[p->number];
 
       doIt = PLL_FALSE;
      
       if(pNumber == -9)
-	pNumber = checkerPars(tr, p->back);
+        pNumber = checkerPars(tr, p->back);
       if(pNumber == -9)
-	doIt = PLL_TRUE;
+        doIt = PLL_TRUE;
       else
-	{
-	  if(qNumber == -9)
-	    qNumber = checkerPars(tr, q);
+        {
+          if(qNumber == -9)
+            qNumber = checkerPars(tr, q);
 
-	  if(rNumber == -9)
-	    rNumber = checkerPars(tr, r);
+          if(rNumber == -9)
+            rNumber = checkerPars(tr, r);
 
-	  if(pNumber == rNumber || pNumber == qNumber)
-	    doIt = PLL_TRUE;       
-	}
+          if(pNumber == rNumber || pNumber == qNumber)
+            doIt = PLL_TRUE;       
+        }
     }
 
   if(doIt)
     {
       double 
-	z[NUM_BRANCHES];
+        z[NUM_BRANCHES];
       
       if(saveBranches)
-	{
-	  int i;
-	  
-	  for(i = 0; i < numBranches; i++)
-	    z[i] = q->z[i];
-	}
+        {
+          int i;
+          
+          for(i = 0; i < numBranches; i++)
+            z[i] = q->z[i];
+        }
 
       insertParsimony(tr, pr, p, q);
   
       mp = evaluateParsimony(tr, pr, p->next->next, PLL_FALSE);
 
       if(mp < tr->bestParsimony)
-	{
-	  tr->bestParsimony = mp;
-	  tr->insertNode = q;
-	  tr->removeNode = p;
-	}
+        {
+          tr->bestParsimony = mp;
+          tr->insertNode = q;
+          tr->removeNode = p;
+        }
       
       if(saveBranches)
-	hookup(q, r, z, numBranches);
+        hookup(q, r, z, numBranches);
       else
-	hookupDefault(q, r);
+        hookupDefault(q, r);
       
       p->next->next->back = p->next->back = (nodeptr) NULL;
     }
@@ -840,7 +840,7 @@ static void addTraverseParsimony (pllInstance *tr, partitionList *pr, nodeptr p,
     testInsertParsimony(tr, pr, p, q, saveBranches);
 
   if (((q->number > tr->mxtips)) && ((--maxtrav > 0) || doAll))
-    {	      
+    {         
       addTraverseParsimony(tr, pr, p, q->next->back, mintrav, maxtrav, doAll, saveBranches);
       addTraverseParsimony(tr, pr, p, q->next->next->back, mintrav, maxtrav, doAll, saveBranches);
     }
@@ -917,13 +917,13 @@ static int rearrangeParsimony(pllInstance *tr, partitionList *pr, nodeptr p, int
   if(tr->constrained)
     {    
       if(! tipHomogeneityCheckerPars(tr, p->back, 0))
-	doP = PLL_FALSE;
-	
+        doP = PLL_FALSE;
+        
       if(! tipHomogeneityCheckerPars(tr, q->back, 0))
-	doQ = PLL_FALSE;
-		        
+        doQ = PLL_FALSE;
+                        
       if(doQ == PLL_FALSE && doP == PLL_FALSE)
-	return 0;
+        return 0;
     }  
 
   if((p->number > tr->mxtips) && doP) 
@@ -932,28 +932,28 @@ static int rearrangeParsimony(pllInstance *tr, partitionList *pr, nodeptr p, int
       p2 = p->next->next->back;
       
       if ((p1->number > tr->mxtips) || (p2->number > tr->mxtips)) 
-	{	  	  
-	  //removeNodeParsimony(p, tr);	  	 
-	  removeNodeParsimony(p);	  	 
+        {                 
+          //removeNodeParsimony(p, tr);          
+          removeNodeParsimony(p);                
 
-	  if ((p1->number > tr->mxtips)) 
-	    {
-	      addTraverseParsimony(tr, pr, p, p1->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
-	      addTraverseParsimony(tr, pr, p, p1->next->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
-	    }
-	 
-	  if ((p2->number > tr->mxtips)) 
-	    {
-	      addTraverseParsimony(tr, pr, p, p2->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
-	      addTraverseParsimony(tr, pr, p, p2->next->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
-	    }
-	    
-	   
-	  hookupDefault(p->next,       p1);
-	  hookupDefault(p->next->next, p2);
+          if ((p1->number > tr->mxtips)) 
+            {
+              addTraverseParsimony(tr, pr, p, p1->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
+              addTraverseParsimony(tr, pr, p, p1->next->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
+            }
+         
+          if ((p2->number > tr->mxtips)) 
+            {
+              addTraverseParsimony(tr, pr, p, p2->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
+              addTraverseParsimony(tr, pr, p, p2->next->next->back, mintrav, maxtrav, doAll, PLL_FALSE);
+            }
+            
+           
+          hookupDefault(p->next,       p1);
+          hookupDefault(p->next->next, p2);
 
-	  newviewParsimony(tr, pr, p);
-	}
+          newviewParsimony(tr, pr, p);
+        }
     }  
        
   if ((q->number > tr->mxtips) && (maxtrav > 0) && doQ) 
@@ -962,40 +962,40 @@ static int rearrangeParsimony(pllInstance *tr, partitionList *pr, nodeptr p, int
       q2 = q->next->next->back;
 
       if (
-	  (
-	   (q1->number > tr->mxtips) && 
-	   ((q1->next->back->number > tr->mxtips) || (q1->next->next->back->number > tr->mxtips))
-	   )
-	  ||
-	  (
-	   (q2->number > tr->mxtips) && 
-	   ((q2->next->back->number > tr->mxtips) || (q2->next->next->back->number > tr->mxtips))
-	   )
-	  )
-	{	   
+          (
+           (q1->number > tr->mxtips) && 
+           ((q1->next->back->number > tr->mxtips) || (q1->next->next->back->number > tr->mxtips))
+           )
+          ||
+          (
+           (q2->number > tr->mxtips) && 
+           ((q2->next->back->number > tr->mxtips) || (q2->next->next->back->number > tr->mxtips))
+           )
+          )
+        {          
 
-	  //removeNodeParsimony(q, tr);
-	  removeNodeParsimony(q);
-	  
-	  mintrav2 = mintrav > 2 ? mintrav : 2;
-	  
-	  if ((q1->number > tr->mxtips)) 
-	    {
-	      addTraverseParsimony(tr, pr, q, q1->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
-	      addTraverseParsimony(tr, pr, q, q1->next->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
-	    }
-	 
-	  if ((q2->number > tr->mxtips)) 
-	    {
-	      addTraverseParsimony(tr, pr, q, q2->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
-	      addTraverseParsimony(tr, pr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
-	    }	   
-	   
-	  hookupDefault(q->next,       q1);
-	  hookupDefault(q->next->next, q2);
-	   
-	  newviewParsimony(tr, pr, q);
-	}
+          //removeNodeParsimony(q, tr);
+          removeNodeParsimony(q);
+          
+          mintrav2 = mintrav > 2 ? mintrav : 2;
+          
+          if ((q1->number > tr->mxtips)) 
+            {
+              addTraverseParsimony(tr, pr, q, q1->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
+              addTraverseParsimony(tr, pr, q, q1->next->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
+            }
+         
+          if ((q2->number > tr->mxtips)) 
+            {
+              addTraverseParsimony(tr, pr, q, q2->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
+              addTraverseParsimony(tr, pr, q, q2->next->next->back, mintrav2 , maxtrav, doAll, PLL_FALSE);
+            }      
+           
+          hookupDefault(q->next,       q1);
+          hookupDefault(q->next->next, q2);
+           
+          newviewParsimony(tr, pr, q);
+        }
     }
 
   return 1;
@@ -1021,14 +1021,14 @@ static boolean isInformative2(pllInstance *tr, int site)
   unsigned char
     nucleotide,
     target = 0;
-  	
+        
   for(j = 0; j < 256; j++)
     check[j] = 0;
   
   for(j = 1; j <= tr->mxtips; j++)
-    {	   
-      nucleotide = tr->yVector[j][site];	    
-      check[nucleotide] =  check[nucleotide] + 1;      	           
+    {      
+      nucleotide = tr->yVector[j][site];            
+      check[nucleotide] =  check[nucleotide] + 1;                  
     }
   
   
@@ -1052,26 +1052,26 @@ static boolean isInformative2(pllInstance *tr, int site)
       informativeCounter++; 
       target = target | 8;
     }
-	  
+          
   if(informativeCounter >= 2)
     return PLL_TRUE;    
   else
     {        
       for(j = 0; j < undetermined; j++)
-	{
-	  if(j == 3 || j == 5 || j == 6 || j == 7 || j == 9 || j == 10 || j == 11 || 
-	     j == 12 || j == 13 || j == 14)
-	    {
-	      if(check[j] > 1)
-		{
-		  if(!(target & j))
-		    return PLL_TRUE;
-		}
-	    }
-	} 
+        {
+          if(j == 3 || j == 5 || j == 6 || j == 7 || j == 9 || j == 10 || j == 11 || 
+             j == 12 || j == 13 || j == 14)
+            {
+              if(check[j] > 1)
+                {
+                  if(!(target & j))
+                    return PLL_TRUE;
+                }
+            }
+        } 
     }
      
-  return PLL_FALSE;	     
+  return PLL_FALSE;          
 }
 */
 
@@ -1089,35 +1089,35 @@ static boolean isInformative(pllInstance *tr, int dataType, int site)
   unsigned char
     nucleotide;
   
-	
+        
   for(j = 0; j < 256; j++)
     check[j] = 0;
   
   for(j = 1; j <= tr->mxtips; j++)
-    {	   
-      nucleotide = tr->yVector[j][site];	    
+    {      
+      nucleotide = tr->yVector[j][site];            
       check[nucleotide] =  check[nucleotide] + 1;
-      assert(bitVector[nucleotide] > 0);	           
+      assert(bitVector[nucleotide] > 0);                   
     }
   
   for(j = 0; j < undetermined; j++)
     {
       if(check[j] > 0)
-	informativeCounter++;    
+        informativeCounter++;    
     } 
-	  
+          
   if(informativeCounter <= 1)
     return PLL_FALSE;    
   else
     {        
       for(j = 0; j < undetermined; j++)
-	{
-	  if(check[j] > 1)
-	    return PLL_TRUE;
-	} 
+        {
+          if(check[j] > 1)
+            return PLL_TRUE;
+        } 
     }
      
-  return PLL_FALSE;	     
+  return PLL_FALSE;          
 }
 
 
@@ -1147,15 +1147,15 @@ static void determineUninformativeSites(pllInstance *tr, partitionList *pr, int 
       
       
       for(i = pr->partitionData[model]->lower; i < pr->partitionData[model]->upper; i++)
-	{
-	   if(isInformative(tr, pr->partitionData[model]->dataType, i))
-	     informative[i] = 1;
-	   else
-	     {
-	       informative[i] = 0;
-	       number++;
-	     }  
-	}      
+        {
+           if(isInformative(tr, pr->partitionData[model]->dataType, i))
+             informative[i] = 1;
+           else
+             {
+               informative[i] = 0;
+               number++;
+             }  
+        }      
     }
 
  
@@ -1173,23 +1173,23 @@ static void reorderNodes(pllInstance *tr, nodeptr *np, nodeptr p, int *count)
   else
     {              
       for(i = tr->mxtips + 1; (i <= (tr->mxtips + tr->mxtips - 1)) && (found == 0); i++)
-	{
-	  if (p == np[i] || p == np[i]->next || p == np[i]->next->next)
-	    {
-	      if(p == np[i])			       
-		tr->nodep[*count + tr->mxtips + 1] = np[i];		 		
-	      else
-		{
-		  if(p == np[i]->next)		  
-		    tr->nodep[*count + tr->mxtips + 1] = np[i]->next;		     	   
-		  else		   
-		    tr->nodep[*count + tr->mxtips + 1] = np[i]->next->next;		    		    
-		}
+        {
+          if (p == np[i] || p == np[i]->next || p == np[i]->next->next)
+            {
+              if(p == np[i])                           
+                tr->nodep[*count + tr->mxtips + 1] = np[i];                             
+              else
+                {
+                  if(p == np[i]->next)            
+                    tr->nodep[*count + tr->mxtips + 1] = np[i]->next;                      
+                  else             
+                    tr->nodep[*count + tr->mxtips + 1] = np[i]->next->next;                                 
+                }
 
-	      found = 1;	      	     
-	      *count = *count + 1;
-	    }
-	}            
+              found = 1;                     
+              *count = *count + 1;
+            }
+        }            
      
       assert(found != 0);
 
@@ -1236,32 +1236,32 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
   for(model = 0; model < (size_t) pr->numberOfPartitions; model++)
     {
       size_t
-	k,
-	states = (size_t)pr->partitionData[model]->states,
-	compressedEntries,
-	compressedEntriesPadded,
-	entries = 0, 
-	lower = pr->partitionData[model]->lower,
-	upper = pr->partitionData[model]->upper;
+        k,
+        states = (size_t)pr->partitionData[model]->states,
+        compressedEntries,
+        compressedEntriesPadded,
+        entries = 0, 
+        lower = pr->partitionData[model]->lower,
+        upper = pr->partitionData[model]->upper;
 
       parsimonyNumber 
-	**compressedTips = (parsimonyNumber **)rax_malloc(states * sizeof(parsimonyNumber*)),
-	*compressedValues = (parsimonyNumber *)rax_malloc(states * sizeof(parsimonyNumber));
+        **compressedTips = (parsimonyNumber **)rax_malloc(states * sizeof(parsimonyNumber*)),
+        *compressedValues = (parsimonyNumber *)rax_malloc(states * sizeof(parsimonyNumber));
       
       for(i = lower; i < upper; i++)    
-	if(informative[i])
-	  entries += (size_t)tr->aliaswgt[i];     
+        if(informative[i])
+          entries += (size_t)tr->aliaswgt[i];     
   
       compressedEntries = entries / PCF;
 
       if(entries % PCF != 0)
-	compressedEntries++;
+        compressedEntries++;
 
 #if (defined(__SIM_SSE3) || defined(__AVX))
       if(compressedEntries % INTS_PER_VECTOR != 0)
-	compressedEntriesPadded = compressedEntries + (INTS_PER_VECTOR - (compressedEntries % INTS_PER_VECTOR));
+        compressedEntriesPadded = compressedEntries + (INTS_PER_VECTOR - (compressedEntries % INTS_PER_VECTOR));
       else
-	compressedEntriesPadded = compressedEntries;
+        compressedEntriesPadded = compressedEntries;
 #else
       compressedEntriesPadded = compressedEntries;
 #endif     
@@ -1270,72 +1270,72 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
       pr->partitionData[model]->parsVect = (parsimonyNumber *)rax_malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
      
       for(i = 0; i < compressedEntriesPadded * states * totalNodes; i++)      
-	pr->partitionData[model]->parsVect[i] = 0;
+        pr->partitionData[model]->parsVect[i] = 0;
 
       for(i = 0; i < (size_t)tr->mxtips; i++)
-	{
-	  size_t
-	    w = 0,
-	    compressedIndex = 0,
-	    compressedCounter = 0,
-	    index = 0;
+        {
+          size_t
+            w = 0,
+            compressedIndex = 0,
+            compressedCounter = 0,
+            index = 0;
 
-	  for(k = 0; k < states; k++)
-	    {
-	      compressedTips[k] = &(pr->partitionData[model]->parsVect[(compressedEntriesPadded * states * (i + 1)) + (compressedEntriesPadded * k)]);
-	      compressedValues[k] = 0;
-	    }                
-	      
-	  for(index = lower; index < (size_t)upper; index++)
-	    {
-	      if(informative[index])
-		{
-		  const unsigned int 
-		    *bitValue = getBitVector(pr->partitionData[model]->dataType);
+          for(k = 0; k < states; k++)
+            {
+              compressedTips[k] = &(pr->partitionData[model]->parsVect[(compressedEntriesPadded * states * (i + 1)) + (compressedEntriesPadded * k)]);
+              compressedValues[k] = 0;
+            }                
+              
+          for(index = lower; index < (size_t)upper; index++)
+            {
+              if(informative[index])
+                {
+                  const unsigned int 
+                    *bitValue = getBitVector(pr->partitionData[model]->dataType);
 
-		  parsimonyNumber 
-		    value = bitValue[tr->yVector[i + 1][index]];	  
-	      
-		  for(w = 0; w < (size_t)tr->aliaswgt[index]; w++)
-		    {	   
-		      for(k = 0; k < states; k++)
-			{
-			  if(value & mask32[k])
-			    compressedValues[k] |= mask32[compressedCounter];
-			}
-		     
-		      compressedCounter++;
-		  
-		      if(compressedCounter == PCF)
-			{
-			  for(k = 0; k < states; k++)
-			    {
-			      compressedTips[k][compressedIndex] = compressedValues[k];
-			      compressedValues[k] = 0;
-			    }			 
-			  
-			  compressedCounter = 0;
-			  compressedIndex++;
-			}
-		    }
-		}
-	    }
+                  parsimonyNumber 
+                    value = bitValue[tr->yVector[i + 1][index]];          
+              
+                  for(w = 0; w < (size_t)tr->aliaswgt[index]; w++)
+                    {      
+                      for(k = 0; k < states; k++)
+                        {
+                          if(value & mask32[k])
+                            compressedValues[k] |= mask32[compressedCounter];
+                        }
+                     
+                      compressedCounter++;
+                  
+                      if(compressedCounter == PCF)
+                        {
+                          for(k = 0; k < states; k++)
+                            {
+                              compressedTips[k][compressedIndex] = compressedValues[k];
+                              compressedValues[k] = 0;
+                            }                    
+                          
+                          compressedCounter = 0;
+                          compressedIndex++;
+                        }
+                    }
+                }
+            }
                            
-	  for(;compressedIndex < compressedEntriesPadded; compressedIndex++)
-	    {	
-	      for(;compressedCounter < PCF; compressedCounter++)	      
-		for(k = 0; k < states; k++)
-		  compressedValues[k] |= mask32[compressedCounter];		  
-	  
-	      for(k = 0; k < states; k++)
-		{
-		  compressedTips[k][compressedIndex] = compressedValues[k];
-		  compressedValues[k] = 0;
-		}	      	      
-	      
-	      compressedCounter = 0;
-	    }	 	
-	}               
+          for(;compressedIndex < compressedEntriesPadded; compressedIndex++)
+            {   
+              for(;compressedCounter < PCF; compressedCounter++)              
+                for(k = 0; k < states; k++)
+                  compressedValues[k] |= mask32[compressedCounter];               
+          
+              for(k = 0; k < states; k++)
+                {
+                  compressedTips[k][compressedIndex] = compressedValues[k];
+                  compressedValues[k] = 0;
+                }                     
+              
+              compressedCounter = 0;
+            }           
+        }               
   
       pr->partitionData[model]->parsimonyLength = compressedEntriesPadded;
 
@@ -1385,7 +1385,7 @@ static void stepwiseAddition(pllInstance *tr, partitionList *pr, nodeptr p, node
   r->back = q;
    
   if(q->number > tr->mxtips && tr->parsimonyScore[q->number] > 0)
-    {	      
+    {         
       stepwiseAddition(tr, pr, p, q->next->back);
       stepwiseAddition(tr, pr, p, q->next->next->back);
     }
@@ -1406,7 +1406,7 @@ void allocateParsimonyDataStructures(pllInstance *tr, partitionList *pr)
   for(i = tr->mxtips + 1; i <= tr->mxtips + tr->mxtips - 1; i++)
     {
       nodeptr 
-	p = tr->nodep[i];
+        p = tr->nodep[i];
 
       p->xPars = 1;
       p->next->xPars = 0;
@@ -1460,7 +1460,7 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
   f = tr->start;       
   
   while(tr->ntips < tr->mxtips) 
-    {	
+    {   
       nodeptr q;
       
       tr->bestParsimony = INT_MAX;
@@ -1471,28 +1471,28 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
       q->back = p;
         
       if(tr->grouped)
-	{
-	  int 
-	    number = p->back->number;	  	 
+        {
+          int 
+            number = p->back->number;            
 
-	  tr->constraintVector[number] = -9;
-	}
+          tr->constraintVector[number] = -9;
+        }
           
       stepwiseAddition(tr, pr, q, f->back);
       
       {
-	nodeptr	  
-	  r = tr->insertNode->back;
-	
-	int counter = 4;
-	
-	hookupDefault(q->next,       tr->insertNode);
-	hookupDefault(q->next->next, r);
-	
-	computeTraversalInfoParsimony(q, tr->ti, &counter, tr->mxtips, PLL_FALSE);              
-	tr->ti[0] = counter;
-	
-	newviewParsimonyIterativeFast(tr, pr);
+        nodeptr   
+          r = tr->insertNode->back;
+        
+        int counter = 4;
+        
+        hookupDefault(q->next,       tr->insertNode);
+        hookupDefault(q->next->next, r);
+        
+        computeTraversalInfoParsimony(q, tr->ti, &counter, tr->mxtips, PLL_FALSE);              
+        tr->ti[0] = counter;
+        
+        newviewParsimonyIterativeFast(tr, pr);
       }
     }    
   
@@ -1505,14 +1505,14 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
       startMP = randomMP;
       nodeRectifierPars(tr);
       for(i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
-	{
-	  rearrangeParsimony(tr, pr, tr->nodep[i], 1, 20, PLL_FALSE);
-	  if(tr->bestParsimony < randomMP)
-	    {		
-	      restoreTreeRearrangeParsimony(tr, pr);
-	      randomMP = tr->bestParsimony;
-	    }
-	}      		  	   
+        {
+          rearrangeParsimony(tr, pr, tr->nodep[i], 1, 20, PLL_FALSE);
+          if(tr->bestParsimony < randomMP)
+            {           
+              restoreTreeRearrangeParsimony(tr, pr);
+              randomMP = tr->bestParsimony;
+            }
+        }                          
     }
   while(randomMP < startMP);
   
@@ -1539,7 +1539,7 @@ void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr)
   for(i = 0; i < numBranches; i++)
     {
       p1z[i] = p1->z[i];
-      p2z[i] = p2->z[i];	   	   
+      p2z[i] = p2->z[i];                   
     }
   
   tr->bestParsimony = INT_MAX; 
