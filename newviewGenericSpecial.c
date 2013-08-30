@@ -758,6 +758,159 @@ static void newviewGAMMA_FLEX(int tipCase,
   if(fastScaling)
     *scalerIncrement = addScale;
 }
+
+static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
+			   double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
+			   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+			   int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
+{
+  double
+    *le,
+    *ri,
+    *x1, *x2, *x3;
+  double
+    ump_x1, ump_x2, x1px2[4];
+  int i, j, k, scale, addScale = 0;
+
+  switch(tipCase)
+    {
+    case TIP_TIP:
+      {
+	for (i = 0; i < n; i++)
+	  {
+	    x1 = &(tipVector[4 * tipX1[i]]);
+	    x2 = &(tipVector[4 * tipX2[i]]);
+	    x3 = &x3_start[4 * i];
+
+	    le =  &left[cptr[i] * 16];
+	    ri =  &right[cptr[i] * 16];
+
+	    for(j = 0; j < 4; j++)
+	      {
+		ump_x1 = 0.0;
+		ump_x2 = 0.0;
+		for(k = 0; k < 4; k++)
+		  {
+		    ump_x1 += x1[k] * le[j * 4 + k];
+		    ump_x2 += x2[k] * ri[j * 4 + k];
+		  }
+		x1px2[j] = ump_x1 * ump_x2;
+	      }
+
+	    for(j = 0; j < 4; j++)
+	      x3[j] = 0.0;
+
+	    for(j = 0; j < 4; j++)
+	      for(k = 0; k < 4; k++)
+		x3[k] += x1px2[j] * EV[j * 4 + k];	    
+	  }
+      }
+      break;
+    case TIP_INNER:
+      {
+	for (i = 0; i < n; i++)
+	  {
+	    x1 = &(tipVector[4 * tipX1[i]]);
+	    x2 = &x2_start[4 * i];
+	    x3 = &x3_start[4 * i];
+
+	    le =  &left[cptr[i] * 16];
+	    ri =  &right[cptr[i] * 16];
+
+	    for(j = 0; j < 4; j++)
+	      {
+		ump_x1 = 0.0;
+		ump_x2 = 0.0;
+		for(k = 0; k < 4; k++)
+		  {
+		    ump_x1 += x1[k] * le[j * 4 + k];
+		    ump_x2 += x2[k] * ri[j * 4 + k];
+		  }
+		x1px2[j] = ump_x1 * ump_x2;
+	      }
+
+	    for(j = 0; j < 4; j++)
+	      x3[j] = 0.0;
+
+	    for(j = 0; j < 4; j++)
+	      for(k = 0; k < 4; k++)
+		x3[k] +=  x1px2[j] *  EV[4 * j + k];	   
+
+	    scale = 1;
+	    for(j = 0; j < 4 && scale; j++)
+	      scale = (x3[j] < PLL_MINLIKELIHOOD && x3[j] > PLL_MINUSMINLIKELIHOOD);	    	   
+	    	    
+	    if(scale)
+	      {		    
+		for(j = 0; j < 4; j++)
+		  x3[j] *= PLL_TWOTOTHE256;
+		
+		if(useFastScaling)
+		  addScale += wgt[i];
+		else
+		  ex3[i]  += 1;		
+	      }	     
+	  }
+      }
+      break;
+    case INNER_INNER:
+      for (i = 0; i < n; i++)
+	{
+	  x1 = &x1_start[4 * i];
+	  x2 = &x2_start[4 * i];
+	  x3 = &x3_start[4 * i];
+
+	  le = &left[cptr[i] * 16];
+	  ri = &right[cptr[i] * 16];
+
+	  for(j = 0; j < 4; j++)
+	    {
+	      ump_x1 = 0.0;
+	      ump_x2 = 0.0;
+	      for(k = 0; k < 4; k++)
+		{
+		  ump_x1 += x1[k] * le[j * 4 + k];
+		  ump_x2 += x2[k] * ri[j * 4 + k];
+		}
+	      x1px2[j] = ump_x1 * ump_x2;
+	    }
+
+	  for(j = 0; j < 4; j++)
+	    x3[j] = 0.0;
+
+	  for(j = 0; j < 4; j++)
+	    for(k = 0; k < 4; k++)
+	      x3[k] +=  x1px2[j] *  EV[4 * j + k];
+	
+	  scale = 1;
+	  for(j = 0; j < 4 && scale; j++)
+	    scale = (x3[j] < PLL_MINLIKELIHOOD && x3[j] > PLL_MINUSMINLIKELIHOOD);
+
+	  if(scale)
+	    {		    
+	      for(j = 0; j < 4; j++)
+		x3[j] *= PLL_TWOTOTHE256;
+	      
+	      if(useFastScaling)
+		addScale += wgt[i];
+	      else
+		ex3[i]  += 1;		
+	    }	  
+	}
+      break;
+    default:
+      assert(0);
+    }
+
+  if(useFastScaling)
+    *scalerIncrement = addScale;
+
+}
+
+
+
+
+
 #endif
 
 
@@ -1459,7 +1612,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         /* figure out if we need to compute the CAT or GAMMA model of rate heterogeneity */
 
         if(tr->rateHetModel == CAT) {
-          ticks t1 = getticks();
+          //ticks t1 = getticks();
 
           assert( states == 4 );
           //		newviewCAT_FLEX(tInfo->tipCase,  pr->partitionData[model]->EV, pr->partitionData[model]->rateCategory,
@@ -1469,30 +1622,30 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
           newviewGTRCAT(tInfo->tipCase,  pr->partitionData[model]->EV, pr->partitionData[model]->rateCategory,
 			x1_start, x2_start, x3_start, pr->partitionData[model]->tipVector,
-			ex1, tipX1, tipX2,
+			ex3, tipX1, tipX2,
 			width, left, right, wgt, &scalerIncrement, fastScaling);
 
 
 
-          ticks t2 = getticks();
+          //ticks t2 = getticks();
           if( tInfo->tipCase == TIP_TIP ) {
             newviewCAT_FLEX_reorder(tInfo->tipCase,  pr->partitionData[model]->EV, pr->partitionData[model]->rateCategory,
                 x1_start, x2_start, x3_start, pr->partitionData[model]->tipVector,
                 0, tipX1, tipX2,
                 width, left, right, wgt, &scalerIncrement, states);
           }
-          ticks t3 = getticks();
+          //ticks t3 = getticks();
 
-          double d1 = elapsed(t2, t1);
-          double d2 = elapsed(t3, t2);
+          //double d1 = elapsed(t2, t1);
+          //double d2 = elapsed(t3, t2);
 
-          printf( "ticks: %f %f\n", d1, d2 );
+          //printf( "ticks: %f %f\n", d1, d2 );
 
         } else {
-          ticks t1 = getticks();
+          //ticks t1 = getticks();
           int old_scale = scalerIncrement;
 
-          ticks t2 = getticks();
+          //ticks t2 = getticks();
           if( 1 || tInfo->tipCase == TIP_TIP || tInfo->tipCase == INNER_INNER ) {
             /* FER this is what we want to compute in the GPU device */
             newviewGAMMA_FLEX_reorder(tInfo->tipCase,
@@ -1501,10 +1654,10 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                 width, left, right, wgt, &scalerIncrement, states, getUndetermined(pr->partitionData[model]->dataType) + 1);
           }
 
-          ticks t3 = getticks();
+          //ticks t3 = getticks();
 
           //                 double d1 = elapsed(t2, t1);
-          double d2 = elapsed(t3, t2);
+          //double d2 = elapsed(t3, t2);
 
           const char *scaling_text = scalerIncrement != old_scale ? " *****" : "";
           //  printf( "d: %d %d %f %s\n", nvc++, tInfo->tipCase, d2, scaling_text );
@@ -2314,7 +2467,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
  *  This is the optimized functions group
  */
 
-#ifndef __AVX 
+#if (!defined(__AVX) && defined(__SIM_SSE3))
 //#ifdef _OPTIMIZED_FUNCTIONS
 
 /** @ingroup group1
@@ -4199,7 +4352,7 @@ boolean noGap(unsigned int *x, int pos)
   return (!(x[pos / 32] & mask32[pos % 32]));
 }
 
-#ifndef __AVX
+#if (!defined(__AVX) && defined(__SIM_SSE3))
 static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 				double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
 				int *ex3, unsigned char *tipX1, unsigned char *tipX2,
