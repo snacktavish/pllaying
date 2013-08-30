@@ -919,15 +919,14 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 	  assert(!tr->saveMemory);
 	  
 	  /* decide wheter CAT or GAMMA is used and compute log like */
-	  
 	  if(tr->rateHetModel == CAT)
-	    partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
-						   x1_start, x2_start, pr->partitionData[model]->tipVector,
-						   tip, width, diagptable, states);
-	  else
-	    partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
-						     x1_start, x2_start, pr->partitionData[model]->tipVector,
-						     tip, width, diagptable, states);
+	    partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt, 
+                                                x1_start, x2_start, pr->partitionData[model]->tipVector,
+                                                tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
+          else
+            partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+                                                x1_start, x2_start, pr->partitionData[model]->tipVector,
+                                                tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
 #else
 	  
 	  /* if we want to compute the per-site likelihoods, we use the generic evaluate function implementations 
