@@ -4,14 +4,14 @@ LIBPATH = ../../
 LIBRARIES = -lpll-SSE3-PTHREADS -lm -lpthread
 RM = rm -f
 
-all: pll
+all: pll-sse3-pthreads
 
-pll: main.c
+pll-sse3-pthreads: main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.SSE3.PTHREADS.gcc
 	@echo "==> Building PLL example"
-	$(CC) -D_USE_PTHREADS $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+	$(CC) -O2 -g -D_USE_PTHREADS $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
 
 clean : 
-	$(RM) pll 
+	$(RM) pll-sse3-pthreads 
 
 .PHONY: all clean

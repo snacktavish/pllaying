@@ -4,14 +4,14 @@ LIBPATH = ../../
 LIBRARIES = -lpll-AVX-PTHREADS -lpthread -lm
 RM = rm -f
 
-all: pll
+all: pll-avx-pthreads
 
-pll: main.c
+pll-avx-pthreads: main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.AVX.PTHREADS.gcc
 	@echo "==> Building PLL example"
 	$(CC) -D_USE_PTHREADS $+ -g -L $(LIBPATH) $(LIBRARIES) -o $@
 
 clean : 
-	$(RM) pll 
+	$(RM) pll-avx-pthreads
 
 .PHONY: all clean

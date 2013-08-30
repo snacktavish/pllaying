@@ -58,6 +58,8 @@ int main (int argc, char * argv[])
   /* Create a PLL tree */
   tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
 
+  tr->numberOfThreads = 8;
+
   /* Parse a PHYLIP file */
   alignmentData = pllParsePHYLIP (argv[1]);
 
@@ -128,6 +130,14 @@ int main (int argc, char * argv[])
   printf ("Likelihood: %f\n\n", tr->likelihood);
   //Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   //printf ("Tree: %s\n", tr->tree_string);
+//  pllAlignmentDataDestroy (alignmentData);
+//  pllNewickParseDestroy (&newick);
+//
+//  pllPartitionsDestroy (tr, &partitions);
+//  pllTreeDestroy (tr);
+//
+//
+//  return (EXIT_SUCCESS);
 
   /* another eval*/
   double computed_lh = tr->likelihood;
@@ -189,7 +199,7 @@ int main (int argc, char * argv[])
   pllAlignmentDataDestroy (alignmentData);
   pllNewickParseDestroy (&newick);
 
-  pllPartitionsDestroy (&partitions, tr->mxtips);
+  pllPartitionsDestroy (tr, &partitions);
   pllTreeDestroy (tr);
 
 

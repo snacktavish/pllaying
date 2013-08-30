@@ -1,17 +1,17 @@
 CC = gcc 
 MAKE = make
 LIBPATH = ../../
-LIBRARIES = -lpll-SSE3 -lm
+LIBRARIES = -lpll-ARM -lm
 RM = rm -f
 
-all: pll-sse3
+all: pll-arm
 
-pll-sse3: main.c
+pll-arm: main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.SSE3.gcc
 	@echo "==> Building PLL example"
 	$(CC) $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
 
 clean : 
-	$(RM) pll-sse3
+	$(RM) pll-arm
 
 .PHONY: all clean
