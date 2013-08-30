@@ -701,7 +701,7 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList * pr)
                     this[0][i] = t_A | (t_N & o_A);
                     this[1][i] = t_C | (t_N & o_C);                
                     
-                    totalScore += populationCount(t_N);   
+                    totalScore += ((unsigned int) __builtin_popcount(t_N));
                   }
               }
               break;
@@ -749,7 +749,7 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList * pr)
                     this[2][i] = t_G | (t_N & o_G);
                     this[3][i] = t_T | (t_N & o_T); 
                     
-                    totalScore += populationCount(t_N);   
+                    totalScore += ((unsigned int) __builtin_popcount(t_N));
                   }
               }
               break;
@@ -790,7 +790,7 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList * pr)
                     for(k = 0; k < 20; k++)                   
                       this[k][i] = t_A[k] | (t_N & o_A[k]);                
                     
-                    totalScore += populationCount(t_N); 
+                    totalScore += ((unsigned int) __builtin_popcount(t_N));
                   }
               }
               break;
@@ -831,7 +831,7 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList * pr)
                     for(k = 0; k < states; k++)               
                       this[k][i] = t_A[k] | (t_N & o_A[k]);                
                     
-                    totalScore += populationCount(t_N); 
+                    totalScore += ((unsigned int) __builtin_popcount(t_N));
                   }
               }                       
             } 
@@ -892,7 +892,7 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                  
                   t_N = ~(t_A | t_C);
 
-                  sum += populationCount(t_N);    
+                  sum += ((unsigned int) __builtin_popcount(t_N));
                  
                  if(sum >= bestScore)
                    return sum;                         
@@ -925,7 +925,7 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
 
                   t_N = ~(t_A | t_C | t_G | t_T);
 
-                  sum += populationCount(t_N);     
+                  sum += ((unsigned int) __builtin_popcount(t_N));
                  
                  if(sum >= bestScore)            
                    return sum;          
@@ -958,7 +958,7 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                
                   t_N = ~t_N;
 
-                  sum += populationCount(t_N);      
+                  sum += ((unsigned int) __builtin_popcount(t_N));
                   
                   if(sum >= bestScore)      
                     return sum;                        
@@ -993,7 +993,7 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                
                   t_N = ~t_N;
 
-                  sum += populationCount(t_N);      
+                  sum += ((unsigned int) __builtin_popcount(t_N));
                                                  
                  if(sum >= bestScore)                     
                    return sum;                     
