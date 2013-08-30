@@ -8,7 +8,7 @@ ARFLAGS = rvs
 
 RM = rm -f
 
-objs    = hash.o stack.o ssort.o queue.o utils.o axml.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o lexer.o common.o alignment.o fasta.o phylip.o newick.o part.o
+objs    = hash.o stack.o ssort.o queue.o utils.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o lexer.o common.o alignment.o fasta.o phylip.o newick.o part.o
 GLOBAL_DEPS = axml.h globalVariables.h
 
 all: libpll-SSE3.a
@@ -21,7 +21,6 @@ bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 evaluatePartialSpecialGeneric.o : evaluatePartialSpecialGeneric.c $(GLOBAL_DEPS)
 optimizeModel.o : optimizeModel.c $(GLOBAL_DEPS)
 trash.o : trash.c $(GLOBAL_DEPS)
-axml.o : axml.c $(GLOBAL_DEPS)
 searchAlgo.o : searchAlgo.c $(GLOBAL_DEPS)
 topologies.o : topologies.c $(GLOBAL_DEPS)
 treeIO.o : treeIO.c $(GLOBAL_DEPS)
@@ -51,7 +50,7 @@ newick.o: parser/newick/newick.c
 part.o: parser/partition/part.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 ssort.o : parser/phylip/ssort.c
-	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
+	$(CC) $(CFLAGS) -c -o ssort.o parser/phylip/ssort.c
 
 clean : 
 	$(RM) *.o libpll-SSE3.a 

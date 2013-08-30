@@ -304,7 +304,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
       }
       break;
     case TIP_INNER:
-      reorder_back( x2, n, span );
+      //reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
       {
         left = &(tipVector[states * tipX1[i]]);
@@ -319,11 +319,11 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 
         }
       }
-      reorder( x2, n, span );
+      //reorder( x2, n, span );
       break;
     case INNER_INNER:
-      reorder_back( x1, n, span );
-      reorder_back( x2, n, span );
+      //reorder_back( x1, n, span );
+      //reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
       {
         for(l = 0; l < 4; l++)
@@ -337,8 +337,8 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
             sum[k] = left[k] * right[k];
         }
       }
-      reorder( x1, n, span );
-      reorder( x2, n, span );
+      //reorder( x1, n, span );
+      //reorder( x2, n, span );
       break;
     default:
       assert(0);
@@ -613,8 +613,8 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
 }
 #endif
 
-void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
-    unsigned char *tipX1, unsigned char *tipX2, int n, const int states);
+//void sumGAMMA_FLEX_reorder(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
+//    unsigned char *tipX1, unsigned char *tipX2, int n, const int states);
 
 /** @brief Precompute values (sumtable) from the 2 likelihood vectors of a given branch
  *
@@ -685,7 +685,8 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
         sumCAT_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
       else
-        sumGAMMA_FLEX_reorder(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
+        //sumGAMMA_FLEX_reorder(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
+        sumGAMMA_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
 #else
       switch(states)

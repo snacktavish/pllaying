@@ -36,7 +36,7 @@ queue.o : queue.c $(GLOBAL_DEPS)
 stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
 ssort.o : parser/phylip/ssort.c
-	$(CC) $(CFLAGS) -mavx -c -o ssort.o parser/phylip/ssort.c
+	$(CC) $(CFLAGS) -c -o ssort.o parser/phylip/ssort.c
 common.o: parser/common.c
 	$(CC) $(CFLAGS) -c -o $@ $+
 alignment.o: parser/alignment/alignment.c

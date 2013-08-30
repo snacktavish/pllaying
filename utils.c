@@ -58,7 +58,9 @@
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
+#if (defined(__AVX) || defined(__SIM_SSE3))
 #include <xmmintrin.h>
+#endif
 /*
    special bug fix, enforces denormalized numbers to be flushed to zero,
    without this program is a tiny bit faster though.
@@ -3119,7 +3121,9 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
     return PLL_FALSE;
   
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
+#if (defined(__AVX) || defined(__SIM_SSE3))
   _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
+#endif
 #endif 
 
   masterTime = gettime();         
