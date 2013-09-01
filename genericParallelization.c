@@ -35,6 +35,7 @@ void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr);
 void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 
+
 /* extern unsigned int* mask32;  */
 extern volatile int jobCycle; 
 extern volatile int threadJob; 
@@ -59,8 +60,7 @@ static threadData *tData;
 #ifdef _FINE_GRAIN_MPI
 extern MPI_Datatype TRAVERSAL_MPI; 
 
-
-
+void pllFinalizeMPI (void);
 /** @brief pthreads helper function for adding bytes to buffer.    
  */ 
 char* addBytes(char *buf, void *toAdd, size_t numBytes)
@@ -77,8 +77,29 @@ char* popBytes(char *buf, void *result, size_t numBytes)
   return buf + numBytes;   
 }
 
+void pllLockMPI (pllInstance * tr)
+{
+  int numberOfPartitions;
+  partitionList * pr;
 
+  if (!MASTER_P) 
+   {
+     MPI_Bcast (&numberOfPartitions, 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+     pr = (partitionList *) calloc (1, sizeof (partitionList));
+     pr->numberOfPartitions = numberOfPartitions;
 
+     workerTrap (tr, pr);
+     MPI_Barrier (MPI_COMM_WORLD);
+     MPI_Finalize ();
+     exit(0);
+   }
+}
+
+void pllFinalizeMPI (void)
+{
+  MPI_Barrier (MPI_COMM_WORLD);
+  MPI_Finalize ();
+}
 
 /**
    @brief Sets up the MPI environment.  
@@ -98,6 +119,7 @@ void initMPI(int argc, char *argv[])
   /* if(MASTER_P) */
   /*   printf("\nThis is RAxML Process Number: %d (MASTER)\n", processID); */
   MPI_Barrier(MPI_COMM_WORLD);
+
 }
 
 
@@ -256,6 +278,7 @@ void stopPthreads (pllInstance * tr)
   rax_free (tData);
   rax_free (barrierBuffer);
   rax_free (globalResult);
+
 }
 #endif
 
@@ -1461,11 +1484,11 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 	  }
 
 #else 
-	pllPartitionsDestroy (tr, &pr);
+	//pllPartitionsDestroy (tr, &pr);
 	/* pllTreeDestroy (tr); */
 	
-	MPI_Finalize();
-	exit(0); 
+	//MPI_Finalize();
+	//exit(0); 
 #endif	
 	return PLL_FALSE; 
       }
@@ -1498,6 +1521,7 @@ void *likelihoodThread(void *tData)
   pllInstance 
     *tr = td->tr;
   partitionList *pr = td->pr;
+  int i;
 
 #ifdef _USE_PTHREADS
   pllInstance *localTree = rax_calloc(1,sizeof(pllInstance )); 
@@ -1546,6 +1570,20 @@ void *likelihoodThread(void *tData)
   /* printf("\nThis is RAxML Worker Process Number: %d\n", tid); */
 
   while(execFunction(tr, tr, pr, pr, tid,n));
+
+  rax_free (tr->lhs);
+  rax_free (tr->td[0].ti);
+  rax_free (tr->td[0].executeModel);
+  rax_free (tr->td[0].parameterValues);
+  rax_free (tr->patrat);
+  rax_free (tr->patratStored);
+  rax_free (tr->aliaswgt);
+  rax_free (tr->y_ptr);
+  for (i = 0; i < pr->numberOfPartitions; ++ i)
+    rax_free (pr->partitionData[i]);
+  rax_free (pr->partitionData);
+  rax_free (pr);
+  rax_free (tr);
 #endif
 
   return (void*)NULL;

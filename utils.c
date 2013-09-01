@@ -1014,9 +1014,16 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 #ifdef _USE_PTHREADS
   if (MASTER_P) {
 #endif
+#ifdef _FINE_GRAIN_MPI
+if (MASTER_P) {
+     masterBarrier (THREAD_EXIT_GRACEFULLY, tr, partitions);
+#endif
   freeLinkageList(pl->alphaList);
   freeLinkageList(pl->freqList); 
   freeLinkageList(pl->rateList);
+#ifdef _FINE_GRAIN_MPI
+}
+#endif
 
 #ifdef _USE_PTHREADS
   }
@@ -1066,7 +1073,7 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 
   *partitions = NULL;
 
-#ifdef _USE_PTHREADS
+#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
      rax_free (tr->y_ptr);
 #endif
 }
@@ -1804,7 +1811,7 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
 
   if (rateHetModel != GAMMA && rateHetModel != CAT) return NULL;
 
-  tr = (pllInstance *) calloc (1, sizeof (pllInstance));
+  tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
   tr->threadID     = 0;
   tr->rateHetModel = rateHetModel;
@@ -1822,6 +1829,8 @@ pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRec
   tr->numberOfThreads = 8;
   tr->sprHistory = NULL;
   
+  pllLockMPI (tr);
+
   return (tr);
 }
 
@@ -3119,6 +3128,7 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
 
   if(!ef)
     return PLL_FALSE;
+
   
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
 #if (defined(__AVX) || defined(__SIM_SSE3))
@@ -3152,6 +3162,9 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
      While this is shared memory and we don't really need to copy stuff, it was implemented like this to allow for an easier 
      transition to a distributed memory implementation (MPI).
      */
+#ifdef _FINE_GRAIN_MPI
+  MPI_Bcast (&(partitions->numberOfPartitions), 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+#endif
   
   /* mpi version now also uses the generic barrier */
   masterBarrier(THREAD_INIT_PARTITION, tr, partitions);
