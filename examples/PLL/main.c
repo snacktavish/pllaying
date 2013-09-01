@@ -8,6 +8,7 @@
 
 #include "../../parser/alignment/alignment.h"
 #include "../../parser/alignment/phylip.h"
+#include "../../genericParallelization.h"
 
 static nodeptr pickMyRandomSubtree(pllInstance *tr)
 {
@@ -49,6 +50,10 @@ int main (int argc, char * argv[])
   pllListSPR * bestList;
   int i;
 
+#ifdef _FINE_GRAIN_MPI
+  initMPI (argc, argv);
+#endif
+
   if (argc != 4)
    {
      fprintf (stderr, "usage: %s [phylip-file] [newick-file] [partition-file]\n", argv[0]);
@@ -66,7 +71,6 @@ int main (int argc, char * argv[])
 
   /* Parse a FASTA file */
   //alignmentData = pllParseFASTA (argv[1]);
-
   if (!alignmentData)
    {
      fprintf (stderr, "Error while parsing %s\n", argv[1]);
@@ -98,6 +102,20 @@ int main (int argc, char * argv[])
 
   /* commit the partitions and build a partitions structure */
   partitions = pllPartitionsCommit (parts, alignmentData);
+
+//#ifdef _FINE_GRAIN_MPI
+//  if (!MASTER_P)
+//   {
+//     partitionList * pr;
+//     pr = (partitionList *) calloc (1, sizeof (partitionList));
+//     pr->numberOfPartitions = partitions->numberOfPartitions;
+//
+//     workerTrap (tr, pr);
+//     MPI_Barrier (MPI_COMM_WORLD);
+//     MPI_Finalize();
+//     return (0);
+//   }
+//#endif
   
   /* destroy the  intermedia partition queue structure */
   pllQueuePartitionsDestroy (&parts);
@@ -130,14 +148,6 @@ int main (int argc, char * argv[])
   printf ("Likelihood: %f\n\n", tr->likelihood);
   //Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   //printf ("Tree: %s\n", tr->tree_string);
-//  pllAlignmentDataDestroy (alignmentData);
-//  pllNewickParseDestroy (&newick);
-//
-//  pllPartitionsDestroy (tr, &partitions);
-//  pllTreeDestroy (tr);
-//
-//
-//  return (EXIT_SUCCESS);
 
   /* another eval*/
   double computed_lh = tr->likelihood;
@@ -192,15 +202,18 @@ int main (int argc, char * argv[])
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
-
+  
   pllDestroyListSPR (&bestList);
 
   /* Do some cleanup */
   pllAlignmentDataDestroy (alignmentData);
   pllNewickParseDestroy (&newick);
-
   pllPartitionsDestroy (tr, &partitions);
   pllTreeDestroy (tr);
+  
+#ifdef _FINE_GRAIN_MPI
+  pllFinalizeMPI ();
+#endif
 
 
   return (EXIT_SUCCESS);
