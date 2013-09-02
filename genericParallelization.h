@@ -77,8 +77,6 @@ typedef struct  _jobDef
 
 extern int processes; 
 extern int processID; 
-static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
-static char* popBytes(char *buf, void *result, size_t numBytes); 
 #endif 
 
 /*********************/

@@ -38,6 +38,11 @@ static void distributeWeights(pllInstance *localTree, pllInstance *tr, partition
 static void *likelihoodThread(void *tData); 
 static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid);
 
+#ifdef _FINE_GRAIN_MPI
+static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
+static char* popBytes(char *buf, void *result, size_t numBytes); 
+#endif
+
 /* extern unsigned int* mask32;  */
 extern volatile int jobCycle; 
 extern volatile int threadJob;          /**< current job to be done by worker threads/processes */
