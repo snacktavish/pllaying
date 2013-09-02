@@ -191,7 +191,7 @@ parse_newick (pllStack ** stack, int * inp)
         item = NULL;
         break;
        default:
-#ifdef PLLDEBUG
+#ifdef __DEBUGGING_MODE
          printf ("Unknown token: %d\n", token.tokenType);
 #endif
        // TODO: Finish this part and add error codes
@@ -227,6 +227,7 @@ parse_newick (pllStack ** stack, int * inp)
   return (1);
 }
 
+#ifdef __DEBUGGING_MODE
 void stack_dump(pllStack ** stack)
 {
   struct item_t * item;
@@ -245,6 +246,7 @@ void stack_dump(pllStack ** stack)
      head = head->next;
    }
 }
+#endif
 
 static void
 assign_ranks (pllStack * stack, int * nodes, int * leaves)

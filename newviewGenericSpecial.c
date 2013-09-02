@@ -81,6 +81,69 @@ extern const char genericStateNames[32];
 
 extern const unsigned int mask32[32];
 
+#if (defined(__SIM_SSE3) && !defined(__AVX))
+static void newviewGTRGAMMAPROT_LG4(int tipCase,
+                                    double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
+                                    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                    int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
+
+static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
+                                        double *x1_start, double *x2_start, double *x3_start,
+                                        double *EV, double *tipVector,
+                                        int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                        const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
+                                        unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap, 
+                                        double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn);
+
+static void newviewGTRGAMMA(int tipCase,
+                            double *x1_start, double *x2_start, double *x3_start,
+                            double *EV, double *tipVector,
+                            int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                            const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling
+                            );
+
+static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
+                           double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+                           int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                           int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
+
+
+static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
+                                double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
+                                int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
+                                unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
+                                double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
+
+static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
+                                            double *x1, double *x2, double *x3, double *extEV, double *tipVector,
+                                            int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                            int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
+                                            unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,  
+                                            double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn
+                                            );
+
+static void newviewGTRGAMMAPROT(int tipCase,
+                                double *x1, double *x2, double *x3, double *extEV, double *tipVector,
+                                int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
+
+static void newviewGTRCATPROT(int tipCase, double *extEV,
+                              int *cptr,
+                              double *x1, double *x2, double *x3, double *tipVector,
+                              int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                              int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
+
+static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
+                                   int *cptr,
+                                   double *x1, double *x2, double *x3, double *tipVector,
+                                   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+                                   int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
+                                   unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
+                                   double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
+#endif
+
+
 
 /* generic function for computing the P matrices, for computing the conditional likelihood at a node p, given child nodes q and r 
    we compute P(z1) and P(z2) here */
@@ -1160,73 +1223,6 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
    for computing the conditional likelihood at p given child nodes q and r. The actual implementation is located at the end/bottom of this 
    file.
    */
-#ifndef __AVX
-//#ifdef _OPTIMIZED_FUNCTIONS
-
-static void newviewGTRGAMMAPROT_LG4(int tipCase,
-                                    double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
-                                    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                    int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
-
-static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
-                                        double *x1_start, double *x2_start, double *x3_start,
-                                        double *EV, double *tipVector,
-                                        int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                        const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
-                                        unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap, 
-                                        double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn);
-
-static void newviewGTRGAMMA(int tipCase,
-                            double *x1_start, double *x2_start, double *x3_start,
-                            double *EV, double *tipVector,
-                            int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                            const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling
-                            );
-
-static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
-                           double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-                           int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                           int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
-
-
-static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
-                                double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
-                                int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
-                                unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
-                                double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
-
-static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
-                                            double *x1, double *x2, double *x3, double *extEV, double *tipVector,
-                                            int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                            int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
-                                            unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,  
-                                            double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn
-                                            );
-
-static void newviewGTRGAMMAPROT(int tipCase,
-                                double *x1, double *x2, double *x3, double *extEV, double *tipVector,
-                                int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
-
-static void newviewGTRCATPROT(int tipCase, double *extEV,
-                              int *cptr,
-                              double *x1, double *x2, double *x3, double *tipVector,
-                              int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                              int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling);
-
-static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
-                                   int *cptr,
-                                   double *x1, double *x2, double *x3, double *tipVector,
-                                   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                   int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean fastScaling,
-                                   unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
-                                   double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
-
-
-#endif
-
-
 /* now this is the function that just iterates over the length of the traversal descriptor and 
    just computes the conditional likelihhod arrays in the order given by the descriptor.
    So in a sense, this function has no clue that there is any tree-like structure 
@@ -1322,9 +1318,11 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           *x3_start = pr->partitionData[model]->xVector[p_slot],
           *left     = (double*)NULL,
           *right    = (double*)NULL,            
+#if (defined(__SIM_SSE3) || defined(__AVX))
           *x1_gapColumn = (double*)NULL,
           *x2_gapColumn = (double*)NULL,
           *x3_gapColumn = (double*)NULL,
+#endif
           *rateCategories = (double*)NULL;
 
         int
@@ -1345,10 +1343,12 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         boolean
           fastScaling = tr->fastScaling;
 
+#if (defined(__SIM_SSE3) || defined(__AVX))
         unsigned int
           *x1_gap = (unsigned int*)NULL,
           *x2_gap = (unsigned int*)NULL,
           *x3_gap = (unsigned int*)NULL;
+#endif
 
         unsigned char
           *tipX1 = (unsigned char *)NULL,
@@ -1359,7 +1359,9 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           rz;        
 
         size_t
+#if (defined(__SIM_SSE3) || defined(__AVX))
           gapOffset = 0,
+#endif
           rateHet = discreteRateCategories(tr->rateHetModel),
 
           /* get the number of states in the data stored in partition model */
@@ -1393,6 +1395,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* memory saving stuff, not important right now, but if you are interested ask Fernando */
 
+#if (defined(__SIM_SSE3) || defined(__AVX))
         if(tr->saveMemory)
           {
             size_t
@@ -1414,6 +1417,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             requiredLength = (width - setBits)  * rateHet * states * sizeof(double);            
           }
         else
+#endif
           {
             /* if we are not trying to save memory the space required to store an inner likelihood array 
                is the number of sites in the partition times the number of states of the data type in the partition 
@@ -1482,14 +1486,15 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           case TIP_TIP:           
             tipX1    = pr->partitionData[model]->yVector[tInfo->qNumber];
             tipX2    = pr->partitionData[model]->yVector[tInfo->rNumber];
-            
+
+#if (defined(__SIM_SSE3) || defined(__AVX))
             if(tr->saveMemory)
               {
                 x1_gapColumn   = &(pr->partitionData[model]->tipVector[gapOffset]);
                 x2_gapColumn   = &(pr->partitionData[model]->tipVector[gapOffset]);
                 x3_gapColumn   = &(pr->partitionData[model]->gapColumn[(tInfo->pNumber - tr->mxtips - 1) * states * rateHet]);
               }
-            
+#endif            
             /* if we do per-site log likelihood scaling, and both child nodes are tips,
                just initialize the vector with zeros, i.e., no scaling events */
 
@@ -1507,12 +1512,14 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             x2_start = pr->partitionData[model]->xVector[r_slot];
             assert(r_slot != p_slot);
             
+#if (defined(__SIM_SSE3) || defined(__AVX))
             if(tr->saveMemory)
               { 
                 x1_gapColumn   = &(pr->partitionData[model]->tipVector[gapOffset]);
                 x2_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->rNumber - tr->mxtips - 1) * states * rateHet];
                 x3_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->pNumber - tr->mxtips - 1) * states * rateHet];
               }
+#endif
             
             /* if one child node is not a tip, just copy the values from there, coudl also be done with memcpy of course 
                the elements of ex3[] will then potentially be further incremented in the actual newview() if scaling events 
@@ -1536,12 +1543,14 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             assert(q_slot != p_slot);
             assert(q_slot != r_slot);
             
+#if (defined(__SIM_SSE3) || defined(__AVX))
             if(tr->saveMemory)
               {
                 x1_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->qNumber - tr->mxtips - 1) * states * rateHet];
                 x2_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->rNumber - tr->mxtips - 1) * states * rateHet];
                 x3_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->pNumber - tr->mxtips - 1) * states * rateHet];
               }
+#endif
 
             /* both child nodes are inner nodes, thus the initial value of the scaling vector 
                ex3 is the sum of the scaling values of the left and right child node */
@@ -1615,9 +1624,6 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
          }
         else 
          {
-          //ticks t1 = getticks();
-           int old_scale = scalerIncrement;
-
              newviewGAMMA_FLEX(tInfo->tipCase,
                  x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
                  0, tipX1, tipX2,

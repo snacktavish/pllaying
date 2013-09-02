@@ -36,14 +36,20 @@ static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitio
 static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 
 static void *likelihoodThread(void *tData); 
-static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid);
+
+static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int tid);
 
 #ifdef _FINE_GRAIN_MPI
 static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
 static char* popBytes(char *buf, void *result, size_t numBytes); 
+static void defineTraversalInfoMPI();
 #endif
 
-/* extern unsigned int* mask32;  */
+#ifdef _USE_PTHREADS
+static pthread_t *threads;
+static threadData *tData;
+#endif
+
 extern volatile int jobCycle; 
 extern volatile int threadJob;          /**< current job to be done by worker threads/processes */
 extern boolean treeIsInitialized; 
@@ -60,14 +66,10 @@ extern char* getJobName(int tmp);
 //extern double *globalResult; 
 extern volatile char *barrierBuffer;
 
-static pthread_t *threads;
-static threadData *tData;
-
 
 #ifdef _FINE_GRAIN_MPI
 extern MPI_Datatype TRAVERSAL_MPI; 
 
-void pllFinalizeMPI (void);
 /** @brief Pthreads helper function for adding bytes to communication buffer.
 
     Copy from \toAdd to \a buf \a numBytes bytes
@@ -235,7 +237,7 @@ boolean pllWorkerTrap(pllInstance *tr, partitionList *pr)
    datatypes (often there are problems with padding). But it is not
    entirely for the weak of heart...
  */ 
-static void defineTraversalInfoMPI()
+static void defineTraversalInfoMPI (void)
 {
   MPI_Datatype *result  = &TRAVERSAL_MPI; 
 
@@ -384,7 +386,7 @@ void pllStopPthreads (pllInstance * tr)
  
   rax_free (threads);
   rax_free (tData);
-  rax_free (barrierBuffer);
+  rax_free ((void *)barrierBuffer);
   rax_free (globalResult);
 
 }
@@ -569,14 +571,13 @@ static int partCompare(const void *p1, const void *p2)
    multiprocessor scheduling problem that turn out to work very well
    and are cheap to compute.
    
-   @param tr 
-     PLL instance
    @param pr 
      List of partitions
+
    @param tid
      Id of current process/thread 
 */
-static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid)
+static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int tid)
 {
   int 
     s,
@@ -587,9 +588,6 @@ static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid
 
       /* check that we have not addedd any new models for data types with a different number of states
 	 and forgot to update modelStates */
-
-      // TODO: Check whether we need this line!
-      // tr->partitionAssignment = (int *)rax_malloc((size_t)tr->NumberOfModels * sizeof(int));
 
       for(model = 0; model < pr->numberOfPartitions; model++)
 	{        
@@ -1585,18 +1583,17 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 static void *likelihoodThread(void *tData)
 {
   threadData *td = (threadData*)tData;
-  int localTrap = 1;
   pllInstance 
     *tr = td->tr;
   partitionList *pr = td->pr;
-  int i;
 
 #ifdef _USE_PTHREADS
   pllInstance *localTree = rax_calloc(1,sizeof(pllInstance )); 
   partitionList *localPr = rax_calloc(1,sizeof(partitionList));
 
   int
-    myCycle = 0;
+    myCycle = 0,
+    localTrap = 1;
 
   const int 
     n = td->tr->numberOfThreads,
@@ -1634,6 +1631,7 @@ static void *likelihoodThread(void *tData)
   const int
     n = processes, 
     tid = td->threadNumber;
+  int i;
 
   /* printf("\nThis is RAxML Worker Process Number: %d\n", tid); */
 

@@ -7,6 +7,7 @@
 //#include "ssort.h"
 #include "../../mem_alloc.h"
 
+#ifdef __DEBUGGING_MODE
 static int
 printTokens (int input)
 {
@@ -50,6 +51,7 @@ printTokens (int input)
 
   return (1);
 }
+#endif
 
 pllAlignmentData *
 pllInitAlignmentData (int sequenceCount, int sequenceLength)

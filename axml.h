@@ -1394,9 +1394,17 @@ boolean isThisMyPartition(partitionList *pr, int tid, int model);
 void printParallelTimePerRegion(void); 
 #endif
 
+#ifdef _FINE_GRAIN_MPI
+extern void pllFinalizeMPI (void);
+#endif
+
 extern void computePlacementBias(pllInstance *tr, analdef *adef);
 
+extern void pllStartPthreads (pllInstance *tr, partitionList *pr);
+extern void pllStopPthreads (pllInstance * tr);
 extern int lookupWord(char *s, stringHashtable *h);
+extern void pllLockMPI (pllInstance * tr);
+extern void pllInitMPI(int * argc, char **argv[]);
 
 extern void getDataTypeString(pllInstance *tr, pInfo *partitionInfo, char typeOfData[1024]);
 

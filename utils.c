@@ -89,6 +89,7 @@ static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);
 static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllListSPR * bestListSPR);
 static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 static void pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches);
+static void pllTreeInitDefaults (pllInstance * tr, int tips);
 
 /***************** UTILITY FUNCTIONS **************************/
 
@@ -1844,7 +1845,7 @@ pllCreateInstance (pllInstanceAttr * attr)
     @todo
       STILL NOT FINISHED
 */
-void pllTreeInitDefaults (pllInstance * tr, int tips)
+static void pllTreeInitDefaults (pllInstance * tr, int tips)
 {
   nodeptr p0, p, q;
   int i, j;

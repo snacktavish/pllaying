@@ -235,7 +235,7 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
    if -M is used, i.e., a per-partition branch length estimate is deployed, and finally the maximum number of tips in the comprehensive tree 
    as well as the number of states in the current model. */
 
-#ifndef OPTIMIZED_FUNCTIONS
+#if (!defined(__SIM_SSE3) && !defined(__AVX))
 static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalInfo *ti, double qz,
 				      int w, double *EIGN, double *EI, double *EV,
 				      double *tipVector, unsigned  char **yVector, 

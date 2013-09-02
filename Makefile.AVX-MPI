@@ -9,7 +9,7 @@ SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
 GLOBAL_DEPS = axml.h globalVariables.h
 RM = rm -f
 
-OBJ = hash.o stack.o ssort.o queue.o utils.o axml.o  randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o avxLikelihood.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o
+OBJ = hash.o stack.o ssort.o queue.o utils.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o avxLikelihood.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o
 
 all : $(STATICLIB)
 
@@ -28,7 +28,6 @@ bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 evaluatePartialSpecialGeneric.o : evaluatePartialSpecialGeneric.c $(GLOBAL_DEPS)
 optimizeModel.o : optimizeModel.c $(GLOBAL_DEPS)
 trash.o : trash.c $(GLOBAL_DEPS)
-axml.o : axml.c $(GLOBAL_DEPS)
 searchAlgo.o : searchAlgo.c $(GLOBAL_DEPS)
 topologies.o : topologies.c $(GLOBAL_DEPS)
 parsePartitions.o : parsePartitions.c $(GLOBAL_DEPS)
@@ -61,7 +60,7 @@ ssort.o : parser/phylip/ssort.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean : 
-	$(RM) *.o $(TARGET)
+	$(RM) *.o $(STATICLIB) $(SHAREDOBJ)
 
 .PHONY: all clean
 .INTERMEDIATE: $(OBJ)
