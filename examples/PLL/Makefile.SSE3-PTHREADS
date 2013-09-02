@@ -1,0 +1,21 @@
+CC = gcc 
+MAKE = make
+LIBPATH = ../../
+BIN = pll
+PLL = pll
+ARCH = SSE3-PTHREADS
+LIBRARIES = -l$(PLL)-$(ARCH) -lm -lpthread
+TARGET = $(BIN)-$(ARCH)
+RM = rm -f
+
+all: $(BIN)-$(ARCH)
+
+$(BIN)-$(ARCH): main.c
+	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
+	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
+	$(CC) -D_USE_PTHREADS $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+
+clean : 
+	-$(RM) $(BIN)-$(ARCH)
+
+.PHONY: all clean
