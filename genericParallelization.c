@@ -31,14 +31,16 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
 void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionList *pr, int n, int tid);
 void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches );
 boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
-void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr);
-void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
-void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
+void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType);
+static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
+static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 
+static void *likelihoodThread(void *tData); 
+static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid);
 
 /* extern unsigned int* mask32;  */
 extern volatile int jobCycle; 
-extern volatile int threadJob; 
+extern volatile int threadJob;          /**< current job to be done by worker threads/processes */
 extern boolean treeIsInitialized; 
 
 #ifdef MEASURE_TIME_PARALLEL
@@ -61,22 +63,66 @@ static threadData *tData;
 extern MPI_Datatype TRAVERSAL_MPI; 
 
 void pllFinalizeMPI (void);
-/** @brief pthreads helper function for adding bytes to buffer.    
+/** @brief Pthreads helper function for adding bytes to communication buffer.
+
+    Copy from \toAdd to \a buf \a numBytes bytes
+
+    @param buf
+      Where to place bytes
+
+    @pram toAdd
+      Where to copy them from
+
+    @para numBytes
+      How many to copy
+
+    @return
+      Pointer to the end of placed data in communication buffer (first free slot)
  */ 
-char* addBytes(char *buf, void *toAdd, size_t numBytes)
+static char* addBytes(char *buf, void *toAdd, size_t numBytes)
 {
   memcpy(buf, toAdd, numBytes);  
   return buf + numBytes;  
 }
 
-/** @brief pthreads helper function for removing byets from buffer. 
+/** @brief Pthreads helper function for removing bytes from communication buffer
+    
+    Copies \a numBytes from communication buffer \a buf to some local buffer \a buf
+
+    @param buf
+      Where to store the bytes
+
+    @param result
+      Where to copy from
+
+    @param numBytes
+      How many to copy
+    
+    @return
+      Pointer to the end of read data in communication buffer (first free slot)
  */ 
-char* popBytes(char *buf, void *result, size_t numBytes)
+static char* popBytes(char *buf, void *result, size_t numBytes)
 {
   memcpy(result, buf, numBytes); 
   return buf + numBytes;   
 }
 
+/** @brief Lock the MPI slave processes prior allocating partitions
+
+    MPI slave processes are locked and wait until the master process
+    has read the number of partitions, which it then broadcasts
+    to slaves, effectively unlocking them. The slave processes will
+    then allocate their own data structures and be locked in the
+    likelihood function.
+
+    @param tr
+      PLL instance
+    
+    @todo
+      This function should not be called by the user. It is called
+      at \a pllCreateInstance. Probably this function should be removed
+      and inline code be placed in \a pllCreateInstance.
+*/
 void pllLockMPI (pllInstance * tr)
 {
   int numberOfPartitions;
@@ -84,17 +130,30 @@ void pllLockMPI (pllInstance * tr)
 
   if (!MASTER_P) 
    {
-     MPI_Bcast (&numberOfPartitions, 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+     //MPI_Bcast (&numberOfPartitions, 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+     MPI_Bcast (&numberOfPartitions, 1, MPI_INT, 0, MPI_COMM_WORLD);
      pr = (partitionList *) calloc (1, sizeof (partitionList));
      pr->numberOfPartitions = numberOfPartitions;
 
-     workerTrap (tr, pr);
+     pllWorkerTrap (tr, pr);
      MPI_Barrier (MPI_COMM_WORLD);
      MPI_Finalize ();
      exit(0);
    }
 }
 
+/** Finalize MPI run
+
+    Finalizes MPI run by synchronizing all processes (master + slaves) with a
+    barrier so that all free their allocated resources. Then \a MPI_Finalize ()
+    is called.
+
+    @todo
+      Similarly as with the \a pllLockMPI function, this should not be called
+      by the user, but it is called implicitly at the end of \a pllDestroyInstance.
+      Probably this function should be removed and inline code be placed in
+      \a pllDestroyInstance.
+*/
 void pllFinalizeMPI (void)
 {
   MPI_Barrier (MPI_COMM_WORLD);
@@ -103,16 +162,21 @@ void pllFinalizeMPI (void)
 
 /**
    @brief Sets up the MPI environment.  
+
+   Calls the \a MPI_Init function and makes sure all processes store
+   their process ID and the total number of processes, using a barrier.
    
-   @notice this should be the first call that is executed in your main
+   @note this should be the first call that is executed in your main
    method.
    
-   @param argc   initial argc from main
-   @param argv   initial argv from main
+   @param argc   
+     Address of argc from main
+   @param argv   
+     Address of argv from main
  */
-void initMPI(int argc, char *argv[])
+void pllInitMPI(int * argc, char **argv[])
 {  
-  MPI_Init(&argc, &argv);
+  MPI_Init(argc, argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &processID);
   MPI_Comm_size(MPI_COMM_WORLD, &processes);
 
@@ -129,9 +193,16 @@ void initMPI(int argc, char *argv[])
    @notice in the MPI case, this function should be called
    immediately after initMPI()
 
-   @param tr the tree 
+   @param tr 
+     PLL instance 
+
+   @param pr
+     List of partitions
+
+   @return
+     Returns /b PLL_FALSE if the callee was the master thread/process, otherwise /b PLL_TRUE
  */ 
-boolean workerTrap(pllInstance *tr, partitionList *pr)
+boolean pllWorkerTrap(pllInstance *tr, partitionList *pr)
 {
   /// @note for the broadcasting, we need to, if the tree structure has already been initialized 
   treeIsInitialized = PLL_FALSE; 
@@ -153,13 +224,13 @@ boolean workerTrap(pllInstance *tr, partitionList *pr)
 
 
 #define ELEMS_IN_TRAV_INFO  9
-/** @brief Creates a datastructure for sending the traversal descriptor.
+/** @brief Create a datastructure for sending the traversal descriptor.
     
     @note This seems to be a very safe method to define your own mpi
    datatypes (often there are problems with padding). But it is not
    entirely for the weak of heart...
  */ 
-void defineTraversalInfoMPI()
+static void defineTraversalInfoMPI()
 {
   MPI_Datatype *result  = &TRAVERSAL_MPI; 
 
@@ -200,6 +271,14 @@ void defineTraversalInfoMPI()
 
 #ifndef _PORTABLE_PTHREADS
 /** @brief Pins a thread to a core (for efficiency). 
+
+    This is a non-portable function that works only on some linux distributions of pthreads.
+    It sets the affinity of each thread to a specific core so that the performance is not
+    degraded due to threads migration.
+
+    @note 
+      It is only called if \a _PORTABLE_PTHREADS is not defined
+
     @param tid the thread id
  */ 
 void pinToCore(int tid)
@@ -221,10 +300,23 @@ void pinToCore(int tid)
 }
 #endif
 
-/**  @brief Starts the worker threads. 
+/**  Start PThreads
+
+     Start JOINABLE threads by executing \a pthread_create. The threads
+     are attached to the \a pllLikelihoodThread function
+
      @param tr
+       PLL instance
+
+     @param pr
+       List of partitions
+
+     @todo
+       This function should never be called by the user. It is called
+       implicitly at \a pllInitModel. Perhaps we should add a check
+       or inline the code
  */ 
-void startPthreads(pllInstance *tr, partitionList *pr)
+void pllStartPthreads (pllInstance *tr, partitionList *pr)
 {
   pthread_attr_t attr;
   int rc, t;
@@ -265,7 +357,18 @@ void startPthreads(pllInstance *tr, partitionList *pr)
   pthread_attr_destroy (&attr);
 }
 
-void stopPthreads (pllInstance * tr)
+/** Stop PThread
+    
+    Stop threads by \a pthread_join
+
+    @param  tr
+      PLL instance
+
+    @todo
+      This function should never be called by the user. It is implicitly called
+      at \a pllPartitionsDestroy. We should inline the code
+*/
+void pllStopPthreads (pllInstance * tr)
 {
   int i;
 
@@ -282,72 +385,22 @@ void stopPthreads (pllInstance * tr)
 }
 #endif
 
-#ifdef MEASURE_TIME_PARALLEL
-static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs)
-{
-  int tid = tr->threadID; 
-  int i,j ; 
-  double reduction[NUM_PAR_JOBS * tr->numberOfThreads]; 
 
-  ASSIGN_GATHER(reduction, timeBuffer, NUM_PAR_JOBS, DOUBLE, tr->threadID); 
+/** Compute per-site log likelihoods (PThreads version) 
 
-#ifdef _USE_PTHREADS
-  /* we'd need a proper barrier here... this evaluation is mostly interesting for MPI  */
-  printf("\n\ncomment out MEASURE_TIME_PARALLEL\n\n");   
-  assert(0); 
-#else 
-   MPI_Barrier(MPI_COMM_WORLD);
-#endif
+    Worker threads evaluate the likelihood on their sites
 
-  /* find min and max time */
-  if(MASTER_P)
-    {      
-      for(j = 0; j < NUM_PAR_JOBS; ++j)
-	{
-	  boolean isFirst = PLL_TRUE; 
-	  for(i = 0; i < tr->numberOfThreads; ++i)
-	    {	      
-	      double num = timeBuffer[i * NUM_PAR_JOBS + j]; 
-	      if(isFirst || num < mins[j])
-		mins[j] = num; 
-	      if(isFirst || num > maxs[j])
-		maxs[j] = num; 
-	      isFirst = PLL_FALSE; 
-	    }
-	}	
-    }  
-}
+    @param tr 
+      Tree instance
 
-static void printParallelTimePerRegion(double *mins, double *maxs)
-{
-  int i; 
-  double allTime = 0; 
-  double relTime[NUM_PAR_JOBS+1]; 
-  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
-    allTime += timePerRegion[i]; 
-  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
-    relTime[i] = (timePerRegion[i] / allTime) * 100 ; 
+    @param lhs
+      Likelihood array
 
-  printf("\n\nTime spent per region \nmasterTimeAbs\tmasterTimeRel\tloadBalance\tcommOverhead\n"); 
-  for(i = 0; i < NUM_PAR_JOBS; ++i )
-    if(timePerRegion[i] != 0)
-      printf("%f\t%.2f\%\t%.2f\%\t%.2f\%\t%s\n", timePerRegion[i], relTime[i], (maxs[i] - mins[i]) * 100  / maxs[i] , (maxs[i] - timePerRegion[i]) * 100  / timePerRegion[i], getJobName(i) ); 
-  printf("================\n%f\t%.2f\%\tSEQUENTIAL\n", timePerRegion[NUM_PAR_JOBS], relTime[i]); 
-  printf("loadbalance: (minT - maxT) / maxT, \twhere minT is the time the fastest worker took for this region (maxT analogous) \n"); 
-  printf("commOverhead: (maxWorker - masterTime) / masterTime, \t where maxWorker is the time the slowest worker spent in this region and masterTime is the time the master spent in this region (e.g., doing additional reduction stuff)\n"); 
-}
-#endif
+    @param n
+      Number of threads
 
-
-
-
-/* function that computes per-site log likelihoods in pthreads */
-
-/** @brief worker threads evaluate the likelihood on their sites. 
-    @param tr the tree instance
-    @param likelihood array (?)  
-    @param n number of threads
-    @param tid thread id 
+    @param tid
+      Thread id
  */ 
 void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid)
 {
@@ -511,12 +564,14 @@ static int partCompare(const void *p1, const void *p2)
    multiprocessor scheduling problem that turn out to work very well
    and are cheap to compute.
    
-   @param tr the library instance
-   @param pr the partitions list
-   @param worker id 
+   @param tr 
+     PLL instance
+   @param pr 
+     List of partitions
+   @param tid
+     Id of current process/thread 
 */
-
-void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid)
+static void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid)
 {
   int 
     s,
@@ -1150,7 +1205,7 @@ char* getJobName(int type)
    traversal descriptor first).
 
    This function here handles all parallel regions in the Pthreads
-   version, when we enter this function masterBarrier() has been called
+   version, when we enter this function pllMasterBarrier() has been called
    by the master thread from within the sequential part of the
    program, tr is the library instance (tree) at the master thread, 
    localTree is the library instance (tree) at the worker threads
@@ -1509,12 +1564,20 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 
 
 
-/**
-   @brief a buziness thread for pthread worker. 
-   
-   @param tData a struct with basic thread info 
+/**  Target function where the threads/processes are trapped
+
+     The threads/processes spend all of their time in this function
+     running operations on the data (computing likelihoods).
+
+     @param tData
+       Structure that contains the vital information for the thread/process, 
+       i.e. PLL instance, list of partitions and thread ID
+
+     @note
+       The data in \a tData are different for pthreads and MPI. 
+       Expand this section.
  */ 
-void *likelihoodThread(void *tData)
+static void *likelihoodThread(void *tData)
 {
   threadData *td = (threadData*)tData;
   int localTrap = 1;
@@ -1590,9 +1653,6 @@ void *likelihoodThread(void *tData)
 }
 
 
-
-
-
 /**
    @brief Cleanup step once the master barrier succeeded. 
 
@@ -1601,10 +1661,16 @@ void *likelihoodThread(void *tData)
    here, we can keep the code mostly free from parallel -specific
    code.
    
-   @param jobType type of parallel region
-   @param tr library instance
+   @param tr 
+     PLL instance
+
+   @param pr
+     List of partitions
+
+   @param jobType 
+     Job that is to be executed
 */
-void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr)
+void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType)
 {
   assert(tr->threadID == 0); 
   
@@ -1649,12 +1715,22 @@ void masterPostBarrier(int jobType, pllInstance *tr, partitionList *pr)
 }
 
 /**
-   @brief a generic master barrier that serves as an entry point for parallel parts of the code.
+   @brief A generic master barrier for executing parallel parts of the code
 
-   @param jobType type of parallel region 
-   @param tr library instance
+   A generic master barrier through which the master thread/process controls
+   the work job execution. Through the parameter \a jobType the master instructs
+   the slaves of what type of work they must conduct.
+
+   @param tr
+     PLL instance
+
+   @param pr
+     List of partitions
+
+   @param jobType 
+     Type of job to be conducted
  */ 
-void masterBarrier(int jobType, pllInstance *tr, partitionList *pr)
+void pllMasterBarrier(pllInstance *tr, partitionList *pr, int jobType)
 {
 
 #ifdef MEASURE_TIME_PARALLEL
@@ -1693,7 +1769,7 @@ void masterBarrier(int jobType, pllInstance *tr, partitionList *pr)
 #endif
 
   /* code executed by the master, once the barrier is crossed */
-  masterPostBarrier(jobType, tr, pr);
+  pllMasterPostBarrier(tr, pr, jobType);
 
 #ifdef MEASURE_TIME_PARALLEL
   timePerRegion[jobType] += gettime() - masterTimePerPhase; 
@@ -1704,14 +1780,28 @@ void masterBarrier(int jobType, pllInstance *tr, partitionList *pr)
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
-/**
-   @brief Tree  initialization function  for workers.
+/** @brief Initialize structures for slave process/threads
+ 
+    Allocate all memory structures required by slave threads/processes
 
-   @param tr library instance
-   @param localTree local library instance
-   @param tid worker id 
+    @param tr 
+      PLL Instance
+
+    @param localTree 
+      A local PLL instance for the slave process/thread which is initialized in this function based on \a tr
+
+    @pram pr
+      List of partitions
+
+    @param localPr
+      A local list of partitions for the slave process/thread which will be initialized based on \a pr 
+
+    @pram tid
+      The slave process/thread ID
+
+    @note
+      This function should never be called by the master thread, but is called by master process in MPI implementation.
  */ 
-/* encapsulated this, s.t. it becomes more clear, that the pthread-master must not execute this */
 static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitionList *localPr, partitionList *pr, int *tid)
 {
   size_t
@@ -1732,7 +1822,6 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
   int bufSize = (9 + pr->numberOfPartitions* 8) * sizeof(int);
   char buf[bufSize], 
     *bufPtr = buf;  
-
 #endif
 
   RECV_BUF(buf, bufSize, MPI_BYTE); 
@@ -1788,13 +1877,22 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
 #endif
 
 
-/**
-   @brief Distribute y-vectors during initialization. 
+/** @brief Distribute y-vectors during initialization. 
 
-   @param tr library instance
-   @param localTree local library instance
+    Distribute the alignment data to the slave process/threads. Each slave
+    copies the data (alignment) from its assigned partition to its local 
+    partition structure.
+
+    @param tr 
+      PLL instance
+    
+    @param localTree 
+      Local library instance for the current thread
+
+    @param localPr
+      Local list of partitions structure for the current thread
  */ 
-void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
+static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
 {
   size_t 
     i,
@@ -1854,15 +1952,24 @@ void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *
     }
 }
 
+/** @brief Distribute the weights in the alignment of slave process/threads
 
+    Allocate space in the local tree structure for the alignment weights. Then
+    copy the weights vector from the master process/thread to the slaves.
 
-/**
-   @brief Distribute the weights in the alignment ot workers. 
+    @param tr 
+      PLL instance
+    
+    @param localTree 
+      Local library instance for the current process/thread
 
-   @param tr library instance
-   @param localTree local library instance
+    @param localPr
+      Local list of partitions for the current process/thread
+
+    @todo
+      The alignment weights should go to the partitions structure rather than the tree structure
  */ 
-void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
+static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr)
 {
   int tid = localTree->threadID; 
   int n = localTree->numberOfThreads; 
@@ -1906,13 +2013,31 @@ void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *l
 }
 
 
-/**
-   @brief Initialize the partitioning scheme (master function).
-   @param tr library instance
-   @param localTree local library instance
-   @param tid worker id    
-   @param n number of workers 
- */ 
+/** @brief Initialize the partitioning scheme (master function) in parallel environment.
+    
+    Initialize the partition scheme in all processes/threads. This is a wrapper function
+    that calls all necessary functions for allocating the local structures for slave threads
+    and for distributing all necessary data from the master threads, such as alignment data,
+    and weight vectors.
+
+    @param tr 
+      PLL instance
+
+    @param localTree 
+      Local PLL instance for the slave process/thread
+
+    @param pr
+      List of partitions
+
+    @param localPr
+      Local partition structure for the slave process/thread
+
+    @param tid
+      Process/thread id
+
+    @param n 
+      Number of processes/threads
+*/ 
 void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 { 
   size_t

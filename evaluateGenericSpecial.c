@@ -1197,10 +1197,10 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   if(getPerSiteLikelihoods)
     {
       memset(tr->lhs, 0, sizeof(double) * tr->originalCrunchedLength); 
-      masterBarrier(THREAD_EVALUATE_PER_SITE_LIKES, tr, pr);
+      pllMasterBarrier(tr, pr, THREAD_EVALUATE_PER_SITE_LIKES);
     }
   else
-    masterBarrier(THREAD_EVALUATE, tr, pr);
+    pllMasterBarrier (tr, pr, THREAD_EVALUATE);
 
   /* and now here we explicitly do the reduction operation , that is add over the 
      per-thread and per-partition log likelihoods to obtain the overall log like 
@@ -1327,7 +1327,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
      This corresponds to a gather operation in MPI.
      */
 
-  masterBarrier(THREAD_PER_SITE_LIKELIHOODS, tr, pr);
+  pllMasterBarrier (tr, pr, THREAD_PER_SITE_LIKELIHOODS);
 
   /* 
      when the parallel region has terminated, the per-site log likelihoods 

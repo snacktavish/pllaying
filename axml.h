@@ -367,6 +367,17 @@ extern double exp_approx (double x);
 
 typedef  int boolean;
 
+/* @brief PLL instance attribute structure */
+typedef struct
+{
+  int rateHetModel;
+  int fastScaling;
+  int saveMemory;
+  int useRecom;
+  long randomNumberSeed;
+  int numberOfThreads;
+} pllInstanceAttr;
+
 /** @brief Stores the recomputation-state of likelihood vectors  */
 typedef struct
 {
@@ -1081,7 +1092,7 @@ typedef  struct  {
   int              startingTree;
   long             randomNumberSeed;
 
-  double          *lhs;
+  double          *lhs;         /**< Array to store per-site log likelihoods of \a originalCrunchedLength (compressed) sites */
   double          *patrat;      /**< rates per pattern */
   double          *patratStored; 
   int             *rateCategory;
@@ -1679,16 +1690,15 @@ void threadMakeVector(pllInstance *tr, int tid);
 void threadComputeAverage(pllInstance *tr, int tid);
 void threadComputePearson(pllInstance *tr, int tid);
 
-extern void masterBarrier(int jobType, pllInstance *tr, partitionList *pr);
+extern void pllMasterBarrier(pllInstance *, partitionList *, int);
 
 #endif
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
 
-boolean workerTrap(pllInstance *tr, partitionList *pr);
-void initMPI(int argc, char *argv[]); 
+boolean pllWorkerTrap(pllInstance *tr, partitionList *pr);
+void initMPI(int *argc, char **argv[]); 
 //void initializePartitions(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
-void multiprocessorScheduling(pllInstance *tr, partitionList *pr, int tid);
 void computeFraction(partitionList *localPr, int tid, int n);
 void computeFractionMany(partitionList *localPr, int tid);
 void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);

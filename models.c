@@ -4286,7 +4286,7 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
     }  
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr, partitions);
+  pllMasterBarrier(tr, partitions, THREAD_COPY_INIT_MODEL);
 #endif
 }
 

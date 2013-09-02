@@ -1,4 +1,64 @@
-/* from utils.c */
+/******************************************** genericParallelization.c ******************************************************/
+#ifdef MEASURE_TIME_PARALLEL
+static void reduceTimesWorkerRegions(pllInstance *tr, double *mins, double *maxs)
+{
+  int tid = tr->threadID; 
+  int i,j ; 
+  double reduction[NUM_PAR_JOBS * tr->numberOfThreads]; 
+
+  ASSIGN_GATHER(reduction, timeBuffer, NUM_PAR_JOBS, DOUBLE, tr->threadID); 
+
+#ifdef _USE_PTHREADS
+  /* we'd need a proper barrier here... this evaluation is mostly interesting for MPI  */
+  printf("\n\ncomment out MEASURE_TIME_PARALLEL\n\n");   
+  assert(0); 
+#else 
+   MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+  /* find min and max time */
+  if(MASTER_P)
+    {      
+      for(j = 0; j < NUM_PAR_JOBS; ++j)
+	{
+	  boolean isFirst = PLL_TRUE; 
+	  for(i = 0; i < tr->numberOfThreads; ++i)
+	    {	      
+	      double num = timeBuffer[i * NUM_PAR_JOBS + j]; 
+	      if(isFirst || num < mins[j])
+		mins[j] = num; 
+	      if(isFirst || num > maxs[j])
+		maxs[j] = num; 
+	      isFirst = PLL_FALSE; 
+	    }
+	}	
+    }  
+}
+
+static void printParallelTimePerRegion(double *mins, double *maxs)
+{
+  int i; 
+  double allTime = 0; 
+  double relTime[NUM_PAR_JOBS+1]; 
+  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
+    allTime += timePerRegion[i]; 
+  for(i = 0; i < NUM_PAR_JOBS+1; ++i)
+    relTime[i] = (timePerRegion[i] / allTime) * 100 ; 
+
+  printf("\n\nTime spent per region \nmasterTimeAbs\tmasterTimeRel\tloadBalance\tcommOverhead\n"); 
+  for(i = 0; i < NUM_PAR_JOBS; ++i )
+    if(timePerRegion[i] != 0)
+      printf("%f\t%.2f\%\t%.2f\%\t%.2f\%\t%s\n", timePerRegion[i], relTime[i], (maxs[i] - mins[i]) * 100  / maxs[i] , (maxs[i] - timePerRegion[i]) * 100  / timePerRegion[i], getJobName(i) ); 
+  printf("================\n%f\t%.2f\%\tSEQUENTIAL\n", timePerRegion[NUM_PAR_JOBS], relTime[i]); 
+  printf("loadbalance: (minT - maxT) / maxT, \twhere minT is the time the fastest worker took for this region (maxT analogous) \n"); 
+  printf("commOverhead: (maxWorker - masterTime) / masterTime, \t where maxWorker is the time the slowest worker spent in this region and masterTime is the time the master spent in this region (e.g., doing additional reduction stuff)\n"); 
+}
+#endif
+
+
+
+
+/******************************************** utils.c ***********************************************************************/
 void getDataTypeString(pllInstance *tr, pInfo *partitionInfo, char typeOfData[1024])
 {
   switch(partitionInfo->dataType)

@@ -1743,7 +1743,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
   }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_INIT_MODEL, tr, pr);
+  pllMasterBarrier (tr, pr, THREAD_COPY_INIT_MODEL);
 #endif
 
   updatePerSiteRates(tr, pr, PLL_FALSE);

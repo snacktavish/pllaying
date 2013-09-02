@@ -1003,9 +1003,8 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 #ifdef _USE_PTHREADS
   int tid = tr->threadID;
   if (MASTER_P) {
-     printf ("Calling stopPthreads!\n");
-     masterBarrier (THREAD_EXIT_GRACEFULLY, tr, partitions);
-     stopPthreads (tr);
+     pllMasterBarrier (tr, pl, THREAD_EXIT_GRACEFULLY);
+     pllStopPthreads (tr);
     }
 #endif
 
@@ -1016,7 +1015,7 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 #endif
 #ifdef _FINE_GRAIN_MPI
 if (MASTER_P) {
-     masterBarrier (THREAD_EXIT_GRACEFULLY, tr, partitions);
+     pllMasterBarrier (tr, pl, THREAD_EXIT_GRACEFULLY);
 #endif
   freeLinkageList(pl->alphaList);
   freeLinkageList(pl->freqList); 
@@ -1799,37 +1798,40 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
 
     @note
       Do not set \a saveMemory to when using \a useRecom as memory saving techniques 
-      are not yet implemented for ancestral state recomputation
+      are not yet implemented for ancestral state recomputation. 
 
     @return
       On success returns an instance to PLL, otherwise \b NULL
 */
 pllInstance *
-pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed)
+pllCreateInstance (pllInstanceAttr * attr)
 {
   pllInstance * tr;
 
-  if (rateHetModel != GAMMA && rateHetModel != CAT) return NULL;
+  if (attr->rateHetModel != GAMMA && attr->rateHetModel != CAT) return NULL;
 
   tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
   tr->threadID     = 0;
-  tr->rateHetModel = rateHetModel;
-  tr->fastScaling  = fastScaling;
-  tr->saveMemory   = saveMemory;
-  tr->useRecom     = useRecom;
+  tr->rateHetModel = attr->rateHetModel;
+  tr->fastScaling  = attr->fastScaling;
+  tr->saveMemory   = attr->saveMemory;
+  tr->useRecom     = attr->useRecom;
   
-  tr->randomNumberSeed = randomNumberSeed;
+  tr->randomNumberSeed = attr->randomNumberSeed;
 
   /* remove it from the library */
   tr->useMedian    = PLL_FALSE;
 
-  tr->maxCategories = (rateHetModel == GAMMA) ? 4 : 25;
+  tr->maxCategories = (attr->rateHetModel == GAMMA) ? 4 : 25;
 
-  tr->numberOfThreads = 8;
+  tr->numberOfThreads = attr->numberOfThreads;
   tr->sprHistory = NULL;
-  
+
+  /* Lock the slave processors at this point */
+#ifdef _FINE_GRAIN_MPI
   pllLockMPI (tr);
+#endif
 
   return (tr);
 }
@@ -2285,7 +2287,7 @@ void pllClearSprHistory (pllInstance * tr)
       The PLL instance
 */
 void
-pllTreeDestroy (pllInstance * tr)
+pllDestroyInstance (pllInstance * tr)
 {
   int i;
 
@@ -2319,6 +2321,10 @@ pllTreeDestroy (pllInstance * tr)
   pllClearSprHistory (tr);
 
   rax_free (tr);
+
+#ifdef _FINE_GRAIN_MPI
+  pllFinalizeMPI ();
+#endif
 
 }
 
@@ -2652,7 +2658,7 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
   //broadcast the changed parameters to all threads/MPI processes 
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_ALPHA, tr, pr);
+  pllMasterBarrier(tr, pr, THREAD_COPY_ALPHA);
 #endif
 
   pr->partitionData[model]->optimizeAlphaParameter = PLL_FALSE;
@@ -2718,7 +2724,7 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_RATES, tr, pr);
+  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeBaseFrequencies = PLL_FALSE;
@@ -2786,7 +2792,7 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_RATES, tr, pr);
+  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeBaseFrequencies = PLL_TRUE;
@@ -2870,7 +2876,7 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_RATES, tr, pr);
+  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeSubstitutionRates = PLL_FALSE;
@@ -3111,13 +3117,16 @@ int pllLinkRates(char *string, partitionList *pr)
     @param tr
       The PLL instance
 
-    @param alignmentData
-      The parsed alignment
-
     @param partitions
       List of partitions
+
+    @param alignmentData
+      The parsed alignment
+    
+    @return
+      Returns \b PLL_TRUE in case of success, otherwise \b PLL_FALSE
 */
-int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionList * partitions)
+int pllInitModel (pllInstance * tr, partitionList * partitions, pllAlignmentData * alignmentData) 
 {
   double ** ef;
   int
@@ -3149,13 +3158,13 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* 
      this main function is the master thread, so if we want to run RAxML with n threads,
-     we use startPthreads to start the n-1 worker threads */
+     we use pllStartPthreads to start the n-1 worker threads */
   
 #ifdef _USE_PTHREADS
-  startPthreads(tr, partitions);
+  pllStartPthreads (tr, partitions);
 #endif
 
-  /* via masterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 
+  /* via pllMasterBarrier() we invoke parallel regions in which all Pthreads work on computing something, mostly likelihood 
      computations. Have a look at execFunction() in axml.c where we siwtch of the different types of parallel regions.
 
      Although not necessary, below we copy the info stored on tr->partitionData to corresponding copies in each thread.
@@ -3163,11 +3172,12 @@ int pllInitModel (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
      transition to a distributed memory implementation (MPI).
      */
 #ifdef _FINE_GRAIN_MPI
-  MPI_Bcast (&(partitions->numberOfPartitions), 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+  //MPI_Bcast (&(partitions->numberOfPartitions), 1, MPI_INT, MPI_ROOT, MPI_COMM_WORLD);
+  MPI_Bcast (&(partitions->numberOfPartitions), 1, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
   
   /* mpi version now also uses the generic barrier */
-  masterBarrier(THREAD_INIT_PARTITION, tr, partitions);
+  pllMasterBarrier (tr, partitions, THREAD_INIT_PARTITION);
 #else  /* SEQUENTIAL */
   /* 
      allocate the required data structures for storing likelihood vectors etc 

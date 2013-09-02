@@ -321,13 +321,13 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
    switch (whichFunction)
     {
       case RATE_F:
-        masterBarrier(THREAD_OPT_RATE, tr, pr);
+        pllMasterBarrier(tr, pr, THREAD_OPT_RATE);
         break;
       case ALPHA_F:
-        masterBarrier(THREAD_OPT_ALPHA, tr, pr);
+        pllMasterBarrier(tr, pr, THREAD_OPT_ALPHA);
         break;
       case FREQ_F:
-        masterBarrier(THREAD_OPT_RATE, tr, pr);
+        pllMasterBarrier(tr, pr, THREAD_OPT_RATE);
         break;
       default:
         break;
@@ -1298,7 +1298,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     }
 
   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    masterBarrier(THREAD_COPY_RATES, tr, pr);
+    pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
   #endif    
 
     
@@ -2133,7 +2133,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
     }
   
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  masterBarrier(THREAD_COPY_RATE_CATS, tr, pr);
+  pllMasterBarrier(tr, pr, THREAD_COPY_RATE_CATS);
 #endif               
 }
 
@@ -2212,7 +2212,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
       /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      masterBarrier(THREAD_RATE_CATS, tr, pr);
+      pllMasterBarrier(tr, pr, THREAD_RATE_CATS);
 #else      
       for(model = 0; model < pr->numberOfPartitions; model++)
         optRateCatModel(tr, pr, model, lower_spacing, upper_spacing, tr->lhs);
@@ -2509,7 +2509,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
            }
           
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-           masterBarrier(THREAD_COPY_RATES, tr, pr);
+           pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
 #endif
           
            resetBranches(tr);
@@ -2544,7 +2544,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      masterBarrier(THREAD_COPY_RATES, tr, pr);
+      pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
 #endif
 
       /* compute again the likelihood of the tree */
@@ -2566,7 +2566,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
           
           //this barrier needs to be called in the library        
           //#ifdef _USE_PTHREADS        
-          //masterBarrier(THREAD_COPY_RATES, tr);          
+          //pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
           //#endif 
 
           /* Restore the topology. rl holds the topology before the optimization. However,

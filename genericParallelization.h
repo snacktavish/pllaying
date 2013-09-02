@@ -23,7 +23,6 @@ void pinToCore(int tid);
 
 #define NOT ! 
 #define IS_PARALLEL (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI)) 
-void *likelihoodThread(void *tData); 
 
 
 
@@ -78,8 +77,8 @@ typedef struct  _jobDef
 
 extern int processes; 
 extern int processID; 
-char* addBytes(char *buf, void *toAdd, size_t numBytes); 
-char* popBytes(char *buf, void *result, size_t numBytes); 
+static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
+static char* popBytes(char *buf, void *result, size_t numBytes); 
 #endif 
 
 /*********************/

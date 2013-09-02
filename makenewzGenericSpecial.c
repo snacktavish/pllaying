@@ -997,18 +997,18 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     /* if this is the first iteration of NR we will need to first do this one-time call 
        of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
-       subsequent calls to masterBarrier(THREAD_MAKENEWZ, tr); will not require this
+       subsequent calls to pllMasterBarrier(THREAD_MAKENEWZ, tr); will not require this
        */
 
     if(firstIteration)
       {
 	tr->td[0].traversalHasChanged = PLL_TRUE; 
-	masterBarrier(THREAD_MAKENEWZ_FIRST, tr, pr);
+	pllMasterBarrier (tr, pr, THREAD_MAKENEWZ_FIRST);
 	firstIteration = PLL_FALSE; 
 	tr->td[0].traversalHasChanged = PLL_FALSE; 
       }
     else 
-      masterBarrier(THREAD_MAKENEWZ, tr, pr);
+      pllMasterBarrier(tr, pr, THREAD_MAKENEWZ);
     branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2, numBranches);
 #else 
     /* sequential part, if this is the first newton-raphson implementation,

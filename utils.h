@@ -62,9 +62,9 @@ void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
 void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
-void  pllTreeDestroy (pllInstance * t);
-pllInstance * pllCreateInstance (int rateHetModel, int fastScaling, int saveMemory, int useRecom, long randomNumberSeed);
-int pllInitModel (pllInstance *, pllAlignmentData *, partitionList *);
+void  pllDestroyInstance (pllInstance *);
+pllInstance * pllCreateInstance (pllInstanceAttr *);
+int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 
