@@ -10,36 +10,6 @@
 #include "../../parser/alignment/phylip.h"
 #include "../../genericParallelization.h"
 
-static nodeptr pickMyRandomSubtree(pllInstance *tr)
-{
-  nodeptr p;
-  //do
-  {
-    /* select a random inner node */
-    p = tr->nodep[(rand() % (tr->mxtips - 2)) + 1 + tr->mxtips];
-
-    /* select a random orientation */
-    int exitDirection = rand() % 3;
-    switch(exitDirection)
-    {
-      case 0:
-        break;
-      case 1:
-        p = p->next;
-        break;
-      case 2:
-        p = p->next->next;
-        break;
-      default:
-        assert(0);
-    }
-  }
-  //while(isTip(p->next->back->number, tr->mxtips) && isTip(p->next->next->back->number, tr->mxtips));
-  assert(!isTip(p->number, tr->mxtips));
-  return p;
-}
-
-
 int main (int argc, char * argv[])
 {
   pllAlignmentData * alignmentData;
@@ -49,9 +19,10 @@ int main (int argc, char * argv[])
   struct pllQueue * parts;
   pllListSPR * bestList;
   int i;
+  pllInstanceAttr attr;
 
 #ifdef _FINE_GRAIN_MPI
-  initMPI (argc, argv);
+  pllInitMPI (&argc, &argv);
 #endif
 
   if (argc != 4)
@@ -60,10 +31,16 @@ int main (int argc, char * argv[])
      return (EXIT_FAILURE);
    }
 
-  /* Create a PLL tree */
-  tr = pllCreateInstance (GAMMA, PLL_FALSE, PLL_FALSE, PLL_FALSE, 12345);
+  /* Set the PLL instance attributes */
+  attr.rateHetModel     = GAMMA;
+  attr.fastScaling      = PLL_FALSE;
+  attr.saveMemory       = PLL_FALSE;
+  attr.useRecom         = PLL_FALSE;
+  attr.randomNumberSeed = 12345;
+  attr.numberOfThreads  = 8;            /* This only affects the pthreads version */
 
-  tr->numberOfThreads = 8;
+  /* Create a PLL tree */
+  tr = pllCreateInstance (&attr);
 
   /* Parse a PHYLIP file */
   alignmentData = pllParsePHYLIP (argv[1]);
@@ -71,6 +48,7 @@ int main (int argc, char * argv[])
 
   /* Parse a FASTA file */
   //alignmentData = pllParseFASTA (argv[1]);
+
   if (!alignmentData)
    {
      fprintf (stderr, "Error while parsing %s\n", argv[1]);
@@ -103,30 +81,14 @@ int main (int argc, char * argv[])
   /* commit the partitions and build a partitions structure */
   partitions = pllPartitionsCommit (parts, alignmentData);
 
-//#ifdef _FINE_GRAIN_MPI
-//  if (!MASTER_P)
-//   {
-//     partitionList * pr;
-//     pr = (partitionList *) calloc (1, sizeof (partitionList));
-//     pr->numberOfPartitions = partitions->numberOfPartitions;
-//
-//     workerTrap (tr, pr);
-//     MPI_Barrier (MPI_COMM_WORLD);
-//     MPI_Finalize();
-//     return (0);
-//   }
-//#endif
-  
   /* destroy the  intermedia partition queue structure */
   pllQueuePartitionsDestroy (&parts);
 
   /* eliminate duplicate sites from the alignment and update weights vector */
   pllPhylipRemoveDuplicate (alignmentData, partitions);
 
-
   /* Set the topology of the PLL tree from a parsed newick tree */
   pllTreeInitTopologyNewick (tr, newick, PLL_TRUE);
-
 
   /* Or instead of the previous function use the next commented line to create
      a random tree topology 
@@ -139,9 +101,8 @@ int main (int argc, char * argv[])
      return (EXIT_FAILURE);
    }
   
-  /* Initialize the model TODO: Put the parameters in a logical order and change the TRUE to flags */
-  //pllInitModel(tr, TRUE, alignmentData, partitions);
-  pllInitModel(tr, alignmentData, partitions);
+  /* Initialize the model */
+  pllInitModel(tr, partitions, alignmentData);
   
   /* TODO: evaluate likelihood, create interface calls */
   evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
@@ -209,12 +170,7 @@ int main (int argc, char * argv[])
   pllAlignmentDataDestroy (alignmentData);
   pllNewickParseDestroy (&newick);
   pllPartitionsDestroy (tr, &partitions);
-  pllTreeDestroy (tr);
+  pllDestroyInstance (tr);
   
-#ifdef _FINE_GRAIN_MPI
-  pllFinalizeMPI ();
-#endif
-
-
   return (EXIT_SUCCESS);
 }
