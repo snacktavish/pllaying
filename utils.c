@@ -58,7 +58,7 @@
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
-#if (defined(__AVX) || defined(__SIM_SSE3))
+#if (defined(__AVX) || defined(__SSE3))
 #include <xmmintrin.h>
 #endif
 /*
@@ -3141,7 +3141,7 @@ int pllInitModel (pllInstance * tr, partitionList * partitions, pllAlignmentData
 
   
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
-#if (defined(__AVX) || defined(__SIM_SSE3))
+#if (defined(__AVX) || defined(__SSE3))
   _mm_setcsr( _mm_getcsr() | _MM_FLUSH_ZERO_ON);
 #endif
 #endif 

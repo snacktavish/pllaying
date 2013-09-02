@@ -46,7 +46,7 @@
 
 /* includes for using SSE3 intrinsics */
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 /*#include <tmmintrin.h>*/
@@ -242,7 +242,7 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
   return sum;
 } 
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
 static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                       double *x1_start, double *x2_start, 
                                       double *tipVector, 
@@ -455,7 +455,7 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
   return  sum;         
 } 
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
 static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                      double *x1, double *x2, double *tipVector,
                                      unsigned char *tipX1, int n, double *diagptable_start, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods,
@@ -591,7 +591,7 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 
 
 
-#ifdef _OPTIMIZED_FUNCTIONS
+#if (defined(__SSE3) || defined(__AVX))
 
 static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
                                        double *x1, double *x2,  
@@ -730,7 +730,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
       if(tr->td[0].executeModel[model] && width > 0)
         {       
           int 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
             rateHet = (int)discreteRateCategories(tr->rateHetModel),
 #endif
             categories,
@@ -749,13 +749,13 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
             *x2_start   = (double*)NULL,
             *diagptable = (double*)NULL; 
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
           double
             *x1_gapColumn = (double*)NULL,
             *x2_gapColumn = (double*)NULL;
 #endif
           
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
           unsigned int
             *x1_gap = (unsigned int*)NULL,
             *x2_gap = (unsigned int*)NULL;       
@@ -813,7 +813,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                   
                   /* memory saving stuff, let's deal with this later or ask Fernando ;-) */
                   
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
                   if(tr->saveMemory)
                     {
                       x2_gap         = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
@@ -832,7 +832,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                   x2_start = pr->partitionData[model]->xVector[q_slot];
                   tip = pr->partitionData[model]->yVector[pNumber];
                   
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
                   if(tr->saveMemory)
                     {
                       x2_gap         = &(pr->partitionData[model]->gapVector[qNumber * pr->partitionData[model]->gapVectorLength]);
@@ -857,7 +857,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
               
               /* memory saving option */
               
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
               if(tr->saveMemory)
                 {
                   x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
@@ -892,7 +892,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
           else
           calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
           
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
           
           /* generic slow functions, memory saving option is not implemented for these */
           
@@ -1376,8 +1376,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
 /* below are the optimized function versions with geeky intrinsics */
 
-#ifdef _OPTIMIZED_FUNCTIONS
-
+#if (defined(__SSE3) || defined(__AVX))
 static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
                                        double *x1, double *x2,  
                                        double *tipVector[4], 
@@ -1391,7 +1390,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
     {               
       for (i = 0; i < n; i++) 
         {
-#ifdef __SIM_SSE3
+#ifdef __SSE3
           __m128d tv = _mm_setzero_pd();
                                   
           for(j = 0, term = 0.0; j < 4; j++)
@@ -1430,7 +1429,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
     {
       for (i = 0; i < n; i++) 
         {                                    
-#ifdef __SIM_SSE3
+#ifdef __SSE3
           __m128d tv = _mm_setzero_pd();                          
               
           for(j = 0, term = 0.0; j < 4; j++)

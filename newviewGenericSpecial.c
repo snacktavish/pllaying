@@ -44,7 +44,7 @@
 #include <assert.h>
 #include "axml.h"
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 
 #include <stdint.h>
 #include <xmmintrin.h>
@@ -81,7 +81,7 @@ extern const char genericStateNames[32];
 
 extern const unsigned int mask32[32];
 
-#if (defined(__SIM_SSE3) && !defined(__AVX))
+#if (defined(__SSE3) && !defined(__AVX))
 static void newviewGTRGAMMAPROT_LG4(int tipCase,
                                     double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
                                     int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -310,7 +310,7 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
     }  
 }
 
-#if (!defined(__AVX) && !defined(__SIM_SSE3))
+#if (!defined(__AVX) && !defined(__SSE3))
 
 /* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
    I provide generic, slow but readable function implementations for computing the 
@@ -1318,7 +1318,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           *x3_start = pr->partitionData[model]->xVector[p_slot],
           *left     = (double*)NULL,
           *right    = (double*)NULL,            
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
           *x1_gapColumn = (double*)NULL,
           *x2_gapColumn = (double*)NULL,
           *x3_gapColumn = (double*)NULL,
@@ -1343,7 +1343,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         boolean
           fastScaling = tr->fastScaling;
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
         unsigned int
           *x1_gap = (unsigned int*)NULL,
           *x2_gap = (unsigned int*)NULL,
@@ -1359,7 +1359,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
           rz;        
 
         size_t
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
           gapOffset = 0,
 #endif
           rateHet = discreteRateCategories(tr->rateHetModel),
@@ -1395,7 +1395,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* memory saving stuff, not important right now, but if you are interested ask Fernando */
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
         if(tr->saveMemory)
           {
             size_t
@@ -1487,7 +1487,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             tipX1    = pr->partitionData[model]->yVector[tInfo->qNumber];
             tipX2    = pr->partitionData[model]->yVector[tInfo->rNumber];
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
             if(tr->saveMemory)
               {
                 x1_gapColumn   = &(pr->partitionData[model]->tipVector[gapOffset]);
@@ -1512,7 +1512,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             x2_start = pr->partitionData[model]->xVector[r_slot];
             assert(r_slot != p_slot);
             
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
             if(tr->saveMemory)
               { 
                 x1_gapColumn   = &(pr->partitionData[model]->tipVector[gapOffset]);
@@ -1543,7 +1543,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             assert(q_slot != p_slot);
             assert(q_slot != r_slot);
             
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
             if(tr->saveMemory)
               {
                 x1_gapColumn   = &pr->partitionData[model]->gapColumn[(tInfo->qNumber - tr->mxtips - 1) * states * rateHet];
@@ -1609,7 +1609,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
               left, right, tr->saveMemory, tr->maxCategories, states);
 
 
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
         assert(!tr->saveMemory);
 
         /* figure out if we need to compute the CAT or GAMMA model of rate heterogeneity */
@@ -2430,8 +2430,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
  *  This is the optimized functions group
  */
 
-#if (!defined(__AVX) && defined(__SIM_SSE3))
-//#ifdef _OPTIMIZED_FUNCTIONS
+#if (!defined(__AVX) && defined(__SSE3))
 
 /** @ingroup group1
  *  @brief Optimized function implementations for conditional likelihood implementation
@@ -4315,7 +4314,7 @@ boolean noGap(unsigned int *x, int pos)
   return (!(x[pos / 32] & mask32[pos % 32]));
 }
 
-#if (!defined(__AVX) && defined(__SIM_SSE3))
+#if (!defined(__AVX) && defined(__SSE3))
 static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
                                 double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
                                 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -6424,7 +6423,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
   double x1px2;
   int  i, j, l, k, scale, addScale = 0;
   double *vl, *vr;
-#ifndef __SIM_SSE3
+#ifndef __SSE3
   double al, ar;
 #endif
 
@@ -6444,7 +6443,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
               {
                 
                 v = &(tipVector[k / 20][20 * i]);
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                 double *ll =  &left[k * 20];
                 double *rr =  &right[k * 20];
                 
@@ -6485,7 +6484,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
               {
                 v = &x3[i * 80 + j * 20];
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                 __m128d zero =  _mm_setzero_pd();
                 for(k = 0; k < 20; k+=2)                                    
                   _mm_store_pd(&v[k], zero);
@@ -6536,7 +6535,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
             for(k = 0; k < 80; k++)
               { 
                 v = &(tipVector[k / 20][20 * i]);
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                 double *ll =  &left[k * 20];
                                 
                 __m128d umpX1v = _mm_setzero_pd();
@@ -6566,7 +6565,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
             for(k = 0; k < 4; k++)
               {
                 v = &(x2[80 * i + k * 20]);
-#ifdef __SIM_SSE3              
+#ifdef __SSE3              
                 for(l = 0; l < 20; l++)
                   {                
                     double *r =  &right[k * 400 + l * 20];
@@ -6629,7 +6628,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 #endif
               }
            
-#ifdef __SIM_SSE3
+#ifdef __SSE3
             { 
               v = &(x3[80 * i]);
               __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
@@ -6653,7 +6652,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 
             if (scale)
               {
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
                
                for(l = 0; l < 80; l+=2)
@@ -6683,7 +6682,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
              vr = &(x2[80 * i + 20 * k]);
              v =  &(x3[80 * i + 20 * k]);
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
              __m128d zero =  _mm_setzero_pd();
              for(l = 0; l < 20; l+=2)                               
                _mm_store_pd(&v[l], zero);
@@ -6694,7 +6693,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 
              for(l = 0; l < 20; l++)
                {                 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                  {
                    __m128d al = _mm_setzero_pd();
                    __m128d ar = _mm_setzero_pd();
@@ -6748,7 +6747,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
            }
          
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
          { 
            v = &(x3[80 * i]);
            __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
@@ -6772,7 +6771,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 
          if (scale)
            {
-#ifdef __SIM_SSE3
+#ifdef __SSE3
                __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
                
                for(l = 0; l < 80; l+=2)

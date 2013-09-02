@@ -51,7 +51,7 @@ extern "C" {
 
 #else
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 
 #include <xmmintrin.h>
 #include <pmmintrin.h>

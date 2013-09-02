@@ -42,7 +42,7 @@ static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int ti
 #ifdef _FINE_GRAIN_MPI
 static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
 static char* popBytes(char *buf, void *result, size_t numBytes); 
-static void defineTraversalInfoMPI();
+static void defineTraversalInfoMPI(void);
 #endif
 
 #ifdef _USE_PTHREADS

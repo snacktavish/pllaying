@@ -50,7 +50,7 @@
 
 
 
-#if (defined(__SIM_SSE3) && !defined(__AVX)) 
+#if (defined(__SSE3) && !defined(__AVX)) 
 
 #include <xmmintrin.h>
 #include <pmmintrin.h>
@@ -122,7 +122,7 @@ inline unsigned int bitcount_64_bit(unsigned long i)
 
 /* bit count for 128 bit SSE3 and 256 bit AVX registers */
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
 static inline unsigned int vectorPopcount(INT_TYPE v)
 {
   unsigned long
@@ -240,7 +240,7 @@ static void computeTraversalInfoParsimony(nodeptr p, int *ti, int *counter, int 
 
 
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
 
 static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList *pr)
 {    
@@ -1625,7 +1625,7 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
       if(entries % PCF != 0)
         compressedEntries++;
 
-#if (defined(__SIM_SSE3) || defined(__AVX))
+#if (defined(__SSE3) || defined(__AVX))
       if(compressedEntries % INTS_PER_VECTOR != 0)
         compressedEntriesPadded = compressedEntries + (INTS_PER_VECTOR - (compressedEntries % INTS_PER_VECTOR));
       else

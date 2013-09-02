@@ -43,7 +43,7 @@
 #include <assert.h>
 #include "axml.h"
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 #endif
@@ -51,7 +51,7 @@
 
 /* optimized implementation for computing per-site log likelihoods under CAT and GAMMA for DNA and protein data */
 
-#ifdef _OPTIMIZED_FUNCTIONS
+#if (defined(__SSE3) || defined(__AVX))
 static inline void computeVectorGTRCATPROT(double *lVector, int *eVector, double ki, int i, double qz, double rz,
 					   traversalInfo *ti, double *EIGN, double *EI, double *EV, double *tipVector, 
 					   unsigned  char **yVector, int mxtips);
@@ -235,7 +235,7 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
    if -M is used, i.e., a per-partition branch length estimate is deployed, and finally the maximum number of tips in the comprehensive tree 
    as well as the number of states in the current model. */
 
-#if (!defined(__SIM_SSE3) && !defined(__AVX))
+#if (!defined(__SSE3) && !defined(__AVX))
 static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalInfo *ti, double qz,
 				      int w, double *EIGN, double *EI, double *EV,
 				      double *tipVector, unsigned  char **yVector, 
@@ -384,7 +384,7 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
 
   /* for the generic function implementation we only offer the CAT implementation for computing/optimizing per-site evolutionary rates */
 
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
   if(tr->rateHetModel == CAT)
     result = evaluatePartialCAT_FLEX(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
 				     pr->partitionData[_model]->wgt[index],
@@ -458,8 +458,7 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
   return result;
 }
 
-#ifdef _OPTIMIZED_FUNCTIONS
-
+#if (defined(__SSE3) || defined(__AVX))
 /* optimized function implementations for computing per-site log likelihoods under CAT and GAMMA for protein and 
    DNA data. 
    The structure is analoguous as above with some data- and model-specific optimizations and vectorizations.

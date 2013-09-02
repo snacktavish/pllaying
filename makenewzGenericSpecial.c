@@ -46,7 +46,7 @@
 #include <assert.h>
 #include "axml.h"
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 /*#include <tmmintrin.h>*/
@@ -179,7 +179,7 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
    So if we want to do a Newton-Rpahson optimization we only execute this function once in the beginning for each new branch we are considering !
    */
 
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
 static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
     unsigned char *tipX1, unsigned char *tipX2, int n, const int states)
 {
@@ -253,7 +253,7 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
 
 
 
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
 
 /* same thing for GAMMA models. The only noteworthy thing here is that we have an additional inner loop over the 
    number of discrete gamma rates. The data access pattern is also different since for tip vector accesses through our 
@@ -349,7 +349,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 /* optimized functions for branch length optimization */
 
 
-#ifdef _OPTIMIZED_FUNCTIONS
+#if (defined(__SSE3) || defined(__AVX))
 
 static void sumCAT_SAVE(int tipCase, double *sum, double *x1_start, double *x2_start, double *tipVector,
     unsigned char *tipX1, unsigned char *tipX2, int n, double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
@@ -405,7 +405,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
    the first and second derivative of the likelihood given a new proposed branch length lz */
 
 
-#if (!defined(__AVX) && !defined(__SIM_SSE3))
+#if (!defined(__AVX) && !defined(__SSE3))
 static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     volatile double *d1, volatile double *d2, int *wgt,
     double *rptr, double *EIGN, int *cptr, double lz, const int states)
@@ -679,7 +679,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
 
       getVects(tr, pr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
 
-#ifndef _OPTIMIZED_FUNCTIONS
+#if (!defined(__SSE3) && !defined(__AVX))
       assert(!tr->saveMemory);
       if(tr->rateHetModel == CAT)
         sumCAT_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
@@ -818,8 +818,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
         lz = tr->td[0].parameterValues[0];
       }
 
-#ifndef _OPTIMIZED_FUNCTIONS
-
+#if (!defined(__SSE3) && !defined(__AVX))
       /* compute first and second derivatives with the slow generic functions */
 
       if(tr->rateHetModel == CAT)
@@ -1225,7 +1224,7 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
 
 /* below are, once again the optimized functions */
 
-#ifdef _OPTIMIZED_FUNCTIONS
+#if (defined(__SSE3) || defined(__AVX))
 
 
 
@@ -1598,7 +1597,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 	      right = &(tipVector[l][20 * tipX2[i]]);
 
 	      sum = &sumtable[i * 80 + l * 20];
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 	      for(k = 0; k < 20; k+=2)
 		{
 		  __m128d sumv = _mm_mul_pd(_mm_load_pd(&left[k]), _mm_load_pd(&right[k]));
@@ -1622,7 +1621,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 	      left = &(tipVector[l][20 * tipX1[i]]);
 	      right = &(x2[80 * i + l * 20]);
 	      sum = &sumtable[i * 80 + l * 20];
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 	      for(k = 0; k < 20; k+=2)
 		{
 		  __m128d sumv = _mm_mul_pd(_mm_load_pd(&left[k]), _mm_load_pd(&right[k]));
@@ -1645,7 +1644,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 	      right = &(x2[80 * i + l * 20]);
 	      sum   = &(sumtable[i * 80 + l * 20]);
 
-#ifdef __SIM_SSE3
+#ifdef __SSE3
 	      for(k = 0; k < 20; k+=2)
 		{
 		  __m128d sumv = _mm_mul_pd(_mm_load_pd(&left[k]), _mm_load_pd(&right[k]));
