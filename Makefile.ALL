@@ -49,6 +49,6 @@ $(STATICLIB7): Makefile.$(ARCH7)
 	$(MAKE) -f $+
 
 clean:
-	-$(RM) *.a *.so *.o
+	-$(RM) *.a $(STATICLIB1) $(STATICLIB2) $(STATICLIB3) $(STATICLIB4) $(STATICLIB5) $(STATICLIB6) $(STATICLIB7)
 
 .PHONY: all clean

@@ -90,6 +90,7 @@ static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, no
 static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 static void pllCreateSprInfoRollback (pllInstance * tr, pllInfoSPR * sprInfo, int numBranches);
 static void pllTreeInitDefaults (pllInstance * tr, int tips);
+static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
 
 /***************** UTILITY FUNCTIONS **************************/
 
@@ -126,81 +127,6 @@ void printBothOpen(const char* format, ... )
 
   fclose(f);
 }
-
-void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean finalPrint)
-{
-  FILE *logFile;
-  char temporaryFileName[1024] = "";
-
-  strcpy(temporaryFileName, resultFileName);
-
-  switch(adef->mode)
-  {    
-    case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-
-      logFile = myfopen(temporaryFileName, "wb");
-      fprintf(logFile, "%s", tr->tree_string);
-      fclose(logFile);
-
-      if(adef->perGeneBranchLengths)
-        printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
-      break;
-    case BIG_RAPID_MODE:
-      if(finalPrint)
-      {
-        switch(tr->rateHetModel)
-        {
-          case GAMMA:
-          case GAMMA_I:
-
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
-                PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-
-            logFile = myfopen(temporaryFileName, "wb");
-            fprintf(logFile, "%s", tr->tree_string);
-            fclose(logFile);
-
-            if(adef->perGeneBranchLengths)
-              printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
-            break;
-          case CAT:
-            /*Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, adef,
-              PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);*/
-
-
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE,
-                PLL_TRUE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-
-
-
-
-            logFile = myfopen(temporaryFileName, "wb");
-            fprintf(logFile, "%s", tr->tree_string);
-            fclose(logFile);
-
-            break;
-          default:
-            assert(0);
-        }
-      }
-      else
-      {
-        Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
-            PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);
-        logFile = myfopen(temporaryFileName, "wb");
-        fprintf(logFile, "%s", tr->tree_string);
-        fclose(logFile);
-      }    
-      break;
-    default:
-      printf("FATAL ERROR call to printResult from undefined STATE %d\n", adef->mode);
-      exit(-1);
-      break;
-  }
-}
-
-
 
 /* Marked for deletion 
 boolean getSmoothFreqs(int dataType)
@@ -518,43 +444,6 @@ static unsigned int KISS32(void)
 }
 */
 /*********************************** *********************************************************/
-
-
-void init_default(pllInstance *tr)
-{
-
-  /*********** tr inits **************/
-
-  tr->numberOfThreads = 1; 
-  tr->doCutoff = PLL_TRUE;
-  tr->secondaryStructureModel = SEC_16; /* default setting */
-  tr->searchConvergenceCriterion = PLL_FALSE;
-  tr->rateHetModel = GAMMA;
-
-  tr->multiStateModel  = GTR_MULTI_STATE;
-  tr->saveMemory = PLL_FALSE;
-
-  tr->fastScaling = PLL_FALSE;
-
-  tr->manyPartitions = PLL_FALSE;
-
-  tr->startingTree = randomTree;
-
-  tr->categories             = 25;
-
-  tr->grouped = PLL_FALSE;
-  tr->constrained = PLL_FALSE;
-
-  tr->gapyness               = 0.0; 
-  tr->useMedian = PLL_FALSE;
-  /* recom */
-  tr->useRecom = PLL_FALSE;
-  tr->rvec = (recompVectors*)NULL;
-  /* recom */
-
-  /********* tr inits end*************/
-
-}
 
 
 
@@ -934,7 +823,7 @@ void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
   p->z[partition_id] = z;
 }
 
-void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
+static void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
 { 
   size_t
     model;

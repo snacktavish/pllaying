@@ -34,10 +34,15 @@ boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr,
 void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType);
 static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
+static boolean pllWorkerTrap(pllInstance *tr, partitionList *pr);
 
 static void *likelihoodThread(void *tData); 
 
 static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int tid);
+
+static void computeFraction(partitionList *localPr, int tid, int n);
+static void computeFractionMany(partitionList *localPr, int tid);
+static void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 
 #ifdef _FINE_GRAIN_MPI
 static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
@@ -60,7 +65,6 @@ double timeBuffer[NUM_PAR_JOBS];
 double timePerRegion[NUM_PAR_JOBS]; 
 #endif
 
-//extern void initializePartitionData(pllInstance *localTree, partitionList *localPr);
 extern char* getJobName(int tmp); 
 
 //extern double *globalResult; 
@@ -209,7 +213,7 @@ void pllInitMPI(int * argc, char **argv[])
    @return
      Returns /b PLL_FALSE if the callee was the master thread/process, otherwise /b PLL_TRUE
  */ 
-boolean pllWorkerTrap(pllInstance *tr, partitionList *pr)
+static boolean pllWorkerTrap(pllInstance *tr, partitionList *pr)
 {
   /// @note for the broadcasting, we need to, if the tree structure has already been initialized 
   treeIsInitialized = PLL_FALSE; 
@@ -487,7 +491,7 @@ boolean isThisMyPartition(partitionList *localPr, int tid, int model)
     
     @param tid thread id    
  */ 
-void computeFractionMany(partitionList *localPr, int tid)
+static void computeFractionMany(partitionList *localPr, int tid)
 {
   int
     sites = 0;
@@ -516,7 +520,7 @@ void computeFractionMany(partitionList *localPr, int tid)
     @param tid thread id
     @param n number of workers
  */ 
-void computeFraction(partitionList *localPr, int tid, int n)
+static void computeFraction(partitionList *localPr, int tid, int n)
 {
   int
     i,
@@ -2041,7 +2045,7 @@ static void distributeWeights(pllInstance *localTree, pllInstance *tr, partition
     @param n 
       Number of processes/threads
 */ 
-void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+static void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 { 
   size_t
     model;

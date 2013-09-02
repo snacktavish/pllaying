@@ -2514,7 +2514,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
           
            resetBranches(tr);
            evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-           treeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
+           pllTreeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
 
            for(model = 0; model < pr->numberOfPartitions; model++)
             {
@@ -2550,7 +2550,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       /* compute again the likelihood of the tree */
       resetBranches(tr);
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-      treeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
+      pllTreeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
       
       /* check if the likelihood of the tree with the new protein models assigned to AUTO partitions is better than the with the old protein models */
       if(tr->likelihood < startLH)
@@ -2696,7 +2696,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     autoProtein(tr, pr);
 
-    treeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
+    pllTreeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
 
 #ifdef _DEBUG_MOD_OPT
     evaluateGeneric(tr, tr->start, PLL_TRUE);
@@ -2709,7 +2709,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     
     evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
     
-    treeEvaluate(tr, pr, 0.0625);
+    pllTreeEvaluate(tr, pr, 0.0625);
 
 #ifdef _DEBUG_MOD_OPT
     evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
@@ -2726,7 +2726,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
           printf("after alphas %f\n", tr->likelihood); 
 #endif
 
-        treeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
+        pllTreeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
 
 #ifdef _DEBUG_MOD_OPT
           evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  

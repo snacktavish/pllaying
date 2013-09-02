@@ -97,6 +97,7 @@
 #include "axml.h"
 
 
+static boolean tipHomogeneityCheckerPars(pllInstance *tr, nodeptr p, int grouping);
 
 extern const unsigned int mask32[32]; 
 /* vector-specific stuff */

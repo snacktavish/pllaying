@@ -451,33 +451,6 @@ char *Tree2String(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, 
 }
 
 
-void printTreePerGene(pllInstance *tr, partitionList *pr, analdef *adef, char *fileName, char *permission)
-{  
-  FILE *treeFile;
-  char extendedTreeFileName[1024];
-  char buf[16];
-  int i;
-
-  assert(adef->perGeneBranchLengths);
-
-  int numberOfModels = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
-  for(i = 0; i < numberOfModels; i++)
-    {
-      strcpy(extendedTreeFileName, fileName);
-      sprintf(buf,"%d", i);
-      strcat(extendedTreeFileName, ".PARTITION.");
-      strcat(extendedTreeFileName, buf);
-      /*printf("Partitiuon %d file %s\n", i, extendedTreeFileName);*/
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_TRUE, i, PLL_FALSE, PLL_FALSE);
-      treeFile = myfopen(extendedTreeFileName, permission);
-      fprintf(treeFile, "%s", tr->tree_string);
-      fclose(treeFile);
-    }  
-    
-}
-
-
-
 /*=======================================================================*/
 /*                         Read a tree from a file                       */
 /*=======================================================================*/

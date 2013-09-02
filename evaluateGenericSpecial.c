@@ -52,10 +52,6 @@
 /*#include <tmmintrin.h>*/
 #endif
 
-//#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-//void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
-//#endif
-
 
 /* 
    global variables of pthreads version, reductionBuffer is the global array 
