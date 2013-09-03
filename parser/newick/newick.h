@@ -1,10 +1,6 @@
 #ifndef __pll_NEWICK__
 #define __pll_NEWICK__
-#include "../../mem_alloc.h"
 #include "../../stack.h"
-#include "../../lexer.h"
-#include "../../axml.h"
-#include "../common.h"
 
 typedef struct
 {
@@ -23,8 +19,4 @@ struct item_t
 };
 
 
-pllNewickTree * pllNewickParseString (char * newick);
-pllNewickTree * pllNewickParseFile (const char * filename);
-int pllValidateNewick (pllNewickTree *);
-void pllNewickParseDestroy (pllNewickTree **);
 #endif

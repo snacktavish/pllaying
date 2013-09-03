@@ -67,6 +67,14 @@ extern "C" {
 #include "genericParallelization.h"
 #include "errcodes.h"
 #include "stack.h"
+#include "queue.h"
+#include "hash.h"
+#include "parser/newick/newick.h"
+#include "lexer.h"
+#include "parser/common.h"
+#include "parser/partition/part.h"
+#include "parser/alignment/alignment.h"
+#include "mem_alloc.h"
 
 #define PLL_MAX_TIP_EV                          0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define PLL_MAX_LOCAL_SMOOTHING_ITERATIONS      32          /** @brief maximum iterations of smoothings per insert in the */
@@ -1290,6 +1298,40 @@ typedef struct
 
 } partitionLengths;
 
+
+typedef struct {
+  double * zp;
+  double * zpn;
+  double * zpnn;
+  double * zqr;
+  nodeptr pn;
+  nodeptr pnn;
+  nodeptr r;
+  nodeptr p;
+  nodeptr q;
+} sprInfoRollback;
+
+typedef struct
+ {
+   nodeptr removeNode;
+   nodeptr insertNode;
+   double likelihood;
+   double zqr[NUM_BRANCHES];
+ } pllInfoSPR;
+
+typedef struct
+ {
+   int max_entries;
+   int entries;
+   pllInfoSPR * sprInfo;
+ } pllListSPR;
+
+
+
+
+
+
+
 /****************************** FUNCTIONS ****************************************************/
 
 
@@ -1396,7 +1438,7 @@ extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
 extern boolean testInsertRestoreBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( pllInstance *tr, partitionList *pr );
 
-extern boolean pllTreeEvaluate ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
+extern void pllTreeEvaluate ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 
 extern void initTL ( topolRELL_LIST *rl, pllInstance *tr, int n );
 extern void freeTL ( topolRELL_LIST *rl);
@@ -1502,8 +1544,63 @@ extern double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, n
 inline boolean isGap(unsigned int *x, int pos);
 inline boolean noGap(unsigned int *x, int pos);
 
+/* newick parser declarations */
+extern pllNewickTree * pllNewickParseString (char * newick);
+extern pllNewickTree * pllNewickParseFile (const char * filename);
+extern int pllValidateNewick (pllNewickTree *);
+extern void pllNewickParseDestroy (pllNewickTree **);
 
+/* partition parser declarations */
+extern void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);
+extern struct pllQueue * pllPartitionParse (const char * filename);
+extern void pllPartitionDump (struct pllQueue * partitions);
 
+/* alignment data declarations */
+extern void pllAlignmentDataDestroy (pllAlignmentData *);
+extern void pllAlignmentDataDump (pllAlignmentData *);
+extern pllAlignmentData * pllInitAlignmentData (int, int);
+
+extern pllAlignmentData * pllParsePHYLIP (const char *);
+extern pllAlignmentData * pllParseFASTA (const char *);
+
+/* from utils.h */
+linkageList* initLinkageList(int *linkList, partitionList *pr);
+
+int pllLinkAlphaParameters(char *string, partitionList *pr);
+int pllLinkFrequencies(char *string, partitionList *pr);
+int pllLinkRates(char *string, partitionList *pr);
+int pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
+
+void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
+void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
+int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
+void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
+
+nodeptr pllGetRandomSubtree(pllInstance *);
+void makeParsimonyTree(pllInstance *tr);
+void pllPartitionsDestroy (pllInstance *, partitionList **);
+int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData);
+partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
+void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
+double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
+void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
+int pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList *, int);
+void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
+void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
+void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
+void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
+void  pllDestroyInstance (pllInstance *);
+pllInstance * pllCreateInstance (pllInstanceAttr *);
+int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
+void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
+int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
+
+void pllInitListSPR (pllListSPR ** bestListSPR, int max);
+void pllDestroyListSPR (pllListSPR ** bestListSPR);
+pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
+void pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
+int pllRollbackSPR (pllInstance * tr, partitionList * pr);
+void pllClearSprHistory (pllInstance * tr);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 /* work tags for parallel regions */

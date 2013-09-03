@@ -4,10 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
-#include "part.h"
-
-//#define GLOBAL_VARIABLES_DEFINITION
-//#include "../../globalVariables.h"
+#include "../../axml.h"
 
 extern const char *protModels[NUM_PROT_MODELS];
 

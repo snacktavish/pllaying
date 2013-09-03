@@ -1,11 +1,6 @@
 #ifndef __pll_PART__
 #define __pll_PART__
-#include "../../lexer.h"
-#include "../../axml.h"
 #include "../../queue.h"
-#include "../../mem_alloc.h"
-#include "../../hash.h"
-#include "../common.h"
 
 struct pllPartitionRegion
 {
@@ -21,11 +16,7 @@ struct pllPartitionInfo
   int protModels;
   int protFreqs;
   int dataType;
-  boolean optimizeBaseFrequencies;
+  int optimizeBaseFrequencies;
   struct pllQueue * regionList;
 };
-
-void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);
-struct pllQueue * pllPartitionParse (const char * filename);
-void pllPartitionDump (struct pllQueue * partitions);
 #endif

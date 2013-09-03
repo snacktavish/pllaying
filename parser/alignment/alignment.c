@@ -2,10 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include "alignment.h"
-#include "../../lexer.h"
-//#include "ssort.h"
-#include "../../mem_alloc.h"
+#include "../../axml.h"
 
 #ifdef __DEBUGGING_MODE
 static int

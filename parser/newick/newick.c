@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include "newick.h"
+#include "../../axml.h"
 
 static int
 parse_newick (pllStack ** stack, int * inp)

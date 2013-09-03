@@ -1,6 +1,7 @@
 CC = mpicc
 MAKE = make
 LIBPATH = ../../
+INCPATH = ../../
 BIN = pll
 PLL = pll
 ARCH = SSE3-MPI
@@ -13,7 +14,7 @@ all: $(BIN)-$(ARCH)
 $(BIN)-$(ARCH): main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
-	$(CC) -D_FINE_GRAIN_MPI $+ -L $(LIBPATH) $(LIBRARIES) -o $@ 
+	$(CC) -D_FINE_GRAIN_MPI $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 
 clean : 
 	-$(RM) $(BIN)-$(ARCH)

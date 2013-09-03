@@ -7,8 +7,6 @@
 
 #include <assert.h>
 
-#include "utils.h"
-
 #include "genericParallelization.h"
 #include "axml.h"
 #include "mem_alloc.h"
@@ -30,11 +28,11 @@
 void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *lhs, int n, int tid);
 void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionList *pr, int n, int tid);
 void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2lnLdlz2, int numBranches );
-boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType);
 static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 static boolean pllWorkerTrap(pllInstance *tr, partitionList *pr);
+static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 
 static void *likelihoodThread(void *tData); 
 
@@ -1225,7 +1223,7 @@ char* getJobName(int type)
    @param tid worker id 
    @param n number of workers 
 */
-boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
+static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n)
 {
   int
     i,

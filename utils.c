@@ -54,7 +54,7 @@
 #include <assert.h>
 #include <errno.h>
 #include "cycle.h"
-#include "parser/phylip/ssort.h"
+#include "parser/ssort.h"
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
@@ -76,13 +76,6 @@
 #define GLOBAL_VARIABLES_DEFINITION
 
 #include "globalVariables.h"
-#include "mem_alloc.h"
-#include "queue.h"
-#include "parser/partition/part.h"
-#include "parser/alignment/alignment.h"
-#include "parser/alignment/phylip.h"
-#include "parser/newick/newick.h"
-#include "utils.h"
 
 static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllListSPR * bestListSPR);
 static int pllStoreSPR (pllListSPR * bestListSPR, pllInfoSPR * sprInfo);

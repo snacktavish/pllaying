@@ -60,17 +60,15 @@
 
 
 double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, bestlist *bt, infoList *iList);
-int cmp_nni(const void* nni1, const void* nni2);
 nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p, double curLH);
 void evalNNIForSubtree(pllInstance* tr, partitionList *pr, nodeptr p, nniMove* nniList, int* cnt, int* cnt_nni, double curLH);
 
 
+static int cmp_nni(const void* nni1, const void* nni2);
+
 extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
 extern char seq_file[1024];      /**< Checkpointing related file */
-//extern char resultFileName[1024];
-//extern char tree_file[1024];
-//extern char run_id[128];
 extern double masterTime;        /**< Needed for checkpointing */
 extern partitionLengths pLengths[MAX_MODEL];
 extern char binaryCheckpointName[1024];  /**< Binary checkpointing file */
@@ -1799,18 +1797,13 @@ void restart(pllInstance *tr, partitionList *pr)
 
     @param maxSmoothIterations
       Number of times to optimize branch lengths
-
-    @return
-      \b PLL_TRUE
 */
-boolean 
+void
 pllTreeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)       /* Evaluate a user tree */
 {
   smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
   evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
-
-  return PLL_TRUE;
 }
 
 /** @brief Perform an NNI move
@@ -1876,7 +1869,7 @@ int NNI(pllInstance * tr, nodeptr p, int swap)
 }
 
 /** @brief Compares 2 NNI moves */
-int cmp_nni(const void* nni1, const void* nni2) {
+static int cmp_nni(const void* nni1, const void* nni2) {
 	nniMove* myNNI1 = (nniMove*) nni1;
 	nniMove* myNNI2 = (nniMove*) nni2;
 	return (int) (1000000.f * myNNI1->deltaLH - 1000000.f * myNNI2->deltaLH);

@@ -1,14 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "../../axml.h"
-#include "../../utils.h"
-#include "../../lexer.h"
-#include "../../hash.h"
-
-#include "../../parser/alignment/alignment.h"
-#include "../../parser/alignment/phylip.h"
-#include "../../genericParallelization.h"
+#include "axml.h"
 
 int main (int argc, char * argv[])
 {

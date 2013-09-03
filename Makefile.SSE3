@@ -51,7 +51,7 @@ newick.o: parser/newick/newick.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -o $@ $<
 part.o: parser/partition/part.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -o $@ $<
-ssort.o : parser/phylip/ssort.c $(GLOBAL_DEPS)
+ssort.o : parser/ssort.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean : 

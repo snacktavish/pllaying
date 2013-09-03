@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "fasta.h"
-#include "../../mem_alloc.h"
+#include "../../axml.h"
 
 
 
