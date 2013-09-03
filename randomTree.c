@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "axml.h"
+#include "pll.h"
 
 
 static void insertTaxon (nodeptr p, nodeptr q)

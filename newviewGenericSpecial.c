@@ -42,7 +42,7 @@
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
-#include "axml.h"
+#include "pll.h"
 
 #ifdef __SSE3
 
@@ -462,9 +462,9 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
            at the virtual root and for branch length optimization and hence values stored 
            in the conditional likelihood vectors can become negative.
            Below we check if all absolute values stored at position i of v are smaller 
-           than a pre-defined value in axml.h. If they are all smaller we can then safely 
+           than a pre-defined value in pll.h. If they are all smaller we can then safely 
            multiply them by a large, constant number PLL_TWOTOTHE256 (without numerical overflow) 
-           that is also speced in axml.h */
+           that is also speced in pll.h */
 
         scale = 1;
         for(l = 0; scale && (l < states); l++)

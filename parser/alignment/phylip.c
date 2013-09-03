@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../../axml.h"
+#include "../../pll.h"
 
 static int
 read_phylip_header (int * inp, int * sequenceCount, int * sequenceLength)

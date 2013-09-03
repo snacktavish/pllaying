@@ -40,7 +40,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
-#include "axml.h"
+#include "pll.h"
 
 /* the set of functions in here computes the log likelihood at a given branch (the virtual root of a tree) */
 

@@ -1,39 +1,8 @@
-/*  RAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees
- *  Copyright August 2006 by Alexandros Stamatakis
- *
- *  Partially derived from
- *  fastDNAml, a program for estimation of phylogenetic trees from sequences by Gary J. Olsen
- *
- *  and
- *
- *  Programs of the PHYLIP package by Joe Felsenstein.
- *
- *  This program is free software; you may redistribute it and/or modify its
- *  under the terms of the GNU General Public License as published by the Free
- *  Software Foundation; either version 2 of the License, or (at your option)
- *  any later version.
- *
- *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- *  or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
- *  for more details.
- *
- *
- *  For any other enquiries send an Email to Alexandros Stamatakis
- *  Alexandros.Stamatakis@epfl.ch
- *
- *  When publishing work that is based on the results from RAxML-VI-HPC please cite:
- *
- *  Alexandros Stamatakis:"RAxML-VI-HPC: maximum likelihood-based phylogenetic analyses
- *  with thousands of taxa and mixed models".
- *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
- */
-
-/** @file axml.h
+/** @file pll.h
   * @brief Data structures for tree and model 
-  */
-#ifndef AXML_H
-#define AXML_H
+*/
+#ifndef __pll__
+#define __pll__
 #include <stdint.h>
 #include <stdio.h>
 

@@ -7,7 +7,7 @@ ARCH = SSE3-MPI
 VERSION = 1.0.0
 STATICLIB = $(TARGET)-$(ARCH).a.$(VERSION)	# static library
 SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
-GLOBAL_DEPS = axml.h globalVariables.h
+GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
 OBJ = hash.o stack.o ssort.o queue.o utils.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o

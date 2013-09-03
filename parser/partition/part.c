@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
-#include "../../axml.h"
+#include "../../pll.h"
 
 extern const char *protModels[NUM_PROT_MODELS];
 

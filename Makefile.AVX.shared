@@ -7,7 +7,7 @@ ARCH = AVX
 VERSION = 1.0.0
 STATICLIB = $(TARGET)-$(ARCH).a.$(VERSION)	# static library
 SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
-GLOBAL_DEPS = axml.h globalVariables.h
+GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
 OBJ = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o optimizeModel.o recom.o trash.o lexer.o common.o alignment.o fasta.o phylip.o ssort.o newick.o part.o
@@ -29,7 +29,7 @@ bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 evaluatePartialSpecialGeneric.o : evaluatePartialSpecialGeneric.c $(GLOBAL_DEPS)
 optimizeModel.o : optimizeModel.c $(GLOBAL_DEPS)
 trash.o : trash.c $(GLOBAL_DEPS)
-axml.o : axml.c $(GLOBAL_DEPS)
+pll.o : pll.c $(GLOBAL_DEPS)
 searchAlgo.o : searchAlgo.c $(GLOBAL_DEPS)
 utils.o : utils.c $(GLOBAL_DEPS)
 topologies.o : topologies.c $(GLOBAL_DEPS)

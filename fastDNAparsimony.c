@@ -94,7 +94,7 @@
 #endif
 
 
-#include "axml.h"
+#include "pll.h"
 
 
 static boolean tipHomogeneityCheckerPars(pllInstance *tr, nodeptr p, int grouping);

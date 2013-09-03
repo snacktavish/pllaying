@@ -14,7 +14,7 @@ It make things much easier for the integration with other software.
 #ifndef TREEIO_H_
 #define TREEIO_H_
 
-#include "axml.h"
+#include "pll.h"
 
 char *Tree2String(char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
 		  boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);

@@ -7,7 +7,7 @@ ARCH = AVX-PTHREADS
 VERSION = 1.0.0
 STATICLIB = $(TARGET)-$(ARCH).a.$(VERSION)	# static library
 SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
-GLOBAL_DEPS = axml.h globalVariables.h
+GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
 OBJ = hash.o stack.o ssort.o queue.o utils.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o common.o alignment.o fasta.o phylip.o newick.o part.o
