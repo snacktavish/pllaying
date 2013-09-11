@@ -76,8 +76,8 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
  *  @param recompute 
  *    PLL_TRUE if recomputation is currently applied 
  *
- *  @param nodeptr
- *    Pointer to a \a node struct
+ *  @param p
+ *    Node to check whether it is associated with the likelihood vector
  *
  *  @param mxtips
  *    Number of tips in the tree

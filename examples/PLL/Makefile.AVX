@@ -14,7 +14,7 @@ all: $(BIN)-$(ARCH)
 $(BIN)-$(ARCH): main.c
 	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
-	$(CC) $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
+	$(CC) -g $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 
 clean : 
 	-$(RM) $(BIN)-$(ARCH)

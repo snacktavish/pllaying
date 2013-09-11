@@ -316,15 +316,17 @@ FILE *myfopen(const char *path, const char *mode)
 
 
 /** @brief Check whether a node is a tip.
-  * 
-  * @param number
-  *  Node number to be checked
-  *
-  * @param maxTips
-  *  Number of tips in the tree
-  *
-  * @return
-  *   \b PLL_TRUE if tip, \b PLL_FALSE otherwise
+    
+    Checks whether the node with number \a number is a tip.
+    
+    @param number
+     Node number to be checked
+   
+    @param maxTips
+     Number of tips in the tree
+   
+    @return
+      \b PLL_TRUE if tip, \b PLL_FALSE otherwise
   */
 boolean isTip(int number, int maxTips)
 {
@@ -336,6 +338,17 @@ boolean isTip(int number, int maxTips)
     return PLL_FALSE;
 }
 
+/** @brief Set the orientation of a node
+
+    Sets the orientation of node \a p. That means, it will reset the orientation
+    \a p->next->x and \a p->next->next->x to 0 and of \a p->x to 1, meaning that
+    the conditional likelihood vector for that node is oriented on \a p, i.e.
+    the conditional likelihood vector represents the subtree rooted at \a p and
+    not any other of the two nodes.
+
+    @param p
+      Node which we want to orient
+*/
 void getxnode (nodeptr p)
 {
   nodeptr  s;
