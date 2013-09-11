@@ -27,6 +27,11 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file newviewGenericSpecial.c
+ *  
+ *  @brief Functions that deal (mostly) with conditional likelihood (re)computation
+ */
+
 #include "mem_alloc.h"
 
 #ifndef WIN32
@@ -45,42 +50,13 @@
 #include "pll.h"
 
 #ifdef __SSE3
-
 #include <stdint.h>
 #include <xmmintrin.h>
 #include <pmmintrin.h>
-
 #include "cycle.h"
 
-/** @file newviewGenericSpecial.c
- *  
- *  @brief Likelihood computations at non root nodes
- */
 
-
-double g_cyc1 = 0.0;
-double g_cyc2 = 0.0;
-
-
-/* required to compute the absoliute values of double precision numbers with SSE3 */
-
-const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
-{
-  uint64_t i[2];
-  __m128d m;
-} absMask = {{0x7fffffffffffffffULL , 0x7fffffffffffffffULL }};
-
-
-
-#endif
-
-extern const char binaryStateNames[2];   
-extern const char dnaStateNames[4];
-extern const char protStateNames[20];
-extern const char genericStateNames[32];
-
-extern const unsigned int mask32[32];
-
+static void computeTraversalInfo(nodeptr, traversalInfo *, int *, int, int, boolean, recompVectors *, boolean);
 #if (defined(__SSE3) && !defined(__AVX))
 static void newviewGTRGAMMAPROT_LG4(int tipCase,
                                     double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
@@ -144,41 +120,73 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 #endif
 
 
+/* required to compute the absolute values of double precision numbers with SSE3 */
+
+const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
+{
+  uint64_t i[2];
+  __m128d m;
+} absMask = {{0x7fffffffffffffffULL , 0x7fffffffffffffffULL }};
+
+
+
+#endif
+
+extern const char dnaStateNames[4];     /**< @brief Array that contains letters for the four DNA base-pairs, i.e. 0 = A, 1 = C, 2 = G, 3 = T */
+extern const char protStateNames[20];   /**< @brief Array that contains letters for the 20 AA base-pairs */
+extern const unsigned int mask32[32];   /**< @brief Array that contains the first 32 powers of 2, i.e. 2^0 upto 2^31 */
+
+
 
 /* generic function for computing the P matrices, for computing the conditional likelihood at a node p, given child nodes q and r 
    we compute P(z1) and P(z2) here */
 
-/** @brief Computation of P matrix
- *
- * Generic function for computing the P matrices, for computing the conditional likelihood at a node p, given child nodes q and r 
-   we compute P(z1) and P(z2) here 
- *
- *The following value is computed here: 
- *\f[
- * EI\cdot exp( EIGN \cdot z)
- * \f]
- * to fill up the P matrix.
- * 
- * @param z1
- *   Branch length leading to left child
- * 
- * @param z2
- *   Branch length leading to right child
- * 
- * @param EIGN
- *   Eigenvalues of Q-matrix
- * 
- * @param EI
- *   Right eigenvectors of Q-matrix
- * 
- * @param left
- *   Contribution of left sided subtree
- * 
- * @param right
- *   Contribution of right sided subtree
- * 
- */
+/** @brief Computes two P matrices for two edges.
 
+    Generic function for computing the P matrices of two nodes based on their edges. This is used to 
+    (later) compute the the conditional likelihood at a node p which has two descendants \a q and \r, 
+    which in turn have the edges \a z1 and \a z2 that connect them with \a p. Given those edges, we
+    compute two P matrices \a P(z1) and \a P(z2) which are stored in the arrays \a left and \a right.
+ 
+    The following value is computed here: 
+    \f[
+     EI\cdot exp( EIGN \cdot z)
+     \f]
+     to fill up the P matrix.
+     
+    @param z1
+      Branch length leading to left descendant node (let's call it \a q)
+     
+    @param z2
+      Branch length leading to right descendant node (let's call it \a r)
+
+    @param rptr
+      Array of values for rate categories
+
+    @param EI
+      Inverse eigenvectors of Q-matrix
+     
+    @param EIGN
+      Eigenvalues of Q-matrix
+
+    @param numberOfCategories
+      How many rate heterogeneity categories we have, depending on GAMMA and CAT
+     
+    @param left
+      Where to store the left P matrix (for node \a q)
+     
+    @param right
+      Where to store the right P matrix (for node \a r)
+
+    @param saveMem
+      If set to \b PLL_TRUE, memory saving technique is enabled
+
+    @param maxCat
+      Maximum number of rate categories
+
+    @param states
+      Number of states for the particular data (4 for DNA or 20 for AA)
+*/
 void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states)
 {
   int 
@@ -271,7 +279,44 @@ void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int nu
   rax_free(d2);
 }
 
+/** @brief Compute two P matrices for two edges for the LG4 model
+    
+    Computing the P matrices of two nodes based on their edges for the LG4 model. This is used to 
+    (later) compute the the conditional likelihood at a node p which has two descendants \a q and \r, 
+    which in turn have the edges \a z1 and \a z2 that connect them with \a p. Given those edges, we
+    compute two P matrices \a P(z1) and \a P(z2) which are stored in the arrays \a left and \a right.
 
+    @param z1
+      Branch length leading to left descendant node (let's call it \a q)
+     
+    @param z2
+      Branch length leading to right descendant node (let's call it \a r)
+
+    @param rptr
+      Array of values for rate categories
+
+    @param EI
+      Inverse eigenvectors of 4 Q-matrices
+     
+    @param EIGN
+      Eigenvalues of 4 Q-matrix
+
+    @param numberOfCategories
+      How many rate heterogeneity categories we have, depending on GAMMA and CAT
+     
+    @param left
+      Where to store the left P matrix (for node \a q)
+     
+    @param right
+      Where to store the right P matrix (for node \a r)
+
+    @param numStates
+      Number of states for the particular data (4 for DNA or 20 for AA)
+
+    @todo
+      Present the maths here as in ::makeP
+
+*/
 static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  double *EIGN[4], int numberOfCategories, double *left, double *right, const int numStates)
 {
   int 
@@ -312,21 +357,82 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
 
 #if (!defined(__AVX) && !defined(__SSE3))
 
-/* The functions here are organized in a similar way as in evaluateGenericSpecial.c 
-   I provide generic, slow but readable function implementations for computing the 
-   conditional likelihood arrays at p, given child nodes q and r. Once again we need 
-   two generic function implementations, one for CAT and one for GAMMA */
-
 /** @brief Computation of conditional likelihood arrays for CAT
- *
- *This is a generic, slow but readable function implementations for computing the 
-   conditional likelihood arrays at p, given child nodes q and r.
- * 
- * @param tipvector
- *   Vector contining sums of left eigenvectors for likelihood computation at tips.
- *
- *
- *
+ 
+    This is a generic, slow but readable function implementation for computing the 
+     conditional likelihood arrays at p, given child nodes q and r using the CAT
+     mode of rate heterogeneity. Depending whether \a q, resp. \r, are tips or internal
+     nodes (indicated by \a tipCase) the conditional likelihoods are computed based on
+     \a x1 if \a q is an inner node or \a tipX1 if it is a tip, resp. \a x2 if \a r
+     is an inner node or \a tipX2 if it is a tip. Output array \a ex3 stores the
+     number of times the likelihood of each site for each internal node has been scaled.
+     The conditional likelihood vectors for any possible base-pair (which is useful when
+     \a q or \a r are tips) has been already precomputed from the eigenvalues of the Q
+     matrix in the array \a tipVector. In case the conditional likelihood for a particular
+     site is very small in terms of a floating point number, then it is multiplied by a
+     very large number (scaling), and then number of times it has been scaled (per node) is
+     stored in the array \a ex3, if \a fastScaling is set to \b PLL_FALSE. Otherwise, the
+     total number of scalings for all sites and all nodes is stored in a single variable
+     \a scalerIncrement.
+
+    @param tipCase
+      Can be either \b TIP_TIP, or \b TIP_INNER or \b INNER_INNER, and describes the
+      descendants of the node for which we currently compute the condition likelihood
+      vector, i.e. whether they are both tips (leaves), or one is tip and the other
+      an inner node, or both are inner nodes.
+
+    @param extEV
+      Eigenvectors of Q matrix
+      
+    @param cptr
+      Array where the rate for each site in the compressed partition alignment is stored
+
+    @param x1
+      Conditional likelihood vectors of the first child node, in case it is an internal node
+
+    @param x2
+      Conditional likelihood vectors of the second child node, in case it is an internal node
+
+    @param x3
+      Pointer to where the computed conditional likelihood vector of node \a p will be stored
+
+    @param tipVector
+      Vector contining sums of left eigenvectors for likelihood computation at tips.
+
+    @param ex3
+      Pointer to an array of whose elements correspond to the number of times the likelihood of
+      a particular site of a particular internal nodeis scaled. Those elements are incremented
+      at every scaling operation and only if \a fastScaling flag is set to \b PLL_FALSE. This 
+      array will be used later when evaluating the likelihood of the whole tree.
+
+    @param tipX1
+      Pointer to the alignment data (sequence) of first child node, in case it is a tip
+
+    @param tipX2
+      Pointer to the alignment data (sequence) of second child node, in case it is a tip
+
+    @param n
+      Number of sites for which we are doing the evaluation. For the single-thread version this is the number of sites in the
+      current partition, for multi-threads this is the number of sites assigned to the running thread from the current partition.
+
+    @param left
+      Pointer to the P matrix of the left child
+
+    @param right
+      Pointer to the P matrix of the right child
+
+    @param wgt
+      Array of weights for each site
+
+    @param scalerIncrement
+      Where to store the number of scalings carried out in case \a fastScaling is set to \b PLL_TRUE.
+
+    @param fastScaling
+      If set to \b PLL_TRUE, only the total number of scalings for all sites of the partition will be
+      stored in \a scalerIncrement, otherwise per-site scalings are stored in the array \a ex3. 
+
+    @param states
+      Number of states for the particular data (4 for DNA or 20 for AA)
  */
 static void newviewCAT_FLEX(int tipCase, double *extEV,
                             int *cptr,
@@ -362,8 +468,6 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
      nodes.
      */
 
-
-  printf( "newview: %d\n", tipCase);
 
   switch(tipCase)
   {
@@ -550,16 +654,81 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
     *scalerIncrement = addScale;
 }
 
-/** @brief Computation of conditional likelihood arrays for GAMMA
- *
- *This is a generic, slow but readable function implementations for computing the 
-   conditional likelihood arrays at p, given child nodes q and r.
- * 
- * @param tipvector
- *   Vector contining sums of left eigenvectors for likelihood computation at tips.
- *
- *
- *
+/** @brief Computation of conditional likelihood arrays for \b GAMMA
+ 
+    This is a generic, slow but readable function implementation for computing the 
+     conditional likelihood arrays at \a p, given child nodes \a q and \a r using the \b GAMMA
+     model of rate heterogeneity. Depending whether \a q, resp. \r, are tips or internal
+     nodes (indicated by \a tipCase) the conditional likelihoods are computed based on
+     \a x1 if \a q is an inner node or \a tipX1 if it is a tip, resp. \a x2 if \a r
+     is an inner node or \a tipX2 if it is a tip. Output array \a ex3 stores the
+     number of times the likelihood of each site for each internal node has been scaled.
+     The conditional likelihood vectors for any possible base-pair (which is useful when
+     \a q or \a r are tips) has been already precomputed from the eigenvalues of the Q
+     matrix in the array \a tipVector. In case the conditional likelihood for a particular
+     site is very small in terms of a floating point number, then it is multiplied by a
+     very large number (scaling), and then number of times it has been scaled (per node) is
+     stored in the array \a ex3, if \a fastScaling is set to \b PLL_FALSE. Otherwise, the
+     total number of scalings for all sites and all nodes is stored in a single variable
+     \a scalerIncrement.
+
+    @param tipCase
+      Can be either \b TIP_TIP, or \b TIP_INNER or \b INNER_INNER, and describes the
+      descendants of the node for which we currently compute the condition likelihood
+      vector, i.e. whether they are both tips (leaves), or one is tip and the other
+      an inner node, or both are inner nodes.
+
+    @param x1
+      Conditional likelihood vectors of the first child node, in case it is an internal node
+
+    @param x2
+      Conditional likelihood vectors of the second child node, in case it is an internal node
+
+    @param x3
+      Pointer to where the computed conditional likelihood vector of node \a p will be stored
+
+    @param extEV
+      Eigenvectors of Q matrix
+
+    @param tipVector
+      Vector contining sums of left eigenvectors for likelihood computation at tips.
+
+    @param ex3
+      Pointer to an array of whose elements correspond to the number of times the likelihood of
+      a particular site of a particular internal nodeis scaled. Those elements are incremented
+      at every scaling operation and only if \a fastScaling flag is set to \b PLL_FALSE. This 
+      array will be used later when evaluating the likelihood of the whole tree.
+
+    @param tipX1
+      Pointer to the alignment data (sequence) of first child node, in case it is a tip
+
+    @param tipX2
+      Pointer to the alignment data (sequence) of second child node, in case it is a tip
+
+    @param n
+      Number of sites to be processed
+
+    @param left
+      Pointer to the P matrix of the left child
+
+    @param right
+      Pointer to the P matrix of the right child
+
+    @param wgt
+      Array of weights for each site
+
+    @param scalerIncrement
+      Where to store the number of scalings carried out in case \a fastScaling is set to \b PLL_TRUE.
+
+    @param fastScaling
+      If set to \b PLL_TRUE, only the total number of scalings for all sites of the partition will be
+      stored in \a scalerIncrement, otherwise per-site scalings are stored in the array \a ex3. 
+
+    @param states
+      Number of states for the particular data (4 for DNA or 20 for AA)
+
+    @param maxStateValue
+      Number of all possible base-pairs including degenerate characters, i.e. 16 for  DNA and 23 for AA
  */
 static void newviewGAMMA_FLEX(int tipCase,
                               double *x1, double *x2, double *x3, double *extEV, double *tipVector,
@@ -822,6 +991,9 @@ static void newviewGAMMA_FLEX(int tipCase,
     *scalerIncrement = addScale;
 }
 
+
+/* Candidate for deletion */
+/*
 static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
                            double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
                            int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -969,7 +1141,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     *scalerIncrement = addScale;
 
 }
-
+*/
 
 
 
@@ -981,18 +1153,42 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
 /* The function below computes partial traversals only down to the point/node in the tree where the 
    conditional likelihhod vector summarizing a subtree is already oriented in the correct direction */
-/** @brief Computes partial traversals
- *
- *The function computes partial traversals only down to the point/node in the tree where the 
-   conditional likelihhod vector summarizing a subtree is already oriented in the correct direction 
 
 
-   @todo Document the parameters, the description is insufficient
- *
- *
- *
+/** @brief Compute a partial or full traversal descriptor for a subtree of the topology
+
+   Unless the \a partialTraversal is set to \b PLL_TRUE, compute a partial traversal descriptor down 
+   to the point/node in the tree where the conditional likelihood vector representing a subtree is
+   already oriented in the correct direction. The elements of the traversal descriptor are stored in
+   \a ti and a \a counter keeps track of the number of elements.
+
+   @param p
+     Root of the  subtree for which we want to compute the traversal descriptor. The two descendents are \a p->next->back and \a p->next->next->back
+
+   @param ti
+i    Traversal descriptor element structure
+
+   @param counter
+     Number of elements in the traversal descriptor. Updated when an element is added
+
+   @param maxTips
+     Number of tips in the tree structure
+
+   @param numBranches
+     Number of branches
+   
+   @param partialTraversal
+     If \b PLL_TRUE, a partial traversal descriptor is computed, otherwise a full
+
+   @param rvec
+     Parameter concerning ancestral state recomputation. Please document
+
+   @param useRecom
+     If \b PLL_TRUE, then ancestral state recomputation is enabled.
+   
+   @todo Fill in the ancestral recomputation parameter information 
  */
-void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom)
+static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTips, int numBranches, boolean partialTraversal, recompVectors *rvec, boolean useRecom)
 {
   /* if it's a tip we don't do anything */
 
@@ -1014,17 +1210,16 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
         r = p->next->next->back;   
 
     /* if the left and right children are tips there is not that much to do */
-
     if(isTip(r->number, maxTips) && isTip(q->number, maxTips))
     {
       /* fix the orientation of p->x */
 
       if (! p->x)
         getxnode(p);    
+      
       assert(p->x);
 
       /* add the current node triplet p,q,r to the traversal descriptor */
-
       ti[*counter].tipCase = TIP_TIP;
       ti[*counter].pNumber = p->number;
       ti[*counter].qNumber = q->number;
@@ -1032,7 +1227,6 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
 
 
       /* copy branches to traversal descriptor */
-
       for(i = 0; i < numBranches; i++)
       {     
         ti[*counter].qz[i] = q->z[i];
@@ -1056,7 +1250,6 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
     {
       /* if either r or q are tips, flip them to make sure that the tip data is stored 
          for q */
-
       if(isTip(r->number, maxTips) || isTip(q->number, maxTips))
       {     
         if(isTip(r->number, maxTips))
@@ -1228,26 +1421,27 @@ void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int maxTip
    So in a sense, this function has no clue that there is any tree-like structure 
    in the traversal descriptor, it just operates on an array of structs of given length */ 
 
-void newviewCAT_FLEX_reorder(int tipCase, double *extEV,
-    int *cptr,
-    double *x1, double *x2, double *x3, double *tipVector,
-    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-    int n, double *left, double *right, int *wgt, int *scalerIncrement, const int states);
 
-void newviewGAMMA_FLEX_reorder(int tipCase, double *x1, double *x2, double *x3, double *extEV, double *tipVector, int *ex3, unsigned char *tipX1, unsigned char *tipX2, int n, double *left, double *right, int *wgt, int *scalerIncrement, const int states, const int maxStateValue);
+/** @brief Compute the conditional likelihood for each entry (node) of the traversal descriptor
 
-/** @brief Iterates over the length of the traversal descriptor and computes the conditional likelihhod
- *
- * @param tr
- *   Tree structure
- *
- * @note This function just iterates over the length of the traversal descriptor and 
-   computes the conditional likelihhod arrays in the order given by the descriptor.
-   So in a sense, this function has no clue that there is any tree-like structure 
-   in the traversal descriptor, it just operates on an array of structs of given length
- * 
+    Computes the conditional likelihood vectors for each entry (node) in the already computed
+    traversal descriptor, starting from the \a startIndex entry.
+     
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param startIndex
+      From which node to start computing the conditional likelihood vectors in the traversal
+      descriptor
+     
+    @note This function just iterates over the length of the traversal descriptor and 
+      computes the conditional likelihhod arrays in the order given by the descriptor.
+      So in a sense, this function has no clue that there is any tree-like structure 
+      in the traversal descriptor, it just operates on an array of structs of given length.
  */
-
 void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 {
   traversalInfo 
@@ -1256,10 +1450,6 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
   int 
     i, 
     model;
-  //int nvc = 0;
-  //double *last_x3 = 0;
-
-  //int last_width = -1;
 
   int 
     p_slot = -1, 
@@ -1444,7 +1634,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             x3_start = (double*)rax_malloc_aligned(requiredLength);              
             
             /* update the data structures for consistent bookkeeping */
-            pr->partitionData[model]->xVector[p_slot] = x3_start;
+            pr->partitionData[model]->xVector[p_slot]      = x3_start;
             pr->partitionData[model]->xSpaceVector[p_slot] = requiredLength;
           }
         
@@ -1821,13 +2011,26 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
   }
 }
 
-/** @brief Compute traversal descriptor
+/** @brief Compute the traversal descriptor of the subtree rooted at \a p.
     
-    Convenience function for computing the traversal descriptor of the subtree 
-    with root node \a p. 
+    Computes the traversal descriptor of the subtree with root \a p. By traversal
+    descriptory we essentially mean a preorder traversal of the unrooted topology
+    by rooting it at a node \a p.
+    If \a partialTraversal is set to \b PLL_TRUE then subtrees which are oriented
+    correctly (i.e. if root node \a r of a subtree has \a r->x == 1) are not
+    included in the traversal descriptor.
 
-    @todo Describe also the usage of tr->useRecom (ancestral state reconstruction flag) and also
-    rename this flag to something more meaningful, i.e. tr->bAncestral
+    @param tr
+      PLL instance
+
+    @param p
+      Node assumed to be the root
+
+    @param partialTraversal
+      If set to \b PLL_TRUE, then a partial traversal descriptor is computed.
+
+    @param numBranches
+      Number of branches (either per-partition branch or joint branch estimate)
 */
 void computeTraversal(pllInstance *tr, nodeptr p, boolean partialTraversal, int numBranches)
 {
@@ -1844,14 +2047,26 @@ void computeTraversal(pllInstance *tr, nodeptr p, boolean partialTraversal, int 
 }
 
 
-/** @brief Re-computes the vector at node p
- *
- * This is the generic function that could be called from the user program 
-   it re-computes the vector at node p (regardless of whether it's orientation is 
-   correct) and re-computes, recursively, the likelihood arrays 
-   in the subtrees of p as needed and if needed 
- *
- *
+/** @brief Computes the conditional likelihood vectors of all nodes in the subtree rooted at \a p
+  
+    Compute the conditional likelihood vectors of all nodes in the subtree rooted at node \a p. The
+    conditional likelihood vector at node \a p is recomputed regardless of whether the orientation (i.e. \a p->x) 
+    is correct or not, and, recursuvely, the likelihoods at each node in the subtree as needed and if necessary.
+    In case \a masked is set to \b PLL_TRUE, the computation will not take place at partitions for which the 
+    conditional likelihood has converged (for example as a reult of previous branch length optimization).
+    
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Root of the subtree for which we want to recompute the conditional likelihood vectors
+
+    @param masked
+      If set to \b PLL_TRUE, then likelihood vectors of partitions that are converged are
+      not recomputed.
  */
 void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
 {  
@@ -1867,7 +2082,7 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
   tr->td[0].count = 0;
 
   /* compute the traversal descriptor, which will include nodes-that-need-update descending the subtree  p */
-  computeTraversal(tr, p, PLL_TRUE, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
+  computeTraversal(tr, p, PLL_TRUE, pr->perGeneBranchLengths?pr->numberOfPartitions : 1);
 
   /* the traversal descriptor has been recomputed -> not sure if it really always changes, something to 
      optimize in the future */
@@ -1939,9 +2154,29 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
 
 /* function to compute the marginal ancestral probability vector at a node p for CAT/PSR model */
 
-/** @brief Function to compute the marginal ancestral probability vector at a node p for CAT/PSR model
- *
- *
+/** @brief Compute the marginal ancestral probability vector for CAT/PSR model
+    
+    Computes the marginal ancestral probability vector for CAT/PSR model, given the conditional likelihood
+    vector \a x3 of some node, and a zero branch length P matrix \a diagptable.
+
+    @param x3
+      Conditional likelihood of the node for which we are computing the ancestral vector
+
+    @param ancestralBuffer
+      Buffer where to store the marginal ancestral probability vector
+
+    @param diagptable
+      A zero branch length P matrix
+
+    @param n
+      Number of sites in the partition to process (in the case of MPI/PTHREADS, the number of sites in the partition assigned to the current thread/process)
+
+    @param numStates
+      Number of states
+
+    @param cptr
+      Array where the rate for each site in the compressed partition alignment is stored
+      
  */
 static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, int *cptr)
 { 
@@ -1989,9 +2224,30 @@ static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable
 /* compute marginal ancestral states for GAMMA models,
    for the euqation to obtain marginal ancestral states 
    see Ziheng Yang's book */
-/** @brief Function to compute the marginal ancestral probability vector at a node p for GAMMA model
- *
- *
+
+/** @brief Compute the marginal ancestral probability vector for GAMMA model
+    
+    Computes the marginal ancestral probability vector for the GAMMA model, given the conditional likelihood
+    vector \a x3 of some node, and a zero branch length P matrix \a diagptable.
+
+    @param x3
+      Conditional likelihood of the node for which we are computing the ancestral vector
+
+    @param ancestralBuffer
+      Buffer where to store the marginal ancestral probability vector
+
+    @param diagptable
+      A zero branch length P matrix
+
+    @param n
+      Number of sites in the partition to process (in the case of MPI/PTHREADS, the number of sites in the partition assigned to the current thread/process)
+
+    @param numStates
+      Number of states
+
+    @param gammaStates
+      Number of GAMMA categories times number of states
+      
  */
 static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, const int gammaStates)
 {
@@ -2045,9 +2301,28 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
 }
 
 /* compute dedicated zero branch length P matrix */
-/** @brief Compute dedicated zero branch length P matrix
- *
- *
+/** @brief Compute a dedicated zero branch length P matrix
+   
+    Computes a P matrix by assuming a branch length of zero. This is used
+    for the marginal ancestral probabilities recomputation.
+
+    @param rptr
+      Array of values for rate categories
+
+    @param EI
+      Inverse eigenvector of Q matrix
+
+    @param EIGN
+      Eigenvalues of Q matrix
+
+    @param numberOfCategories
+      Number of rate categories
+
+    @param left
+      Where to store the resulting P matrix
+
+    @param numStates
+      Number of states
  */
 static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, const int numStates)
 {
@@ -2087,7 +2362,7 @@ static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int nu
     }  
 }
 
-/** @brief A very simple iterative function, we only access the conditional likelihood vector at node p
+/** @brief A very simple iterative function, we only access the conditional likelihood vector at node \a p
  *
  *
  */
@@ -2146,12 +2421,12 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
           if(tr->rateHetModel == CAT)
             {            
               rateCategories = pr->partitionData[model]->perSiteRates;
-              categories = pr->partitionData[model]->numberOfCategories;
+              categories     = pr->partitionData[model]->numberOfCategories;
             }
           else
             {                            
               rateCategories = pr->partitionData[model]->gammaRates;
-              categories = 4;
+              categories     = 4;
             }
           
           /* allocate some space for a special P matrix with a branch length of 0 into which we mingle 
@@ -2193,6 +2468,26 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
 
    Note that the marginal ancestral probability vector summarizes the subtree rooted at p! */
 
+/** @brief Computes the conditional likelihood vectors of all nodes in the subtree rooted at \a p
+    and the marginal ancestral probabilities at node \a p
+
+    Compute the conditional likelihood vectors of all nodes in the subtree rooted at node \a p. The
+    conditional likelihood vector at node \a p is recomputed regardless of whether the orientation (i.e. \a p->x)
+    is correct or not, and, recursively, the likelihoods at each node in the subtree as needed and if necessary.
+    In addition, the marginal ancestral probability vector for node \a p is also computed.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node for which we want to compute the ancestral vector
+
+    @note
+      This function is not implemented with the saveMemory technique. 
+*/
 void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 {
   /* error check, we don't need to compute anything for tips */
@@ -2224,7 +2519,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 
   tr->td[0].count = 0;
 
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions:1, PLL_TRUE, tr->rvec, tr->useRecom);
+  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions : 1, PLL_TRUE, tr->rvec, tr->useRecom);
 
   tr->td[0].traversalHasChanged = PLL_TRUE;
 
@@ -2258,9 +2553,20 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 }
 
 /* returns the character representation of an enumerated DNA or AA state */
-/** @brief Returns the character representation of an enumerated DNA or AA state
- *
- *  @return character representation of an enumerated DNA or AA state
+
+/** @brief Get the character representation of an enumerated DNA or AA state
+    
+    Returns the character representation of the enumarates DNA or AA state,
+    from the constant arrays \a dnaStateNames (for DNA) or \a protStateNames (for proteins).
+
+    @param dataType
+      Type of data, i.e. \b DNA_DATA or \b AA_DATA
+
+    @param state
+      The number which we want to decode to a letter
+
+    @return
+      Returns the decoded character
  */
 static char getStateCharacter(int dataType, int state)
 {
@@ -2282,9 +2588,28 @@ static char getStateCharacter(int dataType, int state)
   return  result;
 }
 
-/** @brief Printing function
- *
- * @note  Here one can see how to store the ancestral probabilities in a dedicated data structure
+/** @brief Prints the ancestral state information for a node \a p to the terminal 
+ 
+    Prints the ancestral state information for a node \a p to the terminal. 
+    The ancestral state sequence, resp. marginal ancestral state probabilities, is printed
+    depending on whether \a \a printStates, resp. \a printProbs, is set to \b PLL_TRUE.
+
+    @param p
+      The node for which to print the ancestral state sequence
+
+    @param printStates
+      If set to \b PLL_TRUE then the ancestral state sequence is printed
+
+    @param printProbs
+      If set to \b PLL_TRUE then the marginal ancestral state probabilities are printed
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+ 
+    @note  Here one can see how to store the ancestral probabilities in a dedicated data structure
  */
 void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pllInstance *tr, partitionList *pr)
 {
@@ -2433,12 +2758,15 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
 #if (!defined(__AVX) && defined(__SSE3))
 
 /** @ingroup group1
- *  @brief Optimized function implementations for conditional likelihood implementation
- *
- * Optimized unrolled, and vectorized versions of the above generi cfunctions 
-   for computing the conditional likelihood at p given child nodes q and r. The procedure is the same as for the slow generic implementations.
- *
- */
+ *  @brief Computation of conditional likelihood arrray for GTR GAMMA with memory saving (Optimized SSE3 version for DNA data)
+
+    This is the SSE3 optimized version of ::newviewGAMMA_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b GAMMA
+    model of rate heterogeneity. The memory saving technique is incorporated.
+
+    @note
+    For more details and function argument description check the function ::newviewGAMMA_FLEX
+*/
 static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
                                         double *x1_start, double *x2_start, double *x3_start,
                                         double *EV, double *tipVector,
@@ -3344,9 +3672,14 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 }
 
 /** @ingroup group1
-    @brief Brief function description
+ *  @brief Computation of conditional likelihood arrray for GTR GAMMA (Optimized SSE3 version for DNA data)
 
-    Detailed function description
+    This is the SSE3 optimized version of ::newviewGAMMA_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b GAMMA
+    model of rate heterogeneity.
+
+    @note
+    For more details and function argument description check the function ::newviewGAMMA_FLEX
 */
 static void newviewGTRGAMMA(int tipCase,
                             double *x1_start, double *x2_start, double *x3_start,
@@ -3861,10 +4194,16 @@ static void newviewGTRGAMMA(int tipCase,
     *scalerIncrement = addScale;
 }
 
-/** @ingroup group1
-    @brief Brief function description
 
-    Detailed function description
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR CAT (Optimized SSE3 version for DNA data)
+
+    This is the SSE3 optimized version of ::newviewCAT_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b CAT
+    model of rate heterogeneity.
+
+    @note
+    For more details and function argument description check the function ::newviewCAT_FLEX
 */
 static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
                            double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
@@ -4298,6 +4637,17 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 }
 #endif
 
+/** @brief Check whether the position \a pos in bitvector \a x is a gap
+    
+    @param x
+      A bitvector represented by unsigned integers
+
+    @param pos
+      Position to check in \a x if it is set (i.e. it is a gap) 
+
+    @return
+      Returns the value of the bit vector (\b 1 if set, \b 0 if not)
+*/
 #ifndef __APPLE__
 inline 
 #endif
@@ -4306,6 +4656,17 @@ boolean isGap(unsigned int *x, int pos)
   return (x[pos / 32] & mask32[pos % 32]);
 }
 
+/** @brief Check whether the position \a pos in bitvector \a x is \b NOT a gap
+    
+    @param x
+      A bitvector represented by unsigned integers
+
+    @param pos
+      Position to check in \a x if it is \b NOT set (i.e. it is \b NOT a gap) 
+
+    @return
+      Returns the value of the bit vector (\b 1 if set, \b 0 if not)
+*/
 #ifndef __APPLE__
 inline 
 #endif
@@ -4315,6 +4676,16 @@ boolean noGap(unsigned int *x, int pos)
 }
 
 #if (!defined(__AVX) && defined(__SSE3))
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR CAT with memory saving (Optimized SSE3 version for DNA data)
+
+    This is the SSE3 optimized version of ::newviewCAT_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b CAT
+    model of rate heterogeneity. The memory saving technique is incorporated.
+
+    @note
+    For more details and function argument description check the function ::newviewCAT_FLEX
+*/
 static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
                                 double *x1_start, double *x2_start,  double *x3_start, double *tipVector,
                                 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -4968,6 +5339,16 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
     *scalerIncrement = addScale;
 }
 
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR GAMMA with memory saving (Optimized SSE3 version for AA data)
+
+    This is the SSE3 optimized version of ::newviewGAMMA_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b GAMMA
+    model of rate heterogeneity. The memory saving technique is incorporated.
+
+    @note
+    For more details and function argument description check the function ::newviewGAMMA_FLEX
+*/
 static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
                                             double *x1, double *x2, double *x3, double *extEV, double *tipVector,
                                             int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -5513,6 +5894,16 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
 
 
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR GAMMA (Optimized SSE3 version for AA data)
+
+    This is the SSE3 optimized version of ::newviewGAMMA_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b GAMMA
+    model of rate heterogeneity.
+
+    @note
+    For more details and function argument description check the function ::newviewGAMMA_FLEX
+*/
 static void newviewGTRGAMMAPROT(int tipCase,
                                 double *x1, double *x2, double *x3, double *extEV, double *tipVector,
                                 int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -5814,6 +6205,16 @@ static void newviewGTRGAMMAPROT(int tipCase,
 
 
 
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR CAT (Optimized SSE3 version for AA data)
+
+    This is the SSE3 optimized version of ::newviewCAT_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b CAT
+    model of rate heterogeneity.
+
+    @note
+    For more details and function argument description check the function ::newviewCAT_FLEX
+*/
 static void newviewGTRCATPROT(int tipCase, double *extEV,
                               int *cptr,
                               double *x1, double *x2, double *x3, double *tipVector,
@@ -6041,6 +6442,16 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
     *scalerIncrement = addScale;
 }
 
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for GTR CAT with memory saving (Optimized SSE3 version for AA data)
+
+    This is the SSE3 optimized version of ::newviewCAT_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b CAT
+    model of rate heterogeneity.
+
+    @note
+    For more details and function argument description check the function ::newviewCAT_FLEX
+*/
 static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
                                    int *cptr,
                                    double *x1, double *x2, double *x3, double *tipVector,
@@ -6414,6 +6825,17 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 }
 
 
+/** @ingroup group1
+ *  @brief Computation of conditional likelihood arrray for the GTR GAMMA and for the LG4 model (Optimized SSE3 version for AA data)
+
+    This is the SSE3 optimized version of ::newviewGAMMA_FLEX for computing the conditional
+    likelihood arrays at some node \a p, given child nodes \a q and \a r using the \b GAMMA
+    model of rate heterogeneity and the LG4 model of evolution. Note that the original unoptimized
+    function does not incorporate the LG4 model.
+
+    @note
+    For more details and function argument description check the function ::newviewGAMMA_FLEX
+*/
 static void newviewGTRGAMMAPROT_LG4(int tipCase,
                                     double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
                                     int *ex3, unsigned char *tipX1, unsigned char *tipX2,
