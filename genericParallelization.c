@@ -470,10 +470,19 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
     }
 }
 
-/** @brief Check, if partition is assign to this worker.
-    @param localTree the local tree instance
-    @param tid the thread id
-    @param model the partition id
+/** @brief Check if a partition is assign to a thread/process.
+
+    Checks whether partition \a model from partition list \a localPr is
+    assigned to be processed by process/thread with id \a tid.
+
+    @param localTree
+      Local PLL instance
+
+    @param tid 
+      Thread/Process id
+
+    @param model
+      Partition number
  */ 
 boolean isThisMyPartition(partitionList *localPr, int tid, int model)
 { 
@@ -735,15 +744,29 @@ void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2ln
 
 /** @brief Read from buffer or writes rates into buffer.  Return
     number of elems written.
-    
-   @param buf the buffer
-   @param srcTar pointer to either source or destination array  
-   @param tr Library instance 
-   @param n number of workers 
-   @param tid process id 
-   @param read PLL_TRUE, if read-mode  
-   @param countOnly  if PLL_TRUE, simply return the number of elements 
 
+    If \a read is set to \b PLL_TRUE, then the contents \a srcTar are
+    copied to \a buf. Otherwise, the contents of \a buf are moved to
+    \a srcTar.
+   
+   @param buf 
+     Buffer
+
+   @param srcTar 
+     Pointer to either source or destination array
+
+   @param tr
+     PLL instance
+
+   @param n number of workers
+
+   @param tid process id
+
+   @param read 
+     If read-mode then set to \b PLL_TRUE
+
+   @param countOnly
+     if \b PLL_TRUE, simply return the number of elements
 */
 static int doublesToBuffer(double *buf, double *srcTar, pllInstance *tr, partitionList *pr, int n, int tid, boolean read, boolean countOnly)
 {
@@ -858,6 +881,8 @@ void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionLis
 
 
 /** @brief Collect doubles from workers to master.
+ 
+    
 
     @param dst destination array
     @param src source array
@@ -879,8 +904,8 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
       resultBuf[tr->originalCrunchedLength]; 
 #endif
 
-  /* gather own values into buffer  */
-  int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,PLL_TRUE, PLL_FALSE);
+  /* gather own persite log likelihood values into local buffer  */
+  //int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,PLL_TRUE, PLL_FALSE);
 
 #ifdef _FINE_GRAIN_MPI 
   /* this communicates all the values to the master */
@@ -911,9 +936,11 @@ static void collectDouble(double *dst, double *src, pllInstance *tr, partitionLi
   else 				/* workers only send their buffer   */
     MPI_Gatherv(buf, numberCollected, MPI_DOUBLE, resultBuf, numberPerWorker, displacements, MPI_DOUBLE, 0, MPI_COMM_WORLD);   
 #else 
-  /* pthread only writes to global space  */  
-  assertNum = doublesToBuffer(buf, dst,tr,pr,n,tid, PLL_FALSE, PLL_FALSE);
-  assert(assertNum == numberCollected); 
+  /* pthread version only writes to global space  */  
+
+  //assertNum = doublesToBuffer(buf, dst,tr,pr,n,tid, PLL_FALSE, PLL_FALSE);
+  doublesToBuffer (dst, src, tr, pr, n, tid, PLL_TRUE, PLL_FALSE);
+  //assert(assertNum == numberCollected); 
 #endif
 }
 
@@ -994,19 +1021,37 @@ static void broadCastRates(partitionList *localPr, partitionList *pr)
 
 
 
-/** @brief likelihood evaluation call with subsequent reduce operation. 
+/** @brief Evaluate the likelihood of this topology (PThreads/MPI implementation)
 
-    @param localTree local library instance 
-    @param tid worker id 
-    @todo Please comment remaining parameters
+    Evaluate the likelihood of the topology described in the PLL instance. First
+    every thread calls \a evaluateIterative where it computes the log likelihoods
+    for the  portion of each assigned partition. The results (for all partition) are stored
+    as elements of a local buffer array (\a buf). This is done by all threads. Subsequently, 
+    an \a MPI_Reduce operation sums the contents of corresponding elements of the local
+    buffer arrays into another array (\a targetBuf) which are the log likelihoods of
+    each (complete) partition. Finally, the last array is copied to the master thread/process.
+    In addition, if \a getPerSiteLikelihoods is enabled the log likelihoods for each site
+    in the (compressed) alignment are stored in the array \a tr->lhs.
+
+    @param tr
+      PLL instance
+    @param tr
+      Local (thread/process) PLL instance
+
+    @param pr
+      Local (thread/process) list of partitions
+
+    @param tid
+      Thread/Process ID
+
+    @param getPerSiteLikelihoods 
+      If set to \b PLL_TRUE, compute the log likelihood for each site. 
  */ 
 static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, partitionList *localPr, int tid, boolean getPerSiteLikelihoods)
 {
   int model;
 
   evaluateIterative(localTree, localPr, getPerSiteLikelihoods);
-
-  /* printf("evaluation succeeded\n");  */
 
   /* when this is done we need to write the per-thread log likelihood to the 
      global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
@@ -1015,6 +1060,8 @@ static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, par
      the actual sum over the entries in the reduction buffer will then be computed 
      by the master thread which ensures that the sum is determinsitic */
 
+  
+  /* if (getPerSiteLikelihoods == PLL_TRUE) store per-site likelihoods in array tr->lhs */
   if(getPerSiteLikelihoods)
     {    
 #ifdef _FINE_GRAIN_MPI
