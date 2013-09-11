@@ -27,6 +27,10 @@
  *  Bioinformatics 2006; doi: 10.1093/bioinformatics/btl446
  */
 
+/** @file evaluateGenericSpecial.c
+    
+    @brief Functions for computing the log likelihood at a given branch of the tree (i.e. a virtual root that is placed at this branch)
+*/
 #include "mem_alloc.h"
 
 #ifndef WIN32 
@@ -52,6 +56,84 @@
 /*#include <tmmintrin.h>*/
 #endif
 
+/* below are the function headers for unreadeble highly optimized versions of the above functions 
+   for DNA and protein data that also use SSE3 intrinsics and implement some memory saving tricks.
+   The actual functions can be found at the end of this source file. 
+   All other likelihood function implementation files:
+
+   newviewGenericSpacial.c
+   makenewzSpecial.c
+   evaluatePartialGenericSpecial.c
+
+   are also structured like this 
+
+   To decide which set of function implementations to use you will have to undefine or define _OPTIMIZED_FUNCTIONS 
+   in the Makefile 
+   */
+#if (defined(__SSE3) || defined(__AVX))
+
+static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
+                                       double *x1, double *x2,  
+                                       double *tipVector[4], 
+                                       unsigned char *tipX1, int n, double *diagptable, const boolean fastScaling);
+
+/* GAMMA for proteins with memory saving */
+
+static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+                                                double *x1, double *x2,  
+                                                double *tipVector, 
+                                                unsigned char *tipX1, int n, double *diagptable, 
+                                                double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+
+
+/* GAMMA for proteins */
+
+static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+                                    double *x1, double *x2,  
+                                    double *tipVector, 
+                                    unsigned char *tipX1, int n, double *diagptable);
+
+/* CAT for proteins */
+
+static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+                                  double *x1, double *x2, double *tipVector,
+                                  unsigned char *tipX1, int n, double *diagptable_start);
+
+
+/* CAT for proteins with memory saving */
+
+static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+                                       double *x1, double *x2, double *tipVector,
+                                       unsigned char *tipX1, int n, double *diagptable_start, 
+                                       double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+
+/* analogous DNA fuctions */
+
+static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+                                   double *x1_start, double *x2_start, double *tipVector,                     
+                                   unsigned char *tipX1, int n, double *diagptable_start,
+                                   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+
+static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+                                           double *x1_start, double *x2_start, 
+                                           double *tipVector, 
+                                           unsigned char *tipX1, const int n, double *diagptable,
+                                           double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
+
+static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
+                               double *x1_start, double *x2_start, 
+                               double *tipVector, 
+                               unsigned char *tipX1, const int n, double *diagptable);
+
+
+static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
+                              double *x1_start, double *x2_start, double *tipVector,                  
+                              unsigned char *tipX1, int n, double *diagptable_start);
+
+
+#endif
+
+
 
 /* 
    global variables of pthreads version, reductionBuffer is the global array 
@@ -74,7 +156,31 @@ extern const unsigned int mask32[32];
 
 /* the function below computes the P matrix from the decomposition of the Q matrix and the respective rate categories for a single partition */
 
+/** @brief Compute the diagonal of P matrix for a specific edge
 
+    This function computes the diagonal of P matrix for a branch of length \a z
+    from the decomposition of the Q matrix specified in \a EIGN and the respective
+    rate categories \a rptr for a single partition. The diagonal is then stored in
+    \a diagptable. 
+
+    @param z
+      Length of edge
+
+    @param states
+      Number of states
+
+    @param numberOfCategories
+      Number of categories in the rate heterogeneity rate arrays
+
+    @param rptr
+      Rate heterogeneity rate arrays
+
+    @param EIGN
+      Eigenvalues
+
+    @param diagptable
+      Where to store the resulting P matrix
+*/
 static void calcDiagptable(const double z, const int states, const int numberOfCategories, const double *rptr, const double *EIGN, double *diagptable)
 {
   int 
@@ -116,6 +222,34 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
   rax_free(lza);
 }
 
+/** @brief Compute the diagonal of P matrix for a specific edge for the LG4 model
+
+    This function computes the diagonal of P matrix for a branch of length \a z
+    from the decomposition of the 4 LG4 Q matrices specified in \a EIGN and the respective
+    rate categories \a rptr for a single partition. The diagonal is then stored in
+    \a diagptable. 
+
+    @param z
+      Length of edge
+
+    @param states
+      Number of states
+
+    @param numberOfCategories
+      Number of categories in the rate heterogeneity rate arrays
+
+    @param rptr
+      Rate heterogeneity rate arrays
+
+    @param EIGN
+      Eigenvalues of the 4 Q matrices
+
+    @param diagptable
+      Where to store the resulting P matrix
+
+    @param numStates
+      Number of states
+*/
 static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rptr, double *EIGN[4], double *diagptable, const int numStates)
 {
   int 
@@ -143,8 +277,68 @@ static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rpt
 
 
 
-/* below a a slow generic implementation of the likelihood computation at the root under the GAMMA model */
+/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
+    
+    Computes the log likelihood of the topology for a specific partition, assuming
+    that the GAMMA model of rate heterogeneity is used. The likelihood is computed at
+    a virtual root placed at an edge whose two end-points (nodes) have the conditional
+    likelihood vectors \a x1 and \a x2. 
+    Furthermore, if \a getPerSiteLikelihoods is set to \b PLL_TRUE, then the log
+    likelihood for each site is also computed and stored at the corresponding position
+    in the array \a perSiteLikelihoods.
 
+    @param fastScaling
+      If set to \b PLL_FALSE, then the likelihood of each site is also multiplied by \a log(PLL_MINLIKELIHOOD) times the number
+      of times it has been scaled down
+
+    @param ex1
+      An array that holds how many times a site has been scaled and points at the entries for node \a p. This
+      parameter is used if \a fastScaling is set to \b PLL_FALSE.
+
+    @param ex2
+      An array that holds how many times a site has been scaled and points at the entries for node \a q. This
+      parameter is used if \a fastScaling is set to \b PLL_TRUE.
+
+    @param wptr
+      Array holding the weight for each site in the compressed partition alignment
+
+    @param x1_start
+      Conditional likelihood vectors for one of the two end-points of the specific edge for which we are evaluating the likelihood
+
+    @param x2_start
+      Conditional likelihood vectors for the other end-point of the specific edge for which we are evaluating the likelihood
+
+    @param tipVector
+      Precomputed table where the number of rows is equal to the number of possible basepair characters for the current data 
+      type, i.e.16 for DNA and 23 for AA, and each rows contains \a states elements each of which contains transition
+      probabilities computed from the eigenvectors of the decomposed Q matrix.
+
+    @param tipX1
+      If one of the two end-points (nodes) of the specific edge (for which we are evaluating the likelihood) is a tip, then
+      this holds a pointer to the sequence data (basepairs) already converted in the internal integer representation, and \a x2
+      holds the conditional likelihood vectors for the internal node.
+
+    @param n
+      Number of sites for which we are doing the evaluation. For the single-thread version this is the 
+      number of sites in the current partition, for multi-threads this is the number of sites assigned
+      to the running thread from the current partition.
+
+    @param diagptable
+      Start of the array that contains the P-Matrix diagonal of the specific edge for which we are
+      evaluating the likehood, and for each category of the GAMMA model
+
+    @param states
+      Number of states (4 for DNA, 20 for AA)
+
+    @param perSiteLikelihoods
+      Array to store per-site log likelihoods if \a getPerSiteLikelihoods is set to \b PLL_TRUE
+
+    @param getPerSiteLikelihoods
+      If set to \b PLL_TRUE then per-site log likelihoods are also computed and stored in \a perSiteLikelihoods
+
+    @return
+      The evaluated log likelihood of the tree topology
+*/
 static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                  double *x1_start, double *x2_start, 
                                  double *tipVector, 
@@ -239,6 +433,81 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
 } 
 
 #if (defined(__SSE3) || defined(__AVX))
+/** @brief Memory saving version of the generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
+
+    Computes the log likelihood of the topology for a specific partition, assuming
+    that the GAMMA model of rate heterogeneity is used and memory saving technique
+    is enabled. The likelihood is computed at a virtual root placed at an edge whose
+    two end-points (nodes) have the conditional likelihood vectors \a x1 and \a x2. 
+    Furthermore, if \a getPerSiteLikelihoods is set to \b PLL_TRUE, then the log
+    likelihood for each site is also computed and stored at the corresponding position
+    in the array \a perSiteLikelihoods.
+
+    @param fastScaling
+      If set to \b PLL_FALSE, then the likelihood of each site is also multiplied by \a log(PLL_MINLIKELIHOOD) times the number
+      of times it has been scaled down
+
+    @param ex1
+      An array that holds how many times a site has been scaled and points at the entries for node \a p. This
+      parameter is used if \a fastScaling is set to \b PLL_FALSE.
+
+    @param ex2
+      An array that holds how many times a site has been scaled and points at the entries for node \a q. This
+      parameter is used if \a fastScaling is set to \b PLL_TRUE.
+
+    @param wptr
+      Array holding the weight for each site in the compressed partition alignment
+
+    @param x1_start
+      Conditional likelihood vectors for one of the two end-points of the specific edge for which we are evaluating the likelihood
+
+    @param x2_start
+      Conditional likelihood vectors for the other end-point of the specific edge for which we are evaluating the likelihood
+
+    @param tipVector
+      Precomputed table where the number of rows is equal to the number of possible basepair characters for the current data 
+      type, i.e.16 for DNA and 23 for AA, and each rows contains \a states elements each of which contains transition
+      probabilities computed from the eigenvectors of the decomposed Q matrix.
+
+    @param tipX1
+      If one of the two end-points (nodes) of the specific edge (for which we are evaluating the likelihood) is a tip, then
+      this holds a pointer to the sequence data (basepairs) already converted in the internal integer representation, and \a x2
+      holds the conditional likelihood vectors for the internal node.
+
+    @param n
+      Number of sites for which we are doing the evaluation. For the single-thread version this is the 
+      number of sites in the current partition, for multi-threads this is the number of sites assigned
+      to the running thread from the current partition.
+
+    @param diagptable
+      Start of the array that contains the P-Matrix diagonal of the specific edge for which we are
+      evaluating the likehood, and for each category of the GAMMA model
+
+    @param states
+      Number of states (4 for DNA, 20 for AA)
+
+    @param perSiteLikelihoods
+      Array to store per-site log likelihoods if \a getPerSiteLikelihoods is set to \b PLL_TRUE
+
+    @param getPerSiteLikelihoods
+      If set to \b PLL_TRUE then per-site log likelihoods are also computed and stored in \a perSiteLikelihoods
+
+    @param x1_gapColumn
+
+    @param x2_gapColumn
+
+    @param x1_gap
+      Gap bitvector for the left child node
+
+    @param x2_gap
+      Gap bitvector for the right child node
+
+    @return
+      The evaluated log likelihood of the tree topology
+
+    @todo
+      Document x1_gapColumn, x2_gapColumn, x1_gap, x2_gap and add a brief description of how this technique works
+*/
 static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                       double *x1_start, double *x2_start, 
                                       double *tipVector, 
@@ -356,8 +625,70 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
 } 
 #endif
 
-/* a generic and slow implementation of the CAT model of rate heterogeneity */
+/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity
+    
+    Computes the log likelihood of the topology for a specific partition, assuming
+    that the CAT model of rate heterogeneity is used. The likelihood is computed at
+    a virtual root placed at an edge whose two end-points (nodes) have the conditional
+    likelihood vectors \a x1 and \a x2. 
+    Furthermore, if \a getPerSiteLikelihoods is set to \b PLL_TRUE, then the log
+    likelihood for each site is also computed and stored at the corresponding position
+    in the array \a perSiteLikelihoods.
 
+    @param fastScaling
+      If set to \b PLL_FALSE, then the likelihood of each site is also multiplied by \a log(PLL_MINLIKELIHOOD) times the number
+      of times it has been scaled down
+
+    @param ex1
+      An array that holds how many times a site has been scaled and points at the entries for node \a p. This
+      parameter is used if \a fastScaling is set to \b PLL_FALSE.
+
+    @param ex2
+      An array that holds how many times a site has been scaled and points at the entries for node \a q. This
+      parameter is used if \a fastScaling is set to \b PLL_TRUE.
+
+    @param cptr
+      Array holding the rate for each site in the compressed partition alignment
+
+    @param wptr
+      Array holding the weight for each site in the compressed partition alignment
+
+    @param x1
+      Conditional likelihood vectors for one of the two end-points of the specific edge for which we are evaluating the likelihood
+
+    @param x2
+      Conditional likelihood vectors for the other end-point of the specific edge for which we are evaluating the likelihood
+
+    @param tipVector
+      Precomputed table where the number of rows is equal to the number of possible basepair characters for the current data type, 
+      i.e.16 for DNA and 23 for AA, and each rows contains \a states elements each of which contains transition probabilities 
+      computed from the eigenvectors of the decomposed Q matrix.
+
+    @param tipX1
+      If one of the two end-points (nodes) of the specific edge (for which we are evaluating the likelihood) is a tip, then
+      this holds a pointer to the sequence data (basepairs) already converted in the internal integer representation, and \a x2
+      holds the conditional likelihood vectors for the internal node.
+
+    @param n
+      Number of sites for which we are doing the evaluation. For the single-thread version this is the number of sites in the
+      current partition, for multi-threads this is the number of sites assigned to the running thread from the current partition.
+
+    @param diagptable_start
+      Start of the array that contains the P-Matrix diagonal of the specific edge for which we are evaluating the likehood,
+      and for each category of the CAT model
+
+    @param states
+      Number of states (4 for DNA, 20 for AA)
+
+    @param perSiteLikelihoods
+      Array to store per-site log likelihoods if \a getPerSiteLikelihoods is set to \b PLL_TRUE
+
+    @param getPerSiteLikelihoods
+      If set to \b PLL_TRUE then per-site log likelihoods are also computed and stored in \a perSiteLikelihoods
+
+    @return
+      The evaluated log likelihood of the tree topology
+*/
 static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                 double *x1, double *x2, double *tipVector,
                                 unsigned char *tipX1, int n, double *diagptable_start, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods)
@@ -452,6 +783,25 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
 } 
 
 #if (defined(__SSE3) || defined(__AVX))
+/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity with memory saving
+    
+    This is the same as ::evaluateCAT_FLEX but with the memory saving technique enabled.
+    Please check ::evaluateCAT_FLEX for more information and a description of the common
+    input parameters
+    
+    @param x1_gapColumn
+
+    @param x2_gapColumn
+
+    @param x1_gap
+      Gap bitvector for the left child node
+
+    @param x2_gap
+      Gap bitvector for the right child node
+    
+    @todo
+      Comment on x1_gapColumn and x2_gapColumn
+*/
 static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                      double *x1, double *x2, double *tipVector,
                                      unsigned char *tipX1, int n, double *diagptable_start, const int states, double *perSiteLikelihoods, boolean getPerSiteLikelihoods,
@@ -570,89 +920,33 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 #endif
 
 
-/* below are the function headers for unreadeble highly optimized versions of the above functions 
-   for DNA and protein data that also use SSE3 intrinsics and implement some memory saving tricks.
-   The actual functions can be found at the end of this source file. 
-   All other likelihood function implementation files:
-
-   newviewGenericSpacial.c
-   makenewzSpecial.c
-   evaluatePartialGenericSpecial.c
-
-   are also structured like this 
-
-   To decide which set of function implementations to use you will have to undefine or define _OPTIMIZED_FUNCTIONS 
-   in the Makefile 
-   */
-
-
-
-#if (defined(__SSE3) || defined(__AVX))
-
-static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
-                                       double *x1, double *x2,  
-                                       double *tipVector[4], 
-                                       unsigned char *tipX1, int n, double *diagptable, const boolean fastScaling);
-
-/* GAMMA for proteins with memory saving */
-
-static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
-                                                double *x1, double *x2,  
-                                                double *tipVector, 
-                                                unsigned char *tipX1, int n, double *diagptable, 
-                                                double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
-
-
-/* GAMMA for proteins */
-
-static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
-                                    double *x1, double *x2,  
-                                    double *tipVector, 
-                                    unsigned char *tipX1, int n, double *diagptable);
-
-/* CAT for proteins */
-
-static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
-                                  double *x1, double *x2, double *tipVector,
-                                  unsigned char *tipX1, int n, double *diagptable_start);
-
-
-/* CAT for proteins with memory saving */
-
-static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
-                                       double *x1, double *x2, double *tipVector,
-                                       unsigned char *tipX1, int n, double *diagptable_start, 
-                                       double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
-
-/* analogous DNA fuctions */
-
-static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
-                                   double *x1_start, double *x2_start, double *tipVector,                     
-                                   unsigned char *tipX1, int n, double *diagptable_start,
-                                   double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
-
-static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
-                                           double *x1_start, double *x2_start, 
-                                           double *tipVector, 
-                                           unsigned char *tipX1, const int n, double *diagptable,
-                                           double *x1_gapColumn, double *x2_gapColumn, unsigned int *x1_gap, unsigned int *x2_gap);
-
-static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
-                               double *x1_start, double *x2_start, 
-                               double *tipVector, 
-                               unsigned char *tipX1, const int n, double *diagptable);
-
-
-static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
-                              double *x1_start, double *x2_start, double *tipVector,                  
-                              unsigned char *tipX1, int n, double *diagptable_start);
-
-
-#endif
-
-
 /* This is the core function for computing the log likelihood at a branch */
+/** @brief Evaluate the log likelihood of a specific branch of the topology
+    
+    Evaluates the likelihood of the tree topology assuming a virtual root is
+    placed at the edge whose end-points are node with number \a pNumber and \a
+    qNumber in the first slot of the traversal descriptor. The function first
+    computes the conditional likelihoods for all necessary nodes (the ones in
+    the traversal descriptor list) by calling the function \a newviewIterative
+    and then evaluates the likelihood at the root. In addition, if \a
+    getPerSiteLikelihoods is set to \b PLL_TRUE, the per-site likelihoods are
+    stored in \a tr->lhs.
 
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param getPerSiteLikelihoods
+      If set to \b PLL_TRUE, compute the log likelihood for each site. 
+
+    @note
+      This is an internal function and should not be called by the user. It assumes
+      that a valid traversal descriptor has already been computed. It also assumes
+      that the edge we are referring to is an edge that leads to a tip, i.e. either
+      p or q of the first entry of traversal descriptor are tips.
+*/
 void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
@@ -775,7 +1069,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
               rateCategories = pr->partitionData[model]->perSiteRates;
               categories = pr->partitionData[model]->numberOfCategories;
             }
-          else
+          else  /* GAMMA */
             {        
               rateCategories = pr->partitionData[model]->gammaRates;
               categories = 4;
@@ -787,7 +1081,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
           diagptable = pr->partitionData[model]->left;
           
           /* figure out if we need to address tip vectors (a char array that indexes into a precomputed tip likelihood 
-             value array or if we need to address inner vectors */
+             value array) or if we need to address inner vectors */
           
           /* either node p or node q is a tip */
           
@@ -800,7 +1094,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                   /* get the start address of the inner likelihood vector x2 for partition model,
                      note that inner nodes are enumerated/indexed starting at 0 to save allocating some 
                      space for additional pointers */
-                  
+
                   x2_start = pr->partitionData[model]->xVector[p_slot];
                   
                   /* get the corresponding tip vector */
@@ -904,7 +1198,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                                                 x1_start, x2_start, pr->partitionData[model]->tipVector,
                                                 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
 #else
-          
+   
           /* if we want to compute the per-site likelihoods, we use the generic evaluate function implementations 
              for this, because the slowdown is not that dramatic */
 
@@ -1070,7 +1364,33 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 
 
 
+/** @brief Evaluate the log likelihood of the tree topology
 
+    Evaluate the log likelihood of the tree topology of instance \a tr by
+    assuming a virtual root between nodes \a p and \a p->back. If
+    \a fullTraversal is set to \b PLL_TRUE then the log likelihood vectors for
+    each node are recomputed from scratch.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Specifies the virtual root, which is assumed to be a (virtual node) connecting \a p and \a p->back
+
+    @param fullTraversal
+      If set to \b PLL_TRUE, then the likelihood vectors at all nodes are recomputed, otherwise only the
+      necessary vectors (those that are not oriented in the right direction) are recomputed.
+
+    @param getPerSiteLikelihoods
+      Also compute and store (in \a tr->lhs) the log likelihood of each site of the (compressed) alignment
+
+    @note
+      If \a getPerSiteLikelihoods is set to \b PLL_TRUE, then make sure that \a tr->fastScaling is set to
+      \b PLL_FALSE, otherwise an assertion will fail.
+*/
 void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
 {
   /* now this may be the entry point of the library to compute 
@@ -1097,7 +1417,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
      not work */
 
   if(getPerSiteLikelihoods)          
-    assert(!(tr->fastScaling));     
+    assert(!(tr->fastScaling)); 
 
   /* set the first entry of the traversal descriptor to contain the indices
      of nodes p and q */
@@ -1138,7 +1458,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   tr->td[0].count = 1;
 
   if(fullTraversal)
-  { 
+  {
     assert(isTip(q->back->number, tr->mxtips));
     computeTraversal(tr, q, PLL_FALSE, numBranches);
   }
@@ -1241,13 +1561,13 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
 
       for(i = 0; i < tr->originalCrunchedLength; i++)
         {
-          printf("lhs[%d]=%f * %d\n", i, tr->lhs[i], tr->aliaswgt[i]); 
+//          printf("lhs[%d]=%f * %d\n", i, tr->lhs[i], tr->aliaswgt[i]); 
           likelihood += (tr->lhs[i]   * tr->aliaswgt[i] );
         }
          
       if( ABS(tr->likelihood - likelihood) > 0.00001)
         {
-          printf("likelihood was %f\t summed/weighted per-site-lnl was %f\n", tr->likelihood, likelihood); 
+  //        printf("likelihood was %f\t summed/weighted per-site-lnl was %f\n", tr->likelihood, likelihood); 
         }
 
         assert(ABS(tr->likelihood - likelihood) < 0.00001);
@@ -1372,7 +1692,16 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
 /* below are the optimized function versions with geeky intrinsics */
 
-#if (defined(__SSE3) || defined(__AVX))
+/** @brief Evaluation of log likelihood of a tree under the GAMMA model of rate heterogeneity and LG4 model of evolution
+    
+    This is the same as ::evaluateGAMMA_FLEX but for the LG4 model. It contains two implementations,
+    one which is the generic, and one that is optimized with SSE3 instructions. The two implementations
+    are separated by preprocessor macros.
+    The difference from ::evaluateGAMMA_FLEX is that we have 4 different tipVectors computed from the 4 different
+    Q matrix decompositions.
+    Please check ::evaluateGAMMA_FLEX for more information and a description of the common
+    input parameters.
+*/
 static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
                                        double *x1, double *x2,  
                                        double *tipVector[4], 
@@ -1465,6 +1794,15 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
   return  sum;
 }
 
+#if (defined(__SSE3) || defined(__AVX))
+/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
+    and the memory saving technique (Optimized SSE3 version for AA data)
+ 
+    This is the SSE3 optimized version of ::evaluateGAMMA_FLEX_SAVE for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateGAMMA_FLEX_SAVE for more information and
+    a description of the input parameters
+*/
 static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                                 double *x1, double *x2,  
                                                 double *tipVector, 
@@ -1572,6 +1910,14 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
+    (Optimized SSE3 version for AA data)
+ 
+    This is the SSE3 optimized version of ::evaluateGAMMA_FLEX for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateGAMMA_FLEX for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                     double *x1, double *x2,  
                                     double *tipVector, 
@@ -1648,6 +1994,14 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 }
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity 
+    (Optimized SSE3 version for AA data)
+ 
+    This is the SSE3 optimized version of ::evaluateCAT_FLEX for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateCAT_FLEX for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                   double *x1, double *x2, double *tipVector,
                                   unsigned char *tipX1, int n, double *diagptable_start)
@@ -1726,6 +2080,14 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
 } 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
+    (Optimized SSE3 version for AA data)
+ 
+    This is the SSE3 optimized version of ::evaluateCAT_FLEX_SAVE for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateCAT_FLEX_SAVE for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                        double *x1, double *x2, double *tipVector,
                                        unsigned char *tipX1, int n, double *diagptable_start, 
@@ -1834,6 +2196,14 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
 } 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
+    (Optimized SSE3 version for DNA data)
+ 
+    This is the SSE3 optimized version of ::evaluateCAT_FLEX_SAVE for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateCAT_FLEX_SAVE for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                                    double *x1_start, double *x2_start, double *tipVector,                     
                                    unsigned char *tipX1, int n, double *diagptable_start,
@@ -1950,6 +2320,14 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
 } 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity with memory saving 
+    (Optimized SSE3 version for DNA data)
+ 
+    This is the SSE3 optimized version of ::evaluateGAMMA_FLEX_SAVE for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateGAMMA_FLEX_SAVE for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                            double *x1_start, double *x2_start, 
                                            double *tipVector, 
@@ -2083,6 +2461,13 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
 } 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity (Optimized SSE3 version for DNA data)
+ 
+    This is the SSE3 optimized version of ::evaluateGAMMA_FLEX for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateGAMMA_FLEX for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, int *wptr,
                                double *x1_start, double *x2_start, 
                                double *tipVector, 
@@ -2196,6 +2581,13 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
 } 
 
 
+/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity (Optimized SSE3 version for DNA data)
+ 
+    This is the SSE3 optimized version of ::evaluateCAT_FLEX for evaluating the log
+    likelihood at some edge whose two end-points (nodes) have the conditional likelihood
+    vectors \a x1 and \a x2. Please check ::evaluateCAT_FLEX for more information and
+    a description of the common input parameters
+*/
 static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int *cptr, int *wptr,
                               double *x1_start, double *x2_start, double *tipVector,                  
                               unsigned char *tipX1, int n, double *diagptable_start)
