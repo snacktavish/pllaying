@@ -65,6 +65,15 @@ void evalNNIForSubtree(pllInstance* tr, partitionList *pr, nodeptr p, nniMove* n
 
 
 static int cmp_nni(const void* nni1, const void* nni2);
+static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllRearrangeList * bestList);
+static int pllStoreRearrangement (pllRearrangeList * bestList, pllRearrangeInfo * rearr);
+static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllRearrangeList * bestList);
+static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
+static void pllCreateSprInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
+static void pllCreateNniInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr);
+static void pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
+static void pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
+static void pllRollbackSPR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
 
 extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
@@ -1856,13 +1865,13 @@ int NNI(pllInstance * tr, nodeptr p, int swap)
    {
      r = p->next->back;
      hookupFull(p->next, q->next->back, q->next->z);
-     hookupFull(q->next, r,           p->next->z);
+     hookupFull(q->next, r,             p->next->z);
    }
   else
    {
-      r = p->next->next->back;
-      hookupFull(p->next->next, q->next->back, q->next->z);
-      hookupFull(q->next,       r,           p->next->next->z);
+     r = p->next->next->back;
+     hookupFull(p->next->next, q->next->back, q->next->z);
+     hookupFull(q->next,       r,             p->next->next->z);
    }
 
   return PLL_TRUE;
@@ -2159,4 +2168,923 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 	free(nonConfNNIList);
 
 	return PLL_TRUE;
+}
+
+
+/** @defgroup rearrangementGroup
+    
+    Rearrangement of topology
+    
+    This set of functions handles the rearrangement of the tree topology
+*/
+
+
+/** @ingroup rearrangementGroup
+    @brief Create a list for storing topology rearrangements
+ 
+    Allocates space and initializes a structure that will hold information
+    of \a max topological rearrangements
+
+    @param max
+      Maximum number of elements that the structure should hold
+    
+    @note This should be called for creating a storage space (list) for
+    routines such as ::pllRearrangeSearch which compute the best NNI/PR/TBR rearrangements.
+*/
+pllRearrangeList * pllCreateRearrangeList (int max)
+{
+  pllRearrangeList * bl;
+
+  bl = (pllRearrangeList *) malloc (sizeof (pllRearrangeList));
+
+  bl->max_entries = max;
+  bl->entries     = 0;
+  bl->rearr       = (pllRearrangeInfo *) malloc (max * sizeof (pllRearrangeInfo));
+
+  return bl;
+}
+
+/** @ingroup rearrangementGroup
+    @brief Deallocator for topology rearrangements list
+    
+    Call this to destroy (deallocate) the memory taken by the \a bestList which holds
+    topological rearrangements
+
+    @param bestList
+      Pointer to the list to be deallocated
+*/
+void pllDestroyRearrangeList (pllRearrangeList ** bestList)
+{
+  pllRearrangeList * bl;
+
+  bl = *bestList;
+
+  rax_free (bl->rearr);
+  rax_free (bl);
+
+  *bestList = NULL;
+}
+
+
+/** @ingroup rearrangementGroup
+    @brief Store a rearrangement move to the list of best rearrangement moves
+
+     Checks if the likelihood yielded by the rearrangement move described in \a rearr
+     is better than any in the sorted list \a bestList. If it is, or
+     if there is still space in \a bestList, the info about the
+     move is inserted in the list.
+
+     @param bestList
+       The list of information about the best rearrangement moves
+
+     @param rearr
+       Info about the current rearrangement move
+
+     @return
+       Returns \b PLL_FALSE if the rearrangement move doesn't make it in the list, otherwise \b PLL_TRUE
+*/
+static int pllStoreRearrangement (pllRearrangeList * bestList, pllRearrangeInfo * rearr)
+ {
+   /* naive implementation of saving rearrangement moves */
+   int i;
+
+   for (i = 0; i < bestList->entries; ++ i)
+    {
+      /* Does the new rearrangement yield a better likelihood that the current in the list */
+      if (rearr->likelihood > bestList->rearr[i].likelihood)
+       {
+         /* is there enough space in the array ? */
+         if (bestList->entries < bestList->max_entries)
+          {
+            /* slide the entries to the right and overwrite the i-th element with the new item */
+            memmove (&(bestList->rearr[i + 1]), &(bestList->rearr[i]), (bestList->entries - i ) * sizeof (pllRearrangeInfo));
+            ++ bestList->entries;
+          }
+         else
+          {
+            memmove (&(bestList->rearr[i + 1]), &(bestList->rearr[i]), (bestList->entries - i - 1 ) * sizeof (pllRearrangeInfo));
+          }
+         memcpy (&(bestList->rearr[i]), rearr, sizeof (pllRearrangeInfo));
+         return (PLL_TRUE);
+       }
+    }
+   if (bestList->entries < bestList->max_entries)
+    {
+      memcpy (&(bestList->rearr[bestList->entries]), rearr, sizeof (pllRearrangeInfo));
+      ++ bestList->entries;
+      return (PLL_TRUE);
+    }
+
+   return (PLL_FALSE);
+ }
+
+/** @ingroup rearrangementGroup
+    @brief Internal function for testing and saving an SPR move
+    
+    Checks the likelihood of the placement of the pruned subtree specified by \a p
+    to node \a q. If the likelihood is better than some in the sorted list 
+    \a bestList, or if there is still free space in \a bestList, then the SPR 
+    move is recorded (in \a bestList)
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Root of the subtree that is to be pruned
+
+    @param q
+      Where to place the pruned subtree (between \a q and \a q->back
+
+    @param bestList
+      Where to store the SPR move
+
+    @note Internal function which is not part of the PLL API and therefore should not be
+    called by the user
+
+    @return
+*/
+static int
+pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pllRearrangeList * bestList)
+{
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  pllRearrangeInfo rearr;
+
+  double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
+  nodeptr  r;
+  //double startLH = tr->endLH;
+  int i;
+
+  r = q->back; 
+  for(i = 0; i < numBranches; i++)
+  {
+    qz[i] = q->z[i];
+    pz[i] = p->z[i];
+  }
+
+  if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
+
+  evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
+  
+  rearr.rearrangeType  = PLL_REARRANGE_SPR;
+  rearr.likelihood     = tr->likelihood;
+  rearr.SPR.removeNode = p;
+  rearr.SPR.insertNode = q;
+  for (i = 0; i < numBranches; ++ i)
+   {
+     rearr.SPR.zqr[i] = tr->zqr[i];
+   }
+
+  pllStoreRearrangement (bestList, &rearr);
+
+/*
+  if(tr->likelihood > tr->bestOfNode)
+  {
+    pllStoreRearrangement (bestList, rearr)
+    tr->bestOfNode = tr->likelihood;
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
+    {
+      tr->currentZQR[i] = tr->zqr[i];           
+      tr->currentLZR[i] = tr->lzr[i];
+      tr->currentLZQ[i] = tr->lzq[i];
+      tr->currentLZS[i] = tr->lzs[i];      
+    }
+  }
+
+  if(tr->likelihood > tr->endLH)
+  {			  
+    
+    tr->insertNode = q;
+    tr->removeNode = p;   
+    for(i = 0; i < numBranches; i++)
+      tr->currentZQR[i] = tr->zqr[i];      
+    tr->endLH = tr->likelihood;                      
+  }        
+*/
+  /* reset the topology so that it is the same as it was before calling insertBIG */
+  hookup(q, r, qz, numBranches);
+
+  p->next->next->back = p->next->back = (nodeptr) NULL;
+
+  if(tr->thoroughInsertion)
+  {
+    nodeptr s = p->back;
+    hookup(p, s, pz, numBranches);
+  } 
+
+/*
+  if((tr->doCutoff) && (tr->likelihood < startLH))
+  {
+    tr->lhAVG += (startLH - tr->likelihood);
+    tr->lhDEC++;
+    if((startLH - tr->likelihood) >= tr->lhCutoff)
+      return PLL_FALSE;	    
+    else
+      return PLL_TRUE;
+  }
+  else
+    return PLL_TRUE;
+  */
+  return (PLL_TRUE);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Internal function for recursively traversing a tree and testing a possible subtree insertion
+
+    Recursively traverses the tree rooted at \a q in the direction of \a q->next->back and \a q->next->next->back
+    and at each node tests the placement of the pruned subtree rooted at \a p by calling the function
+    \a pllTestInsertBIG, which in turn saves the computed SPR in \a bestList if a) there is still space in
+    the \a bestList or b) if the likelihood of the SPR is better than any of the ones in \a bestList.
+
+    @note This function is not part of the API and should not be called by the user.
+*/
+static void pllTraverseUpdate (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{  
+  if (--mintrav <= 0) 
+  {              
+    if (! pllTestInsertBIG(tr, pr, p, q, bestList))  return;
+
+  }
+
+  if ((!isTip(q->number, tr->mxtips)) && (--maxtrav > 0)) 
+  {    
+    pllTraverseUpdate(tr, pr, p, q->next->back, mintrav, maxtrav, bestList);
+    pllTraverseUpdate(tr, pr, p, q->next->next->back, mintrav, maxtrav, bestList);
+  }
+} 
+
+
+/** @ingroup rearrangementGroup
+    @brief Internal function for computing SPR moves
+
+    Compute a list of at most \a max SPR moves that can be performed by pruning
+    the subtree rooted at node \a p and testing all possible placements in a
+    radius of at least \a mintrav nodes and at most \a maxtrav nodes from \a p.
+    Note that \a tr->thoroughInsertion affects the behaviour of the function (see note).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node specifying the root of the pruned subtree, i.e. where to prune.
+
+    @param mintrav
+      Minimum distance from \a p where to try inserting the pruned subtree
+
+    @param maxtrav
+      Maximum distance from \a p where to try inserting the pruned subtree
+
+    @param bestList
+      The list of best topological rearrangements
+
+    @note This function is not part of the API and should not be called by the user
+    as it is called internally by the API function \a pllComputeSPR. 
+    Also, setting \a tr->thoroughInsertion affects this function. For each tested SPR
+    the new branch lengths will also be optimized. This computes better likelihoods
+    but also slows down the method considerably.
+*/
+static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{
+  nodeptr 
+    p1, p2, q, q1, q2;
+  double 
+    p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
+  int
+    mintrav2, i;
+  int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  if (maxtrav < 1 || mintrav > maxtrav) return (PLL_FALSE);
+  q = p->back;
+
+  if (!isTip (p->number, tr->mxtips))
+   {
+     p1 = p->next->back;
+     p2 = p->next->next->back;
+
+     if (!isTip (p1->number, tr->mxtips) || !isTip (p2->number, tr->mxtips))
+      {
+        /* save branch lengths before splitting the tree in two components */
+        for (i = 0; i < numBranches; ++ i)
+         {
+           p1z[i] = p1->z[i];
+           p2z[i] = p2->z[i];
+         }
+
+        /* split the tree in two components */
+        if (! removeNodeBIG (tr, pr, p, numBranches)) return PLL_BADREAR;
+
+        /* recursively traverse and perform SPR on the subtree rooted at p1 */
+        if (!isTip (p1->number, tr->mxtips))
+         {
+           pllTraverseUpdate (tr, pr, p, p1->next->back,       mintrav, maxtrav, bestList);
+           pllTraverseUpdate (tr, pr, p, p1->next->next->back, mintrav, maxtrav, bestList);
+         }
+
+        /* recursively traverse and perform SPR on the subtree rooted at p2 */
+        if (!isTip (p2->number, tr->mxtips))
+         {
+           pllTraverseUpdate (tr, pr, p, p2->next->back,       mintrav, maxtrav, bestList);
+           pllTraverseUpdate (tr, pr, p, p2->next->next->back, mintrav, maxtrav, bestList);
+         }
+
+        /* restore the topology as it was before the split */
+        hookup (p->next,       p1, p1z, numBranches);
+        hookup (p->next->next, p2, p2z, numBranches);
+        newviewGeneric (tr, pr, p, PLL_FALSE);
+      }
+   }
+
+  if (!isTip (q->number, tr->mxtips) && maxtrav > 0)
+   {
+     q1 = q->next->back;
+     q2 = q->next->next->back;
+
+    /* why so many conditions? Why is it not analogous to the previous if for node p? */
+    if (
+        (
+         ! isTip(q1->number, tr->mxtips) && 
+         (! isTip(q1->next->back->number, tr->mxtips) || ! isTip(q1->next->next->back->number, tr->mxtips))
+        )
+        ||
+        (
+         ! isTip(q2->number, tr->mxtips) && 
+         (! isTip(q2->next->back->number, tr->mxtips) || ! isTip(q2->next->next->back->number, tr->mxtips))
+        )
+       )
+     {
+       for (i = 0; i < numBranches; ++ i)
+        {
+          q1z[i] = q1->z[i];
+          q2z[i] = q2->z[i];
+        }
+
+       if (! removeNodeBIG (tr, pr, q, numBranches)) return PLL_BADREAR;
+
+       mintrav2 = mintrav > 2 ? mintrav : 2;
+
+       if (!isTip (q1->number, tr->mxtips))
+        {
+          pllTraverseUpdate (tr, pr, q, q1->next->back,       mintrav2, maxtrav, bestList);
+          pllTraverseUpdate (tr, pr, q, q1->next->next->back, mintrav2, maxtrav, bestList);
+        }
+
+       if (!isTip (q2->number, tr->mxtips))
+        {
+          pllTraverseUpdate (tr, pr, q, q2->next->back,       mintrav2, maxtrav, bestList);
+          pllTraverseUpdate (tr, pr, q, q2->next->next->back, mintrav2, maxtrav, bestList);
+        }
+
+       hookup (q->next,       q1, q1z, numBranches);
+       hookup (q->next->next, q2, q2z, numBranches);
+       newviewGeneric (tr, pr, q, PLL_FALSE);
+     }
+   }
+  return (PLL_TRUE);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Compute a list of possible SPR moves
+    
+    Iteratively tries all possible SPR moves that can be performed by
+    pruning the subtree rooted at \a p and testing all possible placements
+    in a radius of at least \a mintrav nodea and at most \a maxtrav nodes from
+    \a p. Note that \a tr->thoroughInsertion affects the behaviour of the function (see note).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node specifying the root of the pruned subtree, i.e. where to prune.
+
+    @param mintrav
+      Minimum distance from \a p where to try inserting the pruned subtree
+
+    @param maxtrav
+      Maximum distance from \a p where to try inserting the pruned subtree
+
+    @note
+      Setting \a tr->thoroughInsertion affects this function. For each tested SPR
+      the new branch lengths will also be optimized. This computes better likelihoods
+      but also slows down the method considerably.
+*/
+static void 
+pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{
+
+  tr->startLH = tr->endLH = tr->likelihood;
+
+  /* TODO: Add cutoff code */
+
+  tr->bestOfNode = PLL_UNLIKELY;
+
+  pllTestSPR (tr, pr, p, mintrav, maxtrav, bestList);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Return the yielded likelihood of an NNI move, without altering the topology
+
+    This function performs the NNI move of type \a swapType at node \a p, optimizes
+    the branch with endpoints \a p  and \a p->back and evalutes the resulting likelihood.
+    It then restores the topology  to the origin and returns the likelihood that the NNI
+    move yielded.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Where to perform the NNI move
+
+    @param swapType
+      What type of NNI move to perform
+
+    @return
+      The likelihood yielded from the NNI
+*/
+static double 
+pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapType)
+{
+  double lh;
+  double z0[NUM_BRANCHES];
+  int i;
+
+  /* store the origin branch lengths and likelihood. The original branch lengths could
+  be passed as a parameter in order to avoid duplicate computations because of the two
+  NNI moves */
+  for (i = 0; i < pr->numberOfPartitions; ++ i)
+   {
+     z0[i] = p->z[i];
+   }
+
+  /* perform NNI */
+  NNI (tr, p, swapType);
+  /* recompute the likelihood vectors of the two subtrees rooted at p and p->back,
+     optimize the branch lengths and evaluate the likelihood  */
+  newviewGeneric (tr, pr, p,       PLL_FALSE);
+  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  update (tr, pr, p);
+  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  lh = tr->likelihood;
+
+  /* restore topology */
+  NNI (tr, p, swapType);
+  newviewGeneric (tr, pr, p,       PLL_FALSE);
+  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  update (tr, pr, p);
+  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  for (i = 0; i < pr->numberOfPartitions; ++ i)
+   {
+     p->z[i] = p->back->z[i] = z0[i];
+   }
+
+  return lh;
+}
+/** @ingroup rearrangementGroup
+    @brief Compares NNI likelihoods at a node and store in the rearrangement list
+
+    Compares the two possible NNI moves that can be performed at node \a p, and
+    if the likelihood improves from the one of the original topology, then 
+    it picks the one that yields the highest likelihood and tries to insert it in
+    the list of best rearrangement moves
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param bestList
+      Rearrangement moves list
+*/
+static void pllTestNNI (pllInstance * tr, partitionList * pr, nodeptr p, pllRearrangeList * bestList)
+{
+  double lh0, lh1, lh2;
+  pllRearrangeInfo rearr;
+
+  /* store the original likelihood */
+  lh0 = tr->likelihood;
+
+  lh1 = pllTestNNILikelihood (tr, pr, p, PLL_NNI_P_NEXT);
+  lh2 = pllTestNNILikelihood (tr, pr, p, PLL_NNI_P_NEXTNEXT);
+
+  if (lh0 > lh1 && lh0 > lh2) return;
+
+  /* set the arrangement structure */
+  rearr.rearrangeType  = PLL_REARRANGE_NNI;
+  rearr.likelihood     = MAX (lh1, lh2);
+  rearr.NNI.originNode = p;
+  rearr.NNI.swapType   = (lh1 > lh2) ? PLL_NNI_P_NEXT : PLL_NNI_P_NEXTNEXT;
+
+  /* try to store it in the best list */
+  pllStoreRearrangement (bestList, &rearr);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Recursive traversal of the tree structure for testing NNI moves
+ 
+    Recursively traverses the tree structure and tests all allowed NNI
+    moves in the area specified by \a mintrav and \a maxtrav. For more
+    information and details on the function arguments check ::pllSearchNNI
+*/
+static void 
+pllTraverseNNI (pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{
+  if (isTip (p->number, tr->mxtips)) return;
+
+  /* if we are at the right radius then compute the NNIs for nodes p->next and p->next->next */
+  if (!mintrav)
+   {
+     pllTestNNI (tr, pr, p->next, bestList);
+     pllTestNNI (tr, pr, p->next->next, bestList);
+   }
+  
+  /* and then avoid computing the NNIs for nodes p->next->back and p->next->next->back as they are
+  the same to the ones computed in the above two lines. This way we do not need to resolve conflicts
+  later on as in the old code */
+  if (maxtrav)
+   {
+     if (!isTip (p->next->back->number, tr->mxtips))       
+       pllTraverseNNI (tr, pr, p->next->back,       mintrav ? mintrav - 1 : 0, maxtrav - 1, bestList);
+     if (!isTip (p->next->next->back->number, tr->mxtips)) 
+       pllTraverseNNI (tr, pr, p->next->next->back, mintrav ? mintrav - 1 : 0, maxtrav - 1, bestList);
+   }
+}
+
+/** @ingroup rearrangementGroup
+    @brief Compute a list of possible NNI moves
+    
+    Iteratively tries all possible NNI moves at each node that is at
+    least \a mintrav and at most \a maxtrav nodes far from node \a p.
+    At each NNI move, the likelihood is tested and if it is higher than
+    the likelihood of an element in the sorted (by likelihood) list 
+    \a bestList, or if there is still empty space in \a bestList, it is
+    inserted at the corresponding position.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param p
+      Node specifying the point where the NNI will be performed.
+
+    @param mintrav
+      Minimum distance from \a p where the NNI can be tested 
+
+    @param maxtrav
+      Maximum distance from \a p where to try NNIs
+*/
+static void
+pllSearchNNI (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{
+  /* avoid conflicts by precomputing the NNI of the first node */
+
+  if (mintrav == 0) 
+  pllTestNNI (tr, pr, p, bestList);
+  
+  pllTraverseNNI (tr, pr, p, mintrav, maxtrav, bestList);
+  if (maxtrav)
+    pllTraverseNNI (tr, pr, p->back, mintrav, maxtrav - 1, bestList);
+
+}
+
+/** @ingroup rearrangementGroup
+    @brief Create rollback information for an SPR move
+    
+    Creates a structure of type ::pllRollbackInfo and fills it with rollback
+    information about the SPR move described in \a rearr. The rollback info
+    is stored in the PLL instance in a LIFO manner.
+
+    @param tr
+      PLL instance
+
+    @param rearr
+      Description of the SPR move
+
+    @param numBranches
+      Number of partitions
+*/
+static void 
+pllCreateSprInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches)
+{
+  pllRollbackInfo * sprRb;
+  nodeptr p, q;
+  int i;
+
+  p = rearr->SPR.removeNode;
+  q = rearr->SPR.insertNode;
+
+  sprRb = (pllRollbackInfo *) rax_malloc (sizeof (pllRollbackInfo) + 4 * numBranches * sizeof (double));
+  sprRb->SPR.zp   = (double *) ((void *)sprRb + sizeof (pllRollbackInfo));
+  sprRb->SPR.zpn  = (double *) ((void *)sprRb + sizeof (pllRollbackInfo) + numBranches * sizeof (double));
+  sprRb->SPR.zpnn = (double *) ((void *)sprRb + sizeof (pllRollbackInfo) + 2 * numBranches * sizeof (double));
+  sprRb->SPR.zqr  = (double *) ((void *)sprRb + sizeof (pllRollbackInfo) + 3 * numBranches * sizeof (double));
+
+  for (i = 0; i < numBranches; ++ i)
+   {
+     sprRb->SPR.zp[i]   = p->z[i];
+     sprRb->SPR.zpn[i]  = p->next->z[i];
+     sprRb->SPR.zpnn[i] = p->next->next->z[i];
+     sprRb->SPR.zqr[i]  = q->z[i];
+   }
+
+  sprRb->SPR.pn  = p->next->back;
+  sprRb->SPR.pnn = p->next->next->back;
+  sprRb->SPR.r   = q->back;
+  sprRb->SPR.q   = q;
+  sprRb->SPR.p   = p;
+
+  sprRb->rearrangeType = PLL_REARRANGE_SPR;
+
+  pllStackPush (&(tr->rearrangeHistory), (void *) sprRb);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Create rollback information for an NNI move
+
+    Creates a structure of type ::pllRollbackInfo and fills it with rollback
+    information about the SPR move described in \a rearr. The rollback info
+    is stored in the PLL instance in a LIFO manner
+
+    @param tr
+      PLL instance
+
+    @param rearr
+      Description of the NNI move
+*/
+static void
+pllCreateNniInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr)
+{
+  /*TODO: add the branches ? */
+  pllRollbackInfo * ri;
+
+  ri = (pllRollbackInfo *) rax_malloc (sizeof (pllRollbackInfo));
+
+  ri->rearrangeType = PLL_REARRANGE_NNI;
+
+  ri->NNI.origin   = rearr->NNI.originNode;
+  ri->NNI.swapType = rearr->NNI.swapType;
+
+  pllStackPush (&(tr->rearrangeHistory), (void *) ri);
+  
+}
+
+
+/** @ingroup rearrangementGroup
+    @brief Generic function for creating rollback information
+
+    Creates a structure of type ::pllRollbackInfo and fills it with rollback
+    information about the move described in \a rearr. The rollback info
+    is stored in the PLL instance in a LIFO manner
+
+    @param tr
+      PLL instance
+
+    @param rearr
+      Description of the NNI move
+
+    @param numBranches
+      Number of partitions
+*/
+static void
+pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches)
+{
+  switch (rearr->rearrangeType)
+   {
+     case PLL_REARRANGE_NNI:
+       pllCreateNniInfoRollback (tr, rearr);
+     case PLL_REARRANGE_SPR:
+       pllCreateSprInfoRollback (tr, rearr, numBranches);
+     default:
+       break;
+   }
+
+}
+
+
+/** @ingroup rearrangementGroup
+    @brief Rollback an SPR move
+
+    Perform a rollback (undo) on the last SPR move.
+    
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param ri
+      Rollback information
+*/
+static void
+pllRollbackSPR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
+{
+  int numBranches;
+
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  hookup (ri->SPR.p->next,       ri->SPR.pn,      ri->SPR.zpn,  numBranches);
+  hookup (ri->SPR.p->next->next, ri->SPR.pnn,     ri->SPR.zpnn, numBranches); 
+  hookup (ri->SPR.p,             ri->SPR.p->back, ri->SPR.zp,   numBranches);
+  hookup (ri->SPR.q,             ri->SPR.r,       ri->SPR.zqr,  numBranches);
+
+  rax_free (ri);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Rollback an NNI move
+
+    Perform a rollback (undo) on the last NNI move.
+    
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param ri
+      Rollback information
+*/
+static void
+pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
+{
+  int numBranches;
+  nodeptr p = ri->NNI.origin;
+
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  
+  NNI (tr, p, ri->NNI.swapType);
+  newviewGeneric (tr, pr, p,       PLL_FALSE);
+  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  update (tr, pr, p);
+  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  
+  rax_free (ri);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Rollback the last committed rearrangement move
+    
+    Perform a rollback (undo) on the last committed rearrangement move.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @return
+      Returns \b PLL_TRUE is the rollback was successful, otherwise \b PLL_FALSE
+      (if no rollback was done)
+*/
+int 
+pllRearrangeRollback (pllInstance * tr, partitionList * pr)
+{
+  pllRollbackInfo * ri;
+  
+  ri = (pllRollbackInfo *) pllStackPop (&(tr->rearrangeHistory));
+  if (!ri) return (PLL_FALSE);
+
+  switch (ri->rearrangeType)
+   {
+     case PLL_REARRANGE_NNI:
+       pllRollbackNNI (tr, pr, ri);
+       break;
+     case PLL_REARRANGE_SPR:
+       pllRollbackSPR (tr, pr, ri);
+       break;
+     default:
+       rax_free (ri);
+       return (PLL_FALSE);
+   }
+
+  return (PLL_TRUE);
+  
+}
+
+
+/** @ingroup rearrangementGroup
+    @brief Commit a rearrangement move
+
+    Applies the rearrangement move specified in \a rearr to the tree topology in \a tr. 
+    In case of SPR moves, if
+    \a tr->thoroughInsertion is set to \b PLL_TRUE, the new branch lengths are also optimized. 
+    The function stores rollback information in pllInstance::rearrangeHistory if \a saveRollbackInfo
+    is set to \b PLL_TRUE. This way, the rearrangement move can be rolled back (undone) by calling
+    ::pllRearrangeRollback
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param rearr
+      An element of a \a pllRearrangeInfo structure that contains information about the rearrangement move
+
+    @param saveRollbackInfo
+      If set to \b PLL_TRUE, rollback info will be kept for undoing the rearrangement move
+*/
+void
+pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo)
+{
+  int numBranches;
+
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  if (saveRollbackInfo)
+    pllCreateRollbackInfo (tr, rearr, numBranches);
+
+  switch (rearr->rearrangeType)
+   {
+     case PLL_REARRANGE_NNI:
+       NNI (tr, rearr->NNI.originNode, rearr->NNI.swapType);
+       newviewGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE);
+       newviewGeneric (tr, pr, rearr->NNI.originNode->back, PLL_FALSE);
+       update (tr, pr, rearr->NNI.originNode);
+       evaluateGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE, PLL_FALSE);
+       break;
+     case PLL_REARRANGE_SPR:
+       removeNodeBIG (tr, pr, rearr->SPR.removeNode, numBranches);
+       insertBIG     (tr, pr, rearr->SPR.removeNode, rearr->SPR.insertNode);
+       break;
+     default:
+       break;
+   }
+}
+
+
+/******** new rearrangement functions ****************/
+
+/* change this to return the number of new elements in the list */
+/** @ingroup rearrangementGroup
+    @brief Search for rearrangement topologies
+    
+    Search for possible rearrangement moves of type \a rearrangeType in the
+    annular area defined by the minimal resp. maximal radii \a mintrav resp.
+    \a maxtrav. If the resulting likelihood is better than the current, try
+    to insert the move specification in \a bestList, which is a sorted list
+    that holds the rearrange info of the best moves sorted by likelihood
+    (desccending order).
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param rearrangeType
+      Type of rearrangement. Can be \b PLL_REARRANGE_SPR or \b PLL_REARRANGE_NNI
+
+    @param p
+      Point of origin, i.e. where to start searching from
+
+    @param mintrav
+      The minimal radius of the annulus
+
+    @param maxtrav
+      The maximal radius of the annulus
+
+    @param bestList
+      List that holds the details of the best rearrangement moves found
+
+    @note
+      If \a bestList is not empty, the existing entries will not be altered unless
+      better rearrangement moves (that means yielding better likelihood) are found
+      and the list is full, in which case the entries with the worst likelihood will be
+      thrown away.
+*/
+void
+pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList)
+{
+  switch (rearrangeType)
+   {
+     case PLL_REARRANGE_SPR:
+       pllComputeSPR (tr, pr, p, mintrav, maxtrav, bestList);
+       break;
+
+     case PLL_REARRANGE_NNI:
+       pllSearchNNI (tr, pr, p, mintrav, maxtrav, bestList);
+       break;
+
+     case PLL_REARRANGE_TBR:
+       break;
+     default:
+       break;
+   }
+
+  //return (NULL);
 }

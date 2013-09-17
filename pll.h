@@ -96,6 +96,9 @@ extern "C" {
 #define PLL_FALSE                               0
 
 
+#define PLL_REARRANGE_SPR                       0
+#define PLL_REARRANGE_TBR                       1
+#define PLL_REARRANGE_NNI                       2
 
 #define LIKELIHOOD_EPSILON 0.0000001
 
@@ -1238,7 +1241,7 @@ typedef  struct  {
   boolean thoroughInsertion; /**< true if the neighbor branches should be optimized when a subtree is inserted (slower)*/
   boolean useMedian;
 
-  pllStack * sprHistory;
+  pllStack * rearrangeHistory;
 
 
   /* analdef defines */
@@ -1409,37 +1412,105 @@ typedef struct
 
 } partitionLengths;
 
+typedef struct
+{
+  int rearrangeType;
+  double  likelihood;
 
-typedef struct {
-  double * zp;
-  double * zpn;
-  double * zpnn;
-  double * zqr;
-  nodeptr pn;
-  nodeptr pnn;
-  nodeptr r;
-  nodeptr p;
-  nodeptr q;
-} sprInfoRollback;
+  union {
+    struct {
+      double * zp;
+      double * zpn;
+      double * zpnn;
+      double * zqr;
+      nodeptr pn;
+      nodeptr pnn;
+      nodeptr r;
+      nodeptr p;
+      nodeptr q;
+    } SPR;
+    struct {
+      nodeptr origin;
+      int swapType;
+      double z[NUM_BRANCHES];
+    } NNI;
+  };
+} pllRollbackInfo;
 
+
+/** @struct pllRearrangeAttr
+ 
+    @brief Structure holding attributes for searching possible tree rearrangements
+    
+    Holds the attributes for performing tree rearrangements.
+
+    @var pllRearrangeAttr
+      The origin node where the search should start
+
+    @var pllRearrangeAttr:mintrav
+      The minimum radius around the origin node \a p for which nodes should be tested
+
+    @var pllRearrangeAttr:maxtrav
+      The maximum radius around the origin node \a p for which nodes should be tested
+
+    @var pllRearrangeAttr:max
+      Maximum number of results to be returned
+*/
 typedef struct
  {
-   nodeptr removeNode;
-   nodeptr insertNode;
-   double likelihood;
-   double zqr[NUM_BRANCHES];
- } pllInfoSPR;
+   nodeptr p;
+   int mintrav;
+   int maxtrav;
+ } pllRearrangeAttr;
+
+/** @struct pllRearrangeInfo
+    
+    @brief Tree rearrangement information structure
+
+    Holds information for conducting tree arrangements. This structure
+    is the result of a tree arrangement search under given search
+    attributes.
+
+    @var pllRearrangeInfo::rearrangeType
+      Type of rearrangement. Can be \b PLL_REARRANGE_SPR, \b PLL_REARRANGE_NNI or
+      \b PLL_REARRANGE_TBR
+    
+    @var pllRearrangeInfo::likelihood
+      Holds the computed likelihood for the addressed rearrangement
+
+    @var pllRearrangeInfo::SPR::removeNode
+      Node where to perform subtree pruning
+
+    @var pllRearrangeInfo::SPR::insertNode
+      Node where to place the pruned subtree
+
+    @var pllRearrangeInfo::zqr
+      Holds the computed branch lengths after the SPR
+*/
+typedef struct
+ {
+   int rearrangeType;
+   double  likelihood;
+   union {
+     struct {
+       nodeptr removeNode;
+       nodeptr insertNode;
+       double  zqr[NUM_BRANCHES];
+     } SPR;
+     struct {
+       nodeptr originNode;
+       int     swapType;
+     } NNI;
+   };
+ } pllRearrangeInfo;
+
 
 typedef struct
  {
    int max_entries;
    int entries;
-   pllInfoSPR * sprInfo;
- } pllListSPR;
-
-
-
-
+   pllRearrangeInfo * rearr;
+ } pllRearrangeList;
 
 
 
@@ -1705,12 +1776,12 @@ int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 
-void pllInitListSPR (pllListSPR ** bestListSPR, int max);
-void pllDestroyListSPR (pllListSPR ** bestListSPR);
-pllListSPR * pllComputeSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, int max);
-void pllCommitSPR (pllInstance * tr, partitionList * pr, pllInfoSPR * sprInfo, int saveRollbackInfo);
-int pllRollbackSPR (pllInstance * tr, partitionList * pr);
-void pllClearSprHistory (pllInstance * tr);
+pllRearrangeList * pllCreateRearrangeList (int max);
+void pllDestroyRearrangeList (pllRearrangeList ** bestList);
+void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
+void pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
+int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
+void pllClearRearrangeHistory (pllInstance * tr);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 /* work tags for parallel regions */
