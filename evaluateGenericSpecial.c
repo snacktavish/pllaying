@@ -56,6 +56,18 @@
 /*#include <tmmintrin.h>*/
 #endif
 
+
+/** @defgroup evaluateLikelihoodGroup Likelihood evaluation
+    
+    This set of functions deals with the evaluation of likelihood for the current topology
+*/
+
+
+
+
+
+
+
 /* below are the function headers for unreadeble highly optimized versions of the above functions 
    for DNA and protein data that also use SSE3 intrinsics and implement some memory saving tricks.
    The actual functions can be found at the end of this source file. 
@@ -277,7 +289,8 @@ static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rpt
 
 
 
-/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
+/** @ingroup evaluateLikelihoodGroup
+    @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
     
     Computes the log likelihood of the topology for a specific partition, assuming
     that the GAMMA model of rate heterogeneity is used. The likelihood is computed at
@@ -433,7 +446,8 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
 } 
 
 #if (defined(__SSE3) || defined(__AVX))
-/** @brief Memory saving version of the generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
+/** @ingroup evaluateLikelihoodGroup
+    @brief Memory saving version of the generic (and slow) implementation of log likelihood evaluation of a tree using the GAMMA model of rate heterogeneity
 
     Computes the log likelihood of the topology for a specific partition, assuming
     that the GAMMA model of rate heterogeneity is used and memory saving technique
@@ -625,7 +639,8 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
 } 
 #endif
 
-/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity
+/** @ingroup evaluateLikelihoodGroup
+    @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity
     
     Computes the log likelihood of the topology for a specific partition, assuming
     that the CAT model of rate heterogeneity is used. The likelihood is computed at
@@ -783,7 +798,8 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
 } 
 
 #if (defined(__SSE3) || defined(__AVX))
-/** @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity with memory saving
+/** @ingroup evaluateLikelihoodGroup
+    @brief A generic (and slow) implementation of log likelihood evaluation of a tree using the CAT model of rate heterogeneity with memory saving
     
     This is the same as ::evaluateCAT_FLEX but with the memory saving technique enabled.
     Please check ::evaluateCAT_FLEX for more information and a description of the common
@@ -921,7 +937,8 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 
 
 /* This is the core function for computing the log likelihood at a branch */
-/** @brief Evaluate the log likelihood of a specific branch of the topology
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluate the log likelihood of a specific branch of the topology
     
     Evaluates the likelihood of the tree topology assuming a virtual root is
     placed at the edge whose end-points are node with number \a pNumber and \a
@@ -1364,7 +1381,8 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 
 
 
-/** @brief Evaluate the log likelihood of the tree topology
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluate the log likelihood of the tree topology
 
     Evaluate the log likelihood of the tree topology of instance \a tr by
     assuming a virtual root between nodes \a p and \a p->back. If
@@ -1692,7 +1710,8 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
 /* below are the optimized function versions with geeky intrinsics */
 
-/** @brief Evaluation of log likelihood of a tree under the GAMMA model of rate heterogeneity and LG4 model of evolution
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree under the GAMMA model of rate heterogeneity and LG4 model of evolution
     
     This is the same as ::evaluateGAMMA_FLEX but for the LG4 model. It contains two implementations,
     one which is the generic, and one that is optimized with SSE3 instructions. The two implementations
@@ -1795,7 +1814,8 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 }
 
 #if (defined(__SSE3) || defined(__AVX))
-/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
     and the memory saving technique (Optimized SSE3 version for AA data)
  
     This is the SSE3 optimized version of ::evaluateGAMMA_FLEX_SAVE for evaluating the log
@@ -1910,7 +1930,8 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
     (Optimized SSE3 version for AA data)
  
     This is the SSE3 optimized version of ::evaluateGAMMA_FLEX for evaluating the log
@@ -1994,7 +2015,8 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 }
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity 
     (Optimized SSE3 version for AA data)
  
     This is the SSE3 optimized version of ::evaluateCAT_FLEX for evaluating the log
@@ -2080,7 +2102,8 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
 } 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
     (Optimized SSE3 version for AA data)
  
     This is the SSE3 optimized version of ::evaluateCAT_FLEX_SAVE for evaluating the log
@@ -2196,7 +2219,8 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
 } 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity with memory saving 
     (Optimized SSE3 version for DNA data)
  
     This is the SSE3 optimized version of ::evaluateCAT_FLEX_SAVE for evaluating the log
@@ -2320,7 +2344,8 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
 } 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity with memory saving 
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity with memory saving 
     (Optimized SSE3 version for DNA data)
  
     This is the SSE3 optimized version of ::evaluateGAMMA_FLEX_SAVE for evaluating the log
@@ -2461,7 +2486,8 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
 } 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity (Optimized SSE3 version for DNA data)
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity (Optimized SSE3 version for DNA data)
  
     This is the SSE3 optimized version of ::evaluateGAMMA_FLEX for evaluating the log
     likelihood at some edge whose two end-points (nodes) have the conditional likelihood
@@ -2581,7 +2607,8 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
 } 
 
 
-/** @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity (Optimized SSE3 version for DNA data)
+/** @ingroup evaluateLikelihoodGroup
+    @brief Evaluation of log likelihood of a tree using the \b CAT model of rate heterogeneity (Optimized SSE3 version for DNA data)
  
     This is the SSE3 optimized version of ::evaluateCAT_FLEX for evaluating the log
     likelihood at some edge whose two end-points (nodes) have the conditional likelihood
