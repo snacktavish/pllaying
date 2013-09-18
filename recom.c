@@ -201,9 +201,6 @@ static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
   }
   assert(min_cost < mxtips * 2 && min_cost >= 2);
   assert(cheapest_slot >= 0);
-#ifdef _DEBUG_RECOMPUTATION 
-  v->recomStraTime += (gettime() - straTime);
-#endif 
   return cheapest_slot;
 }
 
@@ -363,11 +360,6 @@ void unpinNode(recompVectors *v, int nodenum, int mxtips)
  */
 boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 {
-#ifdef _DEBUG_RECOMPUTATION
-  double 
-    tstart = gettime();
-#endif
-
   boolean 
     slotNeedsRecomp = PLL_FALSE;
 
@@ -382,9 +374,6 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
   assert(*slot >= 0 && *slot < rvec->numVectors);
 
   rvec->unpinnable[*slot] = PLL_FALSE;
-#ifdef _DEBUG_RECOMPUTATION
-  rvec->pinTime += gettime() - tstart;
-#endif
 
   return slotNeedsRecomp;
 }

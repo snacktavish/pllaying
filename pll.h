@@ -298,10 +298,6 @@ typedef struct
   int *unpinnable;     /**< size:numVectors , TRUE if we dont need the vector */
   int maxVectorsUsed;  
   boolean allSlotsBusy; /**< on if all slots contain an ancesctral node (the usual case after first full traversal) */ 
-#ifdef _DEBUG_RECOMPUTATION
-  double pinTime;
-  double recomStraTime;
-#endif
 } recompVectors;
 /* E recomp */
 
@@ -991,9 +987,9 @@ typedef struct {
   double partitionContribution;
   double partitionLH;
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+// #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
   int partitionAssignment;
-#endif
+// #endif
 
 } pInfo;
 
@@ -1119,7 +1115,7 @@ typedef  struct  {
   int threadID;
   volatile int numberOfThreads;
 
-#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
+//#if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
  
   unsigned char *y_ptr; 
   
@@ -1127,7 +1123,7 @@ typedef  struct  {
   double upper_spacing; 
 
   double *ancestralVector;
-#endif
+//#endif
   
 
 
