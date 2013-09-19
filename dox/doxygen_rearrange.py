@@ -42,9 +42,9 @@ def split_html_content (content):
   return (header, functions, footer)
 
 def split_static_functions (functions):
-  
-  dfa_fun  = re.compile ("^<tr[^>]*class[^>]*memitem[^>]*><td[^>]*>static")
-  dfa_desc = re.compile ("^<tr[^>]*class[^>]*memdesc[^>]*>")
+  dfa_fun   = re.compile ("^<tr[^>]*class[^>]*memitem.*><td((?!td>).)*static", re.DOTALL)
+  dfa_desc  = re.compile ("^<tr[^>]*class[^>]*memdesc[^>]*>")
+  dfa_trend = re.compile ("</tr>\n$");
   static = []
   normal = []
 
@@ -52,34 +52,48 @@ def split_static_functions (functions):
 
   i = 0
   while (i < len(functions)):
-    while len (functions[i].strip()) == 0: i = i + 1
-    if dfa_fun.search (functions[i]) is not None:
-      where = g_bStatic
-      static.append (functions[i])
-    else:
-      normal.append (functions[i])
-      where = g_bNormal
-
-    i = i + 1
-
-    while len (functions[i].strip()) == 0: i = i + 1
-    # check if there is a @brief description and append it to the appropriate list
-    if dfa_desc.search (functions[i]) is not None:
-      if where == g_bStatic:
-        static.append (functions[i])
-      else:
-        normal.append (functions[i])
+    #while len (functions[i].strip()) == 0: i = i + 1
+    
+    # we assume lines end with </tr> -- read function declaration line
+    line = ""
+    while dfa_trend.search (line) is None:
+      line = line + functions[i]
       i = i + 1
 
-    while len (functions[i].strip()) == 0: i = i + 1
-    # we assume there is a horizontal bar
-    if where == g_bStatic:
-      static.append (functions[i])
+    if dfa_fun.search (line) is not None:
+      where = g_bStatic
+      static.append (line)
     else:
-      normal.append (functions[i])
+      normal.append (line)
+      where = g_bNormal
 
-    i = i + 1
-  
+
+    # we assume lines end with </tr> -- read optional @brief oneliner
+    line = ""
+    while dfa_trend.search (line) is None:
+      line = line + functions[i]
+      i = i + 1
+
+    # check if there is a @brief description and append it to the appropriate list
+    if dfa_desc.search (line) is not None:
+      if where == g_bStatic:
+        static.append (line)
+      else:
+        normal.append (line)
+
+      #if there was a @brief oneliner, now read the horizontal bar
+      line = ""
+      while dfa_trend.search (line) is None:
+        line = line + functions[i]
+        i = i + 1
+      #i = i + 1
+
+    # store the horizontal bar
+    if where == g_bStatic:
+      static.append (line)
+    else:
+      normal.append (line)
+
   return static, normal
 
 def overwrite_file (fname, header, static, normal, footer):
