@@ -47,7 +47,7 @@ char run_id[128] = "",
   binaryCheckpointInputName[1024] = "",
   byteFileName[1024] = "";
 
-const char *protModels[NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
+const char *protModels[PLL_NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
 					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO", "LG4", "GTR"};
 
 const char dnaStateNames[4]      = {'A', 'C', 'G', 'T'};
@@ -124,7 +124,7 @@ const unsigned int mask32[32] = {1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 20
 const char *secondaryModelList[21] = { "S6A (GTR)", "S6B", "S6C", "S6D", "S6E", "S7A (GTR)", "S7B", "S7C", "S7D", "S7E", "S7F", "S16 (GTR)", "S16A", "S16B", "S16C", 
 				       "S16D", "S16E", "S16F", "S16I", "S16J", "S16K"};
 
-const partitionLengths pLengths[MAX_MODEL] = {
+const partitionLengths pLengths[PLL_MAX_MODEL] = {
   
   /* BINARY */
   {4,   4,   2,  4,  2, 1, 2,  8, 2, 2, PLL_FALSE, PLL_FALSE, 3, inverseMeaningBINARY, 2, PLL_FALSE, bitVectorIdentity},
@@ -178,8 +178,8 @@ MPI_Datatype TRAVERSAL_MPI;
 #else
 extern char infoFileName[1024];
 extern char resultFileName[1024];
-extern const partitionLengths pLengths[MAX_MODEL];
-extern const char * protModels[NUM_PROT_MODELS];
+extern const partitionLengths pLengths[PLL_MAX_MODEL];
+extern const char * protModels[PLL_NUM_PROT_MODELS];
 extern char * secondaryModelList[21];
 extern double masterTime;
 extern char logFileName[1024];

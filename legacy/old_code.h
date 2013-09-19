@@ -1,5 +1,19 @@
 
 /******************************************** axml.h ******************************************************/
+#define LIKELIHOOD_EPSILON                      0.0000001
+
+#define INVAR_MIN                               0.0001
+#define INVAR_MAX                               0.9999
+
+#define TT_MIN                                  0.0000001
+#define TT_MAX                                  1000000.0
+
+#define FREQ_MIN                                0.001
+#define NINT(x)   ((int) ((x)>0 ? ((x)+0.5) : ((x)-0.5)))
+#define LOGF(x) logf(x)
+#define PLL_GAMMA_I                             2
+#define PLL_MEM_APROX_OVERHEAD     1.3 /* TODOFER can we measure this empirically? */
+
 #define  TREE_EVALUATION            0
 #define  BIG_RAPID_MODE             1
 #define  CALC_BIPARTITIONS          3

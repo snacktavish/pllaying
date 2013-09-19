@@ -505,7 +505,7 @@ void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, un
 	  
 	  switch(function)
 	    {	     
-	    case BIPARTITIONS_RF:	     
+	    case PLL_BIPARTITIONS_RF:	     
 	      insertHashRF(toInsert, h, vectorLength, treeNumber, treeVectorLength, position, 0, computeWRF);
 	      *countBranches =  *countBranches + 1;
 	      break;

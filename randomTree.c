@@ -38,7 +38,7 @@ static void buildSimpleTreeRandom (pllInstance *tr, int ip, int iq, int ir)
   int  
     i;
   
-  i = MIN(ip, iq);
+  i = PLL_MIN(ip, iq);
   if (ir < i)  i = ir; 
   tr->start = tr->nodep[i];
   tr->ntips = 3;

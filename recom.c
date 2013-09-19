@@ -36,7 +36,7 @@ void protectNode(recompVectors *rvec, int nodenum, int mxtips)
 
   int slot;
   slot = rvec->iNode[nodenum - mxtips - 1];
-  assert(slot != NODE_UNPINNED);
+  assert(slot != PLL_NODE_UNPINNED);
   assert(rvec->iVector[slot] == nodenum);
 
   if(rvec->unpinnable[slot])
@@ -61,7 +61,7 @@ static boolean isNodePinned(recompVectors *rvec, int nodenum, int mxtips)
 {
   assert(nodenum > mxtips);
 
-  if(rvec->iNode[nodenum - mxtips - 1] == NODE_UNPINNED)
+  if(rvec->iNode[nodenum - mxtips - 1] == PLL_NODE_UNPINNED)
     return PLL_FALSE;
   else
     return PLL_TRUE;
@@ -110,8 +110,8 @@ void allocRecompVectorsInfo(pllInstance *tr)
                     num_vectors, 
                     i;
 
-  assert(tr->vectorRecomFraction > MIN_RECOM_FRACTION);
-  assert(tr->vectorRecomFraction < MAX_RECOM_FRACTION);
+  assert(tr->vectorRecomFraction > PLL_MIN_RECOM_FRACTION);
+  assert(tr->vectorRecomFraction < PLL_MAX_RECOM_FRACTION);
 
   num_vectors = (int) (1 + tr->vectorRecomFraction * (float)num_inner_nodes); 
 
@@ -131,7 +131,7 @@ void allocRecompVectorsInfo(pllInstance *tr)
 
   for(i = 0; i < num_vectors; i++)
   {
-    v->iVector[i]         = SLOT_UNUSED;
+    v->iVector[i]         = PLL_SLOT_UNUSED;
     v->unpinnable[i]      = PLL_FALSE;
   }
 
@@ -140,8 +140,8 @@ void allocRecompVectorsInfo(pllInstance *tr)
 
   for(i = 0; i < num_inner_nodes; i++)
   {
-    v->iNode[i] = NODE_UNPINNED;
-    v->stlen[i] = INNER_NODE_INIT_STLEN;
+    v->iNode[i] = PLL_NODE_UNPINNED;
+    v->stlen[i] = PLL_INNER_NODE_INIT_STLEN;
   }
 
   v->allSlotsBusy = PLL_FALSE;
@@ -180,7 +180,7 @@ static int findUnpinnableSlotByCost(recompVectors *v, int mxtips)
   for(i = 0; i < mxtips - 2; i++)
   {
     slot = v->iNode[i];
-    if(slot != NODE_UNPINNED)
+    if(slot != PLL_NODE_UNPINNED)
     {
       assert(slot >= 0 && slot < v->numVectors);
 
@@ -209,10 +209,10 @@ static void unpinAtomicSlot(recompVectors *v, int slot, int mxtips)
   int 
     nodenum = v->iVector[slot];
 
-  v->iVector[slot] = SLOT_UNUSED;
+  v->iVector[slot] = PLL_SLOT_UNUSED;
 
-  if(nodenum != SLOT_UNUSED)  
-    v->iNode[nodenum - mxtips - 1] = NODE_UNPINNED; 
+  if(nodenum != PLL_SLOT_UNUSED)  
+    v->iNode[nodenum - mxtips - 1] = PLL_NODE_UNPINNED; 
 }
 
 /** @brief Finds the cheapest slot and unpins it
@@ -246,7 +246,7 @@ static int findFreeSlot(recompVectors *v, int mxtips)
 
   for(i = 0; i < v->numVectors; i++)
   {
-    if(v->iVector[i] == SLOT_UNUSED)
+    if(v->iVector[i] == PLL_SLOT_UNUSED)
     {
       slotno = i;
       break;
@@ -365,7 +365,7 @@ boolean getxVector(recompVectors *rvec, int nodenum, int *slot, int mxtips)
 
   *slot = rvec->iNode[nodenum - mxtips - 1];
 
-  if(*slot == NODE_UNPINNED)
+  if(*slot == PLL_NODE_UNPINNED)
   {
     *slot = pinNode(rvec, nodenum, mxtips); /* now we will run the replacement strategy */
     slotNeedsRecomp = PLL_TRUE;
@@ -592,16 +592,16 @@ void countTraversal(pllInstance *tr)
        */
     switch(tInfo->tipCase)
     {
-      case TIP_TIP: 
+      case PLL_TIP_TIP: 
         tc->tt++; 
         /* printBothOpen("T"); */
         break;		  
-      case TIP_INNER: 
+      case PLL_TIP_INNER: 
         tc->ti++; 
         /* printBothOpen("M"); */
         break;		  
 
-      case INNER_INNER: 
+      case PLL_INNER_INNER: 
         tc->ii++; 
         /* printBothOpen("I"); */
         break;		  

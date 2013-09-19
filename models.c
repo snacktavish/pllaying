@@ -64,7 +64,7 @@ extern const unsigned int bitVector32[33];
 extern const unsigned int bitVectorAA[23];
 extern const unsigned int bitVectorIdentity[256];
 
-extern const partitionLengths pLengths[MAX_MODEL];
+extern const partitionLengths pLengths[PLL_MAX_MODEL];
 
 
 
@@ -255,7 +255,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
   {
       switch(proteinMatrix)
 	{
-	case DAYHOFF:
+	case PLL_DAYHOFF:
 	  {	
 	    daa[ 1*20+ 0] =   27.00; daa[ 2*20+ 0] =   98.00; daa[ 2*20+ 1] =   32.00; daa[ 3*20+ 0] =  120.00;
 	    daa[ 3*20+ 1] =    0.00; daa[ 3*20+ 2] =  905.00; daa[ 4*20+ 0] =   36.00; daa[ 4*20+ 1] =   23.00;
@@ -314,7 +314,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16] = 0.058000; f[17] = 0.011000; f[18] = 0.030000; f[19] = 0.064000;
 	  }
 	  break;
-	case DCMUT:
+	case PLL_DCMUT:
 	  {	
 	    daa[ 1*20+ 0] =   26.78280; daa[ 2*20+ 0] =   98.44740; daa[ 2*20+ 1] =   32.70590; daa[ 3*20+ 0] =  119.98050; 
 	    daa[ 3*20+ 1] =    0.00000; daa[ 3*20+ 2] =  893.15150; daa[ 4*20+ 0] =   36.00160; daa[ 4*20+ 1] =   23.23740; 
@@ -373,7 +373,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 
 	  }
 	  break;
-	case JTT:
+	case PLL_JTT:
 	  {
 	    daa[ 1*20+ 0] =   58.00; daa[ 2*20+ 0] =   54.00; daa[ 2*20+ 1] =   45.00; daa[ 3*20+ 0] =   81.00;
 	    daa[ 3*20+ 1] =   16.00; daa[ 3*20+ 2] =  528.00; daa[ 4*20+ 0] =   56.00; daa[ 4*20+ 1] =  113.00;
@@ -431,7 +431,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16] = 0.05800; f[17] = 0.01400; f[18] = 0.03200; f[19] = 0.06600;
 	  }
 	  break;
-	case  MTREV:
+	case  PLL_MTREV:
 	  {
 	    daa[ 1*20+ 0] =   23.18; daa[ 2*20+ 0] =   26.95; daa[ 2*20+ 1] =   13.24; daa[ 3*20+ 0] =   17.67;
 	    daa[ 3*20+ 1] =    1.90; daa[ 3*20+ 2] =  794.38; daa[ 4*20+ 0] =   59.93; daa[ 4*20+ 1] =  103.33;
@@ -490,7 +490,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16] = 0.086000; f[17] = 0.029000; f[18] = 0.033000; f[19] = 0.043000;
 	  }
 	  break;
-	case WAG:
+	case PLL_WAG:
 	  {
 	    daa[ 1*20+ 0] =  55.15710; daa[ 2*20+ 0] =  50.98480; daa[ 2*20+ 1] =  63.53460; 
 	    daa[ 3*20+ 0] =  73.89980; daa[ 3*20+ 1] =  14.73040; daa[ 3*20+ 2] = 542.94200; 
@@ -564,7 +564,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16] = 0.06100; f[17] = 0.01400; f[18] = 0.03500; f[19] = 0.07100;   
 	  }
 	  break;
-	case RTREV:
+	case PLL_RTREV:
 	  {
 	    daa[1*20+0]= 34;         daa[2*20+0]= 51;         daa[2*20+1]= 35;         daa[3*20+0]= 10;         
 	    daa[3*20+1]= 30;         daa[3*20+2]= 384;        daa[4*20+0]= 439;        daa[4*20+1]= 92;         
@@ -622,7 +622,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16]= 0.0622;          f[17]= 0.0251;          f[18]= 0.0318;          f[19]= 0.0619;	    	    
 	  }
 	  break;
-	case CPREV:
+	case PLL_CPREV:
 	  {
 	    daa[1*20+0]= 105;        daa[2*20+0]= 227;        daa[2*20+1]= 357;        daa[3*20+0]= 175;        
 	    daa[3*20+1]= 43;         daa[3*20+2]= 4435;       daa[4*20+0]= 669;        daa[4*20+1]= 823;        
@@ -680,7 +680,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16]= 0.054;           f[17]= 0.018;           f[18]= 0.031;           f[19]= 0.066; 
 	  }
 	  break;
-	case VT:
+	case PLL_VT:
 	  {
 	    /*
 	      daa[1*20+0]= 0.233108;   daa[2*20+0]= 0.199097;   daa[2*20+1]= 0.210797;   daa[3*20+0]= 0.265145;   
@@ -952,7 +952,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[19]= 0.0669190817443274;
 	  }
 	  break;
-	case BLOSUM62:
+	case PLL_BLOSUM62:
 	  {
 	    daa[1*20+0]= 0.735790389698;  daa[2*20+0]= 0.485391055466;  daa[2*20+1]= 1.297446705134;  
 	    daa[3*20+0]= 0.543161820899;  
@@ -1034,7 +1034,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16]= 0.051;                f[17]= 0.013;                f[18]= 0.032;                f[19]= 0.073;
 	  }
 	  break;
-	case MTMAM:
+	case PLL_MTMAM:
 	  {
 	    daa[1*20+0]= 32;              daa[2*20+0]= 2;    daa[2*20+1]= 4;               daa[3*20+0]= 11;
 	    daa[3*20+1]= 0;               daa[3*20+2]= 864;  daa[4*20+0]= 0;               daa[4*20+1]= 186;
@@ -1092,7 +1092,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[16]=0.08700;  f[17]= 0.02930;  f[18]=0.03400;  f[19]= 0.04280;
 	  }
 	  break;
-	case LG:
+	case PLL_LG:
 	  {
 	    daa[1*20+0] = 0.425093;
 
@@ -1173,7 +1173,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    f[19] = 0.06915; 	   
 	  }	  
 	  break;
-	  case LG4:
+	  case PLL_LG4:
 	  {
 	    double 
 	      rates[4][190] = 
@@ -1290,7 +1290,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	    
 	  }
 	  break;
-	case MTART:
+	case PLL_MTART:
 	  {
 	   
 
@@ -1507,7 +1507,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.057700;
 	  }
 	  break;
-	case MTZOA:
+	case PLL_MTZOA:
 	  {
            daa[1*20+0]=   3.3;
            daa[2*20+0]=   1.7;
@@ -1722,7 +1722,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.066;
 	  }
 	  break;
-	case PMB:
+	case PLL_PMB:
 	  {
            daa[1*20+0]=   0.674995699;
            daa[2*20+0]=   0.589645178;
@@ -1937,7 +1937,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.071;
 	  }
 	  break;
-	case HIVB:
+	case PLL_HIVB:
 	  {
            daa[1*20+0]=   0.30750700;
            daa[2*20+0]=   0.00500000;
@@ -2152,7 +2152,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.062;
 	  }
 	  break;
-	case HIVW:
+	case PLL_HIVW:
 	  {
            daa[1*20+0]=   0.0744808;
            daa[2*20+0]=   0.6175090;
@@ -2367,7 +2367,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.051;
 	  }
 	  break;
-	case JTTDCMUT:
+	case PLL_JTTDCMUT:
 	  {
            daa[1*20+0]=   0.531678;
            daa[2*20+0]=   0.557967;
@@ -2582,7 +2582,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
            f[19]= 0.066;
 	  }
 	  break;
-	case FLU:
+	case PLL_FLU:
 	  {
 	    daa[ 1*20+ 0] 	=	0.138658765	;
 	    daa[ 2*20+ 0] 	=	0.053366579	;
@@ -2864,7 +2864,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	  max = temp;
       }
  
-  scaler = AA_SCALE / max;
+  scaler = PLL_AA_SCALE / max;
    
   /* SCALING HAS BEEN RE-INTRODUCED TO RESOLVE NUMERICAL  PROBLEMS */   
 
@@ -2878,7 +2878,7 @@ static void initProtMat(double f[20], int proteinMatrix, double *ext_initialRate
 	  q[i][j] *= scaler;
 	  
 	  
-	  assert(q[i][j] <= AA_SCALE_PLUS_EPSILON);
+	  assert(q[i][j] <= PLL_AA_SCALE_PLUS_EPSILON);
 	  
 	  initialRates[r++] = q[i][j];
 	}
@@ -3451,13 +3451,13 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 
  switch(pr->partitionData[model]->dataType)
    { 
-   case GENERIC_32:
-   case GENERIC_64:
-   case SECONDARY_DATA_6:
-   case SECONDARY_DATA_7: 
-   case SECONDARY_DATA:
-   case DNA_DATA:
-   case BINARY_DATA:    
+   case PLL_GENERIC_32:
+   case PLL_GENERIC_64:
+   case PLL_SECONDARY_DATA_6:
+   case PLL_SECONDARY_DATA_7: 
+   case PLL_SECONDARY_DATA:
+   case PLL_DNA_DATA:
+   case PLL_BINARY_DATA:    
      initGeneric(states, 
 		 getBitVector(pr->partitionData[model]->dataType),
 		 getUndetermined(pr->partitionData[model]->dataType) + 1,
@@ -3471,13 +3471,13 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 		 // model
 		);
      break;   
-   case AA_DATA:
-     if(pr->partitionData[model]->protModels != GTR)
+   case PLL_AA_DATA:
+     if(pr->partitionData[model]->protModels != PLL_GTR)
        {
 	 double f[20];
 	 int l;
 
-	 if(pr->partitionData[model]->protModels == LG4)
+	 if(pr->partitionData[model]->protModels == PLL_LG4)
 	   {
 	     int 
 	       i;
@@ -3495,7 +3495,7 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	   }
 	 else
 	   {
-             if(pr->partitionData[model]->protModels == AUTO)
+             if(pr->partitionData[model]->protModels == PLL_AUTO)
 	       initProtMat(f, pr->partitionData[model]->autoProtModels, ext_initialRates, 0);
 	     else	  
 	       {
@@ -3513,7 +3513,7 @@ void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
            }  
        }
                
-     if(pr->partitionData[model]->protModels == LG4)
+     if(pr->partitionData[model]->protModels == PLL_LG4)
        {
          int 
            i;
@@ -3808,11 +3808,11 @@ void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
     beta = alpha,
     *gammaProbs = (double *)rax_malloc(K * sizeof(double));
 
-  /* Note that ALPHA_MIN setting is somewhat critical due to   */
+  /* Note that PLL_ALPHA_MIN setting is somewhat critical due to   */
   /* numerical instability caused by very small rate[0] values */
   /* induced by low alpha values around 0.01 */
 
-  assert(alfa >= ALPHA_MIN); 
+  assert(alfa >= PLL_ALPHA_MIN); 
 
   if(useMedian)
     {
@@ -3904,18 +3904,18 @@ void initRateMatrix(pllInstance *tr, partitionList *pr)
       
       switch(pr->partitionData[model]->dataType)
 	{
-	case BINARY_DATA:
-	case DNA_DATA:
-	case SECONDARY_DATA:
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
+	case PLL_BINARY_DATA:
+	case PLL_DNA_DATA:
+	case PLL_SECONDARY_DATA:
+	case PLL_SECONDARY_DATA_6:
+	case PLL_SECONDARY_DATA_7:
 	  setRates(pr->partitionData[model]->substRates, rates);
 	  break;	  
-	case GENERIC_32:
-	case GENERIC_64:	  
+	case PLL_GENERIC_32:
+	case PLL_GENERIC_64:	  
 	  switch(tr->multiStateModel)
 	    {
-	    case ORDERED_MULTI_STATE:
+	    case PLL_ORDERED_MULTI_STATE:
 	      {
 		int 
 		  j, 
@@ -3928,20 +3928,20 @@ void initRateMatrix(pllInstance *tr, partitionList *pr)
 		assert(i == rates);		
 	      }
 	      break;
-	    case MK_MULTI_STATE:
+	    case PLL_MK_MULTI_STATE:
 	      for(i = 0; i < rates; i++)
 		pr->partitionData[model]->substRates[i] = 1.0;
 	      
 	      break;
-	    case GTR_MULTI_STATE:
+	    case PLL_GTR_MULTI_STATE:
 	      setRates(pr->partitionData[model]->substRates, rates);
 	      break;
 	    default:
 	      assert(0);
 	    }
 	  break;
-	case AA_DATA:
-	  if(pr->partitionData[model]->protModels == GTR)
+	case PLL_AA_DATA:
+	  if(pr->partitionData[model]->protModels == PLL_GTR)
 	    {
 	      //set optimizeSubstRates to true !
 	      pr->partitionData[model]->optimizeSubstitutionRates = PLL_TRUE;
@@ -3954,9 +3954,9 @@ void initRateMatrix(pllInstance *tr, partitionList *pr)
       
       if(pr->partitionData[model]->nonGTR)
 	{
-	  assert(pr->partitionData[model]->dataType == SECONDARY_DATA ||
-		 pr->partitionData[model]->dataType == SECONDARY_DATA_6 ||
-		 pr->partitionData[model]->dataType == SECONDARY_DATA_7);
+	  assert(pr->partitionData[model]->dataType == PLL_SECONDARY_DATA ||
+		 pr->partitionData[model]->dataType == PLL_SECONDARY_DATA_6 ||
+		 pr->partitionData[model]->dataType == PLL_SECONDARY_DATA_7);
 	  	  
 	  for(i = 0; i < rates; i++)
 	    {
@@ -4000,16 +4000,16 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
   for(model = 0; model < numberOfModels; model++)
     {
-      if(partitions->partitionData[model]->dataType == SECONDARY_DATA ||
-    		  partitions->partitionData[model]->dataType == SECONDARY_DATA_6 ||
-    		  partitions->partitionData[model]->dataType == SECONDARY_DATA_7)
+      if(partitions->partitionData[model]->dataType == PLL_SECONDARY_DATA ||
+    		  partitions->partitionData[model]->dataType == PLL_SECONDARY_DATA_6 ||
+    		  partitions->partitionData[model]->dataType == PLL_SECONDARY_DATA_7)
 	{	
 	  switch(tr->secondaryStructureModel)
 	    {
-	    case SEC_6_A:
+	    case PLL_SEC_6_A:
 	    	partitions->partitionData[model]->nonGTR = PLL_FALSE;
 	      break;
-	    case SEC_6_B:
+	    case PLL_SEC_6_B:
 	      {
 		int f[6]  = {0, 1, 2, 3, 4, 5};
 		int s[15] = {2, 0, 1, 2, 2, 2, 2, 0, 1, 1, 2, 2, 2, 2, 1};
@@ -4019,7 +4019,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
-	    case SEC_6_C:
+	    case PLL_SEC_6_C:
 	      {
 		int f[6]  = {0, 2, 2, 1, 0, 1};
 		int s[15] = {2, 0, 1, 2, 2, 2, 2, 0, 1, 1, 2, 2, 2, 2, 1};
@@ -4029,7 +4029,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
-	    case SEC_6_D:
+	    case PLL_SEC_6_D:
 	      {
 		int f[6]  = {0, 2, 2, 1, 0, 1};
 		int s[15] = {2, -1, 1, 2, 2, 2, 2, -1, 1, 1, 2, 2, 2, 2, 1};
@@ -4039,7 +4039,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
-	    case SEC_6_E:
+	    case PLL_SEC_6_E:
 	      {
 		int f[6]  = {0, 1, 2, 3, 4, 5};
 		int s[15] = {2, -1, 1, 2, 2, 2, 2, -1, 1, 1, 2, 2, 2, 2, 1};
@@ -4049,10 +4049,10 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
-	    case SEC_7_A:
+	    case PLL_SEC_7_A:
 	    	partitions->partitionData[model]->nonGTR = PLL_FALSE;
 	      break;
-	    case SEC_7_B:
+	    case PLL_SEC_7_B:
 	      {
 	      	int f[7]  = {0, 2, 2, 1, 0, 1, 3};
 		int s[21] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20};
@@ -4063,7 +4063,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 	      }
 	      break;
-	    case SEC_7_C:
+	    case PLL_SEC_7_C:
 	      {
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {-1, -1, 0, -1, -1, 4, -1, -1, -1, 3, 5, 1, -1, -1, 6, -1, -1, 7, 2, 8, 9};
@@ -4074,7 +4074,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 	      }
 	      break;
-	    case SEC_7_D:
+	    case PLL_SEC_7_D:
 	      {
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {2, 0, 1, 2, 2, 3, 2, 2, 0, 1, 3, 1, 2, 2, 3, 2, 2, 3, 1, 3, 3};
@@ -4085,7 +4085,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 	      }
 	      break;
-	    case SEC_7_E:
+	    case PLL_SEC_7_E:
 	      {
 	      	int f[7]  = {0, 1, 2, 3, 4, 5, 6};
 		int s[21] = {-1, -1, 0, -1, -1, 1, -1, -1, -1, 0, 1, 0, -1, -1, 1, -1, -1, 1, 0, 1, 1};
@@ -4096,7 +4096,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 	      }
 	      break;
-	    case SEC_7_F:
+	    case PLL_SEC_7_F:
 	      {
 	      	int f[7]  = {0, 2, 2, 1, 0, 1, 3};
 		int s[21] = {2, 0, 1, 2, 2, 3, 2, 2, 0, 1, 3, 1, 2, 2, 3, 2, 2, 3, 1, 3, 3};		
@@ -4108,10 +4108,10 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 	      }
 	      break;
 	      
-	    case SEC_16:
+	    case PLL_SEC_16:
 	    	partitions->partitionData[1]->nonGTR = PLL_FALSE;
 	      break;
-	    case SEC_16_A:
+	    case PLL_SEC_16_A:
 	      {
 	      	int f[16]  = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 		int s[120] = {/* AA */  4,  4,  3,  4, -1, -1, -1,  4, -1, -1, -1,  3, -1, -1, -1,
@@ -4137,7 +4137,7 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 
 		}
 	      break;
-	    case SEC_16_B:
+	    case PLL_SEC_16_B:
 	      {
 		int f[16]  = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
 		int s[120] = {/* AA */  0,  0,  0,  0, -1, -1, -1,  0, -1, -1, -1,  0, -1, -1, -1,
@@ -4162,13 +4162,13 @@ static void setupSecondaryStructureSymmetries(pllInstance *tr, partitionList *pa
 		partitions->partitionData[model]->nonGTR = PLL_TRUE;
 	      }
 	      break;
-	    case SEC_16_C:	      
-	    case SEC_16_D:
-	    case SEC_16_E:
-	    case SEC_16_F:
-	    case SEC_16_I:
-	    case SEC_16_J:
-	    case SEC_16_K:
+	    case PLL_SEC_16_C:	      
+	    case PLL_SEC_16_D:
+	    case PLL_SEC_16_E:
+	    case PLL_SEC_16_F:
+	    case PLL_SEC_16_I:
+	    case PLL_SEC_16_J:
+	    case PLL_SEC_16_K:
 	      assert(0);
 	    default:
 	      assert(0);
@@ -4258,8 +4258,8 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
        k;
 
      partitions->partitionData[model]->alpha = 1.0;
-     if(partitions->partitionData[model]->dataType == AA_DATA && partitions->partitionData[model]->protModels == AUTO)
-       partitions->partitionData[model]->autoProtModels = WAG; /* initialize by WAG per default */
+     if(partitions->partitionData[model]->dataType == PLL_AA_DATA && partitions->partitionData[model]->protModels == PLL_AUTO)
+       partitions->partitionData[model]->autoProtModels = PLL_WAG; /* initialize by WAG per default */
       
      initReversibleGTR(tr, partitions, model); /* Decomposition of Q matrix */
       /* GAMMA model init */
@@ -4286,7 +4286,7 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
     }  
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier(tr, partitions, THREAD_COPY_INIT_MODEL);
+  pllMasterBarrier(tr, partitions, PLL_THREAD_COPY_INIT_MODEL);
 #endif
 }
 

@@ -75,7 +75,7 @@ static void saveTopolRELLRec(pllInstance *tr, nodeptr p, topolRELL *tpl, int *i,
 	      tpl->connect[*i].cq = tr->constraintVector[q->back->number]; 
 	    }
 	  
-	  for(k = 0; k < NUM_BRANCHES; k++)
+	  for(k = 0; k < PLL_NUM_BRANCHES; k++)
 	    tpl->connect[*i].z[k] = q->z[k];
 	  *i = *i + 1;
 
@@ -102,7 +102,7 @@ static void saveTopolRELL(pllInstance *tr, topolRELL *tpl)
       tpl->connect[i].cq = tr->constraintVector[p->back->number]; 
     }
 
-  for(k = 0; k < NUM_BRANCHES; k++)
+  for(k = 0; k < PLL_NUM_BRANCHES; k++)
     tpl->connect[i].z[k] = p->z[k];
   i++;
       
@@ -511,7 +511,7 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
         return 0;
       }
     }
-  else if (ABS(newkeep) > bt->ninit) {
+  else if (PLL_ABS(newkeep) > bt->ninit) {
     if (newkeep <  0) newkeep = -(bt->ninit);
     else newkeep = bt->ninit;
   }
@@ -539,7 +539,7 @@ int initBestTree (bestlist *bt, int newkeep, int numsp)
       bt->ninit = i;
     }
   
-  return  (bt->nkeep = MIN(newkeep, bt->ninit));
+  return  (bt->nkeep = PLL_MIN(newkeep, bt->ninit));
 } /* initBestTree */
 
 
@@ -719,7 +719,7 @@ int  saveBestTree (bestlist *bt, pllInstance *tr, int numBranches)
   
   scrNum = findInList((void *) tpl, (void **) (& (bt->byScore[1])),
 		      oldValid, cmpTplScore);
-  scrNum = ABS(scrNum);
+  scrNum = PLL_ABS(scrNum);
   
   if (scrNum < reuseScrNum)
     for (i = reuseScrNum; i > scrNum; i--)

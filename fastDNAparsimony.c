@@ -127,7 +127,7 @@ inline unsigned int bitcount_64_bit(unsigned long i)
 static inline unsigned int vectorPopcount(INT_TYPE v)
 {
   unsigned long
-    counts[LONG_INTS_PER_VECTOR] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    counts[LONG_INTS_PER_VECTOR] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   int    
     i,
@@ -1100,7 +1100,7 @@ static void buildSimpleTree (pllInstance *tr, partitionList *pr, int ip, int iq,
   nodeptr  p, s;
   int  i;
   
-  i = MIN(ip, iq);
+  i = PLL_MIN(ip, iq);
   if (ir < i)  i = ir; 
   tr->start = tr->nodep[i];
   tr->ntips = 3;
@@ -1153,7 +1153,7 @@ static void testInsertParsimony (pllInstance *tr, partitionList *pr, nodeptr p, 
   if(doIt)
     {
       double 
-        z[NUM_BRANCHES];
+        z[PLL_NUM_BRANCHES];
       
       if(saveBranches)
         {
@@ -1621,9 +1621,9 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
         if(informative[i])
           entries += (size_t)tr->aliaswgt[i];     
   
-      compressedEntries = entries / PCF;
+      compressedEntries = entries / PLL_PCF;
 
-      if(entries % PCF != 0)
+      if(entries % PLL_PCF != 0)
         compressedEntries++;
 
 #if (defined(__SSE3) || defined(__AVX))
@@ -1675,7 +1675,7 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
                      
                       compressedCounter++;
                   
-                      if(compressedCounter == PCF)
+                      if(compressedCounter == PLL_PCF)
                         {
                           for(k = 0; k < states; k++)
                             {
@@ -1692,7 +1692,7 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
                            
           for(;compressedIndex < compressedEntriesPadded; compressedIndex++)
             {   
-              for(;compressedCounter < PCF; compressedCounter++)              
+              for(;compressedCounter < PLL_PCF; compressedCounter++)              
                 for(k = 0; k < states; k++)
                   compressedValues[k] |= mask32[compressedCounter];               
           
@@ -1894,8 +1894,8 @@ void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr)
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   double   
-    p1z[NUM_BRANCHES], 
-    p2z[NUM_BRANCHES];
+    p1z[PLL_NUM_BRANCHES], 
+    p2z[PLL_NUM_BRANCHES];
 
   nodeptr 
     p1 = p->next->back,

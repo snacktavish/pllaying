@@ -135,15 +135,15 @@ static inline void computeVectorCAT_FLEX(double *lVector, int *eVector, double k
 
   switch(ti->tipCase)
     {
-    case TIP_TIP:     
+    case PLL_TIP_TIP:     
       x1 = &(tipVector[states * yVector[qNumber][i]]);
       x2 = &(tipVector[states * yVector[rNumber][i]]);    
       break;
-    case TIP_INNER:     
+    case PLL_TIP_INNER:     
       x1 = &(tipVector[states * yVector[qNumber][i]]);
       x2 = &(lVector[states * (rNumber - mxtips)]);           
       break;
-    case INNER_INNER:            
+    case PLL_INNER_INNER:            
       x1 = &(lVector[states * (qNumber - mxtips)]);
       x2 = &(lVector[states * (rNumber - mxtips)]);     
       break;
@@ -323,11 +323,11 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
   for(k = 0; k < states; k++) 
     term += x1[k] * x2[k] * d[k];       
 
-  /* note the "scale * LOG(PLL_MINLIKELIHOOD)" term here which we use to undo/revert the scaling multiplications 
+  /* note the "scale * PLL_LOG(PLL_MINLIKELIHOOD)" term here which we use to undo/revert the scaling multiplications 
      such that we obtain a correct log likelihood score. The integer variable scale, contains the number of times 
      we had to scale (multiply by 2^256) for site i only during a full tree traversal using Felsenstein's algorithm */
 
-  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
+  term = PLL_LOG(PLL_FABS(term)) + (scale * PLL_LOG(PLL_MINLIKELIHOOD));   
 
   /* multiply with the site pattern weight (site pattern compression factor */
 
@@ -385,7 +385,7 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
   /* for the generic function implementation we only offer the CAT implementation for computing/optimizing per-site evolutionary rates */
 
 #if (!defined(__SSE3) && !defined(__AVX))
-  if(tr->rateHetModel == CAT)
+  if(tr->rateHetModel == PLL_CAT)
     result = evaluatePartialCAT_FLEX(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
 				     pr->partitionData[_model]->wgt[index],
 				     pr->partitionData[_model]->EIGN,
@@ -409,7 +409,7 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
    
     case 4:   /* DNA */
       /* switch over CAT versus GAMMA and pass all model parameters for the respective partition to the respective functions */
-      if(tr->rateHetModel == CAT)      
+      if(tr->rateHetModel == PLL_CAT)      
 	result = evaluatePartialGTRCAT(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
 				       pr->partitionData[_model]->wgt[index],
 				       pr->partitionData[_model]->EIGN,
@@ -430,7 +430,7 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
 	
       break;
     case 20: /* proteins */     
-      if(tr->rateHetModel == CAT)
+      if(tr->rateHetModel == PLL_CAT)
 	result = evaluatePartialGTRCATPROT(index, ki, tr->td[0].count, tr->td[0].ti, tr->td[0].ti[0].qz[branchReference], 
 					   pr->partitionData[_model]->wgt[index],
 					   pr->partitionData[_model]->EIGN,
@@ -486,7 +486,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
 
   switch(ti->tipCase)
     {
-    case TIP_TIP:    
+    case PLL_TIP_TIP:    
       x1 = &(tipVector[20 * yVector[qNumber][i]]);
       x2 = &(tipVector[20 * yVector[rNumber][i]]);     
       for(s = 0; s < 4; s++)
@@ -495,7 +495,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
 	  index2[s] = 0;
 	}
       break;
-    case TIP_INNER:     
+    case PLL_TIP_INNER:     
       x1 = &(tipVector[20 * yVector[qNumber][i]]);
       x2 = &(  lVector[80 * (rNumber - mxtips)]);   
       for(s = 0; s < 4; s++)       
@@ -503,7 +503,7 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
       for(s = 0; s < 4; s++)     
 	index2[s] = s;                     
       break;
-    case INNER_INNER:            
+    case PLL_INNER_INNER:            
       x1 = &(lVector[80 * (qNumber - mxtips)]);
       x2 = &(lVector[80 * (rNumber - mxtips)]); 
       for(s = 0; s < 4; s++)
@@ -518,10 +518,10 @@ static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, doub
      
   {
     double  
-      e1[20] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-      e2[20] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-      d1[20] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-      d2[20] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
+      e1[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+      e2[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+      d1[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+      d2[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
       lz1, lz2;  
     
     int 
@@ -633,7 +633,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
 
   switch(ti->tipCase)
     {
-    case TIP_TIP:          
+    case PLL_TIP_TIP:          
       x1 = &(tipVector[4 * yVector[qNumber][i]]);
       x2 = &(tipVector[4 * yVector[rNumber][i]]);     
       
@@ -643,7 +643,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
 	  index2[s] = 0;
 	}
       break;
-    case TIP_INNER:     
+    case PLL_TIP_INNER:     
       x1 = &(tipVector[4 * yVector[qNumber][i]]);
       x2 = &(lVector[16 * (rNumber - mxtips)]);   
       for(s = 0; s < 4; s++)       
@@ -652,7 +652,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
 	  index2[s] = s;  
 	}
       break;
-    case INNER_INNER:            
+    case PLL_INNER_INNER:            
       x1 = &(lVector[16 * (qNumber - mxtips)]);
       x2 = &(lVector[16 * (rNumber - mxtips)]);       
       for(s = 0; s < 4; s++)
@@ -667,10 +667,10 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
      
   {
     double  
-      e1[4] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-      e2[4] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-      d1[4] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-      d2[4] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
+      e1[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+      e2[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+      d1[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+      d2[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
       lz1, lz2;  
     
     int 
@@ -742,7 +742,7 @@ static  void computeVectorGTRGAMMA(double *lVector, int *eVector, double *gammaR
   
     scale = 1;
     for(l = 0; scale && (l < 16); l++)
-      scale = (ABS(x3[l]) < PLL_MINLIKELIHOOD);	       	      	      	       	       
+      scale = (PLL_ABS(x3[l]) < PLL_MINLIKELIHOOD);	       	      	      	       	       
     
     if(scale)
       {	      
@@ -774,7 +774,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
   int scale = 0, k, l, j;
   double 
     *lVector = (double *)rax_malloc_aligned(sizeof(double) * 80 * mxtips),
-    myEI[400]  __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    myEI[400]  __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   traversalInfo 
     *trav = &ti[0];
@@ -829,7 +829,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
 	term += x1[l] * x2[20 * j + l] * d[j * 20 + l];	      
     }
   
-  term = LOG(0.25 * FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
+  term = PLL_LOG(0.25 * PLL_FABS(term)) + (scale * PLL_LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -851,7 +851,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
   int scale = 0, k, l, j;
   double 
     *lVector = (double *)rax_malloc_aligned(sizeof(double) * 16 * mxtips),
-    myEI[16]  __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    myEI[16]  __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   traversalInfo 
     *trav = &ti[0];
@@ -902,7 +902,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
 	term += x1[l] * x2[4 * j + l] * d[j * 4 + l];	      
     }
 
-  term = LOG(0.25 * FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
+  term = PLL_LOG(0.25 * PLL_FABS(term)) + (scale * PLL_LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -931,15 +931,15 @@ static inline void computeVectorGTRCAT(double *lVector, int *eVector, double ki,
 
   switch(ti->tipCase)
     {
-    case TIP_TIP:     
+    case PLL_TIP_TIP:     
       x1 = &(tipVector[4 * yVector[qNumber][i]]);
       x2 = &(tipVector[4 * yVector[rNumber][i]]);    
       break;
-    case TIP_INNER:     
+    case PLL_TIP_INNER:     
       x1 = &(tipVector[4 * yVector[qNumber][i]]);
       x2 = &lVector[4 * (rNumber - mxtips)];           
       break;
-    case INNER_INNER:            
+    case PLL_INNER_INNER:            
       x1 = &lVector[4 * (qNumber - mxtips)];
       x2 = &lVector[4 * (rNumber - mxtips)];     
       break;
@@ -1050,7 +1050,7 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
   term += x1[2] * x2[2] * d[1];
   term += x1[3] * x2[3] * d[2];     
 
-  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
+  term = PLL_LOG(PLL_FABS(term)) + (scale * PLL_LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 
@@ -1078,15 +1078,15 @@ static inline void computeVectorGTRCATPROT(double *lVector, int *eVector, double
 
   switch(ti->tipCase)
     {
-    case TIP_TIP:     
+    case PLL_TIP_TIP:     
       x1 = &(tipVector[20 * yVector[qNumber][i]]);
       x2 = &(tipVector[20 * yVector[rNumber][i]]);    
       break;
-    case TIP_INNER:     
+    case PLL_TIP_INNER:     
       x1 = &(tipVector[20 * yVector[qNumber][i]]);
       x2 = &lVector[20 * (rNumber - mxtips)];           
       break;
-    case INNER_INNER:            
+    case PLL_INNER_INNER:            
       x1 = &lVector[20 * (qNumber - mxtips)];
       x2 = &lVector[20 * (rNumber - mxtips)];     
       break;
@@ -1201,7 +1201,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
   for(k = 0; k < 20; k++)
     term += x1[k] * x2[k] * d[k];     
 
-  term = LOG(FABS(term)) + (scale * LOG(PLL_MINLIKELIHOOD));   
+  term = PLL_LOG(PLL_FABS(term)) + (scale * PLL_LOG(PLL_MINLIKELIHOOD));   
 
   term = term * w;
 

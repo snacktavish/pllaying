@@ -403,9 +403,9 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
          of 0.25 */
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
 
       /* if required get the per-site log likelihoods.
          note that these are the plain per site log-likes, not 
@@ -431,9 +431,9 @@ static double evaluateGAMMA_FLEX(const boolean fastScaling, int *ex1, int *ex2, 
           term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i])*PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
       
       if(getPerSiteLikelihoods)
         perSiteLikelihoods[i] = term;
@@ -583,9 +583,9 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
          of 0.25 */
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
 
       /* if required get the per-site log likelihoods.
          note that these are the plain per site log-likes, not 
@@ -624,9 +624,9 @@ static double evaluateGAMMA_FLEX_SAVE(const boolean fastScaling, int *ex1, int *
           term += x1[j * states + k] * x2[j * states + k] * diagptable[j * states + k];
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i])*PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
       
       if(getPerSiteLikelihoods)
         perSiteLikelihoods[i] = term;
@@ -747,9 +747,9 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
 
       /* take the log */
        if(!fastScaling)
-         term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+         term = PLL_LOG(PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
        else
-         term = LOG(FABS(term));
+         term = PLL_LOG(PLL_FABS(term));
 
        /* if required get the per-site log likelihoods.
           note that these are the plain per site log-likes, not 
@@ -783,9 +783,9 @@ static double evaluateCAT_FLEX (const boolean fastScaling, int *ex1, int *ex2, i
         term += left[l] * right[l] * diagptable[l];
       
       if(!fastScaling)
-        term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));  
+        term = PLL_LOG(PLL_FABS(term));  
 
       if(getPerSiteLikelihoods)
         perSiteLikelihoods[i] = term;
@@ -870,9 +870,9 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
 
       /* take the log */
        if(!fastScaling)
-         term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+         term = PLL_LOG(PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
        else
-         term = LOG(FABS(term));
+         term = PLL_LOG(PLL_FABS(term));
 
        /* if required get the per-site log likelihoods.
           note that these are the plain per site log-likes, not 
@@ -920,9 +920,9 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
         term += left[l] * right[l] * diagptable[l];
       
       if(!fastScaling)
-        term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));  
+        term = PLL_LOG(PLL_FABS(term));  
 
       if(getPerSiteLikelihoods)
         perSiteLikelihoods[i] = term;
@@ -1081,7 +1081,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
              up to a user defined maximum value of site categories (default: 25)
           */
 
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             {        
               rateCategories = pr->partitionData[model]->perSiteRates;
               categories = pr->partitionData[model]->numberOfCategories;
@@ -1194,7 +1194,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
           
           /* calc P-Matrix at root for branch z connecting nodes p and q */
           
-          if(pr->partitionData[model]->dataType == AA_DATA && pr->partitionData[model]->protModels == LG4)                                        
+          if(pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)                                        
             calcDiagptableFlex_LG4(z, 4, pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN_LG4, diagptable, 20);
           else
           calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
@@ -1206,7 +1206,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
           assert(!tr->saveMemory);
           
           /* decide wheter CAT or GAMMA is used and compute log like */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             partitionLikelihood = evaluateCAT_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt, 
                                                 x1_start, x2_start, pr->partitionData[model]->tipVector,
                                                 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
@@ -1221,7 +1221,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 
           if(getPerSiteLikelihoods)
             {         
-              if(tr->rateHetModel == CAT)
+              if(tr->rateHetModel == PLL_CAT)
                 {
                    if(tr->saveMemory)
                      partitionLikelihood = evaluateCAT_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
@@ -1256,7 +1256,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                 {         
                 case 4: /* DNA */
                   {
-                    if(tr->rateHetModel == CAT)
+                    if(tr->rateHetModel == PLL_CAT)
                       {                           
                         if(tr->saveMemory)
                           partitionLikelihood =  evaluateGTRCAT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
@@ -1283,7 +1283,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                   break;                                   
                 case 20: /* proteins */
                   {
-                    if(tr->rateHetModel == CAT)
+                    if(tr->rateHetModel == PLL_CAT)
                       {                           
                         if(tr->saveMemory)
                           partitionLikelihood = evaluateGTRCATPROT_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
@@ -1303,7 +1303,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
                                                                                  x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
                         else
                       {
-                        if(pr->partitionData[model]->protModels == LG4)
+                        if(pr->partitionData[model]->protModels == PLL_LG4)
                           partitionLikelihood =  evaluateGTRGAMMAPROT_LG4((int *)NULL, (int *)NULL, pr->partitionData[model]->wgt,
                                                                           x1_start, x2_start, pr->partitionData[model]->tipVector_LG4,
                                                                           tip, width, diagptable, PLL_TRUE);
@@ -1337,7 +1337,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
           */
           
           if(fastScaling)
-            partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * LOG(PLL_MINLIKELIHOOD);
+            partitionLikelihood += (pr->partitionData[model]->globalScaler[pNumber] + pr->partitionData[model]->globalScaler[qNumber]) * PLL_LOG(PLL_MINLIKELIHOOD);
           
           /* now we have the correct log likelihood for the current partition after undoing scaling multiplications */           
           
@@ -1511,10 +1511,10 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   if(getPerSiteLikelihoods)
     {
       memset(tr->lhs, 0, sizeof(double) * tr->originalCrunchedLength); 
-      pllMasterBarrier(tr, pr, THREAD_EVALUATE_PER_SITE_LIKES);
+      pllMasterBarrier(tr, pr, PLL_THREAD_EVALUATE_PER_SITE_LIKES);
     }
   else
-    pllMasterBarrier (tr, pr, THREAD_EVALUATE);
+    pllMasterBarrier (tr, pr, PLL_THREAD_EVALUATE);
 
   /* and now here we explicitly do the reduction operation , that is add over the 
      per-thread and per-partition log likelihoods to obtain the overall log like 
@@ -1562,7 +1562,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   /* the code below is mainly for testing if the per-site log 
      likelihoods we have stored in tr->lhs yield the same 
      likelihood as the likelihood we computed. 
-     For numerical reasons we need to make a dirt ABS(difference) < epsilon
+     For numerical reasons we need to make a dirt PLL_ABS(difference) < epsilon
      comparison */
      
   if(getPerSiteLikelihoods) //PLL_TRUE
@@ -1583,12 +1583,12 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
           likelihood += (tr->lhs[i]   * tr->aliaswgt[i] );
         }
          
-      if( ABS(tr->likelihood - likelihood) > 0.00001)
+      if( PLL_ABS(tr->likelihood - likelihood) > 0.00001)
         {
   //        printf("likelihood was %f\t summed/weighted per-site-lnl was %f\n", tr->likelihood, likelihood); 
         }
 
-        assert(ABS(tr->likelihood - likelihood) < 0.00001);
+        assert(PLL_ABS(tr->likelihood - likelihood) < 0.00001);
     }
 
 
@@ -1641,7 +1641,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
      This corresponds to a gather operation in MPI.
      */
 
-  pllMasterBarrier (tr, pr, THREAD_PER_SITE_LIKELIHOODS);
+  pllMasterBarrier (tr, pr, PLL_THREAD_PER_SITE_LIKELIHOODS);
 
   /* 
      when the parallel region has terminated, the per-site log likelihoods 
@@ -1675,10 +1675,10 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
       switch(tr->rateHetModel)
       {
-        case CAT:
+        case PLL_CAT:
           l = evaluatePartialGeneric (tr, pr, i, pr->partitionData[model]->perSiteRates[pr->partitionData[model]->rateCategory[localCount]], model);
           break;
-        case GAMMA:
+        case PLL_GAMMA:
           l = evaluatePartialGeneric (tr, pr, i, 1.0, model);
           break;
         default:
@@ -1693,11 +1693,11 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
   }
 
 
-  /* error checking. We need a dirt ABS() < epsilon here, because the implementations 
+  /* error checking. We need a dirt PLL_ABS() < epsilon here, because the implementations 
      (standard versus per-site) are pretty different and hence slight numerical 
      deviations are expected */
 
-  assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
+  assert(PLL_ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
   
 #endif
   
@@ -1762,9 +1762,9 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 #endif
           
           if(fastScaling)
-            term = LOG(0.25 * FABS(term));
+            term = PLL_LOG(0.25 * PLL_FABS(term));
           else
-            term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));     
+            term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));     
           
           sum += wptr[i] * term;
         }               
@@ -1802,9 +1802,9 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 #endif
           
           if(fastScaling)
-            term = LOG(0.25 * FABS(term));
+            term = PLL_LOG(0.25 * PLL_FABS(term));
           else
-            term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i])*LOG(PLL_MINLIKELIHOOD));
+            term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i])*PLL_LOG(PLL_MINLIKELIHOOD));
           
           sum += wptr[i] * term;
         }         
@@ -1870,9 +1870,9 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));    
+        term = PLL_LOG(0.25 * PLL_FABS(term));    
 
       sum += wptr[i] * term;
     }                   
@@ -1916,9 +1916,9 @@ static double evaluateGTRGAMMAPROT_GAPPED_SAVE (const boolean fastScaling, int *
 
 
        if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
 
 
       sum += wptr[i] * term;
@@ -1971,9 +1971,9 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
 
 
       sum += wptr[i] * term;
@@ -2002,9 +2002,9 @@ static double evaluateGTRGAMMAPROT (const boolean fastScaling, int *ex1, int *ex
 
 
        if(!fastScaling)
-        term = LOG(0.25 * FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(term));
+        term = PLL_LOG(0.25 * PLL_FABS(term));
 
 
       sum += wptr[i] * term;
@@ -2057,9 +2057,9 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-        term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));
+        term = PLL_LOG(PLL_FABS(term));
 
       sum += wptr[i] * term;
     }      
@@ -2090,9 +2090,9 @@ static double evaluateGTRCATPROT (const boolean fastScaling, int *ex1, int *ex2,
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-        term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));  
+        term = PLL_LOG(PLL_FABS(term));  
 
       sum += wptr[i] * term;      
     }
@@ -2161,9 +2161,9 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-        term = LOG(FABS(term)) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));
+        term = PLL_LOG(PLL_FABS(term));
 
       sum += wptr[i] * term;
     }      
@@ -2207,9 +2207,9 @@ static double evaluateGTRCATPROT_SAVE (const boolean fastScaling, int *ex1, int 
       _mm_storel_pd(&term, tv);
 
       if(!fastScaling)
-        term = LOG(FABS(term)) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(term));  
+        term = PLL_LOG(PLL_FABS(term));  
 
       sum += wptr[i] * term;      
     }
@@ -2246,7 +2246,7 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
   {           
     for (i = 0; i < n; i++) 
     {   
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d x1v1, x1v2, x2v1, x2v2, dv1, dv2;
 
       x1 = &(tipVector[4 * tipX1[i]]);
@@ -2279,9 +2279,9 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
       _mm_store_pd(t, x1v1);
 
       if(!fastScaling)
-        term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1])) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(t[0] + t[1]));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1]));
 
 
 
@@ -2292,7 +2292,7 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
   {
     for (i = 0; i < n; i++) 
     { 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d x1v1, x1v2, x2v1, x2v2, dv1, dv2;
 
       if(isGap(x1_gap, i))
@@ -2332,9 +2332,9 @@ static double evaluateGTRCAT_SAVE (const boolean fastScaling, int *ex1, int *ex2
 
 
        if(!fastScaling)
-        term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(t[0] + t[1]));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1]));
 
       sum += wptr[i] * term;
     }    
@@ -2375,7 +2375,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
 
     for (i = 0; i < n; i++)
     {
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d termv, x1v, x2v, dv;
 
       x1 = &(tipVector[4 * tipX1[i]]);   
@@ -2414,9 +2414,9 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
       _mm_store_pd(t, termv);            
 
        if(!fastScaling)
-        term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1])) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(t[0] + t[1]));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -2428,7 +2428,7 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
     for (i = 0; i < n; i++) 
     {
 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d termv, x1v, x2v, dv;
 
       if(x1_gap[i / 32] & mask32[i % 32])
@@ -2473,9 +2473,9 @@ static double evaluateGTRGAMMA_GAPPED_SAVE(const boolean fastScaling, int *ex1, 
       _mm_store_pd(t, termv);
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(t[0] + t[1]));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -2511,7 +2511,7 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
     for (i = 0; i < n; i++)
     {
 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d termv, x1v, x2v, dv;
 
       x1 = &(tipVector[4 * tipX1[i]]);   
@@ -2545,9 +2545,9 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
 
 
        if(!fastScaling)
-        term = LOG(0.25 * FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1])) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(t[0] + t[1]));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1]));
 
 
 
@@ -2559,7 +2559,7 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
     for (i = 0; i < n; i++) 
     {
 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d termv, x1v, x2v, dv;
 
 
@@ -2593,9 +2593,9 @@ static double evaluateGTRGAMMA(const boolean fastScaling, int *ex1, int *ex2, in
       _mm_store_pd(t, termv);
 
       if(!fastScaling)
-        term = LOG(0.25 * FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(0.25 * FABS(t[0] + t[1]));
+        term = PLL_LOG(0.25 * PLL_FABS(t[0] + t[1]));
 
 
 
@@ -2629,7 +2629,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
     for (i = 0; i < n; i++) 
     {   
 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d x1v1, x1v2, x2v1, x2v2, dv1, dv2;
 
       x1 = &(tipVector[4 * tipX1[i]]);
@@ -2656,9 +2656,9 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
       _mm_store_pd(t, x1v1);
 
        if(!fastScaling)
-        term = LOG(FABS(t[0] + t[1])) + (ex2[i] * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1])) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(t[0] + t[1]));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;
@@ -2669,7 +2669,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
     for (i = 0; i < n; i++) 
     { 
 
-      double t[2] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+      double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
       __m128d x1v1, x1v2, x2v1, x2v2, dv1, dv2;
 
       x1 = &x1_start[4 * i];
@@ -2696,9 +2696,9 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
       _mm_store_pd(t, x1v1);
 
       if(!fastScaling)
-        term = LOG(FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * LOG(PLL_MINLIKELIHOOD));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1])) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
       else
-        term = LOG(FABS(t[0] + t[1]));
+        term = PLL_LOG(PLL_FABS(t[0] + t[1]));
 
 
       sum += wptr[i] * term;

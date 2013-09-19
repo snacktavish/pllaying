@@ -824,7 +824,7 @@ static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths
     
   if(readBranchLengths)
     {
-      double b[NUM_BRANCHES];
+      double b[PLL_NUM_BRANCHES];
       int i;
       for(i = 0; i < numBranches; i++)
 	b[i] = (r->z[i] + q->z[i]);
@@ -916,7 +916,7 @@ int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNo
   tr->ntips       = 0;
   tr->nextnode    = tr->mxtips + 1;      
  
-  for(i = 0; i < NUM_BRANCHES; i++)
+  for(i = 0; i < PLL_NUM_BRANCHES; i++)
     tr->partitionSmoothed[i] = PLL_FALSE;
   
   tr->rooted      = PLL_FALSE;     
@@ -972,7 +972,7 @@ int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNo
 
       p->next->next->back = (nodeptr) NULL;      
       //DIEGO: CHECK THIS
-      tr->start = uprootTree(tr, p->next->next, PLL_FALSE, PLL_FALSE, NUM_BRANCHES);
+      tr->start = uprootTree(tr, p->next->next, PLL_FALSE, PLL_FALSE, PLL_NUM_BRANCHES);
       if (! tr->start)                              
 	{
 	  printf("FATAL ERROR UPROOTING TREE\n");

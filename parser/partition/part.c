@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include "../../pll.h"
 
-extern const char *protModels[NUM_PROT_MODELS];
+extern const char *protModels[PLL_NUM_PROT_MODELS];
 
 static struct pllHashTable * hashTable;
 
@@ -20,9 +20,9 @@ static void init_model_names (void)
   int i;
   int * item;
 
-  hashTable = pllHashInit (NUM_PROT_MODELS);
+  hashTable = pllHashInit (PLL_NUM_PROT_MODELS);
 
-  for (i = 0; i < NUM_PROT_MODELS; ++ i)
+  for (i = 0; i < PLL_NUM_PROT_MODELS; ++ i)
    {
      item  = (int *) rax_malloc (sizeof (int));
      *item = i;
@@ -93,19 +93,19 @@ parse_partition (int * inp)
      {
        pi->protModels = -1;
        pi->protFreqs  = -1;
-       pi->dataType   = DNA_DATA;
+       pi->dataType   = PLL_DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_FALSE; 
      }
     else if (!strcmp (pi->partitionModel, "DNAX"))
      {
        pi->protModels = -1;
        pi->protFreqs  = -1;
-       pi->dataType   = DNA_DATA;
+       pi->dataType   = PLL_DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_TRUE; 
      }
     else
      {                  /* check for protein data */
-       pi->dataType  = AA_DATA;
+       pi->dataType  = PLL_AA_DATA;
 
        if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
         {

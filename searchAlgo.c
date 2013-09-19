@@ -79,7 +79,7 @@ extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
 extern char seq_file[1024];      /**< Checkpointing related file */
 extern double masterTime;        /**< Needed for checkpointing */
-extern partitionLengths pLengths[MAX_MODEL];
+extern partitionLengths pLengths[PLL_MAX_MODEL];
 extern char binaryCheckpointName[1024];  /**< Binary checkpointing file */
 extern char binaryCheckpointInputName[1024];
 
@@ -123,7 +123,7 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
 {       
   nodeptr  q; 
   int i;
-  double   z[NUM_BRANCHES], z0[NUM_BRANCHES];
+  double   z[PLL_NUM_BRANCHES], z0[PLL_NUM_BRANCHES];
   int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
 
   #ifdef _DEBUG_UPDATE
@@ -149,7 +149,7 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
   {         
     if(!tr->partitionConverged[i])
     {	  
-      if(ABS(z[i] - z0[i]) > PLL_DELTAZ)  
+      if(PLL_ABS(z[i] - z0[i]) > PLL_DELTAZ)  
       {	      
         tr->partitionSmoothed[i] = PLL_FALSE;
       }	 
@@ -307,12 +307,12 @@ void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
   int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   if (isTip(p->number, tr->mxtips)) return;
 
-  for(i = 0; i < NUM_BRANCHES; i++)
+  for(i = 0; i < PLL_NUM_BRANCHES; i++)
     tr->partitionConverged[i] = PLL_FALSE;	
 
   while (--maxtimes >= 0) 
   {     
-    for(i = 0; i < NUM_BRANCHES; i++)
+    for(i = 0; i < PLL_NUM_BRANCHES; i++)
       tr->partitionSmoothed[i] = PLL_TRUE;
 
     q = p;
@@ -327,7 +327,7 @@ void localSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes)
       break;
   }
 
-  for(i = 0; i < NUM_BRANCHES; i++)
+  for(i = 0; i < PLL_NUM_BRANCHES; i++)
   {
     tr->partitionSmoothed[i] = PLL_FALSE; 
     tr->partitionConverged[i] = PLL_FALSE;
@@ -505,7 +505,7 @@ void smoothRegion (pllInstance *tr, partitionList *pr, nodeptr p, int region)
 
     @todo
       In the previous version (before the model-sep merge) the loops were controlled by tr->numBranches,
-      and now they are controlled by a constant NUM_BRANCHES. What is right?
+      and now they are controlled by a constant PLL_NUM_BRANCHES. What is right?
 */
 void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes, int region)
 {
@@ -515,12 +515,12 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
 
   if (isTip(p->number, tr->mxtips)) return;            /* Should be an error */
 
-  for(i = 0; i < NUM_BRANCHES; i++)
+  for(i = 0; i < PLL_NUM_BRANCHES; i++)
     tr->partitionConverged[i] = PLL_FALSE;
 
   while (--maxtimes >= 0) 
   {	
-    for(i = 0; i < NUM_BRANCHES; i++)
+    for(i = 0; i < PLL_NUM_BRANCHES; i++)
       tr->partitionSmoothed[i] = PLL_TRUE;
 
     q = p;
@@ -535,7 +535,7 @@ void regionalSmooth (pllInstance *tr, partitionList *pr, nodeptr p, int maxtimes
       break;
   }
 
-  for(i = 0; i < NUM_BRANCHES; i++) {
+  for(i = 0; i < PLL_NUM_BRANCHES; i++) {
     tr->partitionSmoothed[i] = PLL_FALSE;
     tr->partitionConverged[i] = PLL_FALSE;
   }
@@ -771,7 +771,7 @@ boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr
   }
   else
   {       
-    double  z[NUM_BRANCHES];
+    double  z[PLL_NUM_BRANCHES];
     int i;
 
     for(i = 0; i < numBranches; i++)
@@ -799,7 +799,7 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
 { 
   nodeptr p = tr->removeNode;
   nodeptr q = tr->insertNode;
-  double qz[NUM_BRANCHES], pz[NUM_BRANCHES], p1z[NUM_BRANCHES], p2z[NUM_BRANCHES];
+  double qz[PLL_NUM_BRANCHES], pz[PLL_NUM_BRANCHES], p1z[PLL_NUM_BRANCHES], p2z[PLL_NUM_BRANCHES];
   nodeptr p1, p2, r, s;
   double currentLH = tr->likelihood;
   int i;
@@ -837,7 +837,7 @@ static void restoreTopologyOnly(pllInstance *tr, bestlist *bt, int numBranches)
   }
   else
   { 	
-    double  z[NUM_BRANCHES];	
+    double  z[PLL_NUM_BRANCHES];	
     for(i = 0; i < numBranches; i++)
     {
       z[i] = sqrt(q->z[i]);      
@@ -874,7 +874,7 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
-  double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
+  double  qz[PLL_NUM_BRANCHES], pz[PLL_NUM_BRANCHES];
   nodeptr  r;
   double startLH = tr->endLH;
   int i;
@@ -1007,7 +1007,7 @@ void addTraverseBIG(pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, in
 */
 int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav)
 {  
-  double   p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
+  double   p1z[PLL_NUM_BRANCHES], p2z[PLL_NUM_BRANCHES], q1z[PLL_NUM_BRANCHES], q2z[PLL_NUM_BRANCHES];
   nodeptr  p1, p2, q, q1, q2;
   int      mintrav2, i;  
   boolean doP = PLL_TRUE, doQ = PLL_TRUE;
@@ -1462,7 +1462,7 @@ static void writeCheckpoint(pllInstance *tr, partitionList *pr, int state)
     myfwrite(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
     myfwrite(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
     
-    if(pr->partitionData[model]->protModels == LG4)
+    if(pr->partitionData[model]->protModels == PLL_LG4)
 	{
 	  int 
 	    k;
@@ -1582,7 +1582,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
   if(tr->ckp.rateHetModel !=  tr->rateHetModel)
   {
-    printf("restart error, you are trying to re-start a run with a different model of rate heterogeneity, the checkpoint was obtained under: %s\n", (tr->ckp.rateHetModel == GAMMA)?"GAMMA":"PSR");
+    printf("restart error, you are trying to re-start a run with a different model of rate heterogeneity, the checkpoint was obtained under: %s\n", (tr->ckp.rateHetModel == PLL_GAMMA)?"GAMMA":"PSR");
     restartErrors++;
   }  
 
@@ -1665,8 +1665,8 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
   {
     int bCounter = 0;
 
-    if((tr->ckp.state == FAST_SPRS && tr->ckp.fastIterations > 0) ||
-        (tr->ckp.state == SLOW_SPRS && tr->ckp.thoroughIterations > 0))
+    if((tr->ckp.state == PLL_FAST_SPRS && tr->ckp.fastIterations > 0) ||
+        (tr->ckp.state == PLL_SLOW_SPRS && tr->ckp.thoroughIterations > 0))
     { 
 
 #ifdef _DEBUG_CHECKPOINTING    
@@ -1675,7 +1675,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
       treeReadTopologyString(tr->tree0, tr);   
 
-      bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 0, BIPARTITIONS_RF, (branchInfo *)NULL,
+      bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 0, PLL_BIPARTITIONS_RF, (branchInfo *)NULL,
           &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);
 
       assert(bCounter == tr->mxtips - 3);
@@ -1683,8 +1683,8 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
     bCounter = 0;
 
-    if((tr->ckp.state == FAST_SPRS && tr->ckp.fastIterations > 1) ||
-        (tr->ckp.state == SLOW_SPRS && tr->ckp.thoroughIterations > 1))
+    if((tr->ckp.state == PLL_FAST_SPRS && tr->ckp.fastIterations > 1) ||
+        (tr->ckp.state == PLL_SLOW_SPRS && tr->ckp.thoroughIterations > 1))
     {
 
 #ifdef _DEBUG_CHECKPOINTING
@@ -1693,7 +1693,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
       treeReadTopologyString(tr->tree1, tr); 
 
-      bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 1, BIPARTITIONS_RF, (branchInfo *)NULL,
+      bitVectorInitravSpecial(tr->bitVectors, tr->nodep[1]->back, tr->mxtips, tr->vLength, tr->h, 1, PLL_BIPARTITIONS_RF, (branchInfo *)NULL,
           &bCounter, 1, PLL_FALSE, PLL_FALSE, tr->threadID);
 
       assert(bCounter == tr->mxtips - 3);
@@ -1730,7 +1730,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
     myfread(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
     myfread(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
     
-    if(pr->partitionData[model]->protModels == LG4)
+    if(pr->partitionData[model]->protModels == PLL_LG4)
 	{
 	  int 
 	    k;
@@ -1750,7 +1750,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
   }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier (tr, pr, THREAD_COPY_INIT_MODEL);
+  pllMasterBarrier (tr, pr, PLL_THREAD_COPY_INIT_MODEL);
 #endif
 
   updatePerSiteRates(tr, pr, PLL_FALSE);
@@ -1779,11 +1779,11 @@ void restart(pllInstance *tr, partitionList *pr)
 
   switch(tr->ckp.state)
   {
-    case REARR_SETTING:      
+    case PLL_REARR_SETTING:      
       break;
-    case FAST_SPRS:
+    case PLL_FAST_SPRS:
       break;
-    case SLOW_SPRS:
+    case PLL_SLOW_SPRS:
       break;
     default:
       assert(0);
@@ -1913,7 +1913,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 #endif
 
 	/* Backup the current branch length */
-	double z0[NUM_BRANCHES];
+	double z0[PLL_NUM_BRANCHES];
 	int i;
 	for (i = 0; i < pr->numberOfPartitions; i++) {
 		z0[i] = p->z[i];
@@ -2171,9 +2171,7 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 }
 
 
-/** @defgroup rearrangementGroup
-    
-    Rearrangement of topology
+/** @defgroup rearrangementGroup Topological rearrangements
     
     This set of functions handles the rearrangement of the tree topology
 */
@@ -2312,7 +2310,7 @@ pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pl
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
   pllRearrangeInfo rearr;
 
-  double  qz[NUM_BRANCHES], pz[NUM_BRANCHES];
+  double  qz[PLL_NUM_BRANCHES], pz[PLL_NUM_BRANCHES];
   nodeptr  r;
   //double startLH = tr->endLH;
   int i;
@@ -2455,7 +2453,7 @@ static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mint
   nodeptr 
     p1, p2, q, q1, q2;
   double 
-    p1z[NUM_BRANCHES], p2z[NUM_BRANCHES], q1z[NUM_BRANCHES], q2z[NUM_BRANCHES];
+    p1z[PLL_NUM_BRANCHES], p2z[PLL_NUM_BRANCHES], q1z[PLL_NUM_BRANCHES], q2z[PLL_NUM_BRANCHES];
   int
     mintrav2, i;
   int numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
@@ -2617,7 +2615,7 @@ static double
 pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapType)
 {
   double lh;
-  double z0[NUM_BRANCHES];
+  double z0[PLL_NUM_BRANCHES];
   int i;
 
   /* store the origin branch lengths and likelihood. The original branch lengths could
@@ -2683,7 +2681,7 @@ static void pllTestNNI (pllInstance * tr, partitionList * pr, nodeptr p, pllRear
 
   /* set the arrangement structure */
   rearr.rearrangeType  = PLL_REARRANGE_NNI;
-  rearr.likelihood     = MAX (lh1, lh2);
+  rearr.likelihood     = PLL_MAX (lh1, lh2);
   rearr.NNI.originNode = p;
   rearr.NNI.swapType   = (lh1 > lh2) ? PLL_NNI_P_NEXT : PLL_NNI_P_NEXTNEXT;
 

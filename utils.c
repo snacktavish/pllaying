@@ -119,7 +119,7 @@ void printBothOpen(const char* format, ... )
 /* Marked for deletion 
 boolean getSmoothFreqs(int dataType)
 {
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
+  assert(PLL_MIN_MODEL < dataType && dataType < PLL_MAX_MODEL);
 
   return pLengths[dataType].smoothFrequencies;
 }
@@ -127,7 +127,7 @@ boolean getSmoothFreqs(int dataType)
 
 const unsigned int *getBitVector(int dataType)
 {
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
+  assert(PLL_MIN_MODEL < dataType && dataType < PLL_MAX_MODEL);
 
   return pLengths[dataType].bitVector;
 }
@@ -135,7 +135,7 @@ const unsigned int *getBitVector(int dataType)
 /*
 int getStates(int dataType)
 {
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
+  assert(PLL_MIN_MODEL < dataType && dataType < PLL_MAX_MODEL);
 
   return pLengths[dataType].states;
 }
@@ -143,7 +143,7 @@ int getStates(int dataType)
 
 int getUndetermined(int dataType)
 {
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
+  assert(PLL_MIN_MODEL < dataType && dataType < PLL_MAX_MODEL);
 
   return pLengths[dataType].undetermined;
 }
@@ -157,7 +157,7 @@ const partitionLengths *getPartitionLengths(pInfo *p)
 
   assert(states != -1 && tipLength != -1);
 
-  assert(MIN_MODEL < dataType && dataType < MAX_MODEL);
+  assert(PLL_MIN_MODEL < dataType && dataType < PLL_MAX_MODEL);
 
   /*pLength.leftLength = pLength.rightLength = states * states;
     pLength.eignLength = states;
@@ -179,10 +179,10 @@ size_t discreteRateCategories(int rateHetModel)
 
   switch(rateHetModel)
   {
-    case CAT:
+    case PLL_CAT:
       result = 1;
       break;
-    case GAMMA:
+    case PLL_GAMMA:
       result = 4;
       break;
     default:
@@ -391,8 +391,8 @@ void hookupFull (nodeptr p, nodeptr q, double *z)
   p->back = q;
   q->back = p;
 
-  memcpy(p->z, z, NUM_BRANCHES*sizeof(double) );
-  memcpy(q->z, z, NUM_BRANCHES*sizeof(double) );
+  memcpy(p->z, z, PLL_NUM_BRANCHES*sizeof(double) );
+  memcpy(q->z, z, PLL_NUM_BRANCHES*sizeof(double) );
   //for(i = 0; i < numBranches; i++)
   //  p->z[i] = q->z[i] = z[i];
 
@@ -406,7 +406,7 @@ void hookupDefault (nodeptr p, nodeptr q)
   p->back = q;
   q->back = p;
 
-  for(i = 0; i < NUM_BRANCHES; i++)
+  for(i = 0; i < PLL_NUM_BRANCHES; i++)
     p->z[i] = q->z[i] = PLL_DEFAULTZ;
 
 }
@@ -603,7 +603,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
       //localPartitions->partitionData[model]->partitionName      = NULL;   // very imporatant since it is deallocated in pllPartitionDestroy
       
-       if(localPartitions->partitionData[model]->dataType == AA_DATA && localPartitions->partitionData[model]->protModels == LG4)      
+       if(localPartitions->partitionData[model]->dataType == PLL_AA_DATA && localPartitions->partitionData[model]->protModels == PLL_LG4)      
 	{	  	  
 	  int 
 	    k;
@@ -784,7 +784,7 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
 double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
 {
   //assert(partition_id < tr->numBranches);
-  assert(partition_id < NUM_BRANCHES);
+  assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
   assert(tr->fracchange != -1.0);
   double z = p->z[partition_id];
@@ -814,7 +814,7 @@ double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
 void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
 {
   //assert(partition_id < tr->numBranches);
-  assert(partition_id < NUM_BRANCHES);
+  assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
   assert(tr->fracchange != -1.0);
   double z;
@@ -894,7 +894,7 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 #ifdef _USE_PTHREADS
   int tid = tr->threadID;
   if (MASTER_P) {
-     pllMasterBarrier (tr, pl, THREAD_EXIT_GRACEFULLY);
+     pllMasterBarrier (tr, pl, PLL_THREAD_EXIT_GRACEFULLY);
      pllStopPthreads (tr);
     }
 #endif
@@ -906,7 +906,7 @@ pllPartitionsDestroy (pllInstance * tr, partitionList ** partitions)
 #endif
 #ifdef _FINE_GRAIN_MPI
 if (MASTER_P) {
-     pllMasterBarrier (tr, pl, THREAD_EXIT_GRACEFULLY);
+     pllMasterBarrier (tr, pl, PLL_THREAD_EXIT_GRACEFULLY);
 #endif
   freeLinkageList(pl->alphaList);
   freeLinkageList(pl->freqList); 
@@ -1098,8 +1098,8 @@ createPartitions (struct pllQueue * parts, int * bounds)
   // TODO: fix this
   pl->perGeneBranchLengths =      0;
 
-  // TODO: change NUM_BRANCHES to number of partitions I guess
-  pl->partitionData = (pInfo **) rax_calloc (NUM_BRANCHES, sizeof (pInfo *));
+  // TODO: change PLL_NUM_BRANCHES to number of partitions I guess
+  pl->partitionData = (pInfo **) rax_calloc (PLL_NUM_BRANCHES, sizeof (pInfo *));
   
   for (i = 0, elm = parts->head; elm; elm = elm->next, ++ i)
    {
@@ -1120,19 +1120,19 @@ createPartitions (struct pllQueue * parts, int * bounds)
      pl->partitionData[i]->optimizeAlphaParameter    = PLL_TRUE;
      pl->partitionData[i]->optimizeSubstitutionRates = PLL_TRUE;
 
-     if (pi->dataType == DNA_DATA)
+     if (pi->dataType == PLL_DNA_DATA)
       {
         pl->partitionData[i]->protModels                = -1;
         pl->partitionData[i]->protFreqs                 = -1;
-        pl->partitionData[i]->dataType                  = DNA_DATA;
+        pl->partitionData[i]->dataType                  = PLL_DNA_DATA;
         pl->partitionData[i]->maxTipStates              = 16;
         pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
       }
-     else /* AA_DATA */
+     else /* PLL_AA_DATA */
       {
-        pl->partitionData[i]->dataType                  = AA_DATA; 
+        pl->partitionData[i]->dataType                  = PLL_AA_DATA; 
         pl->partitionData[i]->protModels                = pi->protModels;
-	if(pl->partitionData[i]->protModels != GTR)
+	if(pl->partitionData[i]->protModels != PLL_GTR)
 	  pl->partitionData[i]->optimizeSubstitutionRates = PLL_FALSE;
         pl->partitionData[i]->maxTipStates              = 23;
         pl->partitionData[i]->protFreqs                 = pi->protFreqs;
@@ -1549,8 +1549,8 @@ pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
       
       switch  (pl->partitionData[model]->dataType)
 	{
-        case AA_DATA:
-        case DNA_DATA:
+        case PLL_AA_DATA:
+        case PLL_DNA_DATA:
           genericBaseFrequencies (pl->partitionData[model], 
                                   alignmentData, 
                                   pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
@@ -1699,7 +1699,7 @@ pllCreateInstance (pllInstanceAttr * attr)
 {
   pllInstance * tr;
 
-  if (attr->rateHetModel != GAMMA && attr->rateHetModel != CAT) return NULL;
+  if (attr->rateHetModel != PLL_GAMMA && attr->rateHetModel != PLL_CAT) return NULL;
 
   tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
@@ -1714,7 +1714,7 @@ pllCreateInstance (pllInstanceAttr * attr)
   /* remove it from the library */
   tr->useMedian    = PLL_FALSE;
 
-  tr->maxCategories = (attr->rateHetModel == GAMMA) ? 4 : 25;
+  tr->maxCategories = (attr->rateHetModel == PLL_GAMMA) ? 4 : 25;
 
   tr->numberOfThreads  = attr->numberOfThreads;
   tr->rearrangeHistory = NULL;
@@ -1817,7 +1817,7 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
   tr->ntips       = 0;
   tr->nextnode    = 0;
 
-  for (i = 0; i < NUM_BRANCHES; ++ i) tr->partitionSmoothed[i] = PLL_FALSE;
+  for (i = 0; i < PLL_NUM_BRANCHES; ++ i) tr->partitionSmoothed[i] = PLL_FALSE;
 
   tr->bitVectors = NULL;
   tr->vLength    = 0;
@@ -1829,10 +1829,10 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
   /* TODO: do these options really fit here or should they be put elsewhere? */
   tr->td[0].count            = 0;
   tr->td[0].ti               = (traversalInfo *) rax_malloc (sizeof(traversalInfo) * (size_t)tr->mxtips);
-  tr->td[0].parameterValues  = (double *) rax_malloc(sizeof(double) * (size_t)NUM_BRANCHES);
-  tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)NUM_BRANCHES);
+  tr->td[0].parameterValues  = (double *) rax_malloc(sizeof(double) * (size_t)PLL_NUM_BRANCHES);
+  tr->td[0].executeModel     = (boolean *) rax_malloc (sizeof(boolean) * (size_t)PLL_NUM_BRANCHES);
   tr->td[0].executeModel[0]  = PLL_TRUE;                                                                                                                                                                                                                                    
-  for (i = 0; i < NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
+  for (i = 0; i < PLL_NUM_BRANCHES; ++ i) tr->td[0].executeModel[i] = PLL_TRUE;
 }
 
 
@@ -1897,7 +1897,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
           double z = exp((-1 * atof(item->branch))/tr->fracchange);
           if(z < PLL_ZMIN) z = PLL_ZMIN;
           if(z > PLL_ZMAX) z = PLL_ZMAX;
-          for (k = 0; k < NUM_BRANCHES; ++ k)
+          for (k = 0; k < PLL_NUM_BRANCHES; ++ k)
              v->z[k] = tr->nodep[i]->z[k] = z;
 
           ++ i;
@@ -1910,7 +1910,7 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz
           double z = exp((-1 * atof(item->branch))/tr->fracchange);
           if(z < PLL_ZMIN) z = PLL_ZMIN;
           if(z > PLL_ZMAX) z = PLL_ZMAX;
-          for (k = 0; k < NUM_BRANCHES; ++ k)
+          for (k = 0; k < PLL_NUM_BRANCHES; ++ k)
             v->z[k] = tr->nodep[j]->z[k] = z;
             
           //t->nameList[j] = strdup (item->name);
@@ -2141,7 +2141,7 @@ pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
 
   for (i = 0; i < partitions->numberOfPartitions; ++ i)
    {
-     d = (partitions->partitionData[i]->dataType == DNA_DATA) ? meaningDNA : meaningAA;
+     d = (partitions->partitionData[i]->dataType == PLL_DNA_DATA) ? meaningDNA : meaningAA;
      
      for (j = 1; j <= alignmentData->sequenceCount; ++ j)
       {
@@ -2330,9 +2330,9 @@ static int checkLinkageConsistency(partitionList *pr)
 	    partitions = ll->ld[i].partitions,
 	    reference = ll->ld[i].partitionList[0];
 	  
-	  if(pr->partitionData[reference]->dataType == AA_DATA)
+	  if(pr->partitionData[reference]->dataType == PLL_AA_DATA)
 	    {
-	      if(pr->partitionData[reference]->protModels == GTR || pr->partitionData[reference]->nonGTR)				  
+	      if(pr->partitionData[reference]->protModels == PLL_GTR || pr->partitionData[reference]->nonGTR)				  
 		{
 		  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_TRUE))
 		    {
@@ -2536,7 +2536,7 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
 
   assert(model >= 0 && model < pr->numberOfPartitions);
 
-  assert(alpha >= ALPHA_MIN && alpha <= ALPHA_MAX);
+  assert(alpha >= PLL_ALPHA_MIN && alpha <= PLL_ALPHA_MAX);
 
   //set the alpha paremeter 
   
@@ -2549,7 +2549,7 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
   //broadcast the changed parameters to all threads/MPI processes 
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier(tr, pr, THREAD_COPY_ALPHA);
+  pllMasterBarrier(tr, pr, PLL_THREAD_COPY_ALPHA);
 #endif
 
   pr->partitionData[model]->optimizeAlphaParameter = PLL_FALSE;
@@ -2615,7 +2615,7 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
+  pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeBaseFrequencies = PLL_FALSE;
@@ -2683,7 +2683,7 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
+  pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeBaseFrequencies = PLL_TRUE;
@@ -2757,7 +2757,7 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
       double
 	r = q[i] * scaler;
       
-      assert(r >= RATE_MIN && r <= RATE_MAX);
+      assert(r >= PLL_RATE_MIN && r <= PLL_RATE_MAX);
       
       pr->partitionData[model]->substRates[i] = r;
     }
@@ -2767,7 +2767,7 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
+  pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
 #endif
   
   pr->partitionData[model]->optimizeSubstitutionRates = PLL_FALSE;
@@ -3068,7 +3068,7 @@ int pllInitModel (pllInstance * tr, partitionList * partitions, pllAlignmentData
 #endif
   
   /* mpi version now also uses the generic barrier */
-  pllMasterBarrier (tr, partitions, THREAD_INIT_PARTITION);
+  pllMasterBarrier (tr, partitions, PLL_THREAD_INIT_PARTITION);
 #else  /* SEQUENTIAL */
   /* 
      allocate the required data structures for storing likelihood vectors etc 

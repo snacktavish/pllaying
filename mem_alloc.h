@@ -11,7 +11,7 @@
 #define rax_free free
 #define rax_posix_memalign posix_memalign
 #define rax_calloc calloc
-#define rax_malloc_aligned(x) memalign(BYTE_ALIGNMENT,x)
+#define rax_malloc_aligned(x) memalign(PLL_BYTE_ALIGNMENT,x)
 
 //void *rax_memalign(size_t align, size_t size);
 //void *rax_malloc(size_t size);

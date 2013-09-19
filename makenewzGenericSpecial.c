@@ -117,7 +117,7 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
   {      
     if(!( isTip(pNumber, tr->mxtips) && isTip(qNumber, tr->mxtips)) )
     {
-      *tipCase = TIP_INNER;
+      *tipCase = PLL_TIP_INNER;
       if(isTip(qNumber, tr->mxtips))
       {
         *tipX1 = pr->partitionData[model]->yVector[qNumber];
@@ -147,14 +147,14 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
          a branch in a two-taxon tree. However, this has been inherited be some RAxML function 
          that optimized pair-wise distances between all taxa in a tree */
 
-      *tipCase = TIP_TIP;
+      *tipCase = PLL_TIP_TIP;
       *tipX1 = pr->partitionData[model]->yVector[pNumber];
       *tipX2 = pr->partitionData[model]->yVector[qNumber];
     }
   }
   else
   {
-    *tipCase = INNER_INNER;
+    *tipCase = PLL_INNER_INNER;
 
     *x1_start = pr->partitionData[model]->xVector[p_slot];
     *x2_start = pr->partitionData[model]->xVector[q_slot];
@@ -197,7 +197,7 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
 
     /* switch over possible configurations of the nodes p and q defining the branch */
 
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for (i = 0; i < n; i++)
       {
         left  = &(tipVector[states * tipX1[i]]);
@@ -212,9 +212,9 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
           sum[l] = left[l] * right[l];
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
 
-      /* same as for TIP_TIP only that 
+      /* same as for PLL_TIP_TIP only that 
          we now access on tip vector and one 
          inner vector. 
 
@@ -234,7 +234,7 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
           sum[l] = left[l] * right[l];
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         left  = &x1[states * i];
@@ -259,7 +259,7 @@ static void sumCAT_FLEX(int tipCase, double *sumtable, double *x1, double *x2, d
    number of discrete gamma rates. The data access pattern is also different since for tip vector accesses through our 
    lookup table, we do not distnguish between rates 
 
-   Note the different access pattern in TIP_INNER:
+   Note the different access pattern in PLL_TIP_INNER:
 
    left = &(tipVector[states * tipX1[i]]);	  
    right = &(x2[span * i + l * states]);
@@ -287,7 +287,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for(i = 0; i < n; i++)
       {
         left  = &(tipVector[states * tipX1[i]]);
@@ -303,7 +303,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       //reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
       {
@@ -321,7 +321,7 @@ static void sumGAMMA_FLEX(int tipCase, double *sumtable, double *x1, double *x2,
       }
       //reorder( x2, n, span );
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       //reorder_back( x1, n, span );
       //reorder_back( x2, n, span );
       for(i = 0; i < n; i++)
@@ -681,7 +681,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
 
 #if (!defined(__SSE3) && !defined(__AVX))
       assert(!tr->saveMemory);
-      if(tr->rateHetModel == CAT)
+      if(tr->rateHetModel == PLL_CAT)
         sumCAT_FLEX(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
             width, states);
       else
@@ -693,7 +693,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
       {
 
         case 4: /* DNA */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
           {
             if(tr->saveMemory)
               sumCAT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
@@ -713,7 +713,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
           }
           break;		
         case 20: /* proteins */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
           {
             if(tr->saveMemory)
               sumGTRCATPROT_SAVE(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector,
@@ -730,7 +730,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
                   width, x1_gapColumn, x2_gapColumn, x1_gap, x2_gap);
 	      else
 		    {
-		      if(pr->partitionData[model]->protModels == LG4)		      			   		
+		      if(pr->partitionData[model]->protModels == PLL_LG4)		      			   		
 			sumGAMMAPROT_LG4(tipCase,  pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector_LG4,
 					 tipX1, tipX2, width);
             else
@@ -821,7 +821,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
 #if (!defined(__SSE3) && !defined(__AVX))
       /* compute first and second derivatives with the slow generic functions */
 
-      if(tr->rateHetModel == CAT)
+      if(tr->rateHetModel == PLL_CAT)
         coreCAT_FLEX(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
             &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
             pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz, states);
@@ -833,7 +833,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
       switch(states)
       {	   
         case 4: /* DNA */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             coreGTRCAT(width, pr->partitionData[model]->numberOfCategories, sumBuffer,
                 &dlnLdlz, &d2lnLdlz2, pr->partitionData[model]->wgt,
                 pr->partitionData[model]->perSiteRates, pr->partitionData[model]->EIGN,  pr->partitionData[model]->rateCategory, lz);
@@ -844,7 +844,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
 
           break;		    
         case 20: /* proteins */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             coreGTRCATPROT(pr->partitionData[model]->EIGN, lz, pr->partitionData[model]->numberOfCategories,  pr->partitionData[model]->perSiteRates,
                 pr->partitionData[model]->rateCategory, width,
                 pr->partitionData[model]->wgt,
@@ -852,7 +852,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
                 sumBuffer);
 	    else
 		{ 
-		  if(pr->partitionData[model]->protModels == LG4)		       
+		  if(pr->partitionData[model]->protModels == PLL_LG4)		       
 		    coreGTRGAMMAPROT_LG4(pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN_LG4,
 					 sumBuffer, width, pr->partitionData[model]->wgt,
 					 &dlnLdlz, &d2lnLdlz2, lz);
@@ -904,12 +904,12 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
 
 static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, int _maxiter, double *result)
 {
-  double   z[NUM_BRANCHES], zprev[NUM_BRANCHES], zstep[NUM_BRANCHES];
-  volatile double  dlnLdlz[NUM_BRANCHES], d2lnLdlz2[NUM_BRANCHES];
-  int i, maxiter[NUM_BRANCHES], model;
+  double   z[PLL_NUM_BRANCHES], zprev[PLL_NUM_BRANCHES], zstep[PLL_NUM_BRANCHES];
+  volatile double  dlnLdlz[PLL_NUM_BRANCHES], d2lnLdlz2[PLL_NUM_BRANCHES];
+  int i, maxiter[PLL_NUM_BRANCHES], model;
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
   boolean firstIteration = PLL_TRUE;
-  boolean outerConverged[NUM_BRANCHES];
+  boolean outerConverged[PLL_NUM_BRANCHES];
   boolean loopConverged;
 
 
@@ -996,18 +996,18 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
     /* if this is the first iteration of NR we will need to first do this one-time call 
        of maknewzIterative() Note that, only this call requires broadcasting the traversal descriptor,
-       subsequent calls to pllMasterBarrier(THREAD_MAKENEWZ, tr); will not require this
+       subsequent calls to pllMasterBarrier(PLL_THREAD_MAKENEWZ, tr); will not require this
        */
 
     if(firstIteration)
       {
 	tr->td[0].traversalHasChanged = PLL_TRUE; 
-	pllMasterBarrier (tr, pr, THREAD_MAKENEWZ_FIRST);
+	pllMasterBarrier (tr, pr, PLL_THREAD_MAKENEWZ_FIRST);
 	firstIteration = PLL_FALSE; 
 	tr->td[0].traversalHasChanged = PLL_FALSE; 
       }
     else 
-      pllMasterBarrier(tr, pr, THREAD_MAKENEWZ);
+      pllMasterBarrier(tr, pr, PLL_THREAD_MAKENEWZ);
     branchLength_parallelReduce(tr, (double*)dlnLdlz, (double*)d2lnLdlz2, numBranches);
 #else 
     /* sequential part, if this is the first newton-raphson implementation,
@@ -1068,13 +1068,13 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
         //this needs further work at some point!
 
         /*
-        if(maxiter[i] > 0 && (ABS(z[i] - zprev[i]) > zstep[i]))
+        if(maxiter[i] > 0 && (PLL_ABS(z[i] - zprev[i]) > zstep[i]))
           outerConverged[i] = PLL_FALSE;
         else
           outerConverged[i] = PLL_TRUE;
         */
 
-        if((ABS(z[i] - zprev[i]) > zstep[i]))
+        if((PLL_ABS(z[i] - zprev[i]) > zstep[i]))
          {
            /* We should make a more informed decision here,
   	      based on the log like improvement */
@@ -1118,7 +1118,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 
 /** @brief Optimize branch length value(s) of a given branch with the Newton-Raphtson procedure 
  *
- * @warning A given branch may have one or several branch length values (up to NUM_BRANCHES), usually the later refers to partition-specific branch length values. Thus z0 and result represent collections rather than double values. The number of branch length values is given by \a tr->numBranches 
+ * @warning A given branch may have one or several branch length values (up to PLL_NUM_BRANCHES), usually the later refers to partition-specific branch length values. Thus z0 and result represent collections rather than double values. The number of branch length values is given by \a tr->numBranches 
  *
  * @param tr
  *   Library instance
@@ -1148,7 +1148,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
 void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask)
 {
   int i;
-  //boolean originalExecute[NUM_BRANCHES];
+  //boolean originalExecute[PLL_NUM_BRANCHES];
   int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
 
   boolean 
@@ -1241,7 +1241,7 @@ static void sumCAT_SAVE(int tipCase, double *sum, double *x1_start, double *x2_s
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -1251,7 +1251,7 @@ static void sumCAT_SAVE(int tipCase, double *sum, double *x1_start, double *x2_s
         _mm_store_pd( &sum[i*4 + 2], _mm_mul_pd( _mm_load_pd( &x1[2] ), _mm_load_pd( &x2[2] )));
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -1267,7 +1267,7 @@ static void sumCAT_SAVE(int tipCase, double *sum, double *x1_start, double *x2_s
         _mm_store_pd( &sum[i*4 + 2], _mm_mul_pd( _mm_load_pd( &x1[2] ), _mm_load_pd( &x2[2] )));
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         if(isGap(x1_gap, i))
@@ -1312,7 +1312,7 @@ static void sumGAMMA_GAPPED_SAVE(int tipCase, double *sumtable, double *x1_start
 
   switch(tipCase)
   {
-    case TIP_TIP:     
+    case PLL_TIP_TIP:     
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -1324,7 +1324,7 @@ static void sumGAMMA_GAPPED_SAVE(int tipCase, double *sumtable, double *x1_start
             _mm_store_pd( &sum[j*4 + k], _mm_mul_pd( _mm_load_pd( &x1[k] ), _mm_load_pd( &x2[k] )));
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         x1  = &(tipVector[4 * tipX1[i]]);
@@ -1344,7 +1344,7 @@ static void sumGAMMA_GAPPED_SAVE(int tipCase, double *sumtable, double *x1_start
             _mm_store_pd( &sum[j*4 + k], _mm_mul_pd( _mm_load_pd( &x1[k] ), _mm_load_pd( &x2[j * 4 + k] )));
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         if(x1_gap[i / 32] & mask32[i % 32])
@@ -1389,7 +1389,7 @@ static void sumGAMMA(int tipCase, double *sumtable, double *x1_start, double *x2
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       /* C-OPT main for loop overt alignment length */
       for (i = 0; i < n; i++)
       {
@@ -1402,7 +1402,7 @@ static void sumGAMMA(int tipCase, double *sumtable, double *x1_start, double *x2
             _mm_store_pd( &sum[j*4 + k], _mm_mul_pd( _mm_load_pd( &x1[k] ), _mm_load_pd( &x2[k] )));
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         x1  = &(tipVector[4 * tipX1[i]]);
@@ -1414,7 +1414,7 @@ static void sumGAMMA(int tipCase, double *sumtable, double *x1_start, double *x2
             _mm_store_pd( &sum[j*4 + k], _mm_mul_pd( _mm_load_pd( &x1[k] ), _mm_load_pd( &x2[j * 4 + k] )));
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         x1  = &x1_start[16 * i];
@@ -1442,7 +1442,7 @@ static void sumCAT(int tipCase, double *sum, double *x1_start, double *x2_start,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -1452,7 +1452,7 @@ static void sumCAT(int tipCase, double *sum, double *x1_start, double *x2_start,
         _mm_store_pd( &sum[i*4 + 2], _mm_mul_pd( _mm_load_pd( &x1[2] ), _mm_load_pd( &x2[2] )));
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -1462,7 +1462,7 @@ static void sumCAT(int tipCase, double *sum, double *x1_start, double *x2_start,
         _mm_store_pd( &sum[i*4 + 2], _mm_mul_pd( _mm_load_pd( &x1[2] ), _mm_load_pd( &x2[2] )));
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         x1 = &x1_start[4 * i];
@@ -1493,7 +1493,7 @@ static void sumGAMMAPROT_GAPPED_SAVE(int tipCase, double *sumtable, double *x1, 
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for(i = 0; i < n; i++)
       {
         left  = &(tipVector[20 * tipX1[i]]);
@@ -1513,7 +1513,7 @@ static void sumGAMMAPROT_GAPPED_SAVE(int tipCase, double *sumtable, double *x1, 
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for(i = 0; i < n; i++)
       {
         left = &(tipVector[20 * tipX1[i]]);
@@ -1540,7 +1540,7 @@ static void sumGAMMAPROT_GAPPED_SAVE(int tipCase, double *sumtable, double *x1, 
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
       {
         if(x1_gap[i / 32] & mask32[i % 32])
@@ -1588,7 +1588,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for(i = 0; i < n; i++)
 	{	  
 	  for(l = 0; l < 4; l++)
@@ -1611,7 +1611,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 	    }
 	}
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for(i = 0; i < n; i++)
 	{
 	 
@@ -1635,7 +1635,7 @@ static void sumGAMMAPROT_LG4(int tipCase, double *sumtable, double *x1, double *
 	    }
 	}
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
 	{
 	  for(l = 0; l < 4; l++)
@@ -1672,7 +1672,7 @@ static void sumGAMMAPROT(int tipCase, double *sumtable, double *x1, double *x2, 
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for(i = 0; i < n; i++)
       {
         left  = &(tipVector[20 * tipX1[i]]);
@@ -1692,7 +1692,7 @@ static void sumGAMMAPROT(int tipCase, double *sumtable, double *x1, double *x2, 
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for(i = 0; i < n; i++)
       {
         left = &(tipVector[20 * tipX1[i]]);
@@ -1712,7 +1712,7 @@ static void sumGAMMAPROT(int tipCase, double *sumtable, double *x1, double *x2, 
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
       {
         for(l = 0; l < 4; l++)
@@ -1745,7 +1745,7 @@ static void sumGTRCATPROT(int tipCase, double *sumtable, double *x1, double *x2,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for (i = 0; i < n; i++)
       {
         left  = &(tipVector[20 * tipX1[i]]);
@@ -1761,7 +1761,7 @@ static void sumGTRCATPROT(int tipCase, double *sumtable, double *x1, double *x2,
 
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         left = &(tipVector[20 * tipX1[i]]);
@@ -1777,7 +1777,7 @@ static void sumGTRCATPROT(int tipCase, double *sumtable, double *x1, double *x2,
 
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         left  = &x1[20 * i];
@@ -1816,7 +1816,7 @@ static void sumGTRCATPROT_SAVE(int tipCase, double *sumtable, double *x1, double
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       for (i = 0; i < n; i++)
       {
         left  = &(tipVector[20 * tipX1[i]]);
@@ -1832,7 +1832,7 @@ static void sumGTRCATPROT_SAVE(int tipCase, double *sumtable, double *x1, double
 
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       for (i = 0; i < n; i++)
       {
         left = &(tipVector[20 * tipX1[i]]);       
@@ -1856,7 +1856,7 @@ static void sumGTRCATPROT_SAVE(int tipCase, double *sumtable, double *x1, double
 
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {	 
         if(isGap(x1_gap, i))
@@ -1902,9 +1902,9 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
             dlnLidlz, 
             d2lnLidlz2,  
             *sum, 
-            diagptable0[16] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-            diagptable1[16] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-            diagptable2[16] __attribute__ ((aligned (BYTE_ALIGNMENT)));    
+            diagptable0[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+            diagptable1[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+            diagptable2[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));    
 
   int     
     i, 
@@ -1986,8 +1986,8 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
     inv_Li, dlnLidlz, d2lnLidlz2,
     dlnLdlz = 0.0,
     d2lnLdlz2 = 0.0;
-  double e1[4] __attribute__ ((aligned (BYTE_ALIGNMENT)));
-  double e2[4] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+  double e1[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
+  double e2[4] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
   double dd1, dd2, dd3;
 
   __m128d
@@ -2065,9 +2065,9 @@ static void coreGTRGAMMAPROT_LG4(double *gammaRates, double *EIGN[4], double *su
 				 volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz)
 {
   double  *sum, 
-    diagptable0[80] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-    diagptable1[80] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-    diagptable2[80] __attribute__ ((aligned (BYTE_ALIGNMENT)));    
+    diagptable0[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+    diagptable1[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+    diagptable2[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));    
   int     i, j, l;
   double  dlnLdlz = 0;
   double d2lnLdlz2 = 0;
@@ -2142,9 +2142,9 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
     volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz)
 {
   double  *sum, 
-          diagptable0[80] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-          diagptable1[80] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-          diagptable2[80] __attribute__ ((aligned (BYTE_ALIGNMENT)));    
+          diagptable0[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+          diagptable1[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+          diagptable2[80] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));    
   int     i, j, l;
   double  dlnLdlz = 0;
   double d2lnLdlz2 = 0;
@@ -2221,9 +2221,9 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   int i, l;
   double *d1, *d_start, *sum;
   double 
-    e[20] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-    s[20] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-    dd[20] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    e[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+    s[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+    dd[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
   double inv_Li, dlnLidlz, d2lnLidlz2;
   double  dlnLdlz = 0.0;
   double  d2lnLdlz2 = 0.0;

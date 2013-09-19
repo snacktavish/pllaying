@@ -16,7 +16,7 @@ extern "C" {
 #include <immintrin.h>
 #include <pmmintrin.h>
 
-#define BYTE_ALIGNMENT 32
+#define PLL_BYTE_ALIGNMENT 32
 
 #else
 
@@ -25,10 +25,10 @@ extern "C" {
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
-#define BYTE_ALIGNMENT 16
+#define PLL_BYTE_ALIGNMENT 16
 
 #else
-#define BYTE_ALIGNMENT 1
+#define PLL_BYTE_ALIGNMENT 1
 #endif
 #endif
 
@@ -90,20 +90,18 @@ extern "C" {
 
 #define PLL_BADREAR                             -1
 
-#define NUM_BRANCHES     16
+#define PLL_NUM_BRANCHES                        16
 
 #define PLL_TRUE                                1
 #define PLL_FALSE                               0
-
 
 #define PLL_REARRANGE_SPR                       0
 #define PLL_REARRANGE_TBR                       1
 #define PLL_REARRANGE_NNI                       2
 
-#define LIKELIHOOD_EPSILON 0.0000001
 
-#define AA_SCALE 10.0
-#define AA_SCALE_PLUS_EPSILON 10.001
+#define PLL_AA_SCALE                            10.0
+#define PLL_AA_SCALE_PLUS_EPSILON               10.001
 
 /* ALPHA_MIN is critical -> numerical instability, eg for 4 discrete rate cats                    */
 /* and alpha = 0.01 the lowest rate r_0 is                                                        */
@@ -123,19 +121,13 @@ extern "C" {
 /* 0.100000 0.00000052651925834844387815526344648331402709118265192955732345581054687500000000    */
 
 
-#define ALPHA_MIN    0.02
-#define ALPHA_MAX    1000.0
+#define PLL_ALPHA_MIN                           0.02
+#define PLL_ALPHA_MAX                           1000.0
 
-#define RATE_MIN     0.0000001
-#define RATE_MAX     1000000.0
+#define PLL_RATE_MIN                            0.0000001
+#define PLL_RATE_MAX                            1000000.0
 
-#define INVAR_MIN    0.0001
-#define INVAR_MAX    0.9999
 
-#define TT_MIN       0.0000001
-#define TT_MAX       1000000.0
-
-#define FREQ_MIN     0.001
 
 /* 
    previous values between 0.001 and 0.000001
@@ -149,25 +141,23 @@ extern "C" {
    
 */
 
-#define ITMAX 100
+#define PLL_ITMAX                               100    /* max number of iterations in brent's algorithm */
 
 
 
-#define SHFT(a,b,c,d)                (a)=(b);(b)=(c);(c)=(d);
-#define SIGN(a,b)                    ((b) > 0.0 ? fabs(a) : -fabs(a))
+#define PLL_SHFT(a,b,c,d)                       (a)=(b);(b)=(c);(c)=(d);
+#define PLL_SIGN(a,b)                           ((b) > 0.0 ? fabs(a) : -fabs(a))
 
-#define ABS(x)    (((x)<0)   ?  (-(x)) : (x))
-#define MIN(x,y)  (((x)<(y)) ?    (x)  : (y))
-#define MAX(x,y)  (((x)>(y)) ?    (x)  : (y))
-#define NINT(x)   ((int) ((x)>0 ? ((x)+0.5) : ((x)-0.5)))
-
-#define FABS(x) fabs(x)
+#define PLL_ABS(x)                              (((x)<0)   ?  (-(x)) : (x))
+#define PLL_MIN(x,y)                            (((x)<(y)) ?    (x)  : (y))
+#define PLL_MAX(x,y)                            (((x)>(y)) ?    (x)  : (y))
+#define PLL_FABS(x)                             fabs(x)
 
 #ifdef _USE_FPGA_LOG
 extern double log_approx (double input);
-#define LOG(x)  log_approx(x)
+#define PLL_LOG(x)  log_approx(x)
 #else
-#define LOG(x)  log(x)
+#define PLL_LOG(x)  log(x)
 #endif
 
 
@@ -179,100 +169,97 @@ extern double exp_approx (double x);
 #endif
 
 
-#define LOGF(x) logf(x)
 
 
 #define PointGamma(prob,alpha,beta)  PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
-#define programName        "PLL"
-#define programVersion     "1.0.0"
-#define programDate        "September 2013"
+#define PLL_LIB_NAME                            "PLL"
+#define PLL_LIB_VERSION                         "1.0.0"
+#define PLL_LIB_DATE                            "September 2013"
 
 
-#define DAYHOFF    0
-#define DCMUT      1
-#define JTT        2
-#define MTREV      3
-#define WAG        4
-#define RTREV      5
-#define CPREV      6
-#define VT         7
-#define BLOSUM62   8
-#define MTMAM      9
-#define LG         10
-#define MTART      11
-#define MTZOA      12
-#define PMB        13
-#define HIVB       14
-#define HIVW       15
-#define JTTDCMUT   16
-#define FLU        17 
-#define AUTO       18
-#define LG4        19
-#define GTR        20  /* GTR always needs to be the last one */
+#define PLL_DAYHOFF                             0
+#define PLL_DCMUT                               1
+#define PLL_JTT                                 2
+#define PLL_MTREV                               3
+#define PLL_WAG                                 4
+#define PLL_RTREV                               5
+#define PLL_CPREV                               6
+#define PLL_VT                                  7
+#define PLL_BLOSUM62                            8
+#define PLL_MTMAM                               9
+#define PLL_LG                                  10
+#define PLL_MTART                               11
+#define PLL_MTZOA                               12
+#define PLL_PMB                                 13
+#define PLL_HIVB                                14
+#define PLL_HIVW                                15
+#define PLL_JTTDCMUT                            16
+#define PLL_FLU                                 17 
+#define PLL_AUTO                                18
+#define PLL_LG4                                 19
+#define PLL_GTR                                 20  /* GTR always needs to be the last one */
 
-#define NUM_PROT_MODELS 21
+#define PLL_NUM_PROT_MODELS                     21
 
 /* bipartition stuff */
 
-#define BIPARTITIONS_RF  4
+#define PLL_BIPARTITIONS_RF                     4
 
 
-#define TIP_TIP     0
-#define TIP_INNER   1
-#define INNER_INNER 2
+#define PLL_TIP_TIP                             0
+#define PLL_TIP_INNER                           1
+#define PLL_INNER_INNER                         2
 
-#define MIN_MODEL        -1
-#define BINARY_DATA      0
-#define DNA_DATA         1
-#define AA_DATA          2
-#define SECONDARY_DATA   3
-#define SECONDARY_DATA_6 4
-#define SECONDARY_DATA_7 5
-#define GENERIC_32       6
-#define GENERIC_64       7
-#define MAX_MODEL        8
+#define PLL_MIN_MODEL                          -1
+#define PLL_BINARY_DATA                         0
+#define PLL_DNA_DATA                            1
+#define PLL_AA_DATA                             2
+#define PLL_SECONDARY_DATA                      3
+#define PLL_SECONDARY_DATA_6                    4
+#define PLL_SECONDARY_DATA_7                    5
+#define PLL_GENERIC_32                          6
+#define PLL_GENERIC_64                          7
+#define PLL_MAX_MODEL                           8
 
-#define SEC_6_A 0
-#define SEC_6_B 1
-#define SEC_6_C 2
-#define SEC_6_D 3
-#define SEC_6_E 4
+#define PLL_SEC_6_A                             0
+#define PLL_SEC_6_B                             1
+#define PLL_SEC_6_C                             2
+#define PLL_SEC_6_D                             3
+#define PLL_SEC_6_E                             4
 
-#define SEC_7_A 5
-#define SEC_7_B 6
-#define SEC_7_C 7
-#define SEC_7_D 8
-#define SEC_7_E 9
-#define SEC_7_F 10
+#define PLL_SEC_7_A                             5
+#define PLL_SEC_7_B                             6
+#define PLL_SEC_7_C                             7
+#define PLL_SEC_7_D                             8
+#define PLL_SEC_7_E                             9
+#define PLL_SEC_7_F                             10
 
-#define SEC_16   11
-#define SEC_16_A 12
-#define SEC_16_B 13
-#define SEC_16_C 14
-#define SEC_16_D 15
-#define SEC_16_E 16
-#define SEC_16_F 17
-#define SEC_16_I 18
-#define SEC_16_J 19
-#define SEC_16_K 20
+#define PLL_SEC_16                              11
+#define PLL_SEC_16_A                            12
+#define PLL_SEC_16_B                            13
+#define PLL_SEC_16_C                            14
+#define PLL_SEC_16_D                            15
+#define PLL_SEC_16_E                            16
+#define PLL_SEC_16_F                            17
+#define PLL_SEC_16_I                            18
+#define PLL_SEC_16_J                            19
+#define PLL_SEC_16_K                            20
 
-#define ORDERED_MULTI_STATE 0
-#define MK_MULTI_STATE      1
-#define GTR_MULTI_STATE     2
+#define PLL_ORDERED_MULTI_STATE                 0
+#define PLL_MK_MULTI_STATE                      1
+#define PLL_GTR_MULTI_STATE                     2
 
-#define CAT         0
-#define GAMMA       1
-#define GAMMA_I     2
+#define PLL_CAT                                 0
+#define PLL_GAMMA                               1
 
 /* recomp */
-#define SLOT_UNUSED            -2  /* value to mark an available vector */
-#define NODE_UNPINNED          -3  /* marks an inner node as not available in RAM */
-#define INNER_NODE_INIT_STLEN  -1  /* initialization */
+#define PLL_SLOT_UNUSED                        -2  /* value to mark an available vector */
+#define PLL_NODE_UNPINNED                      -3  /* marks an inner node as not available in RAM */
+#define PLL_INNER_NODE_INIT_STLEN              -1  /* initialization */
 
-#define MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
-#define MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
-#define MEM_APROX_OVERHEAD     1.3 /* TODOFER can we measure this empirically? */
+#define PLL_MIN_RECOM_FRACTION     0.1 /* at least this % of inner nodes will be allocated in RAM */
+#define PLL_MAX_RECOM_FRACTION     1.0 /* always 1, just there for boundary checks */
 
 
 typedef  int boolean;
@@ -292,8 +279,8 @@ typedef struct
 typedef struct
 {
   int numVectors;      /**< Number of inner vectors allocated in RAM*/
-  int *iVector;        /**< size: numVectors, stores node id || SLOT_UNUSED  */
-  int *iNode;          /**< size: inner nodes, stores slot id || NODE_UNPINNED */
+  int *iVector;        /**< size: numVectors, stores node id || PLL_SLOT_UNUSED  */
+  int *iNode;          /**< size: inner nodes, stores slot id || PLL_NODE_UNPINNED */
   int *stlen;          /**< Number of tips behind the current orientation of the indexed inner node (subtree size/cost) */ 
   int *unpinnable;     /**< size:numVectors , TRUE if we dont need the vector */
   int maxVectorsUsed;  
@@ -323,7 +310,7 @@ typedef unsigned int hashNumberType;
 
 /*typedef uint_fast32_t parsimonyNumber;*/
 
-#define PCF 32
+#define PLL_PCF 32
 
 /** @brief ???Hash tables 
  * @todo add explanation of all hash tables  */
@@ -371,18 +358,18 @@ typedef struct ratec
   * The entry defines 2 input/parent nodes (q and r) and one output/child node (p)
   * qz represents the branch length(s) of the branch connecting q and p
   * rz represents the branch length(s) of the branch connecting r and p
-  * TIP_TIP     Both p and r are tips
-  * INNER_INNER Both p and r are inner nodes
-  * @note TIP_INNER   q is a tip and r is an inner node (by convention, flip q and r if required)
+  * PLL_TIP_TIP     Both p and r are tips
+  * PLL_INNER_INNER Both p and r are inner nodes
+  * @note PLL_TIP_INNER   q is a tip and r is an inner node (by convention, flip q and r if required)
   */
 typedef struct
 {
-  int tipCase;                  /**< Type of entry, must be TIP_TIP TIP_INNER or INNER_INNER */
+  int tipCase;                  /**< Type of entry, must be PLL_TIP_TIP PLL_TIP_INNER or PLL_INNER_INNER */
   int pNumber;                  /**< should exist in some nodeptr p->number */
   int qNumber;                  /**< should exist in some nodeptr q->number */
   int rNumber;                  /**< should exist in some nodeptr r->number */
-  double qz[NUM_BRANCHES];
-  double rz[NUM_BRANCHES];
+  double qz[PLL_NUM_BRANCHES];
+  double rz[PLL_NUM_BRANCHES];
   /* recom */
   int slot_p;                   /**< In recomputation mode, the RAM slot index for likelihood vector of node p, otherwise unused */
   int slot_q;                   /**< In recomputation mode, the RAM slot index for likelihood vector of node q, otherwise unused */
@@ -569,7 +556,7 @@ typedef struct
      branch length twice for each "topological branch" unfortunately.
 
      Assuming that we are only estimating a single branch across all partitions 
-     we'd just set the first index of the branch length array z[NUM_BRANCHES].
+     we'd just set the first index of the branch length array z[PLL_NUM_BRANCHES].
 
      e.g., 
 
@@ -663,7 +650,7 @@ typedef  struct noderec
 {
  
   branchInfo      *bInf;
-  double           z[NUM_BRANCHES];
+  double           z[PLL_NUM_BRANCHES];
   struct noderec  *next;        
   struct noderec  *back;       
   hashNumberType   hash;
@@ -749,7 +736,7 @@ typedef unsigned int parsimonyNumber;
     @var pInfo::dataType
     @brief Type of data this partition contains
 
-    Can be DNA (\b DNA_DATA) or AminoAcid (\b AA_DATA) data
+    Can be DNA (\b PLL_DNA_DATA) or AminoAcid (\b PLL_AA_DATA) data
 
     @var pInfo::states
     @brief Number of states
@@ -851,13 +838,13 @@ typedef unsigned int parsimonyNumber;
     @var pInfo::protModels
     @brief Protein model for current partition
 
-    In case \a pInfo::dataType is set to \a AA_DATA then \a protModels indicates the index in the global array \a protModels
+    In case \a pInfo::dataType is set to \a PLL_AA_DATA then \a protModels indicates the index in the global array \a protModels
     of the protein model that the current partition uses.
 
     @var pInfo::autoProtModels
-    @brief Best fitted protein model for the \b AUTO partitions
+    @brief Best fitted protein model for the \b PLL_AUTO partitions
 
-    If \a protModels is set to \b AUTO then \a autoProtModels holds the currently detected best fitting protein model for the partition
+    If \a protModels is set to \b PLL_AUTO then \a autoProtModels holds the currently detected best fitting protein model for the partition
 
     @var pInfo::protFreqs
 
@@ -1006,9 +993,9 @@ typedef struct
 
 
 
-#define REARR_SETTING 1
-#define FAST_SPRS     2
-#define SLOW_SPRS     3
+#define PLL_REARR_SETTING 1
+#define PLL_FAST_SPRS     2
+#define PLL_SLOW_SPRS     3
 
 
 /** @brief Checkpointing states. 
@@ -1140,7 +1127,7 @@ typedef  struct  {
   int              maxCategories;
   int              categories;
 
-  double           coreLZ[NUM_BRANCHES];
+  double           coreLZ[PLL_NUM_BRANCHES];
   
  
   branchInfo       *bInf;
@@ -1148,7 +1135,7 @@ typedef  struct  {
   int              multiStateModel;
 
 
-  boolean curvatOK[NUM_BRANCHES];
+  boolean curvatOK[PLL_NUM_BRANCHES];
   /* the stuff below is shared among DNA and AA, span does
      not change depending on datatype */
 
@@ -1192,8 +1179,8 @@ typedef  struct  {
 
 
   boolean          bigCutoff;
-  boolean          partitionSmoothed[NUM_BRANCHES];
-  boolean          partitionConverged[NUM_BRANCHES];
+  boolean          partitionSmoothed[PLL_NUM_BRANCHES];
+  boolean          partitionConverged[PLL_NUM_BRANCHES];
   boolean          rooted;
   boolean          doCutoff;
  
@@ -1212,17 +1199,17 @@ typedef  struct  {
   nodeptr removeNode;   /**< the node that has been removed. Together with \a insertNode represents an SPR move */
   nodeptr insertNode;   /**< the node where insertion should take place . Together with \a removeNode represents an SPR move*/
 
-  double zqr[NUM_BRANCHES];
-  double currentZQR[NUM_BRANCHES];
+  double zqr[PLL_NUM_BRANCHES];
+  double currentZQR[PLL_NUM_BRANCHES];
 
-  double currentLZR[NUM_BRANCHES];
-  double currentLZQ[NUM_BRANCHES];
-  double currentLZS[NUM_BRANCHES];
-  double currentLZI[NUM_BRANCHES];
-  double lzs[NUM_BRANCHES];
-  double lzq[NUM_BRANCHES];
-  double lzr[NUM_BRANCHES];
-  double lzi[NUM_BRANCHES];
+  double currentLZR[PLL_NUM_BRANCHES];
+  double currentLZQ[PLL_NUM_BRANCHES];
+  double currentLZS[PLL_NUM_BRANCHES];
+  double currentLZI[PLL_NUM_BRANCHES];
+  double lzs[PLL_NUM_BRANCHES];
+  double lzq[PLL_NUM_BRANCHES];
+  double lzr[PLL_NUM_BRANCHES];
+  double lzi[PLL_NUM_BRANCHES];
 
 
   unsigned int **bitVectors;
@@ -1261,8 +1248,8 @@ typedef struct {
         pllInstance * tr;
         nodeptr p;
         int nniType;
-        double z[NUM_BRANCHES]; // optimize branch lengths
-        double z0[NUM_BRANCHES]; // unoptimized branch lengths
+        double z[PLL_NUM_BRANCHES]; // optimize branch lengths
+        double z0[PLL_NUM_BRANCHES]; // unoptimized branch lengths
         double likelihood;
         double deltaLH;
 } nniMove;
@@ -1276,7 +1263,7 @@ typedef struct {
 
 typedef struct
 {
-  double z[NUM_BRANCHES];
+  double z[PLL_NUM_BRANCHES];
   nodeptr p, q;
   int cp, cq;
 }
@@ -1309,7 +1296,7 @@ typedef  struct
 /** @brief Connection within a topology.
 *   */
 typedef struct conntyp {
-    double           z[NUM_BRANCHES];           /**< branch length */
+    double           z[PLL_NUM_BRANCHES];           /**< branch length */
     node            *p, *q;       /**< parent and child sectors */
     void            *valptr;      /**< pointer to value of subtree */
     int              descend;     /**< pointer to first connect of child */
@@ -1428,7 +1415,7 @@ typedef struct
     struct {
       nodeptr origin;
       int swapType;
-      double z[NUM_BRANCHES];
+      double z[PLL_NUM_BRANCHES];
     } NNI;
   };
 } pllRollbackInfo;
@@ -1459,7 +1446,7 @@ typedef struct
    int maxtrav;
  } pllRearrangeAttr;
 
-/** @struct pllRearrangeInfo
+/** @typedef pllRearrangeInfo
     
     @brief Tree rearrangement information structure
 
@@ -1491,7 +1478,7 @@ typedef struct
      struct {
        nodeptr removeNode;
        nodeptr insertNode;
-       double  zqr[NUM_BRANCHES];
+       double  zqr[PLL_NUM_BRANCHES];
      } SPR;
      struct {
        nodeptr originNode;
@@ -1782,23 +1769,23 @@ void pllClearRearrangeHistory (pllInstance * tr);
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 /* work tags for parallel regions */
 
-#define THREAD_NEWVIEW                  0        
-#define THREAD_EVALUATE                 1
-#define THREAD_MAKENEWZ                 2 
-#define THREAD_MAKENEWZ_FIRST           3
-#define THREAD_RATE_CATS                4
-#define THREAD_COPY_RATE_CATS           5
-#define THREAD_COPY_INIT_MODEL          6
-#define THREAD_INIT_PARTITION           7
-#define THREAD_OPT_ALPHA                8
-#define THREAD_OPT_RATE                 9
-#define THREAD_COPY_ALPHA               10
-#define THREAD_COPY_RATES               11
-#define THREAD_PER_SITE_LIKELIHOODS     12
-#define THREAD_NEWVIEW_ANCESTRAL        13
-#define THREAD_GATHER_ANCESTRAL         14
-#define THREAD_EXIT_GRACEFULLY          15
-#define THREAD_EVALUATE_PER_SITE_LIKES  16
+#define PLL_THREAD_NEWVIEW                  0        
+#define PLL_THREAD_EVALUATE                 1
+#define PLL_THREAD_MAKENEWZ                 2 
+#define PLL_THREAD_MAKENEWZ_FIRST           3
+#define PLL_THREAD_RATE_CATS                4
+#define PLL_THREAD_COPY_RATE_CATS           5
+#define PLL_THREAD_COPY_INIT_MODEL          6
+#define PLL_THREAD_INIT_PARTITION           7
+#define PLL_THREAD_OPT_ALPHA                8
+#define PLL_THREAD_OPT_RATE                 9
+#define PLL_THREAD_COPY_ALPHA               10
+#define PLL_THREAD_COPY_RATES               11
+#define PLL_THREAD_PER_SITE_LIKELIHOODS     12
+#define PLL_THREAD_NEWVIEW_ANCESTRAL        13
+#define PLL_THREAD_GATHER_ANCESTRAL         14
+#define PLL_THREAD_EXIT_GRACEFULLY          15
+#define PLL_THREAD_EVALUATE_PER_SITE_LIKES  16
 
 
 

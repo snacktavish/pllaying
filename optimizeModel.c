@@ -63,7 +63,7 @@ extern char workdir[1024];
 extern char run_id[128];
 extern char lengthFileName[1024];
 extern char lengthFileNameModel[1024];
-extern char *protModels[NUM_PROT_MODELS];
+extern char *protModels[PLL_NUM_PROT_MODELS];
 
 static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels, int rateNumber, double lim_inf, double lim_sup, int whichParameterType);
 // FLAG for easier debugging of model parameter optimization routines 
@@ -103,14 +103,14 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
     states   = pr->partitionData[model]->states,
     numRates = (states * states - states) / 2;
 
-  if(pr->partitionData[model]->dataType == DNA_DATA)
+  if(pr->partitionData[model]->dataType == PLL_DNA_DATA)
     assert(position >= 0 && position < (numRates - 1));
   else
     assert(position >= 0 && position < numRates);
 
-  assert(pr->partitionData[model]->dataType != BINARY_DATA);
+  assert(pr->partitionData[model]->dataType != PLL_BINARY_DATA);
 
-  assert(rate >= RATE_MIN && rate <= RATE_MAX);
+  assert(rate >= PLL_RATE_MIN && rate <= PLL_RATE_MAX);
 
   if(pr->partitionData[model]->nonGTR)
     {    
@@ -320,13 +320,13 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
    switch (whichFunction)
     {
       case RATE_F:
-        pllMasterBarrier(tr, pr, THREAD_OPT_RATE);
+        pllMasterBarrier(tr, pr, PLL_THREAD_OPT_RATE);
         break;
       case ALPHA_F:
-        pllMasterBarrier(tr, pr, THREAD_OPT_ALPHA);
+        pllMasterBarrier(tr, pr, PLL_THREAD_OPT_ALPHA);
         break;
       case FREQ_F:
-        pllMasterBarrier(tr, pr, THREAD_OPT_RATE);
+        pllMasterBarrier(tr, pr, PLL_THREAD_OPT_RATE);
         break;
       default:
         break;
@@ -469,7 +469,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
   
   
 
-  for(iter = 1; iter <= ITMAX; iter++)
+  for(iter = 1; iter <= PLL_ITMAX; iter++)
     {
       allConverged = PLL_TRUE;
 
@@ -540,14 +540,14 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
                           d[i] = p[i] / q[i];
                           u[i] = x[i] + d[i];
                           if( u[i] - a[i] < tol2[i] || b[i] - u[i] < tol2[i])
-                            d[i] = SIGN(tol1[i], xm[i] - x[i]);
+                            d[i] = PLL_SIGN(tol1[i], xm[i] - x[i]);
                         }
                     }
                   else
                     {                
                       d[i] = BRENT_CGOLD * (e[i] = (x[i] >= xm[i] ? a[i] - x[i]: b[i] - x[i]));
                     }
-                  u[i] = ((fabs(d[i]) >= tol1[i]) ? (x[i] + d[i]): (x[i] +SIGN(tol1[i], d[i])));
+                  u[i] = ((fabs(d[i]) >= tol1[i]) ? (x[i] + d[i]) : (x[i] + PLL_SIGN(tol1[i], d[i])));
                 }
 
               if(!converged[i])
@@ -569,8 +569,8 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
                   else
                     b[i] = x[i];
                   
-                  SHFT(v[i],w[i],x[i],u[i]);
-                  SHFT(fv[i],fw[i],fx[i],fu[i]);
+                  PLL_SHFT(v[i],w[i],x[i],u[i]);
+                  PLL_SHFT(fv[i],fw[i],fx[i],fu[i]);
                 }
               else
                 {
@@ -748,8 +748,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     {
       if (fb[i] > fa[i]) 
         {         
-          SHFT(dum[i],ax[i],bx[i],dum[i]);
-          SHFT(dum[i],fa[i],fb[i],dum[i]);
+          PLL_SHFT(dum[i],ax[i],bx[i],dum[i]);
+          PLL_SHFT(dum[i],fa[i],fb[i],dum[i]);
         }
       
       cx[i] = bx[i] + MNBRAK_GOLD * (bx[i] - ax[i]);
@@ -838,7 +838,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
                        r[i]=(bx[i]-ax[i])*(fb[i]-fc[i]);
                        q[i]=(bx[i]-cx[i])*(fb[i]-fa[i]);
                        u[i]=(bx[i])-((bx[i]-cx[i])*q[i]-(bx[i]-ax[i])*r[i])/
-                         (2.0*SIGN(MAX(fabs(q[i]-r[i]),MNBRAK_TINY),q[i]-r[i]));
+                         (2.0 * PLL_SIGN(PLL_MAX(fabs(q[i]-r[i]),MNBRAK_TINY),q[i]-r[i]));
                        
                        ulim[i]=(bx[i])+MNBRAK_GLIMIT*(cx[i]-bx[i]);
                        
@@ -921,8 +921,8 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
                  {
                  case 0:
                    fu[i] = temp[i];
-                   SHFT(ax[i],bx[i],cx[i],u[i]);
-                   SHFT(fa[i],fb[i],fc[i],fu[i]);
+                   PLL_SHFT(ax[i],bx[i],cx[i],u[i]);
+                   PLL_SHFT(fa[i],fb[i],fc[i],fu[i]);
                    state[i] = 0;
                    break;
                  case 1:
@@ -958,20 +958,20 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
                    fu[i] = temp[i];
                    if (fu[i] < fc[i]) 
                      {               
-                       SHFT(bx[i],cx[i],u[i], cx[i]+MNBRAK_GOLD*(cx[i]-bx[i]));
+                       PLL_SHFT(bx[i],cx[i],u[i], cx[i]+MNBRAK_GOLD*(cx[i]-bx[i]));
                        state[i] = 2;
                      }     
                    else
                      {
                        state[i] = 0;
-                       SHFT(ax[i],bx[i],cx[i],u[i]);
-                       SHFT(fa[i],fb[i],fc[i],fu[i]);
+                       PLL_SHFT(ax[i],bx[i],cx[i],u[i]);
+                       PLL_SHFT(fa[i],fb[i],fc[i],fu[i]);
                      }
                    break;          
                  case 3:                  
-                   SHFT(fb[i],fc[i],fu[i], temp[i]);
-                   SHFT(ax[i],bx[i],cx[i],u[i]);
-                   SHFT(fa[i],fb[i],fc[i],fu[i]);
+                   PLL_SHFT(fb[i],fc[i],fu[i], temp[i]);
+                   PLL_SHFT(ax[i],bx[i],cx[i],u[i]);
+                   PLL_SHFT(fa[i],fb[i],fc[i],fu[i]);
                    state[i] = 0;
                    break;
                  default:
@@ -1041,13 +1041,13 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-        case DNA_DATA:                          
-        case BINARY_DATA:
-        case SECONDARY_DATA:
-        case SECONDARY_DATA_6:
-        case SECONDARY_DATA_7:
-        case GENERIC_32:
-        case GENERIC_64:
+        case PLL_DNA_DATA:                          
+        case PLL_BINARY_DATA:
+        case PLL_SECONDARY_DATA:
+        case PLL_SECONDARY_DATA_6:
+        case PLL_SECONDARY_DATA_7:
+        case PLL_GENERIC_32:
+        case PLL_GENERIC_64:
 	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
 	    {
 	      ll->ld[i].valid = PLL_TRUE;
@@ -1056,7 +1056,7 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
 	  else
 	     ll->ld[i].valid = PLL_FALSE;
           break;
-        case AA_DATA:     
+        case PLL_AA_DATA:     
           //to be implemented later-on 
           /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)
             {
@@ -1080,7 +1080,7 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
  
 
   if(non_LG4X_Partitions > 0)    
-    optParamGeneric(tr, pr, modelEpsilon, ll, non_LG4X_Partitions, -1, ALPHA_MIN, ALPHA_MAX, ALPHA_F);
+    optParamGeneric(tr, pr, modelEpsilon, ll, non_LG4X_Partitions, -1, PLL_ALPHA_MIN, PLL_ALPHA_MAX, ALPHA_F);
   
   //right now this assertion shouldn't fail, undo when implementing LG4X  
   assert(LG4X_Partitions == 0);
@@ -1092,16 +1092,16 @@ static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEp
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-        case DNA_DATA:                          
-        case BINARY_DATA:
-        case SECONDARY_DATA:
-        case SECONDARY_DATA_6:
-        case SECONDARY_DATA_7:
-        case GENERIC_32:
-        case GENERIC_64:
+        case PLL_DNA_DATA:                          
+        case PLL_BINARY_DATA:
+        case PLL_SECONDARY_DATA:
+        case PLL_SECONDARY_DATA_6:
+        case PLL_SECONDARY_DATA_7:
+        case PLL_GENERIC_32:
+        case PLL_GENERIC_64:
           ll->ld[i].valid = PLL_FALSE;    
           break;
-        case AA_DATA:     
+        case PLL_AA_DATA:     
           //deal with this later-on
           /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)              
             ll->ld[i].valid = TRUE;        
@@ -1297,7 +1297,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     }
 
   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
+    pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
   #endif    
 
     
@@ -1395,7 +1395,7 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-        case DNA_DATA:  
+        case PLL_DNA_DATA:  
           states = pr->partitionData[ll->ld[i].partitionList[0]]->states; 
           if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
             {
@@ -1405,7 +1405,7 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
           else
              ll->ld[i].valid = PLL_FALSE;
           break;       
-        case AA_DATA:
+        case PLL_AA_DATA:
           ll->ld[i].valid = PLL_FALSE;
           break;
         default:
@@ -1424,7 +1424,7 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-        case AA_DATA:     
+        case PLL_AA_DATA:     
           states = pr->partitionData[ll->ld[i].partitionList[0]]->states;             
           if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeBaseFrequencies)
             {
@@ -1434,7 +1434,7 @@ static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilo
           else
             ll->ld[i].valid = PLL_FALSE; 
           break;
-        case DNA_DATA:      
+        case PLL_DNA_DATA:      
           ll->ld[i].valid = PLL_FALSE;
           break;
         default:
@@ -1483,7 +1483,7 @@ static void optRates(pllInstance *tr, partitionList * pr, double modelEpsilon, l
     numberOfRates = ((states * states - states) / 2) - 1;
 
   for(rateNumber = 0; rateNumber < numberOfRates; rateNumber++)
-    optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, rateNumber, RATE_MIN, RATE_MAX, RATE_F);
+    optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, rateNumber, PLL_RATE_MIN, PLL_RATE_MAX, RATE_F);
 }
 
 
@@ -1507,10 +1507,10 @@ static boolean AAisGTR(partitionList *pr)
 
   for(i = 0; i < pr->numberOfPartitions; i++)
     {
-      if(pr->partitionData[i]->dataType == AA_DATA)
+      if(pr->partitionData[i]->dataType == PLL_AA_DATA)
         {
           count++;
-          if(pr->partitionData[i]->protModels != GTR)
+          if(pr->partitionData[i]->protModels != PLL_GTR)
             return PLL_FALSE;
         }
     }
@@ -1560,7 +1560,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
         {
-          case DNA_DATA:  
+          case PLL_DNA_DATA:  
             states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 	    if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeSubstitutionRates)
 	      {
@@ -1570,13 +1570,13 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	    else	      
 	      ll->ld[i].valid = PLL_FALSE;	      
             break;
-          case BINARY_DATA:
-          case AA_DATA:
-          case SECONDARY_DATA:
-          case SECONDARY_DATA_6:
-          case SECONDARY_DATA_7:
-          case GENERIC_32:
-          case GENERIC_64:
+          case PLL_BINARY_DATA:
+          case PLL_AA_DATA:
+          case PLL_SECONDARY_DATA:
+          case PLL_SECONDARY_DATA_6:
+          case PLL_SECONDARY_DATA_7:
+          case PLL_GENERIC_32:
+          case PLL_GENERIC_64:
             ll->ld[i].valid = PLL_FALSE;
             break;
           default:
@@ -1597,7 +1597,7 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
     {
       switch(pr->partitionData[ll->ld[i].partitionList[0]]->dataType)
 	{
-	case AA_DATA:
+	case PLL_AA_DATA:
 	  states = pr->partitionData[ll->ld[i].partitionList[0]]->states;
 	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeSubstitutionRates)
 	    {
@@ -1607,11 +1607,11 @@ static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsi
 	  else
 	    ll->ld[i].valid = PLL_FALSE;
 	  break;
-	case DNA_DATA:          
-	case BINARY_DATA:
-	case SECONDARY_DATA:        
-	case SECONDARY_DATA_6:
-	case SECONDARY_DATA_7:
+	case PLL_DNA_DATA:          
+	case PLL_BINARY_DATA:
+	case PLL_SECONDARY_DATA:        
+	case PLL_SECONDARY_DATA_6:
+	case PLL_SECONDARY_DATA_7:
 	  ll->ld[i].valid = PLL_FALSE;
 	  break;
 	default:
@@ -1965,7 +1965,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
 
               accRat /= ((double)accWgt);         
 
-              assert(ABS(1.0 - accRat) < 1.0E-5);
+              assert(PLL_ABS(1.0 - accRat) < 1.0E-5);
             }
           else
             {
@@ -1992,7 +1992,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
           
               accRat /= ((double)accWgt);
               
-              assert(ABS(1.0 - accRat) < 1.0E-5);
+              assert(PLL_ABS(1.0 - accRat) < 1.0E-5);
             }
 
           
@@ -2076,7 +2076,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
 
           accRat /= ((double)accWgt);     
 
-          assert(ABS(1.0 - accRat) < 1.0E-5);
+          assert(PLL_ABS(1.0 - accRat) < 1.0E-5);
         }
       else
         {
@@ -2105,7 +2105,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
           
           accRat /=  (double)accWgt;
 
-          assert(ABS(1.0 - accRat) < 1.0E-5);
+          assert(PLL_ABS(1.0 - accRat) < 1.0E-5);
         }
          
          /*
@@ -2132,7 +2132,7 @@ void updatePerSiteRates(pllInstance *tr, partitionList *pr, boolean scaleRates)
     }
   
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-  pllMasterBarrier(tr, pr, THREAD_COPY_RATE_CATS);
+  pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATE_CATS);
 #endif               
 }
 
@@ -2211,7 +2211,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
       /*tr->lhs = lhs;*/
       tr->lower_spacing = lower_spacing;
       tr->upper_spacing = upper_spacing;
-      pllMasterBarrier(tr, pr, THREAD_RATE_CATS);
+      pllMasterBarrier(tr, pr, PLL_THREAD_RATE_CATS);
 #else      
       for(model = 0; model < pr->numberOfPartitions; model++)
         optRateCatModel(tr, pr, model, lower_spacing, upper_spacing, tr->lhs);
@@ -2340,13 +2340,13 @@ void resetBranches(pllInstance *tr)
   p = tr->nodep[1];
   while (nodes-- > 0) 
     {   
-      for(i = 0; i < NUM_BRANCHES; i++)
+      for(i = 0; i < PLL_NUM_BRANCHES; i++)
         p->z[i] = PLL_DEFAULTZ;
         
       q = p->next;
       while(q != p)
         {       
-          for(i = 0; i < NUM_BRANCHES; i++)
+          for(i = 0; i < PLL_NUM_BRANCHES; i++)
             q->z[i] = PLL_DEFAULTZ;         
           q = q->next;
         }
@@ -2374,7 +2374,7 @@ static void printAAmatrix(partitionList *pr, double epsilon)
       
       for(model = 0; model < pr->numberOfPartitions; model++)
         {
-          if(pr->partitionData[model]->dataType == AA_DATA)
+          if(pr->partitionData[model]->dataType == PLL_AA_DATA)
             {
               char gtrFileName[1024];
               char epsilonStr[1024];
@@ -2385,7 +2385,7 @@ static void printAAmatrix(partitionList *pr, double epsilon)
               int    r = 0;
               int i, j;
 
-              assert(pr->partitionData[model]->protModels == GTR);
+              assert(pr->partitionData[model]->protModels == PLL_GTR);
 
               sprintf(epsilonStr, "%f", epsilon);
 
@@ -2458,17 +2458,17 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
     countAutos = 0,
     model;
     
-  /* count the number of partitions with model set to AUTO */
+  /* count the number of partitions with model set to PLL_AUTO */
   for(model = 0; model < pr->numberOfPartitions; model++)
-    if(pr->partitionData[model]->protModels == AUTO)
+    if(pr->partitionData[model]->protModels == PLL_AUTO)
       countAutos++;
   
-  /* if there are partitions with model set to AUTO compute the best model */
+  /* if there are partitions with model set to PLL_AUTO compute the best model */
   if(countAutos > 0)
     {
       int 
         i,
-        numProteinModels = AUTO,
+        numProteinModels = PLL_AUTO,
         *bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
         *oldIndex  = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
 
@@ -2487,7 +2487,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       /* store the initial likelihood of the tree with the currently assigned protein models */
       startLH = tr->likelihood;
       
-      /* save the currently assigned protein model for each AUTO partition */
+      /* save the currently assigned protein model for each PLL_AUTO partition */
       for(model = 0; model < pr->numberOfPartitions; model++)
         {
           oldIndex[model] = pr->partitionData[model]->autoProtModels;
@@ -2500,7 +2500,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
        {
          for(model = 0; model < pr->numberOfPartitions; model++)
            {       
-             if(pr->partitionData[model]->protModels == AUTO)
+             if(pr->partitionData[model]->protModels == PLL_AUTO)
               {
                  pr->partitionData[model]->autoProtModels = i;
                  initReversibleGTR(tr, pr, model);
@@ -2508,7 +2508,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
            }
           
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-           pllMasterBarrier (tr, pr, THREAD_COPY_RATES);
+           pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
 #endif
           
            resetBranches(tr);
@@ -2517,7 +2517,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 
            for(model = 0; model < pr->numberOfPartitions; model++)
             {
-              if(pr->partitionData[model]->protModels == AUTO)
+              if(pr->partitionData[model]->protModels == PLL_AUTO)
                {
                  if(pr->partitionData[model]->partitionLH > bestScores[model])
                   {
@@ -2530,10 +2530,10 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 
       printBothOpen("\n\n");
       
-      /* set the protein model of AUTO partitions to the best computed and reset model parameters */
+      /* set the protein model of PLL_AUTO partitions to the best computed and reset model parameters */
       for(model = 0; model < pr->numberOfPartitions; model++)
        {           
-         if(pr->partitionData[model]->protModels == AUTO)
+         if(pr->partitionData[model]->protModels == PLL_AUTO)
            {
              pr->partitionData[model]->autoProtModels = bestIndex[model];
              initReversibleGTR(tr, pr, model);
@@ -2543,7 +2543,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
+      pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
 #endif
 
       /* compute again the likelihood of the tree */
@@ -2551,12 +2551,12 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       pllTreeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
       
-      /* check if the likelihood of the tree with the new protein models assigned to AUTO partitions is better than the with the old protein models */
+      /* check if the likelihood of the tree with the new protein models assigned to PLL_AUTO partitions is better than the with the old protein models */
       if(tr->likelihood < startLH)
         {       
           for(model = 0; model < pr->numberOfPartitions; model++)
             {
-              if(pr->partitionData[model]->protModels == AUTO)
+              if(pr->partitionData[model]->protModels == PLL_AUTO)
                 {
                   pr->partitionData[model]->autoProtModels = oldIndex[model];
                   initReversibleGTR(tr, pr, model);
@@ -2565,7 +2565,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
           
           //this barrier needs to be called in the library        
           //#ifdef _USE_PTHREADS        
-          //pllMasterBarrier(tr, pr, THREAD_COPY_RATES);
+          //pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
           //#endif 
 
           /* Restore the topology. rl holds the topology before the optimization. However,
@@ -2717,7 +2717,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     switch(tr->rateHetModel)
     {
-      case GAMMA:      
+      case PLL_GAMMA:      
         optAlphasGeneric (tr, pr, modelEpsilon, alphaList);
         evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
@@ -2732,7 +2732,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
           printf("after br-len 2 %f\n", tr->likelihood); 
 #endif
         break;
-      case CAT:
+      case PLL_CAT:
         if(catOpt < 3)
         {                            
           evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  

@@ -122,7 +122,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
 /* required to compute the absolute values of double precision numbers with SSE3 */
 
-const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
+const union __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)))
 {
   uint64_t i[2];
   __m128d m;
@@ -376,7 +376,7 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
      \a scalerIncrement.
 
     @param tipCase
-      Can be either \b TIP_TIP, or \b TIP_INNER or \b INNER_INNER, and describes the
+      Can be either \b PLL_TIP_TIP, or \b PLL_TIP_INNER or \b PLL_INNER_INNER, and describes the
       descendants of the node for which we currently compute the condition likelihood
       vector, i.e. whether they are both tips (leaves), or one is tip and the other
       an inner node, or both are inner nodes.
@@ -473,7 +473,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
   {
 
     /* both child nodes of p weher we want to update the conditional likelihood are tips */
-    case TIP_TIP:     
+    case PLL_TIP_TIP:     
       /* loop over sites */
       for (i = 0; i < n; i++)
       {
@@ -519,7 +519,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
         }          
       }    
       break;
-    case TIP_INNER:      
+    case PLL_TIP_INNER:      
 
       /* same as above, only that now vl is a tip and vr is the conditional probability vector 
          at an inner node. Note that, if we have the case that either q or r is a tip, the 
@@ -593,7 +593,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
         }
       }   
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
 
       /* same as above, only that the two child nodes q and r are now inner nodes */
 
@@ -673,7 +673,7 @@ static void newviewCAT_FLEX(int tipCase, double *extEV,
      \a scalerIncrement.
 
     @param tipCase
-      Can be either \b TIP_TIP, or \b TIP_INNER or \b INNER_INNER, and describes the
+      Can be either \b PLL_TIP_TIP, or \b PLL_TIP_INNER or \b PLL_INNER_INNER, and describes the
       descendants of the node for which we currently compute the condition likelihood
       vector, i.e. whether they are both tips (leaves), or one is tip and the other
       an inner node, or both are inner nodes.
@@ -766,7 +766,7 @@ static void newviewGAMMA_FLEX(int tipCase,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         /* allocate pre-compute memory space */
 
@@ -831,7 +831,7 @@ static void newviewGAMMA_FLEX(int tipCase,
         rax_free(umpX2);
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         /* we do analogous pre-computations as above, with the only difference that we now do them 
            only for one tip vector */
@@ -907,7 +907,7 @@ static void newviewGAMMA_FLEX(int tipCase,
           v = &x3[span * i];
           scale = 1;
           for(l = 0; scale && (l < span); l++)
-            scale = (ABS(v[l]) <  PLL_MINLIKELIHOOD);
+            scale = (PLL_ABS(v[l]) <  PLL_MINLIKELIHOOD);
 
 
           if (scale)
@@ -926,7 +926,7 @@ static void newviewGAMMA_FLEX(int tipCase,
         rax_free(ump_x2);
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
 
       /* same as above, without pre-computations */
 
@@ -966,7 +966,7 @@ static void newviewGAMMA_FLEX(int tipCase,
         v = &(x3[span * i]);
         scale = 1;
         for(l = 0; scale && (l < span); l++)
-          scale = ((ABS(v[l]) <  PLL_MINLIKELIHOOD));
+          scale = ((PLL_ABS(v[l]) <  PLL_MINLIKELIHOOD));
 
         if(scale)
         {  
@@ -1009,7 +1009,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         for (i = 0; i < n; i++)
           {
@@ -1041,7 +1041,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
           }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         for (i = 0; i < n; i++)
           {
@@ -1088,7 +1088,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
           }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
         {
           x1 = &x1_start[4 * i];
@@ -1220,7 +1220,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
       assert(p->x);
 
       /* add the current node triplet p,q,r to the traversal descriptor */
-      ti[*counter].tipCase = TIP_TIP;
+      ti[*counter].tipCase = PLL_TIP_TIP;
       ti[*counter].pNumber = p->number;
       ti[*counter].qNumber = q->number;
       ti[*counter].rNumber = r->number;
@@ -1283,7 +1283,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
 
         /* store data for p, q, r in the traversal descriptor */
 
-        ti[*counter].tipCase = TIP_INNER;
+        ti[*counter].tipCase = PLL_TIP_INNER;
         ti[*counter].pNumber = p->number;
         ti[*counter].qNumber = q->number;
         ti[*counter].rNumber = r->number;
@@ -1304,7 +1304,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
 
           ti[*counter].slot_q = -1;
 
-          unpin2 = r->number; /* when TIP_INNER finishes, the INNER input vector r can be unpinned*/
+          unpin2 = r->number; /* when PLL_TIP_INNER finishes, the INNER input vector r can be unpinned*/
         }
 
         *counter = *counter + 1;
@@ -1318,7 +1318,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
         if(( useRecom && (!partialTraversal) ) || 
             ( useRecom && needsRecomp(useRecom, rvec, q, maxTips) && needsRecomp(useRecom, rvec, r, maxTips) ))
         {
-          /* INNER_INNER and recomputation implies that the order we descend q and r matters, 
+          /* PLL_INNER_INNER and recomputation implies that the order we descend q and r matters, 
            * if we are in a partial traversal, this is only relevant if both require recomputation
            * see TODOFER add ref. */
 
@@ -1369,7 +1369,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
 
         assert(p->x && r->x && q->x);
 
-        ti[*counter].tipCase = INNER_INNER;
+        ti[*counter].tipCase = PLL_INNER_INNER;
         ti[*counter].pNumber = p->number;
         ti[*counter].qNumber = q->number;
         ti[*counter].rNumber = r->number;
@@ -1572,7 +1572,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         
         /* figure out what kind of rate heterogeneity approach we are using */
 
-        if(tr->rateHetModel == CAT)
+        if(tr->rateHetModel == PLL_CAT)
           {              
             rateCategories = pr->partitionData[model]->perSiteRates;
             categories = pr->partitionData[model]->numberOfCategories;
@@ -1673,7 +1673,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         
         switch(tInfo->tipCase)
           {
-          case TIP_TIP:           
+          case PLL_TIP_TIP:           
             tipX1    = pr->partitionData[model]->yVector[tInfo->qNumber];
             tipX2    = pr->partitionData[model]->yVector[tInfo->rNumber];
 
@@ -1697,7 +1697,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                   ex3[k] = 0;
               }
             break;
-          case TIP_INNER:                
+          case PLL_TIP_INNER:                
             tipX1    =  pr->partitionData[model]->yVector[tInfo->qNumber];
             x2_start = pr->partitionData[model]->xVector[r_slot];
             assert(r_slot != p_slot);
@@ -1726,7 +1726,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                   ex3[k] = ex2[k];
               }
             break;
-          case INNER_INNER:                              
+          case PLL_INNER_INNER:                              
             x1_start       = pr->partitionData[model]->xVector[q_slot];
             x2_start       = pr->partitionData[model]->xVector[r_slot];
             assert(r_slot != p_slot);
@@ -1788,7 +1788,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* compute the left and right P matrices */
 
-        if(pr->partitionData[model]->dataType == AA_DATA && pr->partitionData[model]->protModels == LG4)                     
+        if(pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)                     
                 makeP_FlexLG4(qz, rz, pr->partitionData[model]->gammaRates,
                               pr->partitionData[model]->EI_LG4,
                               pr->partitionData[model]->EIGN_LG4,
@@ -1804,7 +1804,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* figure out if we need to compute the CAT or GAMMA model of rate heterogeneity */
 
-        if(tr->rateHetModel == CAT)
+        if(tr->rateHetModel == PLL_CAT)
          {
 
            newviewCAT_FLEX(tInfo->tipCase,  pr->partitionData[model]->EV, pr->partitionData[model]->rateCategory,
@@ -1826,7 +1826,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         switch(states)
         {               
         case 4: /* DNA */
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             {                                
               
               if(tr->saveMemory)
@@ -1892,7 +1892,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             break;                  
           case 20: /* proteins */
 
-            if(tr->rateHetModel == CAT)
+            if(tr->rateHetModel == PLL_CAT)
             {
 
 
@@ -1948,7 +1948,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             
              else
                         {
-                          if(pr->partitionData[model]->protModels == LG4)
+                          if(pr->partitionData[model]->protModels == PLL_LG4)
                             {
 #ifdef __AVX 
                               newviewGTRGAMMAPROT_AVX_LG4(tInfo->tipCase,
@@ -2130,7 +2130,7 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
        not that we do not need a reduction operation here, but just a barrier to make 
        sure that all threads are done with their partition */
 
-    pllMasterBarrier(tr, pr, THREAD_NEWVIEW);
+    pllMasterBarrier(tr, pr, PLL_THREAD_NEWVIEW);
 #else
     /* in the sequential case we now simply call newviewIterative() */
 
@@ -2418,7 +2418,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
 
         /* figure out what kind of rate heterogeneity approach we are using */
 
-          if(tr->rateHetModel == CAT)
+          if(tr->rateHetModel == PLL_CAT)
             {            
               rateCategories = pr->partitionData[model]->perSiteRates;
               categories     = pr->partitionData[model]->numberOfCategories;
@@ -2450,7 +2450,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
              store them in pr->partitionData[model]->ancestralBuffer
           */
 
-          if(tr->rateHetModel == CAT)       
+          if(tr->rateHetModel == PLL_CAT)       
             ancestralCat(x3_start, pr->partitionData[model]->ancestralBuffer, diagptable, width, states, pr->partitionData[model]->rateCategory);
           else
             ancestralGamma(x3_start, pr->partitionData[model]->ancestralBuffer, diagptable, width, states, categories * states);
@@ -2532,7 +2532,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
 
-  pllMasterBarrier (tr, pr, THREAD_NEWVIEW_ANCESTRAL);
+  pllMasterBarrier (tr, pr, PLL_THREAD_NEWVIEW_ANCESTRAL);
 #else
   /* now call the dedicated function that does the mathematical transformation of the 
      conditional likelihood vector at p to obtain the marginal ancestral states */
@@ -2546,7 +2546,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
   /* invoke another parallel region to gather the marginal ancestral probabilities 
      from the threads/MPI processes */
 
-  pllMasterBarrier (tr, pr, THREAD_GATHER_ANCESTRAL);
+  pllMasterBarrier (tr, pr, PLL_THREAD_GATHER_ANCESTRAL);
 #endif
 
   
@@ -2560,7 +2560,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
     from the constant arrays \a dnaStateNames (for DNA) or \a protStateNames (for proteins).
 
     @param dataType
-      Type of data, i.e. \b DNA_DATA or \b AA_DATA
+      Type of data, i.e. \b PLL_DNA_DATA or \b PLL_AA_DATA
 
     @param state
       The number which we want to decode to a letter
@@ -2575,10 +2575,10 @@ static char getStateCharacter(int dataType, int state)
 
   switch(dataType)
     {    
-    case DNA_DATA:
+    case PLL_DNA_DATA:
        result = dnaStateNames[state];
       break;
-    case AA_DATA:
+    case PLL_AA_DATA:
       result =  protStateNames[state];
       break;    
     default:
@@ -2690,7 +2690,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
               /* this is used for discretizing the ancestral state sequence, if all marginal ancestral 
                  probabilities are approximately equal we output a ? */
 
-              approximatelyEqual = approximatelyEqual && (ABS(equal - value) < 0.000001);
+              approximatelyEqual = approximatelyEqual && (PLL_ABS(equal - value) < 0.000001);
               
               a[globalIndex].probs[l] = value;                
             }
@@ -2790,8 +2790,8 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
     *x1_ptr = x1_start,
     *x2_ptr = x2_start,       
     max,
-    maxima[2] __attribute__ ((aligned (BYTE_ALIGNMENT))),        
-    EV_t[16] __attribute__ ((aligned (BYTE_ALIGNMENT)));      
+    maxima[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),        
+    EV_t[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));      
 
   __m128d 
     values[8],
@@ -2808,9 +2808,9 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
-        double *uX1, umpX1[256] __attribute__ ((aligned (BYTE_ALIGNMENT))), *uX2, umpX2[256] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+        double *uX1, umpX1[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), *uX2, umpX2[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 
         for (i = 1; i < 16; i++)
@@ -2967,11 +2967,11 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       { 
         double 
           *uX1, 
-          umpX1[256] __attribute__ ((aligned (BYTE_ALIGNMENT)));                 
+          umpX1[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));                 
 
         for (i = 1; i < 16; i++)
         {
@@ -3088,7 +3088,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
           _mm_store_pd(maxima, maxv);
 
-          max = MAX(maxima[0], maxima[1]);
+          max = PLL_MAX(maxima[0], maxima[1]);
 
           if(max < PLL_MINLIKELIHOOD)
           {
@@ -3251,7 +3251,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
             _mm_store_pd(maxima, maxv);
 
-            max = MAX(maxima[0], maxima[1]);
+            max = PLL_MAX(maxima[0], maxima[1]);
 
             if(max < PLL_MINLIKELIHOOD)
             {
@@ -3289,7 +3289,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
         }
       }
       break;
-    case INNER_INNER:         
+    case PLL_INNER_INNER:         
       {
         __m128d maxv =_mm_setzero_pd();
 
@@ -3420,7 +3420,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
         _mm_store_pd(maxima, maxv);
 
-        max = MAX(maxima[0], maxima[1]);
+        max = PLL_MAX(maxima[0], maxima[1]);
 
         if(max < PLL_MINLIKELIHOOD)
         {
@@ -3623,7 +3623,7 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 
           _mm_store_pd(maxima, maxv);
 
-          max = MAX(maxima[0], maxima[1]);
+          max = PLL_MAX(maxima[0], maxima[1]);
 
           if(max < PLL_MINLIKELIHOOD)
           {
@@ -3702,8 +3702,8 @@ static void newviewGTRGAMMA(int tipCase,
     *x2,
     *x3,
     max,
-    maxima[2] __attribute__ ((aligned (BYTE_ALIGNMENT))),       
-    EV_t[16] __attribute__ ((aligned (BYTE_ALIGNMENT)));      
+    maxima[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),       
+    EV_t[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));      
 
   __m128d 
     values[8],
@@ -3718,9 +3718,9 @@ static void newviewGTRGAMMA(int tipCase,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
-        double *uX1, umpX1[256] __attribute__ ((aligned (BYTE_ALIGNMENT))), *uX2, umpX2[256] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+        double *uX1, umpX1[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), *uX2, umpX2[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 
         for (i = 1; i < 16; i++)
@@ -3825,9 +3825,9 @@ static void newviewGTRGAMMA(int tipCase,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       { 
-        double *uX1, umpX1[256] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+        double *uX1, umpX1[256] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 
         for (i = 1; i < 16; i++)
@@ -3969,7 +3969,7 @@ static void newviewGTRGAMMA(int tipCase,
 
           _mm_store_pd(maxima, maxv);
 
-          max = MAX(maxima[0], maxima[1]);
+          max = PLL_MAX(maxima[0], maxima[1]);
 
           if(max < PLL_MINLIKELIHOOD)
           {
@@ -4004,7 +4004,7 @@ static void newviewGTRGAMMA(int tipCase,
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
 
       for (i = 0; i < n; i++)
       {
@@ -4152,7 +4152,7 @@ static void newviewGTRGAMMA(int tipCase,
 
         _mm_store_pd(maxima, maxv);
 
-        max = MAX(maxima[0], maxima[1]);
+        max = PLL_MAX(maxima[0], maxima[1]);
 
         if(max < PLL_MINLIKELIHOOD)
         {
@@ -4216,7 +4216,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     *x1,
     *x2, 
     *x3, 
-    EV_t[16] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    EV_t[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   int 
     i, 
@@ -4238,7 +4238,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
   switch(tipCase)
   {
-    case TIP_TIP:      
+    case PLL_TIP_TIP:      
       for (i = 0; i < n; i++)
       {  
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -4349,7 +4349,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
         _mm_store_pd(&x3[2], EV_t_l2_k0);                                   
       }
       break;
-    case TIP_INNER:      
+    case PLL_TIP_INNER:      
       for (i = 0; i < n; i++)
       {
         x1 = &(tipVector[4 * tipX1[i]]);
@@ -4489,7 +4489,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         x1 = &x1_start[4 * i];
@@ -4702,7 +4702,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
     *x1_ptr = x1_start,
     *x2_ptr = x2_start, 
     *x3_ptr = x3_start, 
-    EV_t[16] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+    EV_t[16] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   int 
     i, 
@@ -4827,7 +4827,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 
     EV_t_l2_k0 = _mm_hadd_pd( EV_t_l2_k0, EV_t_l3_k0 );                                   
 
-    if(tipCase != TIP_TIP)
+    if(tipCase != PLL_TIP_TIP)
     {    
       scale = 1;
 
@@ -4866,7 +4866,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 
   switch(tipCase)
   {
-    case TIP_TIP:      
+    case PLL_TIP_TIP:      
       for (i = 0; i < n; i++)
       {
         if(noGap(x3_gap, i))
@@ -4989,7 +4989,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
         }
       }
       break;
-    case TIP_INNER:      
+    case PLL_TIP_INNER:      
       for (i = 0; i < n; i++)
       { 
         if(isGap(x3_gap, i))
@@ -5158,7 +5158,7 @@ static void newviewGTRCAT_SAVE( int tipCase,  double *EV,  int *cptr,
 
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       { 
         if(isGap(x3_gap, i))
@@ -5371,7 +5371,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         double umpX1[1840], umpX2[1840];
 
@@ -5471,7 +5471,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         double umpX1[1840], ump_x2[20];
 
@@ -5684,7 +5684,7 @@ static void newviewGTRGAMMAPROT_GAPPED_SAVE(int tipCase,
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       {
         for(k = 0; k < 4; k++)
         {
@@ -5918,7 +5918,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         double umpX1[1840], umpX2[1840];
 
@@ -5986,7 +5986,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         double umpX1[1840], ump_x2[20];
 
@@ -6102,7 +6102,7 @@ static void newviewGTRGAMMAPROT(int tipCase,
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
       {
         for(k = 0; k < 4; k++)
@@ -6228,7 +6228,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         for (i = 0; i < n; i++)
         {
@@ -6274,7 +6274,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         for (i = 0; i < n; i++)
         {
@@ -6354,7 +6354,7 @@ static void newviewGTRCATPROT(int tipCase, double *extEV,
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
       {
         le = &left[cptr[i] * 400];
@@ -6518,7 +6518,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
       }                 
     }
 
-    if(tipCase != TIP_TIP)
+    if(tipCase != PLL_TIP_TIP)
     {       
       __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
 
@@ -6549,7 +6549,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
 
   switch(tipCase)
   {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         for (i = 0; i < n; i++)
         {
@@ -6606,7 +6606,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
         }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         for (i = 0; i < n; i++)
         {
@@ -6710,7 +6710,7 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
         }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
       { 
         if(isGap(x3_gap, i))
@@ -6853,7 +6853,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
         double umpX1[1840], umpX2[1840];
 
@@ -6945,7 +6945,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
           }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
         double umpX1[1840], ump_x2[20];
 
@@ -7069,7 +7069,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
             v = &x3[80 * i];
             scale = 1;
             for(l = 0; scale && (l < 80); l++)
-              scale = (ABS(v[l]) <  PLL_MINLIKELIHOOD );
+              scale = (PLL_ABS(v[l]) <  PLL_MINLIKELIHOOD );
 #endif
 
             if (scale)
@@ -7095,7 +7095,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
           }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
        {
          for(k = 0; k < 4; k++)
@@ -7188,7 +7188,7 @@ static void newviewGTRGAMMAPROT_LG4(int tipCase,
          v = &(x3[80 * i]);
          scale = 1;
          for(l = 0; scale && (l < 80); l++)
-           scale = ((ABS(v[l]) <  PLL_MINLIKELIHOOD ));
+           scale = ((PLL_ABS(v[l]) <  PLL_MINLIKELIHOOD ));
 #endif
 
          if (scale)

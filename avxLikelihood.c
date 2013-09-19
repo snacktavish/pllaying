@@ -22,7 +22,7 @@
 
 extern const unsigned int mask32[32];
 
-const union __attribute__ ((aligned (BYTE_ALIGNMENT)))
+const union __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)))
 {
   uint64_t i[4];
   __m256d m;
@@ -83,13 +83,13 @@ void  newviewGTRGAMMA_AVX(int tipCase,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
 	double 
 	  *uX1, 
-	  umpX1[1024] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
+	  umpX1[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
 	  *uX2, 
-	  umpX2[1024] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX2[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for (i = 1; i < 16; i++)
 	  {
@@ -157,11 +157,11 @@ void  newviewGTRGAMMA_AVX(int tipCase,
 	  }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
 	double 
 	  *uX1, 
-	  umpX1[1024] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for (i = 1; i < 16; i++)
 	  {
@@ -253,7 +253,7 @@ void  newviewGTRGAMMA_AVX(int tipCase,
 	  }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       {
 	for(i = 0; i < n; i++)
 	  {	
@@ -359,13 +359,13 @@ void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
 	double 
 	  *uX1, 
-	  umpX1[1024] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
+	  umpX1[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
 	  *uX2, 
-	  umpX2[1024] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX2[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for (i = 1; i < 16; i++)
 	  {
@@ -471,11 +471,11 @@ void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
 	  }
       }
       break;
-    case TIP_INNER:
+    case PLL_TIP_INNER:
       {
 	double 
 	  *uX1, 
-	  umpX1[1024] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1024] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
        
 	for (i = 1; i < 16; i++)
 	  {
@@ -657,7 +657,7 @@ void  newviewGTRGAMMA_AVX_GAPPED_SAVE(int tipCase,
 	  }
       }
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       {          
 	{		
 	  x1 = x1_gapColumn;	     	    
@@ -852,7 +852,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
   
   switch(tipCase)
     {
-    case TIP_TIP:      
+    case PLL_TIP_TIP:      
       for (i = 0; i < n; i++)
 	{	 
 	  int 
@@ -887,7 +887,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
 	  _mm256_store_pd(&x3_start[4 * i], vv);	    	   	    
 	}
       break;
-    case TIP_INNER:      
+    case PLL_TIP_INNER:      
       for (i = 0; i < n; i++)
 	{
 	  int 
@@ -939,7 +939,7 @@ void newviewGTRCAT_AVX(int tipCase,  double *EV,  int *cptr,
 	  _mm256_store_pd(&x3_start[4 * i], vv);	 	  	  
 	}
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
 	{
 	  int 
@@ -1059,7 +1059,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
 #endif
       }	  		  
 
-    if(tipCase != TIP_TIP)
+    if(tipCase != PLL_TIP_TIP)
       {
 	__m256d 	     
 	  v1 = _mm256_and_pd(vv, absMask_AVX.m);
@@ -1078,7 +1078,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
 
   switch(tipCase)
     {
-    case TIP_TIP:      
+    case PLL_TIP_TIP:      
       for (i = 0; i < n; i++)
 	{ 
 	  if(noGap(x3_gap, i))
@@ -1127,7 +1127,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
 	    }
 	}
       break;
-    case TIP_INNER:      
+    case PLL_TIP_INNER:      
       for (i = 0; i < n; i++)
 	{ 
 	  if(isGap(x3_gap, i))
@@ -1208,7 +1208,7 @@ void newviewGTRCAT_AVX_GAPPED_SAVE(int tipCase,  double *EV,  int *cptr,
 	    }
 	}
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for (i = 0; i < n; i++)
 	{
 	  if(isGap(x3_gap, i))
@@ -1319,7 +1319,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
 	for (i = 0; i < n; i++)
 	  {	   
@@ -1405,7 +1405,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	  }
       }
       break;
-    case TIP_INNER:      	
+    case PLL_TIP_INNER:      	
       for (i = 0; i < n; i++)
 	{
 	  le = &left[cptr[i] * 400];
@@ -1519,7 +1519,7 @@ void newviewGTRCATPROT_AVX(int tipCase, double *extEV,
 	  _mm256_store_pd(&v[16], vv[4]);	       
 	}
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
 	{
 	  le = &left[cptr[i] * 400];
@@ -1724,7 +1724,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
       }	  
 
 
-     if(tipCase != TIP_TIP)
+     if(tipCase != PLL_TIP_TIP)
        {
 	 __m256d minlikelihood_avx = _mm256_set1_pd( PLL_MINLIKELIHOOD );
 	  
@@ -1763,7 +1763,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 
   switch(tipCase)
     {
-    case TIP_TIP:
+    case PLL_TIP_TIP:
       {
 	for (i = 0; i < n; i++)
 	  {
@@ -1862,7 +1862,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 	  }
       }
       break;
-    case TIP_INNER:      	
+    case PLL_TIP_INNER:      	
       for (i = 0; i < n; i++)
 	{
 	  if(isGap(x3_gap, i))
@@ -2003,7 +2003,7 @@ void newviewGTRCATPROT_AVX_GAPPED_SAVE(int tipCase, double *extEV,
 	    }
 	}    
       break;
-    case INNER_INNER:
+    case PLL_INNER_INNER:
       for(i = 0; i < n; i++)
 	{
 	   if(isGap(x3_gap, i))
@@ -2187,12 +2187,12 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
   
   switch(tipCase) 
     {
-    case TIP_TIP: 
+    case PLL_TIP_TIP: 
       {
        
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-	  umpX2[1840] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+	  umpX2[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	
 	for(i = 0; i < 23; i++) 
@@ -2297,12 +2297,12 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 	  } 
       } 
       break;
-    case TIP_INNER: 
+    case PLL_TIP_INNER: 
       {
 
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-	  ump_x2[20] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+	  ump_x2[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for(i = 0; i < 23; i++) 
 	  {	   
@@ -2472,7 +2472,7 @@ void newviewGTRGAMMAPROT_AVX_LG4(int tipCase,
 	  } 
       } 
       break;
-    case INNER_INNER:      
+    case PLL_INNER_INNER:      
       for(i = 0; i < n; i++) 
 	{ 
 	  scale = 1;
@@ -2684,12 +2684,12 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
   
   switch(tipCase) 
     {
-    case TIP_TIP: 
+    case PLL_TIP_TIP: 
       {
        
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-	  umpX2[1840] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+	  umpX2[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for(i = 0; i < 23; i++) 
 	  {
@@ -2793,12 +2793,12 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 	  } 
       } 
       break;
-    case TIP_INNER: 
+    case PLL_TIP_INNER: 
       {
 
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-	  ump_x2[20] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+	  ump_x2[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 	for(i = 0; i < 23; i++) 
 	  {
@@ -2967,7 +2967,7 @@ void newviewGTRGAMMAPROT_AVX(int tipCase,
 	  } 
       } 
       break;
-    case INNER_INNER:      
+    case PLL_INNER_INNER:      
       for(i = 0; i < n; i++) 
 	{ 
 	  scale = 1;
@@ -3188,11 +3188,11 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
   
   switch(tipCase) 
     {
-    case TIP_TIP: 
+    case PLL_TIP_TIP: 
       {       
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))), 
-	  umpX2[1840] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
+	  umpX2[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 
 
@@ -3369,11 +3369,11 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	  }
       }
       break;
-    case TIP_INNER: 
+    case PLL_TIP_INNER: 
       {
 	double 
-	  umpX1[1840] __attribute__ ((aligned (BYTE_ALIGNMENT))),
-	  ump_x2[20] __attribute__ ((aligned (BYTE_ALIGNMENT)));
+	  umpX1[1840] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))),
+	  ump_x2[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
 
 
@@ -3705,7 +3705,7 @@ void newviewGTRGAMMAPROT_AVX_GAPPED_SAVE(int tipCase,
 	  }
       }
       break;
-    case INNER_INNER:    	  
+    case PLL_INNER_INNER:    	  
       for(k = 0; k < 4; k++) 
 	{
 	  vl = &(x1_gapColumn[20 * k]);

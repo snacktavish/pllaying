@@ -58,7 +58,7 @@ static boolean treeNeedString(const char *fp, char c1, int *position)
   else  
     {   
       int 
-	lower = MAX(0, *position - 20),
+	lower = PLL_MAX(0, *position - 20),
 	upper = *position + 20;
       
       printf("Tree Parsing ERROR: Expecting '%c', found: '%c'\n", c1, c2); 

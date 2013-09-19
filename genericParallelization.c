@@ -245,7 +245,7 @@ static void defineTraversalInfoMPI (void)
 
   int i ; 
   MPI_Aint base; 
-  int blocklen[ELEMS_IN_TRAV_INFO+1] = {1, 1, 1, 1, NUM_BRANCHES, NUM_BRANCHES, 1,1,1,1}; 
+  int blocklen[ELEMS_IN_TRAV_INFO+1] = {1, 1, 1, 1, PLL_NUM_BRANCHES, PLL_NUM_BRANCHES, 1,1,1,1}; 
   MPI_Aint disp[ELEMS_IN_TRAV_INFO+1];
   MPI_Datatype type[ELEMS_IN_TRAV_INFO+1] = {MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT, MPI_UB}; 
   traversalInfo desc[2]; 
@@ -448,10 +448,10 @@ void perSiteLogLikelihoodsPthreads(pllInstance *tr, partitionList *pr, double *l
 
 		switch(tr->rateHetModel)
 		  {
-		  case CAT:
+		  case PLL_CAT:
 		    l = evaluatePartialGeneric (tr, pr, localIndex, pr->partitionData[model]->perSiteRates[pr->partitionData[model]->rateCategory[localIndex]], model);
 		    break;
-		  case GAMMA:
+		  case PLL_GAMMA:
 		    l = evaluatePartialGeneric (tr, pr, localIndex, 1.0, model);
 		    break;
 		  default:
@@ -1213,40 +1213,40 @@ char* getJobName(int type)
 {
   switch(type)  
     {
-    case  THREAD_NEWVIEW:       
-      return "THREAD_NEWVIEW";
-    case THREAD_EVALUATE: 
-      return "THREAD_EVALUATE";
-    case THREAD_MAKENEWZ: 
-      return "THREAD_MAKENEWZ";
-    case THREAD_MAKENEWZ_FIRST: 
-      return "THREAD_MAKENEWZ_FIRST";
-    case THREAD_RATE_CATS: 
-      return "THREAD_RATE_CATS";
-    case THREAD_COPY_RATE_CATS: 
-      return "THREAD_COPY_RATE_CATS";
-    case THREAD_COPY_INIT_MODEL: 
-      return "THREAD_COPY_INIT_MODEL";
-    case THREAD_INIT_PARTITION: 
-      return "THREAD_INIT_PARTITION";
-    case THREAD_OPT_ALPHA: 
-      return "THREAD_OPT_ALPHA";
-    case THREAD_OPT_RATE: 
-      return "THREAD_OPT_RATE";
-    case THREAD_COPY_ALPHA: 
-      return "THREAD_COPY_ALPHA";
-    case THREAD_COPY_RATES: 
-      return "THREAD_COPY_RATES";
-    case THREAD_PER_SITE_LIKELIHOODS: 
-      return "THREAD_PER_SITE_LIKELIHOODS";
-    case THREAD_NEWVIEW_ANCESTRAL: 
-      return "THREAD_NEWVIEW_ANCESTRAL";
-    case THREAD_GATHER_ANCESTRAL: 
-      return "THREAD_GATHER_ANCESTRAL";
-    case THREAD_EXIT_GRACEFULLY: 
-      return "THREAD_EXIT_GRACEFULLY";
-    case THREAD_EVALUATE_PER_SITE_LIKES:
-      return "THREAD_EVALUATE_PER_SITE_LIKES";
+    case  PLL_THREAD_NEWVIEW:       
+      return "PLL_THREAD_NEWVIEW";
+    case PLL_THREAD_EVALUATE: 
+      return "PLL_THREAD_EVALUATE";
+    case PLL_THREAD_MAKENEWZ: 
+      return "PLL_THREAD_MAKENEWZ";
+    case PLL_THREAD_MAKENEWZ_FIRST: 
+      return "PLL_THREAD_MAKENEWZ_FIRST";
+    case PLL_THREAD_RATE_CATS: 
+      return "PLL_THREAD_RATE_CATS";
+    case PLL_THREAD_COPY_RATE_CATS: 
+      return "PLL_THREAD_COPY_RATE_CATS";
+    case PLL_THREAD_COPY_INIT_MODEL: 
+      return "PLL_THREAD_COPY_INIT_MODEL";
+    case PLL_THREAD_INIT_PARTITION: 
+      return "PLL_THREAD_INIT_PARTITION";
+    case PLL_THREAD_OPT_ALPHA: 
+      return "PLL_THREAD_OPT_ALPHA";
+    case PLL_THREAD_OPT_RATE: 
+      return "PLL_THREAD_OPT_RATE";
+    case PLL_THREAD_COPY_ALPHA: 
+      return "PLL_THREAD_COPY_ALPHA";
+    case PLL_THREAD_COPY_RATES: 
+      return "PLL_THREAD_COPY_RATES";
+    case PLL_THREAD_PER_SITE_LIKELIHOODS: 
+      return "PLL_THREAD_PER_SITE_LIKELIHOODS";
+    case PLL_THREAD_NEWVIEW_ANCESTRAL: 
+      return "PLL_THREAD_NEWVIEW_ANCESTRAL";
+    case PLL_THREAD_GATHER_ANCESTRAL: 
+      return "PLL_THREAD_GATHER_ANCESTRAL";
+    case PLL_THREAD_EXIT_GRACEFULLY: 
+      return "PLL_THREAD_EXIT_GRACEFULLY";
+    case PLL_THREAD_EVALUATE_PER_SITE_LIKES:
+      return "PLL_THREAD_EVALUATE_PER_SITE_LIKES";
     default: assert(0); 
     }
 }
@@ -1304,28 +1304,28 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 
   switch(currentJob)
     { 
-    case THREAD_NEWVIEW: 
+    case PLL_THREAD_NEWVIEW: 
       /* just a newview on the fraction of sites that have been assigned to this thread */
 
       newviewIterative(localTree, localPr, 0);
       break;     
-    case THREAD_EVALUATE: 
+    case PLL_THREAD_EVALUATE: 
       reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
       break;	
-    case THREAD_MAKENEWZ_FIRST:
+    case PLL_THREAD_MAKENEWZ_FIRST:
 
       /* this is the first call from within makenewz that requires getting the likelihood vectors to the left and 
          right of the branch via newview and doing some precomputations.
 	 
          For details see comments in makenewzGenericSpecial.c 
       */
-    case  THREAD_MAKENEWZ:
+    case  PLL_THREAD_MAKENEWZ:
       {	
 	double
-	  dlnLdlz[NUM_BRANCHES],
-	  d2lnLdlz2[NUM_BRANCHES]; 
+	  dlnLdlz[PLL_NUM_BRANCHES],
+	  d2lnLdlz2[PLL_NUM_BRANCHES]; 
 
-	if(localTree->td[0].functionType == THREAD_MAKENEWZ_FIRST)
+	if(localTree->td[0].functionType == PLL_THREAD_MAKENEWZ_FIRST)
 	  makenewzIterative(localTree, localPr);
 	execCore(localTree, localPr, dlnLdlz, d2lnLdlz2);
 
@@ -1358,15 +1358,15 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 
       break;
 
-    case THREAD_INIT_PARTITION:       
+    case PLL_THREAD_INIT_PARTITION:       
 
       /* broadcast data and initialize and allocate arrays in partitions */
       
       initializePartitionsMaster(tr, localTree, pr, localPr, tid, n);
 
       break;          
-    case THREAD_COPY_ALPHA: 
-    case THREAD_OPT_ALPHA:
+    case PLL_THREAD_COPY_ALPHA: 
+    case PLL_THREAD_OPT_ALPHA:
       /* this is when we have changed the alpha parameter, inducing a change in the discrete gamma rate categories.
 	 this is called when we are optimizing or sampling (in the Bayesioan case) alpha parameter values */
       
@@ -1374,12 +1374,12 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
       broadCastAlpha(localPr,pr);
 
       /* compute the likelihood, note that this is always a full tree traversal ! */
-      if(localTree->td[0].functionType == THREAD_OPT_ALPHA)
+      if(localTree->td[0].functionType == PLL_THREAD_OPT_ALPHA)
 	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
 
       break;           
-    case THREAD_OPT_RATE:
-    case THREAD_COPY_RATES:
+    case PLL_THREAD_OPT_RATE:
+    case PLL_THREAD_COPY_RATES:
 
       /* if we are optimizing the rates in the transition matrix Q this induces recomputing the eigenvector eigenvalue 
 	 decomposition and the tipVector as well because of the special numerics in RAxML, the matrix of eigenvectors 
@@ -1394,14 +1394,14 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
       /* now evaluate the likelihood of the new Q matrix, this always requires a full tree traversal because the changes need
 	 to be propagated throughout the entire tree */
 
-      if(localTree->td[0].functionType == THREAD_OPT_RATE)
+      if(localTree->td[0].functionType == PLL_THREAD_OPT_RATE)
 	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);
 
       break;                       
-    case THREAD_COPY_INIT_MODEL:
+    case PLL_THREAD_COPY_INIT_MODEL:
       {
 
-	/* need to be very careful here ! THREAD_COPY_INIT_MODEL is also used when the program is restarted 
+	/* need to be very careful here ! PLL_THREAD_COPY_INIT_MODEL is also used when the program is restarted 
 	   it is hence not sufficient to just initialize everything by the default values ! */
 
 	broadCastRates(localPr, pr);
@@ -1415,7 +1415,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 	*/
 
 
-	if( localTree->rateHetModel == CAT) /* TRICKY originally this should only be executed by workers  */
+	if( localTree->rateHetModel == PLL_CAT) /* TRICKY originally this should only be executed by workers  */
 	  { 	    
 #ifdef _FINE_GRAIN_MPI
 	    int bufSize = 2 * localTree->originalCrunchedLength * sizeof(double); 
@@ -1441,7 +1441,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 	  }
       } 
       break;    
-    case THREAD_RATE_CATS: 
+    case PLL_THREAD_RATE_CATS: 
       {
 	/* this is for optimizing per-site rate categories under PSR, let's worry about this later */
 
@@ -1453,7 +1453,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 	broadcastAfterRateOpt(tr, localTree, localPr, n,  tid);
       }
       break;
-    case THREAD_COPY_RATE_CATS:
+    case PLL_THREAD_COPY_RATE_CATS:
       {
 	/* 
 	   this is invoked when we have changed the per-site rate category assignment
@@ -1548,7 +1548,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 	  }
       }
       break;
-    case THREAD_PER_SITE_LIKELIHOODS:      
+    case PLL_THREAD_PER_SITE_LIKELIHOODS:      
       {
 
 	/* compute per-site log likelihoods for the sites/partitions 
@@ -1565,13 +1565,13 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
       }
       break;
       /* check for errors */
-    case THREAD_NEWVIEW_ANCESTRAL:       
+    case PLL_THREAD_NEWVIEW_ANCESTRAL:       
       assert(0);
       break; 
-    case THREAD_GATHER_ANCESTRAL:
+    case PLL_THREAD_GATHER_ANCESTRAL:
       assert(0); 
       break; 
-    case THREAD_EXIT_GRACEFULLY: 
+    case PLL_THREAD_EXIT_GRACEFULLY: 
       {
 	/* cleans up the workers memory */
 
@@ -1600,7 +1600,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 	return PLL_FALSE; 
       }
       break; 
-    case THREAD_EVALUATE_PER_SITE_LIKES: 
+    case PLL_THREAD_EVALUATE_PER_SITE_LIKES: 
       {
 	reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_TRUE);
       }
@@ -1660,7 +1660,7 @@ static void *likelihoodThread(void *tData)
       while (myCycle == threadJob);
       myCycle = threadJob;
 
-      if ((threadJob >> 16) != THREAD_INIT_PARTITION) {
+      if ((threadJob >> 16) != PLL_THREAD_INIT_PARTITION) {
     	  localPr->perGeneBranchLengths = pr->perGeneBranchLengths;
       	  localPr->numberOfPartitions = pr->numberOfPartitions;
       }
@@ -1728,10 +1728,10 @@ void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType)
   
   switch(jobType)
     {
-    case THREAD_EVALUATE: 
-    case THREAD_OPT_RATE: 
-    case THREAD_OPT_ALPHA: 
-    case THREAD_EVALUATE_PER_SITE_LIKES: 
+    case PLL_THREAD_EVALUATE: 
+    case PLL_THREAD_OPT_RATE: 
+    case PLL_THREAD_OPT_ALPHA: 
+    case PLL_THREAD_EVALUATE_PER_SITE_LIKES: 
       {
 #ifdef _REPRODUCIBLE_MPI_OR_PTHREADS
 	int i,j;
@@ -1748,7 +1748,7 @@ void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType)
 
 	break; 
       } 
-    case THREAD_PER_SITE_LIKELIHOODS:
+    case PLL_THREAD_PER_SITE_LIKELIHOODS:
       {
 	int i; 
 	/* now just compute the sum over per-site log likelihoods for error checking */      
@@ -1757,7 +1757,7 @@ void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType)
 	  accumulatedPerSiteLikelihood += tr->lhs[i];
 
 	/* printf("RESULT: %f\t%f", tr->likelihood, accumulatedPerSiteLikelihood);  */
-	assert(ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
+	assert(PLL_ABS(tr->likelihood - accumulatedPerSiteLikelihood) < 0.00001);
       }
       break;
     default: 
@@ -1893,13 +1893,13 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
   if(NOT MASTER_P)
     {
       localTree->lhs                     = (double*)rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(double));     
-      localPr->partitionData           = (pInfo**)rax_calloc(NUM_BRANCHES,sizeof(pInfo*));
+      localPr->partitionData           = (pInfo**)rax_calloc(PLL_NUM_BRANCHES,sizeof(pInfo*));
       for(model = 0; model < (size_t)localPr->numberOfPartitions; model++) {
     	localPr->partitionData[model] = (pInfo*)rax_calloc(1,sizeof(pInfo));
       }
       localTree->td[0].ti              = (traversalInfo *)rax_malloc(sizeof(traversalInfo) * (size_t)localTree->mxtips);
-      localTree->td[0].executeModel    = (boolean *)rax_malloc(sizeof(boolean) * NUM_BRANCHES);
-      localTree->td[0].parameterValues = (double *)rax_malloc(sizeof(double) * NUM_BRANCHES);
+      localTree->td[0].executeModel    = (boolean *)rax_malloc(sizeof(boolean) * PLL_NUM_BRANCHES);
+      localTree->td[0].parameterValues = (double *)rax_malloc(sizeof(double) * PLL_NUM_BRANCHES);
       localTree->patrat       = (double*)rax_malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);
       localTree->patratStored = (double*)rax_malloc(sizeof(double) * (size_t)localTree->originalCrunchedLength);            
     }

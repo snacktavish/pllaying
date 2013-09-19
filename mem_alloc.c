@@ -52,8 +52,8 @@ void *rax_calloc(size_t n, size_t size) {
 
 void *rax_malloc_aligned(size_t size) 
 {
-  const size_t BYTE_ALIGNMENT = 32;
-  return rax_memalign(BYTE_ALIGNMENT, size);
+  const size_t PLL_BYTE_ALIGNMENT = 32;
+  return rax_memalign(PLL_BYTE_ALIGNMENT, size);
   
 }
 
@@ -94,8 +94,8 @@ void *rax_calloc(size_t n, size_t size) {
 
 void *rax_malloc_aligned(size_t size) 
 {
-  const size_t BYTE_ALIGNMENT = 32;
-  return rax_memalign(BYTE_ALIGNMENT, size);
+  const size_t PLL_BYTE_ALIGNMENT = 32;
+  return rax_memalign(PLL_BYTE_ALIGNMENT, size);
   
 }
 
