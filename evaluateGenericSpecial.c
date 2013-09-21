@@ -1428,7 +1428,7 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
   int
     i,
     model,
-    numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+    numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions : 1;
 
   /* if evaluate shall return the per-site log likelihoods 
      fastScaling needs to be disabled, otherwise this will 

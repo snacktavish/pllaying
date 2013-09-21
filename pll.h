@@ -1662,7 +1662,6 @@ extern void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors 
 extern void printTraversalInfo(pllInstance *tr);
 extern void countTraversal(pllInstance *tr);
 
-extern void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 
 extern void newviewIterative(pllInstance *tr, partitionList *pr, int startIndex);
 extern void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods);
@@ -1721,9 +1720,9 @@ extern void pllPartitionDump (struct pllQueue * partitions);
 
 /* alignment data declarations */
 extern void pllAlignmentDataDestroy (pllAlignmentData *);
-extern void pllAlignmentDataDump (pllAlignmentData *);
+extern int pllAlignmentDataDumpPHYLIP (pllAlignmentData *, const char *);
+extern int pllAlignmentDataDumpFASTA (pllAlignmentData *, const char *);
 extern pllAlignmentData * pllInitAlignmentData (int, int);
-
 extern pllAlignmentData * pllParsePHYLIP (const char *);
 extern pllAlignmentData * pllParseFASTA (const char *);
 

@@ -57,6 +57,7 @@
 
 
 static void computeTraversalInfo(nodeptr, traversalInfo *, int *, int, int, boolean, recompVectors *, boolean);
+static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 #if (defined(__SSE3) && !defined(__AVX))
 static void newviewGTRGAMMAPROT_LG4(int tipCase,
                                     double *x1, double *x2, double *x3, double *extEV[4], double *tipVector[4],
@@ -187,7 +188,8 @@ extern const unsigned int mask32[32];   /**< @brief Array that contains the firs
     @param states
       Number of states for the particular data (4 for DNA or 20 for AA)
 */
-void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states)
+static void 
+makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states)
 {
   int 
     i, 

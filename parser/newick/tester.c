@@ -1,11 +1,12 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "newick.h"
+#include "../../pll.h"
+
+extern void stack_dump(pllStack ** stack);
 
 int main (int argc, char * argv[])
 {
-  int nodes, leaves;
-  struct pllStack * stack = NULL;
+  pllNewickTree * tree;
   //pllInstance * t;
 
   if (argc != 2)
@@ -15,23 +16,23 @@ int main (int argc, char * argv[])
    }
 
 
-  if (pllNewickParseFile (argv[1], &stack, &nodes, &leaves))
+  if ((tree = pllNewickParseFile (argv[1])))
    {
      printf ("Parsing successful...\n\n");
 
      //if (pllValidateNewick (stack, nodes, leaves))
-     if (pllValidateNewick (stack, nodes, leaves))
+     if (pllValidateNewick (tree))
       {
         printf ("Valid phylogenetic tree\n");
       }
      else
        printf ("Not a valid phylogenetic tree\n");
 
-     stack_dump(&stack);
+     stack_dump(&(tree->tree));
 
      //t = pllTreeCreateNewick (stack, nodes, leaves);
-     pllNewickParseDestroy (&stack);
-     //pllTreeDestroy (t);
+     pllNewickParseDestroy (&tree);
+   //pllTreeDestroy (t);
    }
   else
     printf ("Error while parsing newick tree...\n");

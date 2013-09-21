@@ -6,6 +6,17 @@
 #include <ctype.h>
 #include "../../pll.h"
 
+/** @file part.c
+    
+    @brief Collection of routines for parsing and processing a partition (model) file
+
+    @defgroup parsePartitionFileGroup Reading and parsing partition (model) files
+
+    This set of functions handles the reading and parsing of partition files, i.e.
+    files that contain alignment partition definitions and corresponding models.
+*/
+
+
 extern const char *protModels[PLL_NUM_PROT_MODELS];
 
 static struct pllHashTable * hashTable;
@@ -30,6 +41,15 @@ static void init_model_names (void)
    }
 }
 
+/** @ingroup parsePartitionFileGroup
+    @brief Destroy queue structure that contains parsed information from a partition file
+
+    Destroys the structure, and therefore frees allocated memory, that holds parsed information
+    from a partition (model) file
+
+    @param partitions
+      Queue structure with parsed info
+*/
 void
 pllQueuePartitionsDestroy (struct pllQueue ** partitions)
 {
@@ -236,6 +256,14 @@ parse_partition (int * inp)
  return (partitions);
 } 
 
+/** @ingroup parsePartitionFileGroup
+    @brief Dump a parsed partition file in the console
+
+    Prints the parsed contents of a partition file to the console
+
+    @param partitions
+      A queue structure that contains the parsed information
+*/
 void 
 pllPartitionDump (struct pllQueue * partitions)
 {
@@ -269,6 +297,18 @@ pllPartitionDump (struct pllQueue * partitions)
     }
 }
 
+/** @ingroup parsePartitionFileGroup
+    @brief Parse a partition (model) file
+
+    Parses the partition file \a filename and stores the information
+    a queue structure ::pllQueue
+
+    @param filename
+      Name of the partition file
+    
+    @return
+      Queue structure with parsed information
+*/
 struct pllQueue *
 pllPartitionParse (const char * filename)
 {

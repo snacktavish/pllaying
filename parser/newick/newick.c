@@ -6,6 +6,20 @@
 #include "newick.h"
 #include "../../pll.h"
 
+
+/** @file  newick.c
+
+    @brief Collection of routines for reading and parsing newick trees
+
+    Auxiliary functions for reading and parsing newick tree formats
+*/
+
+
+/** @defgroup newickParseGroup Reading and parsing newick trees
+    
+    This set of functions handles the reading and parsing of newick tree formats
+*/
+
 static int
 parse_newick (pllStack ** stack, int * inp)
 {
@@ -333,7 +347,8 @@ assign_ranks (pllStack * stack, int * nodes, int * leaves)
  pllStackClear (&preorder);
 }
 
-/** @brief Validate if a newick tree is a valid phylogenetic tree
+/** @ingroup newickParseGroup
+    @brief Validate if a newick tree is a valid phylogenetic tree
 
     A valid tree is one where the root node is binary or ternary
     and all other internal nodes are binary. In case the root
@@ -375,7 +390,8 @@ pllValidateNewick (pllNewickTree * t)
  return ((t->nodes == 2 * t->tips - 2) && t->nodes != 4);
 }
 
-/** @brief Parse a newick tree string
+/** @ingroup newickParseGroup
+    @brief Parse a newick tree string
   
     Parse a newick string and create a stack structure which represents the tree
     in a preorder traversal form. Each element of the stack represents one node
@@ -420,7 +436,8 @@ pllNewickParseString (char * newick)
   return (t);
 }
 
-/** @brief Deallocate newick parser stack structure
+/** @ingroup newickParseGroup
+    @brief Deallocate newick parser stack structure
 
     Deallocates the newick parser stack structure that represents the parsed tree. It
     also frees all memory allocated by elements of the stack structure.
@@ -442,7 +459,8 @@ void pllNewickParseDestroy (pllNewickTree ** t)
   (*t) = NULL;
 }
 
-/** @brief Parse a newick tree file
+/** @ingroup newickParseGroup
+    @brief Parse a newick tree file
   
     Parse a newick file and create a stack structure which represents the tree
     in a preorder traversal form. Each element of the stack represents one node

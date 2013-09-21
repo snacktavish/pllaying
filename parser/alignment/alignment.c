@@ -4,6 +4,18 @@
 #include <assert.h>
 #include "../../pll.h"
 
+/** @file  alignment.c
+
+    @brief Collection of routines for reading alignments
+
+    Auxiliary functions for storing alignments read from predefined file formats
+*/
+
+/** @defgroup alignmentGroup Reading and parsing alignments
+    
+    This set of functions handles the reading and parsing of several file formats that describe multiple sequence alignments. They are also responsible for storing the alignment in an internal structure
+*/
+
 #ifdef __DEBUGGING_MODE
 static int
 printTokens (int input)
@@ -50,6 +62,23 @@ printTokens (int input)
 }
 #endif
 
+/** @ingroup alignmentGroup
+    @brief Initialize alignment structure fields
+
+    Allocates memory for the data structure that will hold the alignment and
+    initializes it. It requires the number of sequences \a sequenceCount and
+    the length of sequences \a sequenceLength. It returns a pointer to the
+    initialized data structure.
+
+    @param sequenceCount
+      Number of sequences in the alignment
+    
+    @param sequenceLength
+      Length of the sequences
+
+    @param 
+      Initialized alignment data structured
+*/
 pllAlignmentData *
 pllInitAlignmentData (int sequenceCount, int sequenceLength)
  {
@@ -78,6 +107,14 @@ pllInitAlignmentData (int sequenceCount, int sequenceLength)
    return (alignmentData);
  }
 
+/** @ingroup alignmentGroup
+    @brief Deallocates the memory associated with the alignment data structure
+    
+    Deallocates the memory associated with the alignment data structure \a alignmentData.
+
+    @param alignmentData
+      The alignment data structure
+*/
 void
 pllAlignmentDataDestroy (pllAlignmentData * alignmentData)
 {
@@ -95,27 +132,50 @@ pllAlignmentDataDestroy (pllAlignmentData * alignmentData)
 }
 
 
+/** @ingroup alignmentGroup
+    @brief Prints the alignment to the console
+
+    @param alignmentData
+      The alignment data structure
+*/
 static void 
 printAlignmentData (pllAlignmentData * alignmentData)
  {
    int i;
 
-   printf ("=> Dumping AlignmentData\n");
    printf ("%d %d\n", alignmentData->sequenceCount, alignmentData->sequenceLength);
    for (i = 1; i <= alignmentData->sequenceCount; ++ i)
     {
-      printf ("|%s| |%s|\n", alignmentData->sequenceLabels[i], alignmentData->sequenceData[i]);
+      printf ("%s %s\n", alignmentData->sequenceLabels[i], alignmentData->sequenceData[i]);
     }
  }
 
-void
-pllAlignmentDataDump (pllAlignmentData * alignmentData)
+/** @ingroup alignmentGroup
+    @brief Dump the alignment to a file in PHYLIP sequential format
+
+    Dumps the alignment contained in \a alignmentData to file \a filename.
+
+    @note If \a filename exists, all contents will be erased
+
+    @param alignmentData
+      Alignment data structure
+
+    @param filename
+      Output filename
+
+    @return
+      Returns \b PLL_TRUE on success, otherwise \b PLL_FALSE.
+*/
+int
+pllAlignmentDataDumpPHYLIP (pllAlignmentData * alignmentData, const char * filename)
 {
   FILE * fp;
   int i;
 
   printAlignmentData (alignmentData);
-  fp = fopen ("output.seq.phy","w");
+  fp = fopen (filename,"w");
+  if (!fp) return (PLL_FALSE);
+
   fprintf (fp, "%d %d\n", alignmentData->sequenceCount, alignmentData->sequenceLength);
   for (i = 1; i <= alignmentData->sequenceCount; ++ i)
    {
@@ -123,4 +183,40 @@ pllAlignmentDataDump (pllAlignmentData * alignmentData)
    }
 
   fclose (fp);
+  return (PLL_TRUE);
+}
+
+/** @ingroup alignmentGroup
+    @brief Dump the alignment to a file in FASTA format
+
+    Dumps the alignment contained in \a alignmentData to file \a filename.
+
+    @note If \a filename exists, all contents will be erased
+
+    @param alignmentData
+      Alignment data structure
+
+    @param filename
+      Output filename
+
+    @return
+      Returns \b PLL_TRUE on success, otherwise \b PLL_FALSE.
+*/
+int
+pllAlignmentDataDumpFASTA (pllAlignmentData * alignmentData, const char * filename)
+{
+  FILE * fp;
+  int i;
+
+  printAlignmentData (alignmentData);
+  fp = fopen (filename,"w");
+  if (!fp) return (PLL_FALSE);
+
+  for (i = 1; i <= alignmentData->sequenceCount; ++ i)
+   {
+     fprintf (fp, ">%s\n%s\n", alignmentData->sequenceLabels[i], alignmentData->sequenceData[i]);
+   }
+
+  fclose (fp);
+  return (PLL_TRUE);
 }

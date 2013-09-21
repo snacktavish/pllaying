@@ -1,9 +1,9 @@
 CC           = gcc
-CFLAGS       = -g -Wall
+CFLAGS       = -g -Wall -D__DEBUGGING_MODE
 
 all: parser
 
-parser: newick.c tester.c ../../lexer.c ../../mem_alloc.c ../../stack.c
+parser: newick.c tester.c ../common.c ../../lexer.c ../../stack.c
 	@echo "===> COMPILE $@"
 	$(CC) $(CFLAGS) $+ -o $@ -lm
 
