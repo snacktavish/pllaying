@@ -3,6 +3,12 @@
 import re
 import sys
 
+g_processed_msg = '\x3c\x21\x2d\x2d\x20\x28\xc2\xaf\x60\xc2\xb7\x2e\x5f\x2e\xc2\xb7\xc2\xb7\xc2\xb8\x2e\x2d\x7e\x2a\xc2\xb4\xc2\xa8\xc2\xaf\xc2\xa8\x60\x2a\xc2\xb7\x7e\x2d\x2e\x2c\x2d\x28\x20\x50\x4f\x53\x54\x2d\x50\x52\x4f\x43\x45\x53\x53\x45\x44\x20\x42\x59\x20\x50\x4c\x4c\x20\x44\x4f\x58\x59\x47\x45\x4e\x20\x50\x52\x4f\x43\x45\x53\x53\x4f\x52\x20\x29\x2d\x2c\x2e\x2d\x7e\x2a\xc2\xb4\xc2\xa8\xc2\xaf\xc2\xa8\x60\x2a\xc2\xb7\x7e\x2d\x2e\xc2\xb8\xc2\xb7\xc2\xb7\x2e\x5f\x2e\xc2\xb7\xc2\xb4\xc2\xaf\x29\x20\x20\x2d\x2d\x3e\n'
+
+g_path_prefix = '/var/www/test/html/'
+#  files to process
+g_html_groups = ('group__evaluateLikelihoodGroup.html', 'group__rearrangementGroup.html', 'group__alignmentGroup.html', 'group__newickParseGroup.html', 'group__parsePartitionFileGroup.html')
+g_html_files  = ('newviewGenericSpecial_8c.html', 'optimizeModel_8c.html', 'genericParallelization_8c.html', 'utils_8c.html')
 
 g_memberdecls_table_string = ('table', 'class', 'memberdecls')
 g_bStatic = 0
@@ -100,7 +106,10 @@ def overwrite_file (fname, header, static, normal, footer):
   
   f = open (fname, 'w')
 
+  f.write(g_processed_msg)
+
   normalExist = True
+
 
   for line in header:
     f.write(line)
@@ -131,6 +140,14 @@ def overwrite_file (fname, header, static, normal, footer):
 def process_static_functions (fname):
   """Separate static from normal functions in file fname and overwrite the file"""
   content = readFile (fname)
+
+  # check if file was already processed 
+  if len(content) > 0:
+    if content[0] == g_processed_msg:
+      print 'File ' + fname + ' already processed...'
+      return
+
+
   header, functions, footer = split_html_content (content)
 
   # no functions found? quit
@@ -142,4 +159,6 @@ def process_static_functions (fname):
 
 
 if __name__ == "__main__":
-  process_static_functions (sys.argv[1])
+  html_files = g_html_groups + g_html_files
+  for f in html_files:
+    process_static_functions (g_path_prefix + f)
