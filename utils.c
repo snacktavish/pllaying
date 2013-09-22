@@ -540,7 +540,7 @@ void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr)
       
       /* then compute the ancestral state at node p */
 
-      newviewGenericAncestral(tr, pr, p);
+      pllNewviewGenericAncestral(tr, pr, p);
 
       /* and print it to terminal, the two booleans that are set to PLL_TRUE here 
 	 tell the function to print the marginal probabilities as well as 
@@ -781,7 +781,7 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
     @return
       The branch length
 */
-double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
+double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
@@ -811,7 +811,7 @@ double get_branch_length(pllInstance *tr, nodeptr p, int partition_id)
     @param bl
       Branch length
 */
-void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl)
+void pllSetBranchLength (pllInstance *tr, nodeptr p, int partition_id, double bl)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
@@ -2296,7 +2296,7 @@ static int init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int 
   return PLL_TRUE;
 }
 
-/* @brief Check parameter linkage across partitions for consistency
+/** @brief Check parameter linkage across partitions for consistency
  *
  * Checks that linked alpha, substitution rate and frequency model parameters 
  * across several partitions are consistent. E.g., when two partitions are linked 

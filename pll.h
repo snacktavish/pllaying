@@ -1525,8 +1525,8 @@ extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits)
 
 
 /* Handling branch lengths*/
-extern double get_branch_length(pllInstance *tr, nodeptr p, int partition_id);
-extern void set_branch_length(pllInstance *tr, nodeptr p, int partition_id, double bl);
+extern double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id);
+extern void pllSetBranchLength (pllInstance *tr, nodeptr p, int partition_id, double bl);
 
 
 extern size_t discreteRateCategories(int rateHetModel);
@@ -1631,7 +1631,7 @@ extern void getStartingTree (pllInstance *tr);
 extern double treeLength (pllInstance *tr, int model);
 
 extern double evaluatePartialGeneric (pllInstance *, partitionList *pr, int i, double ki, int _model);
-extern void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
+extern void pllEvaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
 extern void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
 
 extern void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
@@ -1663,8 +1663,8 @@ extern void printTraversalInfo(pllInstance *tr);
 extern void countTraversal(pllInstance *tr);
 
 
-extern void newviewIterative(pllInstance *tr, partitionList *pr, int startIndex);
-extern void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods);
+extern void pllNewviewIterative(pllInstance *tr, partitionList *pr, int startIndex);
+extern void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods);
 extern void storeExecuteMaskInTraversalDescriptor(pllInstance *tr, partitionList *pr);
 extern void storeValuesInTraversalDescriptor(pllInstance *tr, partitionList *pr, double *value);
 extern void makenewzIterative(pllInstance *, partitionList *pr);

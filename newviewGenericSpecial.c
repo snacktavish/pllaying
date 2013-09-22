@@ -1444,7 +1444,7 @@ static void computeTraversalInfo(nodeptr p, traversalInfo *ti, int *counter, int
       So in a sense, this function has no clue that there is any tree-like structure 
       in the traversal descriptor, it just operates on an array of structs of given length.
  */
-void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
+void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 {
   traversalInfo 
     *ti   = tr->td[0].ti;
@@ -1500,7 +1500,7 @@ void newviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
       size_t            
         width  = (size_t)pr->partitionData[model]->width;
 
-      /* this conditional statement is exactly identical to what we do in evaluateIterative */
+      /* this conditional statement is exactly identical to what we do in pllEvaluateIterative */
 
       if(tr->td[0].executeModel[model] && width > 0)
       {       
@@ -2070,7 +2070,7 @@ void computeTraversal(pllInstance *tr, nodeptr p, boolean partialTraversal, int 
       If set to \b PLL_TRUE, then likelihood vectors of partitions that are converged are
       not recomputed.
  */
-void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
+void pllNewviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
 {  
   /* if it's a tip there is nothing to do */
 
@@ -2134,9 +2134,9 @@ void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean mask
 
     pllMasterBarrier(tr, pr, PLL_THREAD_NEWVIEW);
 #else
-    /* in the sequential case we now simply call newviewIterative() */
+    /* in the sequential case we now simply call pllNewviewIterative() */
 
-    newviewIterative(tr, pr, 0);
+    pllNewviewIterative(tr, pr, 0);
 #endif
 
   }
@@ -2398,7 +2398,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
       size_t            
         width  = (size_t)pr->partitionData[model]->width;
 
-      /* this conditional statement is exactly identical to what we do in evaluateIterative */
+      /* this conditional statement is exactly identical to what we do in pllEvaluateIterative */
 
       if(tr->td[0].executeModel[model] && width > 0)
         {             
@@ -2462,7 +2462,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
     }
 }
 
-/* this is very similar to newviewGeneric, except that it also computes the marginal ancestral probabilities 
+/* this is very similar to pllNewviewGeneric, except that it also computes the marginal ancestral probabilities 
    at node p. To simplify the code I am re-using newview() here to first get the likelihood vector p->x at p
    and then I deploy newviewAncestralIterative(tr); that should always only have a traversal descriptor of lenth 1,
    to do some mathematical transformations that are required to obtain the marginal ancestral probabilities from 
@@ -2490,7 +2490,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
     @note
       This function is not implemented with the saveMemory technique. 
 */
-void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
+void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 {
   /* error check, we don't need to compute anything for tips */
   
@@ -2510,9 +2510,9 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
       return;
     }
 
-  /* first call newviewGeneric() with mask set to PLL_FALSE such that the likelihood vector is there ! */
+  /* first call pllNewviewGeneric() with mask set to PLL_FALSE such that the likelihood vector is there ! */
 
-  newviewGeneric(tr, pr, p, PLL_FALSE);
+  pllNewviewGeneric(tr, pr, p, PLL_FALSE);
 
   /* now let's compute the ancestral states using this vector ! */
   
@@ -2526,7 +2526,7 @@ void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
   tr->td[0].traversalHasChanged = PLL_TRUE;
 
   /* here we actually assert, that the traversal descriptor only contains one node triplet p, p->next->back, p->next->next->back
-     this must be PLL_TRUE because we have alread invoked the standard newviewGeneric() on p.
+     this must be PLL_TRUE because we have alread invoked the standard pllNewviewGeneric() on p.
   */ 
 
   assert(tr->td[0].count == 1);  

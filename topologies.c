@@ -1,4 +1,3 @@
-
 /*  RAxML-VI-HPC (version 2.2) a program for sequential and parallel estimation of phylogenetic trees 
  *  Copyright August 2006 by Alexandros Stamatakis
  *
@@ -460,7 +459,7 @@ static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
   
   tr->nextnode   = tpl->nextnode;    
 
-  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   return PLL_TRUE;
 }
 

@@ -944,7 +944,7 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
     placed at the edge whose end-points are node with number \a pNumber and \a
     qNumber in the first slot of the traversal descriptor. The function first
     computes the conditional likelihoods for all necessary nodes (the ones in
-    the traversal descriptor list) by calling the function \a newviewIterative
+    the traversal descriptor list) by calling the function \a pllNewviewIterative
     and then evaluates the likelihood at the root. In addition, if \a
     getPerSiteLikelihoods is set to \b PLL_TRUE, the per-site likelihoods are
     stored in \a tr->lhs.
@@ -964,7 +964,7 @@ static double evaluateCAT_FLEX_SAVE (const boolean fastScaling, int *ex1, int *e
       that the edge we are referring to is an edge that leads to a tip, i.e. either
       p or q of the first entry of traversal descriptor are tips.
 */
-void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods)
+void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods)
 {
   /* the branch lengths and node indices of the virtual root branch are always the first one that 
      are stored in the very important traversal array data structure that describes a partial or full tree traversal */
@@ -1005,7 +1005,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
 
   /* iterate over all valid entries in the traversal descriptor */
 
-  newviewIterative(tr, pr, 1);
+  pllNewviewIterative(tr, pr, 1);
 
   /* after the above call we are sure that we have properly and consistently computed the 
      conditionals to the right and left of the virtual root and we can now invoke the 
@@ -1409,7 +1409,7 @@ void evaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLik
       If \a getPerSiteLikelihoods is set to \b PLL_TRUE, then make sure that \a tr->fastScaling is set to
       \b PLL_FALSE, otherwise an assertion will fail.
 */
-void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
+void pllEvaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -1532,10 +1532,10 @@ void evaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean ful
      and add everything */
 
 #else
-  /* and here is just the sequential case, we directly call evaluateIterative() above 
+  /* and here is just the sequential case, we directly call pllEvaluateIterative() above 
      without having to tell the threads/processes that they need to compute this function now */
 
-  evaluateIterative(tr, pr, getPerSiteLikelihoods); //PLL_TRUE
+  pllEvaluateIterative(tr, pr, getPerSiteLikelihoods); //PLL_TRUE
 
   /*
     if we want to obtain per-site rates they have initially been stored 
@@ -1625,7 +1625,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
      will then be used for calculating per-site log likelihoods 
      for each site individually and independently */
 
-  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   //likelihood = tr->likelihood;
 

@@ -657,12 +657,12 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
 
   /* call newvieIterative to get the likelihood arrays to the left and right of the branch */
 
-  newviewIterative(tr, pr, 1);
+  pllNewviewIterative(tr, pr, 1);
 
 
   /* 
      loop over all partoitions to do the precomputation of the sumTable buffer 
-     This is analogous to the newviewIterative() and evaluateIterative() 
+     This is analogous to the pllNewviewIterative() and pllEvaluateIterative() 
      implementations.
      */
 

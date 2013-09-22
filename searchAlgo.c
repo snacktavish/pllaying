@@ -98,7 +98,7 @@ boolean initrav (pllInstance *tr, partitionList *pr, nodeptr p)
     } 
     while (q != p);  
 
-    newviewGeneric(tr, pr, p, PLL_FALSE);
+    pllNewviewGeneric(tr, pr, p, PLL_FALSE);
   }
 
   return PLL_TRUE;
@@ -130,7 +130,7 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
     double 
       startLH;
   
-    evaluateGeneric(tr, p);
+    pllEvaluateGeneric (tr, p);
   
     startLH = tr->likelihood;
   #endif
@@ -159,7 +159,7 @@ void update(pllInstance *tr, partitionList *pr, nodeptr p)
   }
  
   #ifdef _DEBUG_UPDATE
-    evaluateGeneric(tr, p);
+    pllEvaluateGeneric (tr, p);
   
     if(tr->likelihood <= startLH)
       {
@@ -203,9 +203,9 @@ void smooth (pllInstance *tr, partitionList *pr, nodeptr p)
     }	
 
     if(numBranches > 1 && !tr->useRecom)
-      newviewGeneric(tr, pr,p, PLL_TRUE);
+      pllNewviewGeneric(tr, pr,p, PLL_TRUE);
     else
-      newviewGeneric(tr, pr,p, PLL_FALSE);
+      pllNewviewGeneric(tr, pr,p, PLL_FALSE);
   }
 } 
 
@@ -480,7 +480,7 @@ void smoothRegion (pllInstance *tr, partitionList *pr, nodeptr p, int region)
         q = q->next;
       }	
 
-      newviewGeneric(tr, pr,p, PLL_FALSE);
+      pllNewviewGeneric(tr, pr,p, PLL_FALSE);
     }
   }
 }
@@ -621,8 +621,8 @@ nodeptr  removeNodeRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p)
   q = p->next->back;
   r = p->next->next->back;  
 
-  newviewGeneric(tr, pr,q, PLL_FALSE);
-  newviewGeneric(tr, pr,r, PLL_FALSE);
+  pllNewviewGeneric(tr, pr,q, PLL_FALSE);
+  pllNewviewGeneric(tr, pr,r, PLL_FALSE);
 
   hookup(q, r, tr->currentZQR, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
 
@@ -724,7 +724,7 @@ boolean insertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
     hookup(p->next->next, r, z, numBranches);
   }
 
-  newviewGeneric(tr, pr,p, PLL_FALSE);
+  pllNewviewGeneric(tr, pr,p, PLL_FALSE);
 
   if(tr->thoroughInsertion)
   {     
@@ -789,7 +789,7 @@ boolean insertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr
     hookup(p->next->next, r, z, numBranches);
   }   
 
-  newviewGeneric(tr, pr,p, PLL_FALSE);
+  pllNewviewGeneric(tr, pr,p, PLL_FALSE);
 
   return  PLL_TRUE;
 }
@@ -888,7 +888,7 @@ boolean testInsertBIG (pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q)
 
   if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
-  evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
 
   if(tr->likelihood > tr->bestOfNode)
   {
@@ -1054,7 +1054,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
 
       hookup(p->next,       p1, p1z, numBranches);
       hookup(p->next->next, p2, p2z, numBranches);
-      newviewGeneric(tr, pr,p, PLL_FALSE);
+      pllNewviewGeneric(tr, pr,p, PLL_FALSE);
     }
   }  
 
@@ -1107,7 +1107,7 @@ int rearrangeBIG(pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int
       hookup(q->next,       q1, q1z, numBranches);
       hookup(q->next->next, q2, q2z, numBranches);
 
-      newviewGeneric(tr, pr,q, PLL_FALSE);
+      pllNewviewGeneric(tr, pr,q, PLL_FALSE);
     }
   } 
 
@@ -1268,7 +1268,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
   {
     if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
-    evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
+    pllEvaluateGeneric (tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
   }
   else
   {
@@ -1284,7 +1284,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! x->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, pr,x, PLL_FALSE);
+            pllNewviewGeneric(tr, pr,x, PLL_FALSE);
         }
       }
 
@@ -1293,7 +1293,7 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! y->x)) 
         {		  
           if (! (y->x))
-            newviewGeneric(tr, pr,y, PLL_FALSE);
+            pllNewviewGeneric(tr, pr,y, PLL_FALSE);
         }
       }
 
@@ -1302,9 +1302,9 @@ boolean testInsertRestoreBIG (pllInstance *tr, partitionList *pr, nodeptr p, nod
         while ((! x->x) || (! y->x)) 
         {
           if (! (x->x))
-            newviewGeneric(tr, pr,x, PLL_FALSE);
+            pllNewviewGeneric(tr, pr,x, PLL_FALSE);
           if (! (y->x))
-            newviewGeneric(tr, pr,y, PLL_FALSE);
+            pllNewviewGeneric(tr, pr,y, PLL_FALSE);
         }
       }				      	
 
@@ -1553,7 +1553,7 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
 
   }
 
-  evaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
@@ -1812,7 +1812,7 @@ pllTreeEvaluate (pllInstance *tr, partitionList *pr, int maxSmoothIterations)   
 {
   smoothTree(tr, pr, maxSmoothIterations); /* former (32 * smoothFactor) */
 
-  evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
 }
 
 /** @brief Perform an NNI move
@@ -1941,10 +1941,10 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 	NNI(tr, p, PLL_NNI_P_NEXT);
 	double lh1 = tr->likelihood;
 	/* Update branch lengths */
-	newviewGeneric(tr, pr, p, PLL_FALSE);
-	newviewGeneric(tr, pr, q, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, p, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, q, PLL_FALSE);
 	update(tr, pr, p);
-	evaluateGeneric(tr, pr, p, PLL_FALSE, PLL_FALSE);
+	pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
 
 	nniMove nni1;
 	nni1.p = p;
@@ -1972,17 +1972,17 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 	printf("Restore topology\n");
 	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
-	evaluateGeneric(tr, tr->start, TRUE);
+	pllEvaluateGeneric (tr, tr->start, TRUE);
 	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);
 #endif
 	/* Try to do an NNI move of type 2 */
 	NNI(tr, p, 2);
 	double lh2 = tr->likelihood;
 	/* Update branch lengths */
-	newviewGeneric(tr, pr, p, PLL_FALSE);
-	newviewGeneric(tr, pr, q, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, p, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, q, PLL_FALSE);
 	update(tr, pr, p);
-	evaluateGeneric(tr, pr, p, PLL_FALSE, PLL_FALSE);
+	pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
 
 	// Create the nniMove struct to store this move
 	nniMove nni2;
@@ -2002,8 +2002,8 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 
 	/* Restore previous NNI move */
 	NNI(tr, p, 2);
-	newviewGeneric(tr, pr, p, PLL_FALSE);
-	newviewGeneric(tr, pr, p->back, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, p, PLL_FALSE);
+	pllNewviewGeneric(tr, pr, p->back, PLL_FALSE);
 	/* Restore the old branch length */
 	for (i = 0; i < pr->numberOfPartitions; i++) {
 		p->z[i] = z0[i];
@@ -2122,8 +2122,8 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 		for (i = 0; i < numNNI2Apply; i++) {
 			// Just do the topological change
 			NNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
-			newviewGeneric(tr, pr, nonConfNNIList[i].p, PLL_FALSE);
-			newviewGeneric(tr, pr, nonConfNNIList[i].p->back, PLL_FALSE);
+			pllNewviewGeneric(tr, pr, nonConfNNIList[i].p, PLL_FALSE);
+			pllNewviewGeneric(tr, pr, nonConfNNIList[i].p->back, PLL_FALSE);
 			// Apply the store branch length
 			int j;
 			for (j = 0; j < pr->numberOfPartitions; j++) {
@@ -2133,11 +2133,11 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 		}
 		// Re-optimize all branches
 		smoothTree(tr, pr, 2);
-		evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+		pllEvaluateGeneric (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
 		if (estimateModel) {
 			modOpt(tr, pr, 0.1);
 		}
-		evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+		pllEvaluateGeneric (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
 		if (tr->likelihood < curScore) {
 #ifdef _DEBUG_NNI
 			printf("Tree likelihood gets worse after applying NNI\n");
@@ -2154,7 +2154,7 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 					nonConfNNIList[i].p->back->z[j] = nonConfNNIList[i].z0[j];
 				}
 			}
-			evaluateGeneric(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+			pllEvaluateGeneric (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
 #ifdef _DEBUG_NNI
 			printf("Tree likelihood after rolling back = %f \n",
 					tr->likelihood);
@@ -2324,7 +2324,7 @@ pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, pl
 
   if (! insertBIG(tr, pr, p, q))       return PLL_FALSE;
 
-  evaluateGeneric(tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, p->next->next, PLL_FALSE, PLL_FALSE);
   
   rearr.rearrangeType  = PLL_REARRANGE_SPR;
   rearr.likelihood     = tr->likelihood;
@@ -2495,7 +2495,7 @@ static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mint
         /* restore the topology as it was before the split */
         hookup (p->next,       p1, p1z, numBranches);
         hookup (p->next->next, p2, p2z, numBranches);
-        newviewGeneric (tr, pr, p, PLL_FALSE);
+        pllNewviewGeneric (tr, pr, p, PLL_FALSE);
       }
    }
 
@@ -2541,7 +2541,7 @@ static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mint
 
        hookup (q->next,       q1, q1z, numBranches);
        hookup (q->next->next, q2, q2z, numBranches);
-       newviewGeneric (tr, pr, q, PLL_FALSE);
+       pllNewviewGeneric (tr, pr, q, PLL_FALSE);
      }
    }
   return (PLL_TRUE);
@@ -2630,18 +2630,18 @@ pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapT
   NNI (tr, p, swapType);
   /* recompute the likelihood vectors of the two subtrees rooted at p and p->back,
      optimize the branch lengths and evaluate the likelihood  */
-  newviewGeneric (tr, pr, p,       PLL_FALSE);
-  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p,       PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p->back, PLL_FALSE);
   update (tr, pr, p);
-  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
   lh = tr->likelihood;
 
   /* restore topology */
   NNI (tr, p, swapType);
-  newviewGeneric (tr, pr, p,       PLL_FALSE);
-  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p,       PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p->back, PLL_FALSE);
   update (tr, pr, p);
-  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
   for (i = 0; i < pr->numberOfPartitions; ++ i)
    {
      p->z[i] = p->back->z[i] = z0[i];
@@ -2925,10 +2925,10 @@ pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
   numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   
   NNI (tr, p, ri->NNI.swapType);
-  newviewGeneric (tr, pr, p,       PLL_FALSE);
-  newviewGeneric (tr, pr, p->back, PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p,       PLL_FALSE);
+  pllNewviewGeneric (tr, pr, p->back, PLL_FALSE);
   update (tr, pr, p);
-  evaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
+  pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
   
   rax_free (ri);
 }
@@ -3010,10 +3010,10 @@ pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rea
    {
      case PLL_REARRANGE_NNI:
        NNI (tr, rearr->NNI.originNode, rearr->NNI.swapType);
-       newviewGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE);
-       newviewGeneric (tr, pr, rearr->NNI.originNode->back, PLL_FALSE);
+       pllNewviewGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE);
+       pllNewviewGeneric (tr, pr, rearr->NNI.originNode->back, PLL_FALSE);
        update (tr, pr, rearr->NNI.originNode);
-       evaluateGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE, PLL_FALSE);
+       pllEvaluateGeneric (tr, pr, rearr->NNI.originNode, PLL_FALSE, PLL_FALSE);
        break;
      case PLL_REARRANGE_SPR:
        removeNodeBIG (tr, pr, rearr->SPR.removeNode, numBranches);

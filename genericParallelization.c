@@ -704,7 +704,7 @@ static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int ti
     
     We collect the first and second derivatives from the various
     threads and sum them up. It's similar to what we do in
-    evaluateGeneric() with the only difference that we have to collect
+    pllEvaluateGeneric() with the only difference that we have to collect
     two values (firsrt and second derivative) instead of onyly one (the
     log likelihood
 
@@ -1024,7 +1024,7 @@ static void broadCastRates(partitionList *localPr, partitionList *pr)
 /** @brief Evaluate the likelihood of this topology (PThreads/MPI implementation)
 
     Evaluate the likelihood of the topology described in the PLL instance. First
-    every thread calls \a evaluateIterative where it computes the log likelihoods
+    every thread calls \a pllEvaluateIterative where it computes the log likelihoods
     for the  portion of each assigned partition. The results (for all partition) are stored
     as elements of a local buffer array (\a buf). This is done by all threads. Subsequently, 
     an \a MPI_Reduce operation sums the contents of corresponding elements of the local
@@ -1051,7 +1051,7 @@ static void reduceEvaluateIterative(pllInstance *tr, pllInstance *localTree, par
 {
   int model;
 
-  evaluateIterative(localTree, localPr, getPerSiteLikelihoods);
+  pllEvaluateIterative(localTree, localPr, getPerSiteLikelihoods);
 
   /* when this is done we need to write the per-thread log likelihood to the 
      global reduction buffer. Tid is the thread ID, hence thread 0 will write its 
@@ -1307,7 +1307,7 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
     case PLL_THREAD_NEWVIEW: 
       /* just a newview on the fraction of sites that have been assigned to this thread */
 
-      newviewIterative(localTree, localPr, 0);
+      pllNewviewIterative(localTree, localPr, 0);
       break;     
     case PLL_THREAD_EVALUATE: 
       reduceEvaluateIterative(tr, localTree, localPr, tid, PLL_FALSE);

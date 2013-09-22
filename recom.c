@@ -19,7 +19,7 @@
 /** @brief Locks node \a nodenum to force it remains availably in memory
  *
  * @warning If a node is available we dont need to recompute it, but we neet to make sure it is not unpinned while buildding the rest of the traversal descriptor, i.e. unpinnable must be PLL_FALSE at this point, it will automatically be set to PLL_TRUE, after the counter post-order instructions have been executed 
-Omitting this call the traversal will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of newviewIterative, careful! 
+Omitting this call the traversal will likely still work as long as num_allocated_nodes >> log n, but wrong inner vectors will be used at the wrong moment of pllNewviewIterative, careful! 
  *
  *  @param rvec 
  *    Recomputation info
