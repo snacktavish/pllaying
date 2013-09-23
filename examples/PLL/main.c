@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include "../../hash.h"
 #include "pll.h"
 
 int main (int argc, char * argv[])
@@ -10,9 +11,9 @@ int main (int argc, char * argv[])
   pllNewickTree * newick;
   partitionList * partitions;
   struct pllQueue * parts;
-  pllListSPR * bestList;
   int i;
   pllInstanceAttr attr;
+  pllRearrangeList * bestList;
 
 #ifdef _FINE_GRAIN_MPI
   pllInitMPI (&argc, &argv);
@@ -25,7 +26,7 @@ int main (int argc, char * argv[])
    }
 
   /* Set the PLL instance attributes */
-  attr.rateHetModel     = GAMMA;
+  attr.rateHetModel     = PLL_GAMMA;
   attr.fastScaling      = PLL_FALSE;
   attr.saveMemory       = PLL_FALSE;
   attr.useRecom         = PLL_FALSE;
@@ -96,68 +97,66 @@ int main (int argc, char * argv[])
   
   /* Initialize the model */
   pllInitModel(tr, partitions, alignmentData);
-  
-  /* TODO: evaluate likelihood, create interface calls */
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
-  printf ("Likelihood: %f\n\n", tr->likelihood);
-  //Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
-  //printf ("Tree: %s\n", tr->tree_string);
 
-  /* another eval*/
-  double computed_lh = tr->likelihood;
-  evaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
-  assert(computed_lh == tr->likelihood);
-  int numBranches = partitions->perGeneBranchLengths ? partitions->numberOfPartitions : 1;
+
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  
+
+  bestList = pllCreateRearrangeList (20);
+
 
   tr->thoroughInsertion = 1;
-  printf ("Computing the best 20 SPRs in a radius (1,20)     [thoroughInsertion = enabled]\n");
-  bestList = pllComputeSPR (tr, partitions, tr->nodep[tr->mxtips + 1], 1, 20, 20);
+  printf ("Computing the best 20 SPR and NNIs in a radius (1,20)     [thoroughInsertion = enabled]\n");
+  pllRearrangeSearch (tr, partitions, PLL_REARRANGE_SPR, tr->nodep[tr->mxtips + 1], 1, 20, bestList);
+  pllRearrangeSearch (tr, partitions, PLL_REARRANGE_NNI, tr->nodep[tr->mxtips + 1], 1, 20, bestList);
 
-  printf ("Number of SPRs computed : %d\n", bestList->entries);
+  printf ("Number of computed rearrangements: %d\n", bestList->entries);
+  printf ("------------------------------------\n");
 
   for (i = 0; i < bestList->entries; ++ i)
    {
-     printf ("\t bestList->sprInfo[%2d].likelihood     = %f\n", i, bestList->sprInfo[i].likelihood);
+     printf ("%2d  Type: %s  Likelihood: %f\n", i, bestList->rearr[i].rearrangeType == PLL_REARRANGE_SPR ? "SPR" : "NNI", bestList->rearr[i].likelihood);
    }
 
 
-  printf ("Committing bestList->sprInfo[0]                   [thoroughInsertion = disabled]\n");
+  printf ("Committing bestList->rearr[0]                   [thoroughInsertion = disabled]\n");
   tr->thoroughInsertion = 0;
-  pllCommitSPR (tr, partitions, &(bestList->sprInfo[0]), PLL_TRUE);
+  pllRearrangeCommit(tr, partitions, &(bestList->rearr[0]), PLL_TRUE);
 
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   tr->thoroughInsertion = PLL_FALSE;
-  pllDestroyListSPR (&bestList);
+  pllDestroyRearrangeList (&bestList);
+  bestList = pllCreateRearrangeList (20);
   printf ("Computing the best 20 SPRs in a radius (1,30)     [thoroughInsertion = enabled]\n");
-  bestList = pllComputeSPR (tr, partitions, tr->nodep[tr->mxtips + 1], 1, 30, 20);
+  pllRearrangeSearch (tr, partitions, PLL_REARRANGE_SPR, tr->nodep[tr->mxtips + 1], 1, 30, bestList);
 
   printf ("Number of SPRs computed : %d\n", bestList->entries);
   for (i = 0; i < bestList->entries; ++ i)
    {
-     printf ("\t bestList->sprInfo[2%d].likelihood     = %f\n", i, bestList->sprInfo[i].likelihood);
+     printf ("%2d  Type: %s  Likelihood: %f\n", i, bestList->rearr[i].rearrangeType == PLL_REARRANGE_SPR ? "SPR" : "NNI", bestList->rearr[i].likelihood);
    }
 
-  printf ("Committing bestList->sprInfo[0]                   [thoroughInsertion = false]\n");
+  printf ("Committing bestList->rearr[0]                   [thoroughInsertion = false]\n");
   tr->thoroughInsertion = 0;
-  pllCommitSPR (tr, partitions, &(bestList->sprInfo[0]), PLL_TRUE);
+  pllRearrangeCommit (tr, partitions, &(bestList->rearr[0]), PLL_TRUE);
 
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   printf ("Rolling back...\n");
-  pllRollbackSPR (tr, partitions);
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllRearrangeRollback (tr, partitions);
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   printf ("Rolling back...\n");
-  pllRollbackSPR (tr, partitions);
-  evaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllRearrangeRollback (tr, partitions);
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New likelihood: %f\n\n", tr->likelihood);
 
   
-  pllDestroyListSPR (&bestList);
+  pllDestroyRearrangeList (&bestList);
 
   /* Do some cleanup */
   pllAlignmentDataDestroy (alignmentData);
