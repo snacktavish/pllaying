@@ -30,6 +30,20 @@ int main (int argc, char * argv[])
 
      stack_dump(&(tree->tree));
 
+     pllNewickUnroot (tree);
+
+     if (pllValidateNewick (tree))
+      {
+       printf ("Valid phylogenetic tree\n");
+      }
+     else
+      {
+        printf ("Not a valid phylogenetic tree\n");
+      }
+     
+     stack_dump(&(tree->tree));
+
+
      //t = pllTreeCreateNewick (stack, nodes, leaves);
      pllNewickParseDestroy (&tree);
    //pllTreeDestroy (t);

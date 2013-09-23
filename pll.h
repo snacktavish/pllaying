@@ -5,6 +5,7 @@
 #define __pll__
 #include <stdint.h>
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1712,6 +1713,7 @@ extern pllNewickTree * pllNewickParseString (char * newick);
 extern pllNewickTree * pllNewickParseFile (const char * filename);
 extern int pllValidateNewick (pllNewickTree *);
 extern void pllNewickParseDestroy (pllNewickTree **);
+extern int pllNewickUnroot (pllNewickTree * t);
 
 /* partition parser declarations */
 extern void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);

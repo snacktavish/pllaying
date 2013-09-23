@@ -23,4 +23,7 @@
 #define PLL_INCONSISTENT_FREQUENCY_STATES_ACROSS_LINKED_PARTITIONS 1 << 5 /**<frequency states are not identical across linked partitions */
 #define PLL_INCONSISTENT_FREQUENCY_VALUES_ACROSS_LINKED_PARTITIONS 1 << 6 /**<frequency values are not identical across linked partitions */
 
+#define PLL_NEWICK_ROOTED_TREE          1 << 0          /**< @brief Binary root detected */
+#define PLL_NEWICK_BAD_STRUCTURE        1 << 1          /**< @brief Errornous tree detected */
+
 #endif

@@ -65,16 +65,6 @@ extern double masterTimePerPhase;
 
 
 
-#define INIT_LENGTH
-typedef struct  _jobDef
-{
-  int functionType; 
-  int count; 
-  int traveralHasChanged;
-  
-  
-} InitjobDescr; 
-
 extern int processes; 
 extern int processID; 
 #endif 

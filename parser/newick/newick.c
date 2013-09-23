@@ -369,6 +369,7 @@ pllValidateNewick (pllNewickTree * t)
 {
   pllStack * head;
   struct item_t * item;
+  int correct = 0;
  
  item = t->tree->item;
  if (item->rank != 2 && item->rank != 3) return (0);
@@ -376,7 +377,7 @@ pllValidateNewick (pllNewickTree * t)
  while (head)
  {
    item = head->item;
-   if (item->rank != 2 &&  item->rank != 0) 
+   if (item->rank != 2 && item->rank != 0) 
     {
       return (0);
     }
@@ -385,10 +386,62 @@ pllValidateNewick (pllNewickTree * t)
  
  item = t->tree->item;
 
- if (item->rank == 2) return (t->nodes == 2 * t->tips -1);
+ if (item->rank == 2) 
+  {
+    correct = (t->nodes == 2 * t->tips -1);
+    if (correct)
+     {
+       errno = PLL_NEWICK_ROOTED_TREE;
+     }
+    else
+     {
+       errno = PLL_NEWICK_BAD_STRUCTURE;
+     }
+    return (PLL_FALSE);
+  }
+  
+ 
+ correct = ((t->nodes == 2 * t->tips - 2) && t->nodes != 4);
+ if (correct) return (PLL_TRUE);
 
- return ((t->nodes == 2 * t->tips - 2) && t->nodes != 4);
+ errno = PLL_NEWICK_BAD_STRUCTURE;
 }
+
+
+/** @ingroup newickParseGroup
+    @brief Convert a binary rooted trree to a binary unrooted tree
+
+    Changes the root of the node to have 3 descendants instead of two, deletes its last immediate descendant internal node
+    and takes the two children (of the deleted internal node) as its children.
+
+    @param
+      Newick tree
+    
+    @return
+      \b PLL_TRUE in case of success, otherwise \b PLL_FALSE and \a errno is set
+*/
+int
+pllNewickUnroot (pllNewickTree * t)
+{
+  pllStack * tmp;
+  struct item_t * item;
+
+  item = t->tree->item;
+  if (item->rank == 2)
+   {
+     item->rank = 3;
+     t->nodes--;
+     tmp = t->tree->next;
+     t->tree->next = t->tree->next->next;
+     item = tmp->item;
+     free (item->name);
+     free (tmp->item);
+     free (tmp);
+   }
+
+  return (pllValidateNewick (t));
+}
+
 
 /** @ingroup newickParseGroup
     @brief Parse a newick tree string
