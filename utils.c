@@ -80,6 +80,12 @@
 static void pllTreeInitDefaults (pllInstance * tr, int tips);
 static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
 
+
+/** @defgroup instanceLinkingGroup Linking topology, partition scheme and alignment to the PLL instance
+    
+    This set of functions handles the linking of topology, partition scheme and multiple sequence alignment
+    with the PLL instance
+*/
 /***************** UTILITY FUNCTIONS **************************/
 
 
@@ -968,7 +974,8 @@ if (MASTER_P) {
 #endif
 }
 
-/** @brief Correspondance check between partitions and alignment
+/** @ingroup instanceLinkingGroup
+    @brief Correspondance check between partitions and alignment
 
     This function checks whether the partitions to be created and the given
     alignment correspond, that is, whether each site of the alignment is
@@ -1158,13 +1165,14 @@ createPartitions (struct pllQueue * parts, int * bounds)
 }
 
 
-/** @brief Constructs the proposed partition scheme 
+/** @ingroup instanceLinkingGroup
+    @brief Constructs the proposed partition scheme 
 
     This function constructs the proposed partition scheme. It assumes
     that the partition scheme is correct.
 
     @note This function \b does \b not validate the partition scheme.
-    The user must manually call the \fn pllPartitionsValidate function
+    The user must manually call the ::pllPartitionsValidate function
     for validation
     
     @param parts
@@ -1176,8 +1184,7 @@ createPartitions (struct pllQueue * parts, int * bounds)
     @return
       Returns a pointer to \a partitionList structure of partitions in case of success, \b NULL otherwise
 */
-partitionList *
-pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData)
+partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData)
 {
   int * oi;
   int i, j, dst;
@@ -1585,7 +1592,8 @@ pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
   *empiricalFrequencies = NULL;
 }
 
-/** @brief Load alignment to the PLL instance
+/** @ingroup instanceLinkingGroup
+    @brief Load alignment to the PLL instance
     
     Loads (copies) the parsed alignment to the PLL instance. Depending
     on how the \a bDeep flag is set, the alignment in the PLL instance
@@ -1836,7 +1844,8 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
 }
 
 
-/** @brief Initializes the PLL tree topology according to a parsed newick tree
+/** @ingroup instanceLinkingGroup
+    @brief Initializes the PLL tree topology according to a parsed newick tree
 
     Set the tree topology based on a parsed and validated newick tree
 
