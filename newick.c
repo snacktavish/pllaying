@@ -430,8 +430,17 @@ pllNewickUnroot (pllNewickTree * t)
    {
      item->rank = 3;
      t->nodes--;
-     tmp = t->tree->next;
-     t->tree->next = t->tree->next->next;
+     item = t->tree->next->item;
+     if (item->rank == 0)
+      {
+        tmp = t->tree->next->next;
+        t->tree->next->next = t->tree->next->next->next;
+      }
+     else
+      {
+        tmp = t->tree->next;
+        t->tree->next = t->tree->next->next;
+      }
      item = tmp->item;
      free (item->name);
      free (tmp->item);
@@ -458,7 +467,7 @@ pllNewickUnroot (pllNewickTree * t)
       Returns a pointer to the created \a pllNewickTree structure in case of success, otherwise \b NULL
 */
 pllNewickTree *
-pllNewickParseString (char * newick)
+pllNewickParseString (const char * newick)
 {
   int n, input, rc;
   pllNewickTree * t;

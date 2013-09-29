@@ -1722,7 +1722,7 @@ inline boolean isGap(unsigned int *x, int pos);
 inline boolean noGap(unsigned int *x, int pos);
 
 /* newick parser declarations */
-extern pllNewickTree * pllNewickParseString (char * newick);
+extern pllNewickTree * pllNewickParseString (const char * newick);
 extern pllNewickTree * pllNewickParseFile (const char * filename);
 extern int pllValidateNewick (pllNewickTree *);
 extern void pllNewickParseDestroy (pllNewickTree **);

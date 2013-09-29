@@ -1323,7 +1323,7 @@ pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl)
         sites[p][i][j] = 0;
       }
 
-     oi[p] = ssort1main (sites[p], pl->partitionData[p]->width);
+     oi[p] = pllssort1main (sites[p], pl->partitionData[p]->width);
 
      for (i = 0; i < pl->partitionData[p]->width; ++ i) oi[p][i] = 1;
 
