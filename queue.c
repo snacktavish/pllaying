@@ -3,9 +3,9 @@
 #include "mem_alloc.h"
 
 int
-pllQueueInit (struct pllQueue ** q)
+pllQueueInit (pllQueue ** q)
 {  
-  *q = (struct pllQueue *) rax_malloc (sizeof (struct pllQueue));
+  *q = (pllQueue *) rax_malloc (sizeof (pllQueue));
   if (!*q) return (0);
    
   (*q)->head = NULL;
@@ -15,7 +15,7 @@ pllQueueInit (struct pllQueue ** q)
 }  
 
 int 
-pllQueueSize (struct pllQueue * q)
+pllQueueSize (pllQueue * q)
 {  
   int n = 0;
   struct pllQueueItem * elm;
@@ -28,7 +28,7 @@ pllQueueSize (struct pllQueue * q)
 }  
 
 int
-pllQueueRemove (struct pllQueue * q, void ** item)
+pllQueueRemove (pllQueue * q, void ** item)
 {  
   struct pllQueueItem * elm;
    
@@ -46,7 +46,7 @@ pllQueueRemove (struct pllQueue * q, void ** item)
 }  
 
 int 
-pllQueueAppend (struct pllQueue * q, void * item)
+pllQueueAppend (pllQueue * q, void * item)
 { 
   struct pllQueueItem * qitem;
   if (!q) return (0);

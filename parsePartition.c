@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
-#include "../../pll.h"
+#include "pll.h"
 
 /** @file part.c
     
@@ -51,10 +51,10 @@ static void init_model_names (void)
       Queue structure with parsed info
 */
 void
-pllQueuePartitionsDestroy (struct pllQueue ** partitions)
+pllQueuePartitionsDestroy (pllQueue ** partitions)
 {
-  struct pllPartitionInfo * pi;
-  struct pllPartitionRegion * region;
+  pllPartitionInfo * pi;
+  pllPartitionRegion * region;
 
   while (pllQueueRemove (*partitions, (void **)&pi))
    {
@@ -70,15 +70,15 @@ pllQueuePartitionsDestroy (struct pllQueue ** partitions)
   rax_free (*partitions);
 }
 
-static struct pllQueue *
+static pllQueue *
 parse_partition (int * inp)
 {
   int input, i;
   pllLexToken token;
   int lines = 0;
-  struct pllQueue * partitions;
-  struct pllPartitionInfo * pi;
-  struct pllPartitionRegion * region;
+  pllQueue * partitions;
+  pllPartitionInfo * pi;
+  pllPartitionRegion * region;
   int * item;
 
   input  = *inp;
@@ -89,7 +89,7 @@ parse_partition (int * inp)
   while (token.tokenType != PLL_TOKEN_EOF)
   {
     ++ lines;
-    pi = (struct pllPartitionInfo *) rax_calloc (1, sizeof (struct pllPartitionInfo));
+    pi = (pllPartitionInfo *) rax_calloc (1, sizeof (pllPartitionInfo));
     pllQueueInit (&(pi->regionList));
     pllQueueAppend (partitions, (void *)pi);
     CONSUME (PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
@@ -202,7 +202,7 @@ parse_partition (int * inp)
     /* read rhs */
     while (1)
     {
-      region = (struct pllPartitionRegion *) rax_malloc (sizeof (struct pllPartitionRegion));
+      region = (pllPartitionRegion *) rax_malloc (sizeof (pllPartitionRegion));
       if (token.tokenType != PLL_TOKEN_NUMBER) 
        {
          pllQueuePartitionsDestroy (&partitions);
@@ -265,23 +265,23 @@ parse_partition (int * inp)
       A queue structure that contains the parsed information
 */
 void 
-pllPartitionDump (struct pllQueue * partitions)
+pllPartitionDump (pllQueue * partitions)
 {
    struct pllQueueItem * elm;
    struct pllQueueItem * regionList;
-   struct pllPartitionInfo * pi;
-   struct pllPartitionRegion * region;
+   pllPartitionInfo * pi;
+   pllPartitionRegion * region;
 
    elm = partitions->head;
 
    while (elm)
     {
-      pi  = (struct pllPartitionInfo *) elm->item;
+      pi  = (pllPartitionInfo *) elm->item;
       printf ("%s, %s = ", pi->partitionModel, pi->partitionName);
       regionList = pi->regionList->head;
       while (regionList)
        {
-         region = (struct pllPartitionRegion *) regionList->item;
+         region = (pllPartitionRegion *) regionList->item;
          printf ("%d", region->start);
          if (region->start != region->end)
           {
@@ -309,13 +309,13 @@ pllPartitionDump (struct pllQueue * partitions)
     @return
       Queue structure with parsed information
 */
-struct pllQueue *
+pllQueue *
 pllPartitionParse (const char * filename)
 {
   long n;
   char * rawdata;
   int input;
-  struct pllQueue * partitions;
+  pllQueue * partitions;
 
   rawdata = pllReadFile (filename, &n);
   if (!rawdata)

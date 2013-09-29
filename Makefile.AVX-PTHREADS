@@ -10,7 +10,7 @@ SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
 GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
-OBJ = hash.o stack.o ssort.o queue.o utils.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o common.o alignment.o fasta.o phylip.o newick.o part.o
+OBJ = hash.o stack.o ssort.o queue.o utils.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o avxLikelihood.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o alignment.o newick.o parsePartition.o
 
 
 all: $(STATICLIB)
@@ -46,20 +46,10 @@ recom.o : recom.c  $(GLOBAL_DEPS)
 queue.o : queue.c  $(GLOBAL_DEPS)
 stack.o : stack.c $(GLOBAL_DEPS)
 hash.o : hash.c $(GLOBAL_DEPS)
-common.o: parser/common.c
-	$(CC) $(CFLAGS) -o $@ $<
-alignment.o: parser/alignment/alignment.c
-	$(CC) $(CFLAGS) -o $@ $<
-phylip.o: parser/alignment/phylip.c
-	$(CC) $(CFLAGS) -o $@ $<
-fasta.o: parser/alignment/fasta.c
-	$(CC) $(CFLAGS) -o $@ $<
-newick.o: parser/newick/newick.c
-	$(CC) $(CFLAGS) -o $@ $<
-part.o: parser/partition/part.c
-	$(CC) $(CFLAGS) -o $@ $<
-ssort.o : parser/ssort.c
-	$(CC) $(CFLAGS) -o $@ $<
+alignment.o: alignment.c $(GLOBAL_DEPS)
+newick.o: newick.c $(GLOBAL_DEPS)
+parsePartition.o: parsePartition.c $(GLOBAL_DEPS)
+ssort.o : ssort.c $(GLOBAL_DEPS)
 
 clean : 
 	-$(RM) *.o $(STATICLIB) $(SHAREDOBJ)

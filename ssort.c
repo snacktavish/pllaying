@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "ssort.h"
-#include "../mem_alloc.h"
+#include "mem_alloc.h"
 
 /*  string sorting implementation from:
  *  Bentley J. L., Sedgewick R.: Fast Algorithms for Sorting and Searching 
@@ -76,7 +75,7 @@ ssort1 (char ** x, int n, int depth, int * oi)
 }
 
 int * 
-ssort1main (char ** x, int n)
+pllssort1main (char ** x, int n)
 {
   int * oi;
   int i;

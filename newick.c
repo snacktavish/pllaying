@@ -3,8 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
-#include "newick.h"
-#include "../../pll.h"
+#include "pll.h"
 
 
 /** @file  newick.c

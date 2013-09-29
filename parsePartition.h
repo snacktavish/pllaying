@@ -1,15 +1,15 @@
 #ifndef __pll_PART__
 #define __pll_PART__
-#include "../../queue.h"
+#include "queue.h"
 
-struct pllPartitionRegion
+typedef struct
 {
   int start;
   int end;
   int stride;
-};
+} pllPartitionRegion;
 
-struct pllPartitionInfo
+typedef struct 
 {
   char * partitionName;
   char * partitionModel;
@@ -17,6 +17,6 @@ struct pllPartitionInfo
   int protFreqs;
   int dataType;
   int optimizeBaseFrequencies;
-  struct pllQueue * regionList;
-};
+  pllQueue * regionList;
+} pllPartitionInfo;
 #endif

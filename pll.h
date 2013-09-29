@@ -39,11 +39,9 @@ extern "C" {
 #include "stack.h"
 #include "queue.h"
 #include "hash.h"
-#include "parser/newick/newick.h"
+#include "newick.h"
 #include "lexer.h"
-#include "parser/common.h"
-#include "parser/partition/part.h"
-#include "parser/alignment/alignment.h"
+#include "parsePartition.h"
 #include "mem_alloc.h"
 
 #define PLL_MAX_TIP_EV                          0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
@@ -76,6 +74,11 @@ extern "C" {
 
 #define PLL_DEEP_COPY                           1 << 0
 #define PLL_SHALLOW_COPY                        1 << 1
+
+
+#define PLL_FORMAT_PHYLIP                       1 
+#define PLL_FORMAT_FASTA                        2
+#define PLL_FORMAT_NEWICK                       3
 
 #define PLL_NNI_P_NEXT                          1       /**< Use p->next for the NNI move */
 #define PLL_NNI_P_NEXTNEXT                      2       /**< Use p->next->next for the NNI move */
@@ -170,6 +173,8 @@ extern double exp_approx (double x);
 #endif
 
 
+
+#define PLL_SWAP(x,y) do{ __typeof__ (x) _t = x; x = y; y = _t; } while(0)
 
 
 #define PointGamma(prob,alpha,beta)  PointChi2(prob,2.0*(alpha))/(2.0*(beta))
@@ -1496,6 +1501,15 @@ typedef struct
    pllRearrangeInfo * rearr;
  } pllRearrangeList;
 
+/** @brief Generic structure for storing a multiple sequence alignment */
+typedef struct
+ {
+   int              sequenceCount;      /**< @brief Number of sequences */
+   int              sequenceLength;     /**< @brief Length of sequences */
+   char          ** sequenceLabels;     /**< @brief An array of where the \a i-th element is the name of the \a i-th sequence */
+   unsigned char ** sequenceData;       /**< @brief The actual sequence data */
+   int            * siteWeights;        /**< @brief An array where the \a i-th element indicates how many times site \a i appeared (prior to duplicates removal) in the alignment */
+ } pllAlignmentData;
 
 
 /****************************** FUNCTIONS ****************************************************/
@@ -1633,13 +1647,12 @@ extern double treeLength (pllInstance *tr, int model);
 
 extern double evaluatePartialGeneric (pllInstance *, partitionList *pr, int i, double ki, int _model);
 extern void pllEvaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
-extern void newviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
+extern void pllNewviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
 
-extern void newviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
+extern void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
 extern void newviewAncestralIterative(pllInstance *tr, partitionList *pr);
 extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pllInstance *tr, partitionList *pr);
 
-extern void newviewGenericMulti (pllInstance *tr, nodeptr p, int model);
 extern void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, double *z0, int maxiter, double *result, boolean mask);
 extern void makenewzGenericDistance(pllInstance *tr, int maxiter, double *z0, double *result, int taxon1, int taxon2);
 extern double evaluatePartitionGeneric (pllInstance *tr, nodeptr p, int model);
@@ -1716,18 +1729,19 @@ extern void pllNewickParseDestroy (pllNewickTree **);
 extern int pllNewickUnroot (pllNewickTree * t);
 
 /* partition parser declarations */
-extern void  pllQueuePartitionsDestroy (struct pllQueue ** partitions);
-extern struct pllQueue * pllPartitionParse (const char * filename);
-extern void pllPartitionDump (struct pllQueue * partitions);
+extern void  pllQueuePartitionsDestroy (pllQueue ** partitions);
+extern pllQueue * pllPartitionParse (const char * filename);
+extern void pllPartitionDump (pllQueue * partitions);
 
 /* alignment data declarations */
 extern void pllAlignmentDataDestroy (pllAlignmentData *);
-extern int pllAlignmentDataDumpPHYLIP (pllAlignmentData *, const char *);
-extern int pllAlignmentDataDumpFASTA (pllAlignmentData *, const char *);
+extern int pllAlignmentDataDumpFile (pllAlignmentData *, int, const char *);
+extern void pllAlignmentDataDumpConsole (pllAlignmentData * alignmentData);
 extern pllAlignmentData * pllInitAlignmentData (int, int);
-extern pllAlignmentData * pllParsePHYLIP (const char *);
-extern pllAlignmentData * pllParseFASTA (const char *);
+extern pllAlignmentData * pllParseAlignmentFile (int fileType, const char *);
 
+extern char * pllReadFile (const char *, long *);
+extern int * pllssort1main (char ** x, int n);
 /* from utils.h */
 linkageList* initLinkageList(int *linkList, partitionList *pr);
 
@@ -1744,8 +1758,8 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (pllInstance *, partitionList **);
-int pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData);
-partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData);
+int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
+partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
 void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
 void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);

@@ -7,14 +7,14 @@ struct pllQueueItem
   struct pllQueueItem * next;
 }; 
    
-struct pllQueue
+typedef struct
 {  
   struct pllQueueItem * head;
   struct pllQueueItem * tail;
-}; 
+} pllQueue; 
 
-int pllQueueInit (struct pllQueue ** q);
-int pllQueueSize (struct pllQueue * q);
-int pllQueueRemove (struct pllQueue * q, void ** item);
-int pllQueueAppend (struct pllQueue * q, void * item);
+int pllQueueInit (pllQueue ** q);
+int pllQueueSize (pllQueue * q);
+int pllQueueRemove (pllQueue * q, void ** item);
+int pllQueueAppend (pllQueue * q, void * item);
 #endif

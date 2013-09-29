@@ -54,7 +54,6 @@
 #include <assert.h>
 #include <errno.h>
 #include "cycle.h"
-#include "parser/ssort.h"
 
 
 #if ! (defined(__ppc) || defined(__powerpc__) || defined(PPC))
@@ -991,14 +990,14 @@ if (MASTER_P) {
       Returns \a 1 in case of success, otherwise \a 0
 */
 int
-pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData)
+pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData)
 {
   int nparts;
   char * used;
   struct pllQueueItem * elm;
   struct pllQueueItem * regionItem;
-  struct pllPartitionRegion * region;
-  struct pllPartitionInfo * pi;
+  pllPartitionRegion * region;
+  pllPartitionInfo * pi;
   int i;
 
   /* check if the list contains at least one partition */
@@ -1012,11 +1011,11 @@ pllPartitionsValidate (struct pllQueue * parts, pllAlignmentData * alignmentData
   /* traverse all partitions and their respective regions and mark sites */
   for (elm = parts->head; elm; elm = elm->next)
    {
-     pi = (struct pllPartitionInfo *) elm->item;
+     pi = (pllPartitionInfo *) elm->item;
      
      for (regionItem = pi->regionList->head; regionItem; regionItem = regionItem->next)
       {
-        region = (struct pllPartitionRegion *) regionItem->item;
+        region = (pllPartitionRegion *) regionItem->item;
 
         for (i = region->start - 1; i < region->end; i += region->stride)
          {
@@ -1093,10 +1092,10 @@ swapSite (unsigned char ** buf, int s1, int s2, int nTaxa)
       
 */
 static partitionList *
-createPartitions (struct pllQueue * parts, int * bounds)
+createPartitions (pllQueue * parts, int * bounds)
 {
   partitionList * pl;
-  struct pllPartitionInfo * pi;
+  pllPartitionInfo * pi;
   struct pllQueueItem * elm;
   int i;
 
@@ -1110,7 +1109,7 @@ createPartitions (struct pllQueue * parts, int * bounds)
   
   for (i = 0, elm = parts->head; elm; elm = elm->next, ++ i)
    {
-     pi = (struct pllPartitionInfo *) elm->item;
+     pi = (pllPartitionInfo *) elm->item;
      pl->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
 
      pl->partitionData[i]->lower = bounds[i << 1];
@@ -1184,14 +1183,14 @@ createPartitions (struct pllQueue * parts, int * bounds)
     @return
       Returns a pointer to \a partitionList structure of partitions in case of success, \b NULL otherwise
 */
-partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData * alignmentData)
+partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData)
 {
   int * oi;
   int i, j, dst;
   struct pllQueueItem * elm;
   struct pllQueueItem * regionItem;
-  struct pllPartitionRegion * region;
-  struct pllPartitionInfo * pi;
+  pllPartitionRegion * region;
+  pllPartitionInfo * pi;
   partitionList * pl;
   int * newBounds;
   int k, nparts;
@@ -1208,12 +1207,12 @@ partitionList * pllPartitionsCommit (struct pllQueue * parts, pllAlignmentData *
   /* reposition the sites in the alignment */
   for (elm = parts->head; elm; elm = elm->next, ++ k)
    {
-     pi = (struct pllPartitionInfo *) elm->item;
+     pi = (pllPartitionInfo *) elm->item;
      
      newBounds[k << 1] = dst;   /* set the lower column for this partition */
      for (regionItem = pi->regionList->head; regionItem; regionItem = regionItem->next)
       {
-        region = (struct pllPartitionRegion *) regionItem->item;
+        region = (pllPartitionRegion *) regionItem->item;
 
         for (i = region->start - 1; i < region->end; i += region->stride)
          {
@@ -3132,3 +3131,65 @@ int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likeli
 
   return PLL_TRUE;
 }
+
+/** @brief Read the contents of a file
+    
+    Reads the ile \a filename and return its content. In addition
+    the size of the file is stored in the input variable \a filesize.
+    The content of the variable \a filesize can be anything and will
+    be overwritten.
+
+    @param filename
+      Name of the input file
+
+    @param filesize
+      Input parameter where the size of the file (in bytes) will be stored
+
+    @return
+      Contents of the file
+*/
+char * 
+pllReadFile (const char * filename, long * filesize)
+{
+  FILE * fp;
+  char * rawdata;
+
+  fp = fopen (filename, "r");
+  if (!fp) return (NULL);
+
+  /* obtain file size */
+  if (fseek (fp, 0, SEEK_END) == -1)
+   {
+     fclose (fp);
+     return (NULL);
+   }
+
+  *filesize = ftell (fp);
+
+  if (*filesize == -1) 
+   {
+     fclose (fp);
+     return (NULL);
+   }
+  rewind (fp);
+
+  /* allocate buffer and read file contents */
+  rawdata = (char *) rax_malloc (((*filesize) + 1) * sizeof (char));
+  if (rawdata) 
+   {
+     if (fread (rawdata, sizeof (char), *filesize, fp) != (size_t) *filesize) 
+      {
+        rax_free (rawdata);
+        rawdata = NULL;
+      }
+     else
+      {
+        rawdata[*filesize] = 0;
+      }
+   }
+
+  fclose (fp);
+
+  return (rawdata);
+}
+
