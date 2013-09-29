@@ -8,7 +8,7 @@ g_processed_msg = '\x3c\x21\x2d\x2d\x20\x28\xc2\xaf\x60\xc2\xb7\x2e\x5f\x2e\xc2\
 g_path_prefix = '/var/www/test/html/'
 #  files to process
 g_html_groups = ('group__evaluateLikelihoodGroup.html', 'group__rearrangementGroup.html', 'group__alignmentGroup.html', 'group__newickParseGroup.html', 'group__parsePartitionFileGroup.html')
-g_html_files  = ('newviewGenericSpecial_8c.html', 'optimizeModel_8c.html', 'genericParallelization_8c.html', 'utils_8c.html')
+g_html_files  = ('newviewGenericSpecial_8c.html', 'optimizeModel_8c.html', 'genericParallelization_8c.html', 'utils_8c.html', 'evaluateGenericSpecial_8c.html', 'makenewzGenericSpecial_8c.html')
 
 g_memberdecls_table_string = ('table', 'class', 'memberdecls')
 g_bStatic = 0
