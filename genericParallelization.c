@@ -31,7 +31,6 @@ void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2ln
 void pllMasterPostBarrier(pllInstance *tr, partitionList *pr, int jobType);
 static void distributeYVectors(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
 static void distributeWeights(pllInstance *localTree, pllInstance *tr, partitionList *localPr);
-static boolean pllWorkerTrap(pllInstance *tr, partitionList *pr);
 static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionList *pr, partitionList *localPr, int tid, int n);
 
 static void *likelihoodThread(void *tData); 
@@ -46,6 +45,7 @@ static void initializePartitionsMaster(pllInstance *tr, pllInstance *localTree, 
 static char* addBytes(char *buf, void *toAdd, size_t numBytes); 
 static char* popBytes(char *buf, void *result, size_t numBytes); 
 static void defineTraversalInfoMPI(void);
+static boolean pllWorkerTrap(pllInstance *tr, partitionList *pr);
 #endif
 
 #ifdef _USE_PTHREADS
@@ -197,10 +197,9 @@ void pllInitMPI(int * argc, char **argv[])
 
 
 /**
-   @brief Traps worker threads/processes.    
+   @brief Traps worker MPI processes.    
    
-   @notice in the MPI case, this function should be called
-   immediately after initMPI()
+   @note  This function should be called immediately after initMPI()
 
    @param tr 
      PLL instance 
@@ -892,22 +891,20 @@ void broadcastAfterRateOpt(pllInstance *tr, pllInstance *localTree, partitionLis
  */
 static void collectDouble(double *dst, double *src, pllInstance *tr, partitionList *pr, int n, int tid)
 {
-  double 
-    buf[tr->originalCrunchedLength]; 
-  int
-    assertNum = 0; 
 #ifdef _FINE_GRAIN_MPI    
-  int i; 
-    int
-      displacements[tr->numberOfThreads];
-    double 
-      resultBuf[tr->originalCrunchedLength]; 
-#endif
+  int
+    assertNum = 0,
+    i, 
+    displacements[tr->numberOfThreads];
+  double 
+    buf[tr->originalCrunchedLength],
+    resultBuf[tr->originalCrunchedLength]; 
 
+  /* NOTE: This was moved here because it was an additional unnecessary move for the PTHREADS version. I didnt
+  have time to check the MPI version, have to get back to this and remove it */
   /* gather own persite log likelihood values into local buffer  */
-  //int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,PLL_TRUE, PLL_FALSE);
+  int numberCollected = doublesToBuffer(buf, src, tr, pr,n,tid,PLL_TRUE, PLL_FALSE);
 
-#ifdef _FINE_GRAIN_MPI 
   /* this communicates all the values to the master */
   
   int numberPerWorker[tr->numberOfThreads];     
