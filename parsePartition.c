@@ -111,15 +111,15 @@ parse_partition (int * inp)
 
     if (!strcmp (pi->partitionModel, "DNA"))
      {
-       pi->protModels = -1;
-       pi->protFreqs  = -1;
+       pi->protModels = PLL_FALSE;
+       pi->protFreqs  = PLL_FALSE;
        pi->dataType   = PLL_DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_FALSE; 
      }
     else if (!strcmp (pi->partitionModel, "DNAX"))
      {
-       pi->protModels = -1;
-       pi->protFreqs  = -1;
+       pi->protModels = PLL_FALSE;
+       pi->protFreqs  = PLL_FALSE;
        pi->dataType   = PLL_DNA_DATA;
        pi->optimizeBaseFrequencies = PLL_TRUE; 
      }
@@ -130,7 +130,7 @@ parse_partition (int * inp)
        if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
         {
           pi->protModels = *item;
-          pi->protFreqs  = -1;
+          pi->protFreqs  = PLL_FALSE;
           pi->optimizeBaseFrequencies = PLL_FALSE;
         }
        else
@@ -141,7 +141,7 @@ parse_partition (int * inp)
              if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
                 pi->protModels = *item;
-                pi->protFreqs  = -1;
+                pi->protFreqs  = PLL_FALSE;
                 pi->optimizeBaseFrequencies = PLL_TRUE;
               }
              pi->partitionModel[token.len - 1] = 'X';
@@ -152,7 +152,7 @@ parse_partition (int * inp)
              if (pllHashSearch (hashTable, pi->partitionModel, (void **) &item))
               {
                 pi->protModels = *item;
-                pi->protFreqs  = 1;
+                pi->protFreqs  = PLL_TRUE;
                 pi->optimizeBaseFrequencies = PLL_FALSE;
               }
              pi->partitionModel[token.len - 1] = 'F';
