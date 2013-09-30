@@ -1,2 +1,2 @@
 ACLOCAL_AMFLAGS = -I m4 --install
-SUBDIRS = src man examples
+SUBDIRS = MPI src man examples

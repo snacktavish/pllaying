@@ -27,7 +27,7 @@ LT_INIT
 AM_PROG_CC_C_O
 # Checks for libraries.
 # FIXME: Replace `main' with a function in `-lm':
-AC_CHECK_LIB([m], [main])
+AC_CHECK_LIB([m], [log])
 
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h float.h limits.h malloc.h stddef.h stdint.h stdlib.h string.h strings.h sys/time.h unistd.h])
@@ -90,19 +90,25 @@ AC_ARG_ENABLE(sse3,AC_HELP_STRING([--enable-sse3],[build SSE3 version of the lib
 AC_ARG_ENABLE(sse3-pthreads,AC_HELP_STRING([--enable-sse3-pthreads],[build pthreads SSE3 version of the library]),[have_sse3_pthreads=yes])
 AC_ARG_ENABLE(sse3-mpi,AC_HELP_STRING([--enable-sse3-mpi],[build MPI SSE3 version of the library]),[have_sse3_mpi=yes])
 
+AX_MPI([have_mpi=yes],[have_mpi=no])
 
 AM_CONDITIONAL(BUILD_GENERIC, test "x${have_generic}" = "xyes")
 AM_CONDITIONAL(BUILD_AVX, test "x${have_avx}" = "xyes")
 AM_CONDITIONAL(BUILD_AVX_PTHREADS, test "x${have_avx_pthreads}" = "xyes")
 AM_CONDITIONAL(BUILD_SSE3, test "x${have_sse3}" = "xyes")
 AM_CONDITIONAL(BUILD_SSE3_PTHREADS, test "x${have_sse3_pthreads}" = "xyes")
+AM_CONDITIONAL(BUILD_MPI, test "x${have_mpi}" = "xyes")
 
 AC_SUBST(LIBPLL_VERSION)
 AC_SUBST(LIBPLL_MAJOR)
 AC_SUBST(LIBPLL_MINOR)
 AC_SUBST(LIBPLL_REV)
+AC_SUBST(MPICC)
+
+
 
 AC_CONFIG_FILES([Makefile
+                 MPI/Makefile
                  src/Makefile
                  man/Makefile
                  examples/Makefile])
