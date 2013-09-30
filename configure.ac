@@ -104,5 +104,6 @@ AC_SUBST(LIBPLL_REV)
 
 AC_CONFIG_FILES([Makefile
                  src/Makefile
-                 man/Makefile])
+                 man/Makefile
+                 examples/Makefile])
 AC_OUTPUT
