@@ -2640,7 +2640,7 @@ pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapT
   NNI (tr, p, swapType);
   pllNewviewGeneric (tr, pr, p,       PLL_FALSE);
   pllNewviewGeneric (tr, pr, p->back, PLL_FALSE);
-  update (tr, pr, p);
+  //update (tr, pr, p);
   pllEvaluateGeneric (tr, pr, p, PLL_FALSE, PLL_FALSE);
   for (i = 0; i < pr->numberOfPartitions; ++ i)
    {
@@ -2864,8 +2864,10 @@ pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranch
    {
      case PLL_REARRANGE_NNI:
        pllCreateNniInfoRollback (tr, rearr);
+       break;
      case PLL_REARRANGE_SPR:
        pllCreateSprInfoRollback (tr, rearr, numBranches);
+       break;
      default:
        break;
    }
