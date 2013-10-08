@@ -1289,7 +1289,7 @@ copySite (unsigned char ** dst, unsigned char ** src, int to, int from, int nTax
 
 */
 void 
-pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl)
+pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl)
 {
   int i, j, k, p;
   char *** sites;
@@ -3100,6 +3100,8 @@ int pllInitModel (pllInstance * tr, partitionList * partitions, pllAlignmentData
   partitions->rateList  = initLinkageList(unlinked, partitions);
 
   rax_free(unlinked);
+
+  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
   return PLL_TRUE;
 }

@@ -1760,7 +1760,7 @@ void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (pllInstance *, partitionList **);
 int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
 partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
-void pllPhylipRemoveDuplicate (pllAlignmentData * alignmentData, partitionList * pl);
+extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
 double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
 void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
 int pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList *, int);
