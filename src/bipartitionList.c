@@ -416,7 +416,7 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
       e = initEntry(); 
        
       /*e->bitVector  = (unsigned int*rax_callocvectorLength, sizeof(unsigned int));*/
-      e->bitVector = (unsigned int*)rax_malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      rax_posix_memalign ((void **)&(e->bitVector), PLL_BYTE_ALIGNMENT, (size_t)vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
 
@@ -443,7 +443,7 @@ static void insertHashRF(unsigned int *bitVector, hashtable *h, unsigned int vec
        
       /*e->bitVector  = (unsigned int*rax_callocvectorLength, sizeof(unsigned int)); */
 
-      e->bitVector = (unsigned int*)rax_malloc_aligned((size_t)vectorLength * sizeof(unsigned int));
+      rax_posix_memalign ((void **)&(e->bitVector), PLL_BYTE_ALIGNMENT, (size_t)vectorLength * sizeof(unsigned int));
       memset(e->bitVector, 0, vectorLength * sizeof(unsigned int));
 
       e->treeVector = (unsigned int*)rax_calloc((size_t)treeVectorLength, sizeof(unsigned int));

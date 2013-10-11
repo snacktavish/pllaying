@@ -1633,7 +1633,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             /* allocate memory: note that here we use a byte-boundary aligned malloc, because we need the vectors
                to be aligned at 16 BYTE (SSE3) or 32 BYTE (AVX) boundaries! */
             
-            x3_start = (double*)rax_malloc_aligned(requiredLength);              
+            rax_posix_memalign ((void **)&x3_start, PLL_BYTE_ALIGNMENT, requiredLength);              
             
             /* update the data structures for consistent bookkeeping */
             pr->partitionData[model]->xVector[p_slot]      = x3_start;
@@ -1662,7 +1662,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                 if(ex3)
                   rax_free(ex3);
                 
-                ex3 = (int*)rax_malloc_aligned(requiredExpLength);               
+                rax_posix_memalign ((void **)&ex3, PLL_BYTE_ALIGNMENT, requiredExpLength);               
                 
                 pr->partitionData[model]->expVector[p_slot] = ex3;
                 
@@ -2435,7 +2435,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
              the eignevalues. This will allow us to obtain real probabilites from the internal RAxML 
              representation */
 
-          diagptable = (double*)rax_malloc_aligned(categories * states * states * sizeof(double));
+          rax_posix_memalign ((void **)&diagptable, PLL_BYTE_ALIGNMENT, categories * states * states * sizeof(double));
           
           requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
           

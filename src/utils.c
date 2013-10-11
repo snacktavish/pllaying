@@ -595,17 +595,17 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->globalScaler    = (unsigned int *)rax_calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));
 
-      localPartitions->partitionData[model]->left              = (double *)rax_malloc_aligned((size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
-      localPartitions->partitionData[model]->right             = (double *)rax_malloc_aligned((size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->left),  PLL_BYTE_ALIGNMENT, (size_t)pl->leftLength * (maxCategories + 1) * sizeof(double));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->right), PLL_BYTE_ALIGNMENT, (size_t)pl->rightLength * (maxCategories + 1) * sizeof(double));
       localPartitions->partitionData[model]->EIGN              = (double*)rax_malloc((size_t)pl->eignLength * sizeof(double));
-      localPartitions->partitionData[model]->EV                = (double*)rax_malloc_aligned((size_t)pl->evLength * sizeof(double));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->EV),    PLL_BYTE_ALIGNMENT, (size_t)pl->evLength * sizeof(double));
       localPartitions->partitionData[model]->EI                = (double*)rax_malloc((size_t)pl->eiLength * sizeof(double));
 
       localPartitions->partitionData[model]->substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
       localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->freqExponents     = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->empiricalFrequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
-      localPartitions->partitionData[model]->tipVector         = (double *)rax_malloc_aligned((size_t)pl->tipVectorLength * sizeof(double));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->tipVector), PLL_BYTE_ALIGNMENT, (size_t)pl->tipVectorLength * sizeof(double));
       //localPartitions->partitionData[model]->partitionName      = NULL;   // very imporatant since it is deallocated in pllPartitionDestroy
       
        if(localPartitions->partitionData[model]->dataType == PLL_AA_DATA && localPartitions->partitionData[model]->protModels == PLL_LG4)      
@@ -616,11 +616,11 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 	  for(k = 0; k < 4; k++)
 	    {	    
 	      localPartitions->partitionData[model]->EIGN_LG4[k]              = (double*)rax_malloc(pl->eignLength * sizeof(double));
-	      localPartitions->partitionData[model]->EV_LG4[k]                = (double*)rax_malloc_aligned(pl->evLength * sizeof(double));
+	      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->EV_LG4[k]), PLL_BYTE_ALIGNMENT, pl->evLength * sizeof(double));
 	      localPartitions->partitionData[model]->EI_LG4[k]                = (double*)rax_malloc(pl->eiLength * sizeof(double));
 	      localPartitions->partitionData[model]->substRates_LG4[k]        = (double *)rax_malloc(pl->substRatesLength * sizeof(double));
 	      localPartitions->partitionData[model]->frequencies_LG4[k]       = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
-	      localPartitions->partitionData[model]->tipVector_LG4[k]         = (double *)rax_malloc_aligned(pl->tipVectorLength * sizeof(double));
+	      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->tipVector_LG4[k]), PLL_BYTE_ALIGNMENT, pl->tipVectorLength * sizeof(double));
 	    }
 	}
 
@@ -653,14 +653,14 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));
 
-      localPartitions->partitionData[model]->sumBuffer = (double *)rax_malloc_aligned(width *
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->sumBuffer), PLL_BYTE_ALIGNMENT, width *
 										      (size_t)(localPartitions->partitionData[model]->states) *
 										      discreteRateCategories(localTree->rateHetModel) *
 										      sizeof(double));
 
       /* Initialize buffers to store per-site log likelihoods */
 
-      localPartitions->partitionData[model]->perSiteLikelihoods = (double *)rax_malloc_aligned(  width * sizeof(double));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->perSiteLikelihoods), PLL_BYTE_ALIGNMENT, width * sizeof(double));
 
       /* initialize data structures for per-site likelihood scaling */
 
@@ -690,7 +690,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
-      localPartitions->partitionData[model]->ancestralBuffer = (double *)rax_malloc_aligned(width *
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->ancestralBuffer), PLL_BYTE_ALIGNMENT, width *
 										 (size_t)(localPartitions->partitionData[model]->states) *
 										 sizeof(double));
 
@@ -699,7 +699,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       ancestralVectorWidth += ((size_t)(localPartitions->partitionData[model]->upper - localPartitions->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double));
       /* :TODO: do we have to use the original tree for that   */
 
-      localPartitions->partitionData[model]->wgt = (int *)rax_malloc_aligned(width * sizeof(int));
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->wgt), PLL_BYTE_ALIGNMENT,width * sizeof(int));
 
       /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
 
@@ -710,7 +710,7 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 	  localPartitions->partitionData[model]->gapVectorLength = ((int)width / 32) + 1;
 	  assert(4 == sizeof(unsigned int));
 	  localPartitions->partitionData[model]->gapVector = (unsigned int*)rax_calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
-	  localPartitions->partitionData[model]->gapColumn = (double *)rax_malloc_aligned(((size_t)localTree->mxtips) *
+	  rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->gapColumn),PLL_BYTE_ALIGNMENT, ((size_t)localTree->mxtips) *
 									       ((size_t)(localPartitions->partitionData[model]->states)) *
 									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
 	}

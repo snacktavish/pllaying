@@ -1636,7 +1636,7 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
 #endif     
 
       
-      pr->partitionData[model]->parsVect = (parsimonyNumber *)rax_malloc_aligned((size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
+      rax_posix_memalign ((void **) &(pr->partitionData[model]->parsVect), PLL_BYTE_ALIGNMENT, (size_t)compressedEntriesPadded * states * totalNodes * sizeof(parsimonyNumber));
      
       for(i = 0; i < compressedEntriesPadded * states * totalNodes; i++)      
         pr->partitionData[model]->parsVect[i] = 0;
@@ -1712,7 +1712,7 @@ static void compressDNA(pllInstance *tr, partitionList *pr, int *informative)
       rax_free(compressedValues);
     }
   
-  tr->parsimonyScore = (unsigned int*)rax_malloc_aligned(sizeof(unsigned int) * totalNodes);  
+  rax_posix_memalign ((void **) &(tr->parsimonyScore), PLL_BYTE_ALIGNMENT, sizeof(unsigned int) * totalNodes);  
           
   for(i = 0; i < totalNodes; i++) 
     tr->parsimonyScore[i] = 0;

@@ -419,17 +419,20 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     *d, 
 
     /* arrays to store stuff we can pre-compute */
-
-    *d_start = (double *)rax_malloc_aligned(numberOfCategories * states * sizeof(double)),
-    *e =(double *)rax_malloc_aligned(states * sizeof(double)),
-    *s = (double *)rax_malloc_aligned(states * sizeof(double)),
-    *dd = (double *)rax_malloc_aligned(states * sizeof(double)),
+    *d_start,
+    *e,
+    *s,
+    *dd,
     inv_Li, 
     dlnLidlz, 
     d2lnLidlz2,
     dlnLdlz = 0.0,
     d2lnLdlz2 = 0.0;
 
+  rax_posix_memalign ((void **) &d_start, PLL_BYTE_ALIGNMENT, numberOfCategories * states * sizeof(double));
+  rax_posix_memalign ((void **) &e,       PLL_BYTE_ALIGNMENT, (states * sizeof(double)));
+  rax_posix_memalign ((void **) &s,       PLL_BYTE_ALIGNMENT, states * sizeof(double));
+  rax_posix_memalign ((void **) &dd,      PLL_BYTE_ALIGNMENT, states * sizeof(double)),
   d = d_start;
 
   e[0] = 0.0;
@@ -2009,7 +2012,8 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
   e2v[0]= _mm_load_pd(&e2[0]);
   e2v[1]= _mm_load_pd(&e2[2]);
 
-  d = d_start = (double *)rax_malloc_aligned(numberOfCategories * 4 * sizeof(double));
+  rax_posix_memalign ((void **) &d_start, PLL_BYTE_ALIGNMENT, numberOfCategories * 4 * sizeof(double));
+  d = d_start;
 
   dd1 = EIGN[1] * lz;
   dd2 = EIGN[2] * lz;
@@ -2228,7 +2232,8 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   double  dlnLdlz = 0.0;
   double  d2lnLdlz2 = 0.0;
 
-  d1 = d_start = (double *)rax_malloc_aligned(numberOfCategories * 20 * sizeof(double));
+  rax_posix_memalign ((void **)&d_start, PLL_BYTE_ALIGNMENT, numberOfCategories * 20 * sizeof(double));
+  d1 = d_start; 
 
   e[0] = 0.0;
   s[0] = 0.0; 
