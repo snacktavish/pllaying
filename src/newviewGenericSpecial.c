@@ -4650,7 +4650,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
     @return
       Returns the value of the bit vector (\b 1 if set, \b 0 if not)
 */
-#ifndef __APPLE__
+#ifndef __clang__
 inline 
 #endif
 boolean isGap(unsigned int *x, int pos)
@@ -4669,7 +4669,7 @@ boolean isGap(unsigned int *x, int pos)
     @return
       Returns the value of the bit vector (\b 1 if set, \b 0 if not)
 */
-#ifndef __APPLE__
+#ifndef __clang__
 inline 
 #endif
 boolean noGap(unsigned int *x, int pos)
