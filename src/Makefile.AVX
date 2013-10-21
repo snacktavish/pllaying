@@ -1,6 +1,6 @@
 CC = gcc
 AR = ar
-CFLAGS = -g -c -O2 -D__SSE3 -D__AVX -msse3 -fomit-frame-pointer -funroll-loops -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wunused-function -Wundef -Wunused
+CFLAGS = -g -c -O2 -D_GNU_SOURCE -D__SSE3 -D__AVX -msse3 -fomit-frame-pointer -funroll-loops -Wall -Wunused-parameter -Wredundant-decls  -Wreturn-type  -Wswitch-default -Wunused-value -Wimplicit  -Wimplicit-function-declaration  -Wimplicit-int -Wimport  -Wunused-label -Wno-int-to-pointer-cast -Wbad-function-cast  -Wmissing-declarations -Wmissing-prototypes  -Wnested-externs  -Wold-style-definition -Wstrict-prototypes  -Wpointer-sign -Wextra -Wredundant-decls -Wunused -Wunused-parameter -Wunused-value  -Wunused-variable -Wformat  -Wformat-nonliteral -Wparentheses -Wsequence-point -Wuninitialized -Wunused-function -Wundef -Wunused
 ARFLAGS = rvs
 TARGET = libpll
 ARCH = avx
