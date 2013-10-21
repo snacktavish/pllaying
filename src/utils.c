@@ -87,6 +87,45 @@ static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
 */
 /***************** UTILITY FUNCTIONS **************************/
 
+static char *
+my_strtok_r (char * s, const char * delim, char **save_ptr)
+{  
+  char *token;
+   
+  /* Scan leading delimiters */
+  if (s == NULL)
+    s = *save_ptr;
+   
+  s += strspn (s, delim);
+  if (*s == '\0')
+   {
+     *save_ptr = s;
+     return NULL;
+   }
+   
+  /* Find the end of the token. */
+  token = s;
+  s = strpbrk (token, delim);
+  if (!s)
+    *save_ptr = strchr (token, '\0');
+  else
+   {
+     /* Terminate the token and make *SAVE_PTR point past it */
+     *s = '\0';
+     *save_ptr = s + 1;
+   }
+   
+  return token;
+}  
+
+#if (defined(_SVID_SOURCE) || defined(_BSD_SOURCE) || defined(_POSIX_C_SOURCE) || defined(_XOPEN_SOURCE) || defined(_POSIX_SOURCE))
+#define STRTOK_R strtok_r
+#else
+#define STRTOK_R my_strtok_r
+#endif
+
+
+
 
 void storeExecuteMaskInTraversalDescriptor(pllInstance *tr, partitionList *pr)
 {
@@ -2258,7 +2297,7 @@ static int init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int 
 
   for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
     {
-      token = strtok_r(str1, ",", &saveptr);
+      token = STRTOK_R(str1, ",", &saveptr);
       if(token == (char *)NULL)
 	break;
       if(!(j < numberOfRates))
@@ -2899,7 +2938,7 @@ static linkageList* initLinkageListString(char *linkageString, partitionList * p
 
   for(j = 0, str1 = ch; ;j++, str1 = (char *)NULL) 
     {
-      token = strtok_r(str1, ",", &saveptr);
+      token = STRTOK_R(str1, ",", &saveptr);
       if(token == (char *)NULL)
 	break;
       assert(j < pr->numberOfPartitions);
