@@ -1,8 +1,58 @@
-/** @file pll.h
-  * @brief Data structures for tree and model 
-*/
+/** 
+ * PLL (version 1.0.0) a software library for phylogenetic inference
+ * Copyright (C) 2013 Tomas Flouri and Alexandros Stamatakis
+ *
+ * Derived from 
+ * RAxML-HPC, a program for sequential and parallel estimation of phylogenetic
+ * trees by Alexandros Stamatakis
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For any other enquiries send an Email to Tomas Flouri
+ * Tomas.Flouri@h-its.org
+ *
+ * When publishing work that uses PLL please cite PLL
+ *
+ * ABSTRACT
+ * 
+ * PLL is a highly optimized, parallelized software library to ease the
+ * development of new software tools dealing with phylogenetic inference. Among
+ * the functions included in PLL are 
+ *
+ * DOCUMENTATION
+ *
+ * Extensive documentation for using PLL is available online at
+ * 
+ *                 http://www.libpll.org
+ *
+ *
+ * USAGE
+ *
+ * To use PLL, 
+ *
+ * @file pll.h
+ * @brief Data structures for tree and model 
+ *
+ * @author Tomas Flouri
+ * @author Fernando Izquierdo-Carrasco
+ * @author Andre Aberer
+ * @author Alexandros Stamatakis
+ */
+
 #ifndef __pll__
 #define __pll__
+
 #include <stdint.h>
 #include <stdio.h>
 #include <errno.h>
@@ -1351,26 +1401,6 @@ typedef struct {
     boolean          improved;
     } bestlist;
 
-/** @brief Parameters (raxml-specific)
-*   */
-typedef  struct {
-  int              bestTrav;            /**< best rearrangement radius */
-  int              max_rearrange;       /**< max. rearrangemenent radius */
-  int              stepwidth;           /**< step in rearrangement radius */
-  int              initial;             /**< user defined rearrangement radius which also sets bestTrav if initialSet is set */
-  boolean          initialSet;          /**< set bestTrav according to initial */
-  int              mode;                /**< candidate for removal */
-  boolean        perGeneBranchLengths;
-  boolean        permuteTreeoptimize;   /**< randomly select subtrees for SPR moves */
-  boolean        compressPatterns;
-  double         likelihoodEpsilon;
-  boolean        useCheckpoint;
-
-} analdef;
-
-
-
-
 /** @brief  This is used to look up some hard-coded data for each data type 
 *   */
 typedef struct 
@@ -1535,7 +1565,6 @@ extern void getDataTypeString(pllInstance *tr, pInfo *partitionInfo, char typeOf
 
 extern int countTips(nodeptr p, int numsp);
 extern entry *initEntry(void);
-extern void computeRogueTaxa(pllInstance *tr, char* treeSetFileName, analdef *adef);
 extern unsigned int precomputed16_bitcount(unsigned int n, char *bits_in_16bits);
 
 
@@ -1561,12 +1590,7 @@ extern void hookup ( nodeptr p, nodeptr q, double *z, int numBranches);
 extern void hookupFull ( nodeptr p, nodeptr q, double *z);
 extern void hookupDefault ( nodeptr p, nodeptr q);
 extern boolean whitechar ( int ch );
-//extern void printResult ( pllInstance *tr, partitionList *pr, analdef *adef, boolean finalPrint );
 extern void printLog ( pllInstance *tr);
-extern void printStartingTree ( pllInstance *tr, analdef *adef, boolean finalPrint );
-extern void writeInfoFile ( analdef *adef, pllInstance *tr, double t );
-/* extern int main ( int argc, char *argv[] ); */
-extern void calcBipartitions ( pllInstance *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
 extern void initReversibleGTR( pllInstance *tr, partitionList *pr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
@@ -1574,8 +1598,6 @@ extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
 extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
 extern void initModel ( pllInstance *tr, double **empiricalFrequencies, partitionList * partitions);
-
-extern void classifyML(pllInstance *tr, analdef *adef);
 
 extern void resetBranches ( pllInstance *tr );
 extern void modOpt ( pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
@@ -1801,7 +1823,6 @@ void pllClearRearrangeHistory (pllInstance * tr);
 #define PLL_THREAD_GATHER_ANCESTRAL         14
 #define PLL_THREAD_EXIT_GRACEFULLY          15
 #define PLL_THREAD_EVALUATE_PER_SITE_LIKES  16
-
 
 
 typedef struct
