@@ -82,7 +82,7 @@ if test "x${ax_cv_have_sse3_ext}" = "xyes"; then
   fi
 fi
 
-AC_ARG_ENABLE(avx,AC_HELP_STRING([--enable-generic],[build generic version of the library]),[have_generic=yes])
+AC_ARG_ENABLE(generic,AC_HELP_STRING([--enable-generic],[build generic version of the library]),[have_generic=yes])
 AC_ARG_ENABLE(avx,AC_HELP_STRING([--enable-avx],[build AVX version of the library]),[have_avx=yes])
 AC_ARG_ENABLE(avx-pthreads,AC_HELP_STRING([--enable-avx-pthreads],[build pthreads AVX version of the library]),[have_avx_pthreads=yes])
 AC_ARG_ENABLE(avx-mpi,AC_HELP_STRING([--enable-avx-mpi],[build MPI AVX version of the library]),[have_avx_mpi=yes])
