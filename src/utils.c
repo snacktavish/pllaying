@@ -1560,20 +1560,6 @@ genericBaseFrequencies (pInfo * partition, pllAlignmentData * alignmentData, boo
   
 }
 
-/** @brief Compute the empirical base frequencies for all partitions
-
-    Compute the empirical base frequencies for all partitions in the list \a pl.
-
-    @param pl
-      Partition list
-    
-    @param alignmentData
-      Multiple sequence alignment
-
-    @return
-      A list of \a pl->numberOfPartitions arrays each of size \a pl->partitionData[i]->states,
-      where \a i is the \a i-th partition
-*/
 double **
 pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData)
 {
@@ -1626,33 +1612,6 @@ pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models)
   *empiricalFrequencies = NULL;
 }
 
-/** @ingroup instanceLinkingGroup
-    @brief Load alignment to the PLL instance
-    
-    Loads (copies) the parsed alignment to the PLL instance. Depending
-    on how the \a bDeep flag is set, the alignment in the PLL instance
-    is a deep or shallow copy of \a alignmentData
-
-    @param tr
-      The library instance
-
-    @param alignmentData 
-      The multiple sequence alignment
-
-    @param partitions
-      List of partitions
-
-    @param bDeep
-      Controls how the alignment is used within the PLL instance.
-      If it is set to \b PLL_DEEP_COPY, then new memory will be allocated
-      and the alignment will be copied there (deep copy). On the other
-      hand, if \b PLL_SHALLOW_COPY is specified, only the pointers will be
-      copied and therefore, the alignment will be shared between the 
-      alignment structure and the library instance (shallow copy).
-
-    @return
-      Returns 1 in case of success, 0 otherwise.
-*/
 int
 pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList * partitions, int bDeep)
 {
@@ -1710,32 +1669,6 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
   return (1);
 }
 
-/** @brief Create the main instance of PLL
-    
-    Create an instance of the phylogenetic likelihood library
-
-    @param rateHetModel
-      Rate heterogeneity model
-
-    @param fastScaling
-      explain fastScaling here
-
-    @param saveMemory
-      explain saveMemory here
-
-    @param useRecom
-      If set to \b PLL_TRUE, enables ancestral state recomputation
-    
-    @todo
-      Document fastScaling, rate heterogeneity and saveMemory and useRecom
-
-    @note
-      Do not set \a saveMemory to when using \a useRecom as memory saving techniques 
-      are not yet implemented for ancestral state recomputation. 
-
-    @return
-      On success returns an instance to PLL, otherwise \b NULL
-*/
 pllInstance *
 pllCreateInstance (pllInstanceAttr * attr)
 {
@@ -2797,8 +2730,28 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
   updateAllBranchLengths (tr, old_fracchange, tr->fracchange);
 }
 
+
 /** @ingroup modelParamsGroups
-    @brief Set all base freuqncies to a fixed value for a partition
+    @brief Get the base frequencies of a partition
+
+    Gets the base frequencies of partition \a model from partition list
+    \a partitionList and stores them in \a outBuffer. Note that \outBuffer
+    must be of size s, where s is the number of states.
+
+    @param  tr       PLL instance
+    @param pr        List of partitions
+    @param model     Index of the partition for which we want to get the base frequencies
+    @param outBuffer Buffer where to store the base frequencies
+*/
+void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+{
+  int states;
+
+  memcpy (outBuffer, pr->partitionData[model]->frequencies, pr->partitionData[model]->states * sizeof (double));
+}
+
+/** @ingroup modelParamsGroups
+    @brief Set all base frequencies to a fixed value for a partition
     
     Sets all base freuqencies of a partition to fixed values and disables 
     ML optimization of these parameters 
@@ -2942,7 +2895,30 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
 
 
 
+/** @ingroup modelParamsGroups
+    @brief Get the substitution rates for a specific partition
 
+    Gets the substitution rates of partition \a model from partition list
+    \a partitionList and stores them in \a outBuffer. Note that \outBuffer
+    must be of size (2 * s - s) / 2, where s is the number of states, i.e.
+    the number of upper diagonal entries of the Q matrix.
+
+    @param tr        PLL instance
+    @param pr        List of partitions
+    @param model     Index of partition for which we want to get the substitution rates
+    @param outBuffer Buffer where to store the substitution rates.
+*/
+void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+{
+  int 
+    rates,
+    states;
+  
+  states = pr->partitionData[model]->states;
+  rates = (states * states - states) / 2;
+
+  memcpy (outBuffer, pr->partitionData[model]->substRates, rates * sizeof (double));
+}
 
 /** @ingroup modelParamsGroups
      @brief Set all substitution rates to a fixed value for a specific partition

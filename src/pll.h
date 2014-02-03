@@ -1542,8 +1542,7 @@ typedef struct
  } pllAlignmentData;
 
 
-/****************************** FUNCTIONS ****************************************************/
-
+/******************** START OF API FUNCTION DESCRIPTIONS ********************/
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
 boolean isThisMyPartition(partitionList *pr, int tid, int model);
@@ -1554,6 +1553,67 @@ void printParallelTimePerRegion(void);
 extern void pllFinalizeMPI (void);
 #endif
 
+
+
+/**
+ * @brief Create the main instance of PLL
+ *   
+ * Create an instance of the phylogenetic likelihood library
+ *
+ * @param rateHetModel   Rate heterogeneity model
+ * @param fastScaling    TODO: explain fastScaling here
+ * @param saveMemory     TODO: explain saveMemory here
+ * @param useRecom       If set to \b PLL_TRUE, enables ancestral state recomputation
+ * 
+ * @todo                 Document fastScaling, rate heterogeneity and saveMemory and useRecom
+ *
+ * @note                 Do not set \a saveMemory to when using \a useRecom as memory saving 
+ *                       techniques are not yet implemented for ancestral state recomputation. 
+ * 
+ * @return               On success returns an instance to PLL, otherwise \b NULL
+ */
+extern pllInstance * pllCreateInstance (pllInstanceAttr * pInst);
+
+/** 
+ *  @ingroup instanceLinkingGroup
+ *  @brief Load alignment to the PLL instance
+ *   
+ *   Loads (copies) the parsed alignment to the PLL instance. Depending
+ *   on how the \a bDeep flag is set, the alignment in the PLL instance
+ *   is a deep or shallow copy of \a alignmentData
+ * 
+ *    @param tr              The library instance
+ *    @param alignmentData   The multiple sequence alignment
+ *    @param partitions      List of partitions
+ *    @param bDeep           Controls how the alignment is used within the PLL
+                             instance. If it is set to \b PLL_DEEP_COPY, then 
+                             new memory will be allocated and the alignment will
+                             be copied there (deep copy). On the other hand, if
+                             \b PLL_SHALLOW_COPY is specified, only the pointers
+                             will be copied and therefore, the alignment will be
+                             shared between the alignment structure and the
+                             library instance (shallow copy).
+ *
+ *    @return Returns 1 in case of success, 0 otherwise.
+ */
+extern int pllLoadAlignment (pllInstance * tr, 
+                         pllAlignmentData * alignmentData, 
+                         partitionList * pList, 
+                         int bDeep);
+
+/**
+ * @brief Compute the empirical base frequencies for all partitions
+ *
+ * Compute the empirical base frequencies for all partitions in the list \a pl.
+ *
+ * @param pl                Partition list
+ * @param alignmentData     Multiple sequence alignment
+ *
+ * @return   A list of \a pl->numberOfPartitions arrays each of size
+             \a pl->partitionData[i]->states, where \a i is the \a i-th partition
+*/
+extern double ** pllBaseFrequenciesGTR (partitionList * pl, 
+                         pllAlignmentData * alignmentData);
 
 extern void pllStartPthreads (pllInstance *tr, partitionList *pr);
 extern void pllStopPthreads (pllInstance * tr);
@@ -1783,15 +1843,12 @@ void pllPartitionsDestroy (pllInstance *, partitionList **);
 int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
 partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
 extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
-double ** pllBaseFrequenciesGTR (partitionList * pl, pllAlignmentData * alignmentData);
 void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
-int pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionList *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
 void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
 void  pllDestroyInstance (pllInstance *);
-pllInstance * pllCreateInstance (pllInstanceAttr *);
 int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
