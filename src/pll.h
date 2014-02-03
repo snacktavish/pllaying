@@ -1837,6 +1837,9 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 
+extern void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer);
+extern void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
+
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
 void pllPartitionsDestroy (pllInstance *, partitionList **);
