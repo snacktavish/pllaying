@@ -2730,6 +2730,41 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
   updateAllBranchLengths (tr, old_fracchange, tr->fracchange);
 }
 
+/** @ingroup modelParamsGroups
+    @brief Get the rate categories of the Gamma model of a partition
+
+    Gets the gamma rate categories of the Gamma model of rate heterogeneity
+    of partition \a pid from partition list \a pr.
+
+    @param pr   List of partitions
+    @param pid  Index of partition to use
+    @param outBuffer  Output buffer where to store the rates
+*/
+void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer)
+{
+  /* TODO: Change the hardcoded 4 and also add a check that this partition
+     really uses gamma. Currently, instance is also not required */
+  memcpy (outBuffer, pr->partitionData[pid]->gammaRates, 4 * sizeof (double));
+}
+
+/** @ingroup modelParamsGroups
+    @brief Get the alpha parameter of the Gamma model of a partition
+
+    Returns the alpha parameter of the gamma model of rate heterogeneity
+    of partition \a pid from partition list \a pr.
+
+    @param pr   List of partitions
+    @param pid  Index of partition to use
+
+    @return
+      Alpha parameter
+*/
+double pllGetAlpha (partitionList * pr, int pid)
+{
+  /* TODO: check if the partition uses gamma */
+  return (pr->partitionData[pid]->alpha);
+}
+
 
 /** @ingroup modelParamsGroups
     @brief Get the base frequencies of a partition
@@ -2749,6 +2784,7 @@ void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, doub
 
   memcpy (outBuffer, pr->partitionData[model]->frequencies, pr->partitionData[model]->states * sizeof (double));
 }
+
 
 /** @ingroup modelParamsGroups
     @brief Set all base frequencies to a fixed value for a partition

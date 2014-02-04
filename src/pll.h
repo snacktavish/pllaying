@@ -1839,6 +1839,8 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
 
 extern void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer);
 extern void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
+void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
+double pllGetAlpha (partitionList * pr, int pid);
 
 nodeptr pllGetRandomSubtree(pllInstance *);
 void makeParsimonyTree(pllInstance *tr);
