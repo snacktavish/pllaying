@@ -2201,6 +2201,7 @@ pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
   char * d;
   int i, j, k;
 
+  if (alignmentData->sequenceData[1][1] < 23) return;
   for (i = 0; i < 256; ++ i)
    {
      meaningDNA[i] = -1;
