@@ -3078,6 +3078,430 @@ pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nod
      default:
        break;
    }
-
-  //return (NULL);
 }
+
+
+static int
+determineRearrangementSetting(pllInstance *tr, partitionList *pr,
+    bestlist *bestT, bestlist *bt)
+{
+  int i, mintrav, maxtrav, bestTrav, impr, index, MaxFast, *perm = (int*) NULL;
+  double startLH;
+  boolean cutoff;
+
+  MaxFast = 26;
+
+  startLH = tr->likelihood;
+
+  cutoff = tr->doCutoff;
+  tr->doCutoff = PLL_FALSE;
+
+  mintrav = 1;
+  maxtrav = 5;
+
+  bestTrav = maxtrav = 5;
+
+  impr = 1;
+
+  resetBestTree(bt);
+
+  if (tr->permuteTreeoptimize)
+    {
+      int n = tr->mxtips + tr->mxtips - 2;
+      perm = (int *) rax_malloc(sizeof(int) * (n + 1));
+      makePermutation(perm, n, tr);
+    }
+
+  while (impr && maxtrav < MaxFast)
+    {
+      recallBestTree(bestT, 1, tr, pr);
+      nodeRectifier(tr);
+
+      if (maxtrav > tr->ntips - 3)
+        maxtrav = tr->ntips - 3;
+
+      tr->startLH = tr->endLH = tr->likelihood;
+
+      for (i = 1; i <= tr->mxtips + tr->mxtips - 2; i++)
+        {
+
+          if (tr->permuteTreeoptimize)
+            index = perm[i];
+          else
+            index = i;
+
+          tr->bestOfNode = PLL_UNLIKELY;
+          if (rearrangeBIG(tr, pr, tr->nodep[index], mintrav, maxtrav))
+            {
+              if (tr->endLH > tr->startLH)
+                {
+                  restoreTreeFast(tr, pr);
+                  tr->startLH = tr->endLH = tr->likelihood;
+                }
+            }
+        }
+
+      pllTreeEvaluate(tr, pr, 8);
+      saveBestTree(bt, tr,
+          pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+
+      if (tr->likelihood > startLH)
+        {
+          startLH = tr->likelihood;
+          bestTrav = maxtrav;
+          impr = 1;
+        }
+      else
+        {
+          impr = 0;
+        }
+      maxtrav += 5;
+
+      if (tr->doCutoff)
+        {
+          tr->lhCutoff = (tr->lhAVG) / ((double) (tr->lhDEC));
+
+          tr->itCount = tr->itCount + 1;
+          tr->lhAVG = 0;
+          tr->lhDEC = 0;
+        }
+    }
+
+  recallBestTree(bt, 1, tr, pr);
+  tr->doCutoff = cutoff;
+
+  if (tr->permuteTreeoptimize)
+    rax_free(perm);
+
+  return bestTrav;
+}
+
+/** @ingroup rearrangementGroup
+    @brief RAxML algorithm for ML search
+
+    RAxML algorithm for searching the Maximum Likelihood tree and model.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param estimateModel
+      If true, model parameters are optimized in a ML framework.
+
+    @note
+      For datasets with a large number of taxa, setting tr->searchConvergenceCriterion to
+    PLL_TRUE can improve the execution time in up to 50% looking for topology convergence.
+*/
+int
+pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
+    boolean estimateModel)
+{
+  unsigned int vLength = 0;
+  int i, impr, bestTrav, rearrangementsMax = 0, rearrangementsMin = 0,
+      thoroughIterations = 0, Thorough, fastIterations = 0;
+
+  double lh, previousLh, difference, epsilon;
+  bestlist *bestT, *bt;
+  infoList iList;
+  pllTreeEvaluate(tr, pr, 32);
+#ifdef _TERRACES
+  /* store the 20 best trees found in a dedicated list */
+
+  bestlist
+  *terrace;
+
+  /* output file names */
+
+  char
+  terraceFileName[1024],
+  buf[64];
+#endif
+
+  hashtable *h = (hashtable*) NULL;
+  unsigned int **bitVectors = (unsigned int**) NULL;
+
+  /* Security check... These variables might have not been initialized! */
+  if (tr->stepwidth == 0) tr->stepwidth = 5;
+  if (tr->max_rearrange == 0) tr->max_rearrange = 21;
+
+  if (tr->searchConvergenceCriterion)
+    {
+      bitVectors = initBitVector(tr->mxtips, &vLength);
+      h = initHashTable(tr->mxtips * 4);
+    }
+
+  bestT = (bestlist *) rax_malloc(sizeof(bestlist));
+  bestT->ninit = 0;
+  initBestTree(bestT, 1, tr->mxtips);
+
+  bt = (bestlist *) rax_malloc(sizeof(bestlist));
+  bt->ninit = 0;
+  initBestTree(bt, 20, tr->mxtips);
+
+#ifdef _TERRACES
+  /* initialize the tree list and the output file name for the current tree search/replicate */
+  terrace = (bestlist *) rax_malloc(sizeof(bestlist));
+  terrace->ninit = 0;
+  initBestTree(terrace, 20, tr->mxtips);
+  strcpy(terraceFileName, workdir);
+  strcat(terraceFileName, "RAxML_terrace.");
+  strcat(terraceFileName, run_id);
+  strcat(terraceFileName, ".BS.");
+  strcat(terraceFileName, buf);
+#endif
+
+  initInfoList(&iList, 50);
+
+  difference = 10.0;
+  epsilon = 0.01;
+
+  Thorough = 0;
+
+  if (estimateModel)
+    {
+      pllEvaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllOptimizeModelParameters(tr, pr, 10.0);
+    }
+  else
+    pllTreeEvaluate(tr, pr, 64);
+
+  saveBestTree(bestT, tr,
+      pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+
+  if (!tr->initialSet)
+    bestTrav = tr->bestTrav = determineRearrangementSetting(tr, pr, bestT, bt);
+  else
+    bestTrav = tr->bestTrav = tr->initial;
+
+  if (estimateModel)
+    {
+      pllEvaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllOptimizeModelParameters(tr, pr, 5.0);
+    }
+  else
+    pllTreeEvaluate(tr, pr, 32);
+
+  saveBestTree(bestT, tr,
+      pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+  impr = 1;
+  if (tr->doCutoff)
+    tr->itCount = 0;
+
+  while (impr)
+    {
+      recallBestTree(bestT, 1, tr, pr);
+
+      if (tr->searchConvergenceCriterion)
+        {
+          int bCounter = 0;
+
+          if (fastIterations > 1)
+            cleanupHashTable(h, (fastIterations % 2));
+
+          bitVectorInitravSpecial(bitVectors, tr->nodep[1]->back, tr->mxtips,
+              vLength, h, fastIterations % 2, PLL_BIPARTITIONS_RF,
+              (branchInfo *) NULL, &bCounter, 1, PLL_FALSE, PLL_FALSE, 0);
+
+          assert(bCounter == tr->mxtips - 3);
+
+          if (fastIterations > 0)
+            {
+              double rrf = convergenceCriterion(h, tr->mxtips);
+
+              if (rrf <= 0.01) /* 1% cutoff */
+                {
+                  cleanupHashTable(h, 0);
+                  cleanupHashTable(h, 1);
+                  goto cleanup_fast;
+                }
+            }
+        }
+
+      fastIterations++;
+
+      pllTreeEvaluate(tr, pr, 32);
+
+      saveBestTree(bestT, tr,
+          pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+      //printResult(tr, adef, PLL_FALSE);
+      lh = previousLh = tr->likelihood;
+
+      treeOptimizeRapid(tr, pr, 1, bestTrav, bt, &iList);
+
+      impr = 0;
+
+      for (i = 1; i <= bt->nvalid; i++)
+        {
+          recallBestTree(bt, i, tr, pr);
+
+          pllTreeEvaluate(tr, pr, 8);
+
+          /*
+           if(adef->rellBootstrap)
+           updateRellTrees(tr, NUM_RELL_BOOTSTRAPS);
+           */
+
+          difference = (
+              (tr->likelihood > previousLh) ?
+                  tr->likelihood - previousLh : previousLh - tr->likelihood);
+          if (tr->likelihood > lh && difference > epsilon)
+            {
+              impr = 1;
+              lh = tr->likelihood;
+              saveBestTree(bestT, tr,
+                  pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+            }
+        }
+    }
+
+  if (tr->searchConvergenceCriterion)
+    {
+      cleanupHashTable(h, 0);
+      cleanupHashTable(h, 1);
+    }
+
+  cleanup_fast:
+
+  Thorough = 1;
+  impr = 1;
+
+  recallBestTree(bestT, 1, tr, pr);
+  if (estimateModel)
+    {
+      pllEvaluateGeneric(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllOptimizeModelParameters(tr, pr, 1.0);
+    }
+  else
+    pllTreeEvaluate(tr, pr, 32);
+
+  while (1)
+    {
+      recallBestTree(bestT, 1, tr, pr);
+      if (impr)
+        {
+          //printResult(tr, adef, PLL_FALSE);
+          rearrangementsMin = 1;
+          rearrangementsMax = tr->stepwidth;
+
+          if (tr->searchConvergenceCriterion)
+            {
+              int bCounter = 0;
+
+              if (thoroughIterations > 1)
+                cleanupHashTable(h, (thoroughIterations % 2));
+
+              bitVectorInitravSpecial(bitVectors, tr->nodep[1]->back,
+                  tr->mxtips, vLength, h, thoroughIterations % 2,
+                  PLL_BIPARTITIONS_RF, (branchInfo *) NULL, &bCounter, 1,
+                  PLL_FALSE, PLL_FALSE, 0);
+
+              assert(bCounter == tr->mxtips - 3);
+
+              if (thoroughIterations > 0)
+                {
+                  double rrf = convergenceCriterion(h, tr->mxtips);
+
+                  if (rrf <= 0.01) /* 1% cutoff */
+                    {
+                      goto cleanup;
+                    }
+                }
+            }
+
+          thoroughIterations++;
+        }
+      else
+        {
+          rearrangementsMax += tr->stepwidth;
+          rearrangementsMin += tr->stepwidth;
+          if (rearrangementsMax > tr->max_rearrange)
+            goto cleanup;
+        }
+      pllTreeEvaluate(tr, pr, 32);
+
+      previousLh = lh = tr->likelihood;
+      saveBestTree(bestT, tr,
+          pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+
+      treeOptimizeRapid(tr, pr, rearrangementsMin, rearrangementsMax, bt,
+          &iList);
+
+      impr = 0;
+
+      for (i = 1; i <= bt->nvalid; i++)
+        {
+          recallBestTree(bt, i, tr, pr);
+
+          pllTreeEvaluate(tr, pr, 8);
+
+#ifdef _TERRACES
+          /* save all 20 best trees in the terrace tree list */
+          saveBestTree(terrace, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
+#endif
+
+          difference = (
+              (tr->likelihood > previousLh) ?
+                  tr->likelihood - previousLh : previousLh - tr->likelihood);
+          if (tr->likelihood > lh && difference > epsilon)
+            {
+              impr = 1;
+              lh = tr->likelihood;
+              saveBestTree(bestT, tr,
+                  pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+            }
+        }
+
+    }
+
+  cleanup:
+
+#ifdef _TERRACES
+    {
+      double
+      bestLH = tr->likelihood;
+      FILE
+      *f = myfopen(terraceFileName, "w");
+
+      /* print out likelihoods of 20 best trees found during the tree search */
+      for(i = 1; i <= terrace->nvalid; i++)
+        {
+          recallBestTree(terrace, i, tr, pr);
+          /* if the likelihood scores are smaller than some epsilon 0.000001
+           print the tree to file */
+          if(ABS(bestLH - tr->likelihood) < 0.000001)
+            {
+              fprintf(f, "%s\n", tr->tree_string);
+            }
+        }
+      fclose(f);
+      /* increment tree search counter */
+      bCount++;
+    }
+#endif
+
+  if (tr->searchConvergenceCriterion)
+    {
+      freeBitVectors(bitVectors, 2 * tr->mxtips);
+      rax_free(bitVectors);
+      freeHashTable(h);
+      rax_free(h);
+    }
+
+  freeBestTree(bestT);
+  rax_free(bestT);
+  freeBestTree(bt);
+  rax_free(bt);
+
+#ifdef _TERRACES
+  /* free terrace tree list */
+  freeBestTree(terrace);
+  rax_free(terrace);
+#endif
+
+  freeInfoList(&iList);
+  //printResult(tr, adef, PLL_FALSE);
+  return 0;
+}
+

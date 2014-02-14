@@ -1769,7 +1769,7 @@ extern void execCore(pllInstance *, partitionList *pr, volatile double *dlnLdlz,
 
 
 
-
+extern void makePermutation(int *perm, int n, pllInstance *tr);
 extern nodeptr findAnyTip(nodeptr p, int numsp);
 extern void putWAG(double *ext_initialRates);
 extern  unsigned int **initBitVector(int mxtips, unsigned int *vectorLength);
@@ -1864,6 +1864,7 @@ void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType
 void pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
 int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
 void pllClearRearrangeHistory (pllInstance * tr);
+int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 /* work tags for parallel regions */

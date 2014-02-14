@@ -89,7 +89,7 @@ static int randomInt(int n, pllInstance *tr)
   return res;
 }
 
-static void makePermutation(int *perm, int n, pllInstance *tr)
+void makePermutation(int *perm, int n, pllInstance *tr)
 {    
   int  
     i, 
