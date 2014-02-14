@@ -731,7 +731,7 @@ static void multiprocessorScheduling(pllInstance * tr, partitionList *pr, int ti
     
     We collect the first and second derivatives from the various
     threads and sum them up. It's similar to what we do in
-    pllEvaluateGeneric() with the only difference that we have to collect
+    pllEvaluateLikelihood() with the only difference that we have to collect
     two values (firsrt and second derivative) instead of onyly one (the
     log likelihood
 

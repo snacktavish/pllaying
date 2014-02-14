@@ -1406,7 +1406,7 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
       If \a getPerSiteLikelihoods is set to \b PLL_TRUE, then make sure that \a tr->fastScaling is set to
       \b PLL_FALSE, otherwise an assertion will fail.
 */
-void pllEvaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
+void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods)
 {
   /* now this may be the entry point of the library to compute 
      the log like at a branch defined by p and p->back == q */
@@ -1622,7 +1622,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
      will then be used for calculating per-site log likelihoods 
      for each site individually and independently */
 
-  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   //likelihood = tr->likelihood;
 

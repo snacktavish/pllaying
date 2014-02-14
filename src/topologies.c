@@ -453,7 +453,7 @@ static boolean restoreTree (topol *tpl, pllInstance *tr, partitionList *pr)
   
   tr->nextnode   = tpl->nextnode;    
 
-  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   return PLL_TRUE;
 }
 

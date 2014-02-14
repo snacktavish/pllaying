@@ -2067,7 +2067,7 @@ void computeTraversal(pllInstance *tr, nodeptr p, boolean partialTraversal, int 
       If set to \b PLL_TRUE, then likelihood vectors of partitions that are converged are
       not recomputed.
  */
-void pllNewviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
+void pllUpdatePartials (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked)
 {  
   /* if it's a tip there is nothing to do */
 
@@ -2459,7 +2459,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
     }
 }
 
-/* this is very similar to pllNewviewGeneric, except that it also computes the marginal ancestral probabilities 
+/* this is very similar to pllUpdatePartials, except that it also computes the marginal ancestral probabilities 
    at node p. To simplify the code I am re-using newview() here to first get the likelihood vector p->x at p
    and then I deploy newviewAncestralIterative(tr); that should always only have a traversal descriptor of lenth 1,
    to do some mathematical transformations that are required to obtain the marginal ancestral probabilities from 
@@ -2487,7 +2487,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
     @note
       This function is not implemented with the saveMemory technique. 
 */
-void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
+void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 {
   /* error check, we don't need to compute anything for tips */
   
@@ -2507,9 +2507,9 @@ void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
       return;
     }
 
-  /* first call pllNewviewGeneric() with mask set to PLL_FALSE such that the likelihood vector is there ! */
+  /* first call pllUpdatePartials() with mask set to PLL_FALSE such that the likelihood vector is there ! */
 
-  pllNewviewGeneric(tr, pr, p, PLL_FALSE);
+  pllUpdatePartials(tr, pr, p, PLL_FALSE);
 
   /* now let's compute the ancestral states using this vector ! */
   
@@ -2523,7 +2523,7 @@ void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
   tr->td[0].traversalHasChanged = PLL_TRUE;
 
   /* here we actually assert, that the traversal descriptor only contains one node triplet p, p->next->back, p->next->next->back
-     this must be PLL_TRUE because we have alread invoked the standard pllNewviewGeneric() on p.
+     this must be PLL_TRUE because we have alread invoked the standard pllUpdatePartials() on p.
   */ 
 
   assert(tr->td[0].count == 1);  

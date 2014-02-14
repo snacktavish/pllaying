@@ -1700,7 +1700,7 @@ extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
 extern boolean testInsertRestoreBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q );
 extern void restoreTreeFast ( pllInstance *tr, partitionList *pr );
 
-extern void pllTreeEvaluate ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
+extern void pllOptimizeBranchLengths ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 
 extern void initTL ( topolRELL_LIST *rl, pllInstance *tr, int n );
 extern void freeTL ( topolRELL_LIST *rl);
@@ -1728,10 +1728,10 @@ extern void getStartingTree (pllInstance *tr);
 extern double treeLength (pllInstance *tr, int model);
 
 extern double evaluatePartialGeneric (pllInstance *, partitionList *pr, int i, double ki, int _model);
-extern void pllEvaluateGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
-extern void pllNewviewGeneric (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
+extern void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
+extern void pllUpdatePartials (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
 
-extern void pllNewviewGenericAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
+extern void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
 extern void newviewAncestralIterative(pllInstance *tr, partitionList *pr);
 extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pllInstance *tr, partitionList *pr);
 

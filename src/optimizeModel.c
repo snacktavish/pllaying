@@ -330,7 +330,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
     }
 #else
       /* and compute the likelihood by doing a full tree traversal :-) */
-      pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif     
 
 
@@ -1174,7 +1174,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     *_param      = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *_x          = (double *)rax_malloc(sizeof(double) * numberOfModels); 
    
-  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   
 #ifdef  _DEBUG_MOD_OPT
   double
@@ -1313,7 +1313,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
   rax_free(startValues);
 
 #ifdef _DEBUG_MOD_OPT
-  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
   if(tr->likelihood < initialLH)
     printf("%f %f\n", tr->likelihood, initialLH);
@@ -2171,7 +2171,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
   
       assert(isTip(tr->start->number, tr->mxtips));         
       
-      pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
       if(tr->optimizeRateCategoryInvocations == 1)
         {
@@ -2278,7 +2278,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
                 
       updatePerSiteRates(tr, pr, PLL_TRUE);
 
-      pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
       
       if(tr->likelihood < initialLH)
         {                         
@@ -2293,7 +2293,7 @@ static void optimizeRateCategories(pllInstance *tr, partitionList *pr, int _maxC
           
           updatePerSiteRates(tr, pr, PLL_FALSE);
           
-          pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+          pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
           /* printf("REVERT: %1.40f %1.40f\n", initialLH, tr->likelihood); */
 
@@ -2479,7 +2479,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
       initTL(rl, tr, 1);
       saveTL(rl, tr, 0);
 
-      pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
 
       /* store the initial likelihood of the tree with the currently assigned protein models */
       startLH = tr->likelihood;
@@ -2509,8 +2509,8 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 #endif
           
            resetBranches(tr);
-           pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-           pllTreeEvaluate(tr, pr, 16);// 0.5 * 32 = 16.0
+           pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+           pllOptimizeBranchLengths(tr, pr, 16);// 0.5 * 32 = 16.0
 
            for(model = 0; model < pr->numberOfPartitions; model++)
             {
@@ -2545,8 +2545,8 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 
       /* compute again the likelihood of the tree */
       resetBranches(tr);
-      pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-      pllTreeEvaluate(tr, pr, 64); // 0.5 * 32 = 16
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+      pllOptimizeBranchLengths(tr, pr, 64); // 0.5 * 32 = 16
       
       /* check if the likelihood of the tree with the new protein models assigned to PLL_AUTO partitions is better than the with the old protein models */
       if(tr->likelihood < startLH)
@@ -2569,7 +2569,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
              since the topology doesn't change - only the branch lengths do - maybe we
              could write a new routine that will store only the branch lengths and restore them */
           restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);  
-          pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
+          pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
         }
       
       assert(tr->likelihood >= startLH);
@@ -2670,7 +2670,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
      to entereing this function.
    */
   inputLikelihood = tr->likelihood;
-  pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
   assert (inputLikelihood == tr->likelihood);
 
   do
@@ -2684,7 +2684,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     optRatesGeneric(tr, pr, modelEpsilon, rateList);
 
-    pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 #ifdef _DEBUG_MOD_OPT
     printf ("after rates %f\n", tr->likelihood);
@@ -2692,23 +2692,23 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     autoProtein(tr, pr);
 
-    pllTreeEvaluate(tr, pr, 2); // 0.0625 * 32 = 2.0
+    pllOptimizeBranchLengths(tr, pr, 2); // 0.0625 * 32 = 2.0
 
 #ifdef _DEBUG_MOD_OPT
-    pllEvaluateGeneric (tr, tr->start, PLL_TRUE);
+    pllEvaluateLikelihood (tr, tr->start, PLL_TRUE);
     printf("after br-len 1 %f\n", tr->likelihood); 
 #endif
 
-    pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
     optBaseFreqs(tr, pr, modelEpsilon, freqList);
     
-    pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
     
-    pllTreeEvaluate(tr, pr, 0.0625);
+    pllOptimizeBranchLengths(tr, pr, 0.0625);
 
 #ifdef _DEBUG_MOD_OPT
-    pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
+    pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
     printf("after optBaseFreqs 1 %f\n", tr->likelihood);
 #endif 
 
@@ -2716,26 +2716,26 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     {
       case PLL_GAMMA:      
         optAlphasGeneric (tr, pr, modelEpsilon, alphaList);
-        pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+        pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 #ifdef _DEBUG_MOD_OPT
           printf("after alphas %f\n", tr->likelihood); 
 #endif
 
-        pllTreeEvaluate(tr, pr, 3); // 0.1 * 32 = 3.2
+        pllOptimizeBranchLengths(tr, pr, 3); // 0.1 * 32 = 3.2
 
 #ifdef _DEBUG_MOD_OPT
-          pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
+          pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
           printf("after br-len 2 %f\n", tr->likelihood); 
 #endif
         break;
       case PLL_CAT:
         if(catOpt < 3)
         {                            
-          pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
+          pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
           optimizeRateCategories(tr, pr, tr->categories);
 #ifdef _DEBUG_MOD_OPT
-            pllEvaluateGeneric (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
+            pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);  
             printf("after cat-opt %f\n", tr->likelihood); 
 #endif
           catOpt++;

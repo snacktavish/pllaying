@@ -98,7 +98,7 @@ int main (int argc, char * argv[])
      have the guarantee that tr->likelihood the valid likelihood */
   pllInitModel(tr, partitions, alignmentData);
 
-  pllTreeEvaluate (tr, partitions, 64);
+  pllOptimizeBranchLengths (tr, partitions, 64);
 
   printf ("Log-likelihood of topology: %f\n", tr->likelihood);
 
@@ -146,7 +146,7 @@ int main (int argc, char * argv[])
   printf ("Committing move 0\n");
   pllRearrangeCommit(tr, partitions, &(rearrangeList->rearr[0]), PLL_TRUE);
 
-  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
   printf ("New log-likelihood: %f\n\n", tr->likelihood);
 
   /* We don't need the rearrange list anymore */
@@ -177,7 +177,7 @@ int main (int argc, char * argv[])
   printf ("Committing rearrangeList->rearr[0]\n");
   pllRearrangeCommit (tr, partitions, &(rearrangeList->rearr[0]), PLL_TRUE);
 
-  pllEvaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   printf ("New log-likelihood: %f\n\n", tr->likelihood);
 
   /* Rolling back to the previous topology. Note that if we evaluate the
@@ -187,7 +187,7 @@ int main (int argc, char * argv[])
      partial traversal here as an example */
   printf ("Rolling back...\n");
   pllRearrangeRollback (tr, partitions);
-  pllEvaluateGeneric (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
+  pllEvaluateLikelihood (tr, partitions, tr->start, PLL_FALSE, PLL_FALSE);
   printf ("New log-likelihood: %f\n\n", tr->likelihood);
 
   /* We do one more rollback to get to the original topology, but this time we
@@ -195,8 +195,8 @@ int main (int argc, char * argv[])
      do branch-length optimization */
   printf ("Rolling back...\n");
   pllRearrangeRollback (tr, partitions);
-  pllEvaluateGeneric (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
-  pllTreeEvaluate (tr, partitions, 64);
+  pllEvaluateLikelihood (tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
+  pllOptimizeBranchLengths (tr, partitions, 64);
   printf ("New log-likelihood: %f\n\n", tr->likelihood);
 
   /* DEallocate the rearrange list */
