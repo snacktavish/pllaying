@@ -41,7 +41,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 /* the set of functions in here computes the log likelihood at a given branch (the virtual root of a tree) */
 
