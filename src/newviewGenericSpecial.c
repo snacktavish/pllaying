@@ -52,6 +52,8 @@
 #include <pmmintrin.h>
 #include "cycle.h"
 
+static void pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
+static void pllGetTransitionMatrixLG4 (partitionList * pr, int model, nodeptr p, double * outBuffer);
 
 static void computeTraversalInfo(nodeptr, traversalInfo *, int *, int, int, boolean, recompVectors *, boolean);
 static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
@@ -277,6 +279,128 @@ makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberO
   rax_free(d1);
   rax_free(d2);
 }
+
+
+/** Compute the transition probability matrix for a given branch
+
+    Computes the transition probability matrix for the branch \a p->z and partition \a model given the
+    PLL instance \a tr and list of partitions \a pr. The result is stored in \a outBuffer which must
+    be of sufficient size, i.e states * states * (numberOfRateCategories + 1) * sizeof(double);
+
+    @param tr  PLL instance
+    @param pr  List of partitions
+    @param model  Partition index for which to take the branch length
+    @param p  Adjacent node to the edge we want to compute the trans. prob. matrix
+    @param outBuffer Output buffer where to store the transition probability matrix
+
+*/
+void pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer)
+{
+  if (pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)
+    pllGetTransitionMatrixLG4 (pr, model, p, outBuffer);
+  else
+    pllGetTransitionMatrixNormal (tr, pr, model, p, outBuffer);
+}
+
+
+static void pllGetTransitionMatrixLG4 (partitionList * pr, int model, nodeptr p, double * outBuffer)
+{
+  int
+    i, j, k,
+    states = pr->partitionData[model]->states,
+    numberOfCategories = 4;
+  double
+    d[64],
+    *  rptr = pr->partitionData[model]->gammaRates,
+    ** EI   = pr->partitionData[model]->EI_LG4,
+    ** EIGN = pr->partitionData[model]->EIGN_LG4;
+
+  assert (states == 20);
+
+  for (i = 0; i < numberOfCategories; ++i)
+   {
+     for (j = 1; j < states; ++j)
+      {
+        d[j] = EXP(rptr[i] * EIGN[i][j] * p->z[model]);
+      }
+     for (j = 0; j < states; ++ j)
+      {
+        outBuffer[states * states * i + states * j] = 1.0;
+        for (k = 1; k < states; ++k) 
+         {
+           outBuffer[states * states * i + states * j + k] = d[k] * EI[i][states * j + k];
+         }
+      }
+   }
+}
+
+static void pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer)
+{
+  int 
+    i, j, k,
+    numberOfCategories,
+    states = pr->partitionData[model]->states;
+  double
+    * d = (double *)rax_malloc(sizeof(double) * states),
+    * rptr,
+    * EI   = pr->partitionData[model]->EI,
+    * EIGN = pr->partitionData[model]->EIGN;
+
+
+
+  if (tr->rateHetModel == PLL_CAT)
+   {
+     rptr               = pr->partitionData[model]->perSiteRates;
+     numberOfCategories = pr->partitionData[model]->numberOfCategories;
+   }
+  else
+   {
+     rptr               = pr->partitionData[model]->gammaRates;
+     numberOfCategories = 4;
+   }
+
+  for (i = 0; i < numberOfCategories; ++ i)
+   {
+     /* exponentiate the rate multiplied by the branch */
+     for (j = 1; j < states; ++ j)
+      {
+        d[j] = EXP(rptr[i] * EIGN[j] * p->z[model]);
+      }
+
+     /* now fill the P matrix for the branch length values */
+     for (j = 0; j < states; ++ j)
+      {
+        outBuffer[states * states * i + states * j] = 1.0;
+        for (k = 1; j < states; ++k)
+         {
+           outBuffer[states * states * i + states * j + k] = d[k] * EI[states * j + k];
+         }
+      }
+   }
+
+  if (tr->saveMemory)
+   {
+     i = tr->maxCategories;
+     
+     for (j = 1; j < states; ++j)
+      {
+        d[j] = EXP(EIGN[j] * p->z[model]);
+      }
+
+     for (j = 0; j < states; ++j)
+      {
+        outBuffer[states * states * i + states * j] = 1.0;
+        for (k = 1; k < states; ++k)
+         {
+           outBuffer[states * states * i + states * j + k] = d[k] * EI[states * j + k];
+         }
+      }
+   }
+
+  rax_free(d);
+}
+
+
 
 /** @brief Compute two P matrices for two edges for the LG4 model
     

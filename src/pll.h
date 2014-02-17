@@ -1866,6 +1866,8 @@ int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
 void pllClearRearrangeHistory (pllInstance * tr);
 int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
 
+void pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
+
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS) )
 /* work tags for parallel regions */
 
