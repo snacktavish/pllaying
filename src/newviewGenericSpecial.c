@@ -52,9 +52,6 @@
 #include <pmmintrin.h>
 #include "cycle.h"
 
-static void pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
-static void pllGetTransitionMatrixLG4 (partitionList * pr, int model, nodeptr p, double * outBuffer);
-
 static void computeTraversalInfo(nodeptr, traversalInfo *, int *, int, int, boolean, recompVectors *, boolean);
 static void makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberOfCategories, double *left, double *right, boolean saveMem, int maxCat, const int states);
 #if (defined(__SSE3) && !defined(__AVX))
@@ -131,6 +128,9 @@ const union __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)))
 
 
 #endif
+
+static void pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
+static void pllGetTransitionMatrixLG4 (partitionList * pr, int model, nodeptr p, double * outBuffer);
 
 extern const char dnaStateNames[4];     /**< @brief Array that contains letters for the four DNA base-pairs, i.e. 0 = A, 1 = C, 2 = G, 3 = T */
 extern const char protStateNames[20];   /**< @brief Array that contains letters for the 20 AA base-pairs */
