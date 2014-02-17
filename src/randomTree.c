@@ -32,8 +32,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include "pll.h"
 
+#include "pll.h"
+#include "pllInternal.h"
 
 static void insertTaxon (nodeptr p, nodeptr q)
 {

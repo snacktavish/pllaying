@@ -34,7 +34,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 /** @defgroup alignmentGroup Reading and parsing multiple sequence alignments
     

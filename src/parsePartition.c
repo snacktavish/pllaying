@@ -37,7 +37,9 @@
 #include <assert.h>
 #include <math.h>
 #include <ctype.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 extern const char *protModels[PLL_NUM_PROT_MODELS];
 

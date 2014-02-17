@@ -44,7 +44,7 @@
 #include <assert.h>
 
 #include "pll.h"
-
+#include "pllInternal.h"
 
 static boolean treeNeedString(const char *fp, char c1, int *position)
 {

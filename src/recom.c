@@ -39,6 +39,7 @@
 #include <sys/time.h>
 
 #include "pll.h"
+#include "pllInternal.h"
 
 /** @brief Locks node \a nodenum to force it remains availably in memory
  *

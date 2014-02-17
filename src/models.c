@@ -50,7 +50,7 @@
 #include <assert.h>
 
 #include "pll.h"
-
+#include "pllInternal.h"
 
 
 extern const unsigned int bitVectorSecondary[256];

@@ -47,10 +47,8 @@
 #include <assert.h>
 #include <errno.h>
 
-
-
 #include "pll.h"
-
+#include "pllInternal.h"
 
 double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, bestlist *bt, infoList *iList);
 nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p, double curLH);

@@ -31,7 +31,9 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 
 /** @file  newick.c

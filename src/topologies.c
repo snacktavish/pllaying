@@ -45,9 +45,7 @@
 #include <assert.h>
 
 #include "pll.h"
-
-
-
+#include "pllInternal.h"
 
 static void saveTopolRELLRec(pllInstance *tr, nodeptr p, topolRELL *tpl, int *i, int numsp)
 {

@@ -67,6 +67,7 @@
 #endif
 
 #include "pll.h"
+#include "pllInternal.h"
 
 #define GLOBAL_VARIABLES_DEFINITION
 

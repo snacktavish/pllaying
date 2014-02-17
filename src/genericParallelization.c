@@ -35,8 +35,8 @@
 
 #include <assert.h>
 
-#include "genericParallelization.h"
 #include "pll.h"
+#include "pllInternal.h"
 
 /** @file genericParallelization.c
     

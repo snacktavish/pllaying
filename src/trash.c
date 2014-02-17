@@ -43,9 +43,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+
 #include "pll.h"
-
-
+#include "pllInternal.h"
  
   
 /** @brief Reorder nodes in PLL tree

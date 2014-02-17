@@ -44,7 +44,9 @@
 #include <stdint.h>
 #include <limits.h>
 #include <assert.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 #ifdef __SSE3
 #include <stdint.h>

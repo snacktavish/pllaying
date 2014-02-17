@@ -32,8 +32,6 @@
 #include <unistd.h>
 #endif
 
-
-
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
@@ -41,7 +39,9 @@
 #include <ctype.h>
 #include <string.h>
 #include <assert.h>
+
 #include "pll.h"
+#include "pllInternal.h"
 
 #ifdef __SSE3
 #include <xmmintrin.h>

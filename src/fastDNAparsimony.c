@@ -92,7 +92,7 @@
 
 
 #include "pll.h"
-
+#include "pllInternal.h"
 
 static boolean tipHomogeneityCheckerPars(pllInstance *tr, nodeptr p, int grouping);
 

@@ -31,7 +31,6 @@
  * AVX versions of the likelihood functions
  */
 #include <unistd.h>
-
 #include <math.h>
 #include <time.h>
 #include <stdlib.h>
@@ -40,7 +39,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
-#include "pll.h"
 #include <stdint.h>
 #include <xmmintrin.h>
 #include <pmmintrin.h>
@@ -51,6 +49,9 @@
 #include <x86intrin.h>
 #define FMAMACC(a,b,c) _mm256_fmadd_pd(b,c,a)
 #endif
+
+#include "pll.h"
+#include "pllInternal.h"
 
 extern const unsigned int mask32[32];
 

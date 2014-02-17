@@ -46,7 +46,7 @@
 #include <assert.h>
 
 #include "pll.h"
-
+#include "pllInternal.h"
 
 extern char infoFileName[1024];
 extern char tree_file[1024];
