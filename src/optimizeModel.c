@@ -2707,7 +2707,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
     
-    pllOptimizeBranchLengths(tr, pr, 0.0625);
+    pllOptimizeBranchLengths(tr, pr, 2); // 0.0625 * 32 = 2.0
 
 #ifdef _DEBUG_MOD_OPT
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
