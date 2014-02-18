@@ -2125,7 +2125,7 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
    }
   
 
-  makeRandomTree (tr);
+  pllMakeRandomTree (tr);
 }
 
 
@@ -2179,8 +2179,8 @@ pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentD
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions)
 {
   allocateParsimonyDataStructures(tr, partitions);
-  makeParsimonyTreeFast(tr, partitions);
-  freeParsimonyDataStructures(tr, partitions);
+  pllMakeParsimonyTreeFast(tr, partitions);
+  pllFreeParsimonyDataStructures(tr, partitions);
 }
 
 /** @brief Encode the alignment data to the PLL numerical representation

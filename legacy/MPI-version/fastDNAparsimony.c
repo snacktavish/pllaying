@@ -1888,7 +1888,7 @@ void allocateParsimonyDataStructures(tree *tr)
   rax_free(informative); 
 }
 
-void freeParsimonyDataStructures(tree *tr)
+void pllFreeParsimonyDataStructures(tree *tr)
 {
   size_t 
     model;
@@ -1902,7 +1902,7 @@ void freeParsimonyDataStructures(tree *tr)
 }
 
 
-void makeParsimonyTreeFast(tree *tr)
+void pllMakeParsimonyTreeFast(tree *tr)
 {   
   nodeptr  
     p, 

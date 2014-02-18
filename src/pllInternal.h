@@ -75,6 +75,7 @@ extern nodeptr removeNodeRestoreBIG ( pllInstance *tr, partitionList *pr, nodept
 extern boolean insertBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q);
 extern boolean insertRestoreBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q );
 extern boolean testInsertBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q );
+extern int NNI(pllInstance * tr, nodeptr p, int swap);
 extern void addTraverseBIG ( pllInstance *tr, partitionList *pr, nodeptr p, nodeptr q, int mintrav, int maxtrav );
 extern int rearrangeBIG ( pllInstance *tr, partitionList *pr, nodeptr p, int mintrav, int maxtrav );
 extern void traversalOrder ( nodeptr p, int *count, nodeptr *nodeArray );
@@ -119,7 +120,6 @@ extern void unpinNode(recompVectors *v, int nodenum, int mxtips);
 extern void protectNode(recompVectors *rvec, int nodenum, int mxtips);
 
 /* Handling branch lengths*/
-
 extern void computeTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec, int *count);
 extern void computeFullTraversalInfoStlen(nodeptr p, int maxTips, recompVectors *rvec);
 extern void printTraversalInfo(pllInstance *tr);

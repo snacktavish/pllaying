@@ -126,7 +126,7 @@ static void state_free(state *s)
   rax_free(s);
 }
 
-static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean printBranchLengths)
+static char *pllTreeToNewickRecomREC(char *treestr, tree *tr, nodeptr q, boolean printBranchLengths)
 {
   char  *nameptr;            
   double z;
@@ -144,13 +144,13 @@ static char *Tree2StringRecomREC(char *treestr, tree *tr, nodeptr q, boolean pri
     while(!p->x)
       p = p->next;
     *treestr++ = '(';
-    treestr = Tree2StringRecomREC(treestr, tr, q->next->back, printBranchLengths);
+    treestr = pllTreeToNewickRecomREC(treestr, tr, q->next->back, printBranchLengths);
     *treestr++ = ',';
-    treestr = Tree2StringRecomREC(treestr, tr, q->next->next->back, printBranchLengths);
+    treestr = pllTreeToNewickRecomREC(treestr, tr, q->next->next->back, printBranchLengths);
     if(q == tr->start->back) 
     {
       *treestr++ = ',';
-      treestr = Tree2StringRecomREC(treestr, tr, q->back, printBranchLengths);
+      treestr = pllTreeToNewickRecomREC(treestr, tr, q->back, printBranchLengths);
     }
     *treestr++ = ')';                    
     // write innernode as nodenum_b_nodenumback
@@ -194,7 +194,7 @@ static double exp_pdf(double lambda, double x)
 
 static void printSimpleTree(tree *tr, boolean printBranchLengths, analdef *adef)
 {
-  Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, SUMMARIZE_LH, 0,0);
+  pllTreeToNewick(tr->tree_string, tr, tr->start->back, printBranchLengths, 1, 0, 0, 0, SUMMARIZE_LH, 0,0);
   fprintf(stderr, "%s\n", tr->tree_string);
 }
 
@@ -202,7 +202,7 @@ static void printRecomTree(tree *tr, boolean printBranchLengths, char *title)
 {
   FILE *nwfile;
   nwfile = myfopen("tmp.nw", "w+");
-  Tree2StringRecomREC(tr->tree_string, tr, tr->start->back, printBranchLengths);
+  pllTreeToNewickRecomREC(tr->tree_string, tr, tr->start->back, printBranchLengths);
   fprintf(nwfile,"%s\n", tr->tree_string);
   fclose(nwfile);
   if(title)

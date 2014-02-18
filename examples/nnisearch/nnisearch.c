@@ -149,7 +149,6 @@ double doOneNNI(tree * tr, nodeptr p, int swap, int optBran) {
 	nodeptr tmp;
 
 	q = p->back;
-	//printTopology(tr, TRUE);
 	assert(!isTip(q->number, tr->mxtips));
 	assert(!isTip(p->number, tr->mxtips));
 
@@ -193,7 +192,7 @@ nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH) {
 	assert ( ! isTip(q->number, tr->mxtips) );
 
 #ifdef DEBUG_MAX
-	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
 #endif
 
@@ -246,7 +245,6 @@ nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH) {
 
 #ifdef DEBUG_MAX
 	printf("Delta likelihood of the 1.NNI move: %f\n", nni1.deltaLH);
-	//printTopology(tr, TRUE);
 #endif
 
 	/* Restore previous NNI move */
@@ -259,7 +257,7 @@ nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH) {
 
 #ifdef DEBUG_MAX
 	printf("Restore topology\n");
-	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
 	evaluateGeneric(tr, tr->start, TRUE);
 	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);
@@ -281,7 +279,6 @@ nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH) {
 
 #ifdef DEBUG_MAX
 	printf("Delta likelihood of the 2.NNI move: %f\n", nni2.deltaLH);
-	//printTopology(tr, TRUE);
 #endif
 
 	/* Restore previous NNI move */
@@ -296,7 +293,7 @@ nniMove getBestNNIForBran(tree* tr, nodeptr p, double curLH) {
 
 #ifdef DEBUG_MAX
 	printf("Restore topology\n");
-	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
 	evaluateGeneric(tr, tr->start, TRUE);
 	printf("Likelihood after restoring from NNI 2: %f\n", tr->likelihood);
@@ -341,14 +338,14 @@ int main(int argc, char * argv[])
 	tr->randomNumberSeed = 665;
 
 	/* Create random tree */
-	//makeRandomTree(tr);
+	//pllMakeRandomTree(tr);
 	//printf("RANDOM TREE: Number of taxa: %d\n", tr->mxtips);
 	//printf("RANDOM TREE: Number of partitions: %d\n", tr->NumberOfModels);
 
 	printf("Creating parsimony tree ...\n");
 	getrusage(RUSAGE_SELF, &usage);
 	start_tmp = usage.ru_utime;
-	makeParsimonyTree(tr);
+	pllMakeParsimonyTree(tr);
 	getrusage(RUSAGE_SELF, &usage);
 	end_tmp = usage.ru_utime;
 	printf("Parsimony tree created in %f seconds \n", (double) end_tmp.tv_sec + end_tmp.tv_usec/1.0e6 - start_tmp.tv_sec - start_tmp.tv_usec/1.0e6);
@@ -360,7 +357,7 @@ int main(int argc, char * argv[])
 	//printf ("Virtual root: %d\n", tr->start->number);
 
 	int printBranchLengths=TRUE;
-	Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, TRUE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, printBranchLengths, TRUE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	//fprintf(stderr, "%s\n", tr->tree_string);
 	char parTree[100];
 	strcpy (parTree, argv[1]);
@@ -385,7 +382,7 @@ int main(int argc, char * argv[])
 	//evaluateGeneric(tr, tr->start, TRUE);
 	//printf("Likelihood after branch length optimization: %f\n", tr->likelihood);
 	//printBranchLengths=TRUE;
-	//Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	//pllTreeToNewick(tr->tree_string, tr, tr->start->back, printBranchLengths, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	//fprintf(stderr, "%s\n", tr->tree_string);
 
 
@@ -421,7 +418,7 @@ int main(int argc, char * argv[])
 	printf("Model parameters and branch lengths optimized in %f seconds \n", (double) end_tmp.tv_sec + end_tmp.tv_usec/1.0e6 - start_tmp.tv_sec - start_tmp.tv_usec/1.0e6);
 	evaluateGeneric(tr, tr->start, FALSE);
 	printf("Likelihood after model optimization: %f\n", tr->likelihood);
-	Tree2String(tr->tree_string, tr, tr->start->back, printBranchLengths, TRUE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, printBranchLengths, TRUE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	char resultFile[100];
 	strcpy (resultFile, argv[1]);
 	strcat(resultFile,".result");
@@ -431,7 +428,6 @@ int main(int argc, char * argv[])
 	end = usage.ru_utime;
 	printf("CPU time = %f seconds \n", (double) end.tv_sec + end.tv_usec/1.0e6 - start.tv_sec - start.tv_usec/1.0e6);
 	printf("Result tree written to %s \n", resultFile);
-	//printTopology(tr, TRUE);
 	fclose(treefile);
 	return (0);
 }

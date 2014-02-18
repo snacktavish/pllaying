@@ -177,7 +177,7 @@ int countTips(nodeptr p, int numsp)
 }
 
 
-double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr p)
+static double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr p)
 {
   double 
     z = 0.0,
@@ -320,7 +320,7 @@ static char *TreeInner2StringREC(char *treestr, pllInstance *tr, partitionList *
 }
 
 
-static char *Tree2StringREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
+static char *pllTreeToNewickREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 {
   char  *nameptr;            
@@ -340,15 +340,15 @@ static char *Tree2StringREC(char *treestr, pllInstance *tr, partitionList *pr, n
   else 
     {                 	 
       *treestr++ = '(';
-      treestr = Tree2StringREC(treestr, tr, pr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
+      treestr = pllTreeToNewickREC(treestr, tr, pr, p->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
 			       finalPrint, perGene, branchLabelSupport, printSHSupport);
       *treestr++ = ',';
-      treestr = Tree2StringREC(treestr, tr, pr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
+      treestr = pllTreeToNewickREC(treestr, tr, pr, p->next->next->back, printBranchLengths, printNames, printLikelihood, rellTree,
 			       finalPrint, perGene, branchLabelSupport, printSHSupport);
       if(p == tr->start->back) 
 	{
 	  *treestr++ = ',';
-	  treestr = Tree2StringREC(treestr, tr, pr, p->back, printBranchLengths, printNames, printLikelihood, rellTree,
+	  treestr = pllTreeToNewickREC(treestr, tr, pr, p->back, printBranchLengths, printNames, printLikelihood, rellTree,
 				   finalPrint, perGene, branchLabelSupport, printSHSupport);
 	}
       *treestr++ = ')';                    
@@ -400,33 +400,7 @@ static char *Tree2StringREC(char *treestr, pllInstance *tr, partitionList *pr, n
 }
 
 
-
-void printTopology(pllInstance *tr, partitionList *pr, boolean printInner)
-{
-  if(!printInner)
-  {
-    boolean printBranchLengths = PLL_FALSE;
-    Tree2String(tr->tree_string, tr, pr, tr->start->back, printBranchLengths, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0);
-    fprintf(stderr, "%s", tr->tree_string);
-  }
-  else
-  {
-    TreeInner2StringREC(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0, PLL_TRUE);
-    fprintf(stderr, "%s", tr->tree_string);
-    fprintf(stderr, "Start was %d, pnb %d, pnnb %d, pback %d\n", 
-        tr->start->back->number, 
-        tr->start->back->next->back->number, 
-        tr->start->back->next->next->back->number, 
-        tr->start->number);
-  }
-}
-
-    
-
-
-
-
-char *Tree2String(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
+char *pllTreeToNewick(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
 		  boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
 { 
 
@@ -440,7 +414,7 @@ char *Tree2String(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, 
     assert(!branchLabelSupport && !rellTree);
 
  
-  Tree2StringREC(treestr, tr, pr, p, printBranchLengths, printNames, printLikelihood, rellTree,
+  pllTreeToNewickREC(treestr, tr, pr, p, printBranchLengths, printNames, printLikelihood, rellTree,
 		 finalPrint, perGene, branchLabelSupport, printSHSupport);  
     
   

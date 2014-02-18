@@ -1899,7 +1899,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 	assert( ! isTip(p->number, tr->mxtips));
 	assert( ! isTip(q->number, tr->mxtips));
 #ifdef _DEBUG_NNI
-	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
 #endif
 
@@ -1961,7 +1961,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 
 #ifdef _DEBUG_NNI
 	printf("Restore topology\n");
-	Tree2String(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
+	pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, FALSE, 0, 0, 0, SUMMARIZE_LH, 0,0);
 	fprintf(stderr, "%s\n", tr->tree_string);
 	pllEvaluateLikelihood (tr, tr->start, TRUE);
 	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);

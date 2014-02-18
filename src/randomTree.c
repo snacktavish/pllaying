@@ -130,7 +130,7 @@ static int markBranches(nodeptr *branches, nodeptr p, int *counter, int numsp)
 
 
 
-void makeRandomTree(pllInstance *tr)
+void pllMakeRandomTree(pllInstance *tr)
 {  
   nodeptr 
     p, 

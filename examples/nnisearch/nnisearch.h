@@ -1,10 +1,10 @@
 void read_msa (tree * tr, char * filename);
 
-void makeParsimonyTree(tree *tr)
+void pllMakeParsimonyTree(tree *tr)
 {
   allocateParsimonyDataStructures(tr);
-  makeParsimonyTreeFast(tr);
-  freeParsimonyDataStructures(tr);
+  pllMakeParsimonyTreeFast(tr);
+  pllFreeParsimonyDataStructures(tr);
 }
 
 typedef struct {

@@ -979,11 +979,11 @@ extern int treeOptimizeThorough ( tree *tr, int mintrav, int maxtrav);
 
 extern int checker ( tree *tr, nodeptr p );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
-extern void makeRandomTree ( tree *tr);
+extern void pllMakeRandomTree ( tree *tr);
 extern void nodeRectifier ( tree *tr );
-extern void makeParsimonyTreeFast(tree *tr);
+extern void pllMakeParsimonyTreeFast(tree *tr);
 extern void allocateParsimonyDataStructures(tree *tr);
-extern void freeParsimonyDataStructures(tree *tr);
+extern void pllFreeParsimonyDataStructures(tree *tr);
 extern void parsimonySPR(nodeptr p, tree *tr);
 
 extern FILE *myfopen(const char *path, const char *mode);
@@ -1032,7 +1032,7 @@ extern void resetBestTree ( bestlist *bt );
 extern boolean freeBestTree ( bestlist *bt );
 
 
-extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
+extern char *pllTreeToNewick ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
 			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
 

@@ -1609,7 +1609,7 @@ extern int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel);
 
 extern void pllOptimizeBranchLengths ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 
-extern char *Tree2String ( char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
+extern char * pllTreeToNewick ( char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
                            boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 
 extern void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
@@ -1680,15 +1680,11 @@ int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estim
 
 void pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
 
-/* to be refactored */
-extern void makeRandomTree ( pllInstance *tr);
-void makeParsimonyTree(pllInstance *tr);
-extern void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr);
-extern void freeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
-extern void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr);
-extern int NNI(pllInstance * tr, nodeptr p, int swap);
-void printTopology(pllInstance *tr, partitionList *pr, boolean printInner);
-extern double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, nodeptr p);
+extern void pllMakeRandomTree ( pllInstance *tr);
+void pllMakeParsimonyTree(pllInstance *tr);
+extern void pllMakeParsimonyTreeFast(pllInstance *tr, partitionList *pr);
+extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
+
 /* ---------------- */
 
 #ifdef __cplusplus

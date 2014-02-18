@@ -1123,13 +1123,13 @@ extern int checker ( tree *tr, nodeptr p );
 extern int randomInt ( int n );
 extern void makePermutation ( int *perm, int n, analdef *adef );
 extern boolean tipHomogeneityChecker ( tree *tr, nodeptr p, int grouping );
-extern void makeRandomTree ( tree *tr, analdef *adef );
+extern void pllMakeRandomTree ( tree *tr, analdef *adef );
 extern void nodeRectifier ( tree *tr );
-extern void makeParsimonyTreeThorough(tree *tr, analdef *adef);
-extern void makeParsimonyTree ( tree *tr, analdef *adef );
-extern void makeParsimonyTreeFastDNA(tree *tr, analdef *adef);
-extern void makeParsimonyTreeIncomplete ( tree *tr, analdef *adef );
-extern void makeParsimonyInsertions(tree *tr, nodeptr startNodeQ, nodeptr startNodeR);
+extern void pllMakeParsimonyTreeThorough(tree *tr, analdef *adef);
+extern void pllMakeParsimonyTree ( tree *tr, analdef *adef );
+extern void pllMakeParsimonyTreeFastDNA(tree *tr, analdef *adef);
+extern void pllMakeParsimonyTreeIncomplete ( tree *tr, analdef *adef );
+extern void pllMakeParsimonyInsertions(tree *tr, nodeptr startNodeQ, nodeptr startNodeR);
 
 
 
@@ -1179,7 +1179,7 @@ extern void resetBestTree ( bestlist *bt );
 extern boolean freeBestTree ( bestlist *bt );
 
 
-extern char *Tree2String ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
+extern char *pllTreeToNewick ( char *treestr, tree *tr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood, 
 			   boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 extern void printTreePerGene(tree *tr, analdef *adef, char *fileName, char *permission);
 

@@ -1763,7 +1763,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	  printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-	  Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+	  pllTreeToNewick(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 
 	  if(fastIterations % 2 == 0)	      
 	    memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2041,7 +2041,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 	      printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 	      
-	      Tree2String(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
+	      pllTreeToNewick(buffer, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, FALSE, SUMMARIZE_LH, FALSE, FALSE);
 	      
 	      if(thoroughIterations % 2 == 0)	      
 		memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -2183,7 +2183,7 @@ void computeBIGRAPID (tree *tr, analdef *adef, boolean estimateModel)
 
 	      treeFile = myfopen(fileName, "a");
 	     
-	      Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, TRUE, SUMMARIZE_LH, FALSE, FALSE);
+	      pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, TRUE, SUMMARIZE_LH, FALSE, FALSE);
 	       
 	      fprintf(treeFile, "%s", tr->tree_string);
 	      fclose(treeFile);	      

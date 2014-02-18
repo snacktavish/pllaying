@@ -142,7 +142,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
   switch(adef->mode)
   {    
     case TREE_EVALUATION:
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+      pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
       logFile = myfopen(temporaryFileName, "wb");
       fprintf(logFile, "%s", tr->tree_string);
@@ -159,7 +159,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
           case GAMMA:
           case GAMMA_I:
 
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
+            pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
                 PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
             logFile = myfopen(temporaryFileName, "wb");
@@ -170,11 +170,11 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
               printTreePerGene(tr, pr, adef, temporaryFileName, "wb");
             break;
           case CAT:
-            /*Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, adef,
+            /*pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint, adef,
               PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);*/
 
 
-            Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE,
+            pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE,
                 PLL_TRUE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
 
@@ -191,7 +191,7 @@ void printResult(pllInstance *tr, partitionList *pr, analdef *adef, boolean fina
       }
       else
       {
-        Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
+        pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, finalPrint,
             PLL_NO_BRANCHES, PLL_FALSE, PLL_FALSE);
         logFile = myfopen(temporaryFileName, "wb");
         fprintf(logFile, "%s", tr->tree_string);
@@ -372,7 +372,7 @@ void printTreePerGene(pllInstance *tr, partitionList *pr, analdef *adef, char *f
       strcat(extendedTreeFileName, ".PARTITION.");
       strcat(extendedTreeFileName, buf);
       /*printf("Partitiuon %d file %s\n", i, extendedTreeFileName);*/
-      Tree2String(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_TRUE, i, PLL_FALSE, PLL_FALSE);
+      pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_TRUE, i, PLL_FALSE, PLL_FALSE);
       treeFile = myfopen(extendedTreeFileName, permission);
       fprintf(treeFile, "%s", tr->tree_string);
       fclose(treeFile);
@@ -380,6 +380,72 @@ void printTreePerGene(pllInstance *tr, partitionList *pr, analdef *adef, char *f
     
 }
 
+void printTopology(pllInstance *tr, partitionList *pr, boolean printInner)
+{
+  if(!printInner)
+  {
+    boolean printBranchLengths = PLL_FALSE;
+    pllTreeToNewick(tr->tree_string, tr, pr, tr->start->back, printBranchLengths, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0);
+    fprintf(stderr, "%s", tr->tree_string);
+  }
+  else
+  {
+    TreeInner2StringREC(tr->tree_string, tr, pr, tr->start->back, PLL_FALSE, 0, 0, 0, 0, PLL_SUMMARIZE_LH, 0,0, PLL_TRUE);
+    fprintf(stderr, "%s", tr->tree_string);
+    fprintf(stderr, "Start was %d, pnb %d, pnnb %d, pback %d\n",
+        tr->start->back->number,
+        tr->start->back->next->back->number,
+        tr->start->back->next->next->back->number,
+        tr->start->number);
+  }
+}
+
+void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr)
+{
+  int i;
+  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+
+  double
+    p1z[PLL_NUM_BRANCHES],
+    p2z[PLL_NUM_BRANCHES];
+
+  nodeptr
+    p1 = p->next->back,
+    p2 = p->next->next->back;
+
+  //unsigned int score = evaluateParsimony(tr, pr, p, PLL_TRUE);
+
+  //printf("parsimonyScore: %u\n", score);
+
+  for(i = 0; i < numBranches; i++)
+    {
+      p1z[i] = p1->z[i];
+      p2z[i] = p2->z[i];
+    }
+
+  tr->bestParsimony = INT_MAX;
+
+  hookupDefault(p1, p2);
+
+  p->next->next->back = p->next->back = (node *) NULL;
+
+  if (p1->number > tr->mxtips)
+    {
+      addTraverseParsimony(tr, pr, p, p1->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
+      addTraverseParsimony(tr, pr, p, p1->next->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
+    }
+
+  if(p2->number > tr->mxtips)
+    {
+      addTraverseParsimony(tr, pr, p, p2->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
+      addTraverseParsimony(tr, pr, p, p2->next->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
+    }
+
+  //printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
+
+  hookup(p1, p->next, p1z,       numBranches);
+  hookup(p2, p->next->next, p2z, numBranches);
+}
 
 /******************************************** searchAlgo.c ***********************************************************************/
 
@@ -727,7 +793,7 @@ START_FAST_SPRS:
         printf("Storing tree in slot %d\n", fastIterations % 2);
 #endif
 
-        Tree2String(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+        pllTreeToNewick(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
         if(fastIterations % 2 == 0)	      
           memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));
@@ -953,7 +1019,7 @@ START_SLOW_SPRS:
           printf("Storing tree in slot %d\n", thoroughIterations % 2);
 #endif
 
-          Tree2String(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+          pllTreeToNewick(buffer, tr, pr, tr->start->back, PLL_FALSE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
 
           if(thoroughIterations % 2 == 0)	      
             memcpy(tr->tree0, buffer, tr->treeStringLength * sizeof(char));

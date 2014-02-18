@@ -1461,7 +1461,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
       switch(adef->mode)
 	{    
 	case TREE_EVALUATION:
-	  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
+	  pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint, SUMMARIZE_LH, FALSE, FALSE);
 	  
 	  logFile = myfopen(temporaryFileName, "wb");
 	  fprintf(logFile, "%s", tr->tree_string);
@@ -1477,7 +1477,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 		{
 		case GAMMA:
 		case GAMMA_I:
-		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
+		  pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE, finalPrint,
 			      SUMMARIZE_LH, FALSE, FALSE);
 		  
 		  logFile = myfopen(temporaryFileName, "wb");
@@ -1488,12 +1488,12 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 		    printTreePerGene(tr, adef, temporaryFileName, "wb");
 		  break;
 		case CAT:
-		  /*Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
+		  /*pllTreeToNewick(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint, adef,
 		    NO_BRANCHES, FALSE, FALSE);*/
 		  
 		  
 		  
-		  Tree2String(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
+		  pllTreeToNewick(tr->tree_string, tr, tr->start->back, TRUE, TRUE, FALSE, FALSE,
 			      TRUE, SUMMARIZE_LH, FALSE, FALSE);
 		  
 		  
@@ -1510,7 +1510,7 @@ void printResult(tree *tr, analdef *adef, boolean finalPrint)
 	    }
 	  else
 	    {
-	      Tree2String(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
+	      pllTreeToNewick(tr->tree_string, tr, tr->start->back, FALSE, TRUE, FALSE, FALSE, finalPrint,
 			  NO_BRANCHES, FALSE, FALSE);
 	      logFile = myfopen(temporaryFileName, "wb");
 	      fprintf(logFile, "%s", tr->tree_string);
@@ -2307,7 +2307,7 @@ int main (int argc, char *argv[])
 	  {
 	  case randomTree:
 	    assert(0);
-	    makeRandomTree(tr);
+	    pllMakeRandomTree(tr);
 	    break;
 	  case givenTree:
 	    getStartingTree(tr);     
@@ -2316,8 +2316,8 @@ int main (int argc, char *argv[])
 	    /* runs only on process/thread 0 ! */
 	    assert(0);
 	    allocateParsimonyDataStructures(tr);
-	    makeParsimonyTreeFast(tr);
-	    freeParsimonyDataStructures(tr);
+	    pllMakeParsimonyTreeFast(tr);
+	    pllFreeParsimonyDataStructures(tr);
 	  break;
 	default:
 	  assert(0);
@@ -2346,7 +2346,7 @@ int main (int argc, char *argv[])
 	    
 	    allocateParsimonyDataStructures(tr);
 	    mcmc(tr, adef);
-	    freeParsimonyDataStructures(tr);
+	    pllFreeParsimonyDataStructures(tr);
 	  }
 	else
 #endif	 

@@ -1334,7 +1334,7 @@ int main (int argc, char *argv[])
     switch(tr->startingTree)
     {
       case randomTree:	 
-        makeRandomTree(tr);
+        pllMakeRandomTree(tr);
         break;
       case givenTree:
         getStartingTree(tr);     
@@ -1342,8 +1342,8 @@ int main (int argc, char *argv[])
       case parsimonyTree:	     
         /* runs only on process/thread 0 ! */
         allocateParsimonyDataStructures(tr, partitions);
-        makeParsimonyTreeFast(tr, partitions);
-        freeParsimonyDataStructures(tr, partitions);
+        pllMakeParsimonyTreeFast(tr, partitions);
+        pllFreeParsimonyDataStructures(tr, partitions);
         break;
       default:
         assert(0);

@@ -1784,7 +1784,7 @@ void allocateParsimonyDataStructures(pllInstance *tr, partitionList *pr)
   rax_free(informative); 
 }
 
-void freeParsimonyDataStructures(pllInstance *tr, partitionList *pr)
+void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr)
 {
   size_t 
     model;
@@ -1798,7 +1798,7 @@ void freeParsimonyDataStructures(pllInstance *tr, partitionList *pr)
 }
 
 
-void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
+void pllMakeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
 {   
   nodeptr  
     p, 
@@ -1884,53 +1884,3 @@ void makeParsimonyTreeFast(pllInstance *tr, partitionList *pr)
   
   rax_free(perm);
 } 
-
-void parsimonySPR(nodeptr p, partitionList *pr, pllInstance *tr)
-{
-  int i;
-  int numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
-
-  double   
-    p1z[PLL_NUM_BRANCHES], 
-    p2z[PLL_NUM_BRANCHES];
-
-  nodeptr 
-    p1 = p->next->back,
-    p2 = p->next->next->back;
-
-  //unsigned int score = evaluateParsimony(tr, pr, p, PLL_TRUE);
-
-  //printf("parsimonyScore: %u\n", score);
-
-  for(i = 0; i < numBranches; i++)
-    {
-      p1z[i] = p1->z[i];
-      p2z[i] = p2->z[i];                   
-    }
-  
-  tr->bestParsimony = INT_MAX; 
-
-  hookupDefault(p1, p2);
-
-  p->next->next->back = p->next->back = (node *) NULL;
-
-  if (p1->number > tr->mxtips) 
-    {
-      addTraverseParsimony(tr, pr, p, p1->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
-      addTraverseParsimony(tr, pr, p, p1->next->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
-    }
-  
-  if(p2->number > tr->mxtips)
-    {
-      addTraverseParsimony(tr, pr, p, p2->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
-      addTraverseParsimony(tr, pr, p, p2->next->next->back, 0, 0, PLL_TRUE, PLL_TRUE);
-    }
-
-  //printf("best %u nodes %d %d\n",tr->bestParsimony, tr->insertNode->number, tr->insertNode->back->number);
-
-  hookup(p1, p->next, p1z,       numBranches);
-  hookup(p2, p->next->next, p2z, numBranches);
-}
-
-
-

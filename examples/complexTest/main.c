@@ -334,12 +334,12 @@ int main (int argc, char * argv[])
 
   /*
      allocateParsimonyDataStructures(tr, partitions);
-     makeParsimonyTreeFast(tr, partitions);
-     freeParsimonyDataStructures(tr, partitions);
+     pllMakeParsimonyTreeFast(tr, partitions);
+     pllFreeParsimonyDataStructures(tr, partitions);
   */
 
   pllComputeRandomizedStepwiseAdditionParsimonyTree(tr, partitions);
-  Tree2String (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+  pllTreeToNewick (tr->tree_string, tr, partitions, tr->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s %d\n", tr->tree_string, tr->start->number);
   evaluateGeneric(tr, partitions, tr->start, PLL_TRUE, PLL_FALSE);
 
@@ -359,7 +359,7 @@ int main (int argc, char * argv[])
    }
   pllInitModel(tr2, alignmentData2, partitions2);
 
-  Tree2String (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
+  pllTreeToNewick (tr2->tree_string, tr2, partitions2, tr2->start->back, PLL_TRUE, PLL_TRUE, PLL_FALSE, PLL_FALSE, PLL_FALSE, PLL_SUMMARIZE_LH, PLL_FALSE, PLL_FALSE);
   printf ("Tree: %s %d\n", tr2->tree_string, tr2->start->number);
   evaluateGeneric(tr2, partitions2, tr2->start, PLL_TRUE, PLL_FALSE);
 
