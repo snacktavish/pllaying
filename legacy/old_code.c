@@ -1141,4 +1141,162 @@ cleanup:
 }
 #endif
 
+int ckpCount = 0;
+
+/** @brief Write a checkpoint
+
+    Is checkpoint enabled?
+
+    @todo fill this up
+*/
+static void writeCheckpoint(pllInstance *tr, partitionList *pr, int state)
+{
+  int
+    model;
+
+  char
+    extendedName[2048],
+    buf[64];
+
+  FILE
+    *f;
+
+  strcpy(extendedName,  binaryCheckpointName);
+  strcat(extendedName, "_");
+  sprintf(buf, "%d", ckpCount);
+  strcat(extendedName, buf);
+
+  ckpCount++;
+
+  f = myfopen(extendedName, "w");
+
+  /* cdta */
+
+
+  tr->ckp.accumulatedTime = accumulatedTime + (gettime() - masterTime);
+
+  tr->ckp.state = state;
+
+  tr->ckp.tr_optimizeRateCategoryInvocations = tr->optimizeRateCategoryInvocations;
+  tr->ckp.tr_thoroughInsertion = tr->thoroughInsertion;
+  tr->ckp.tr_startLH  = tr->startLH;
+  tr->ckp.tr_endLH    = tr->endLH;
+  tr->ckp.tr_likelihood = tr->likelihood;
+  tr->ckp.tr_bestOfNode = tr->bestOfNode;
+
+  tr->ckp.tr_lhCutoff = tr->lhCutoff;
+  tr->ckp.tr_lhAVG    = tr->lhAVG;
+  tr->ckp.tr_lhDEC    = tr->lhDEC;
+  tr->ckp.tr_itCount  = tr->itCount;
+  tr->ckp.tr_doCutoff = tr->doCutoff;
+  /* printf("Acc time: %f\n", tr->ckp.accumulatedTime); */
+
+  /* user stupidity */
+
+
+  tr->ckp.searchConvergenceCriterion = tr->searchConvergenceCriterion;
+  tr->ckp.rateHetModel =  tr->rateHetModel;
+  tr->ckp.maxCategories =  tr->maxCategories;
+  tr->ckp.NumberOfModels = pr->numberOfPartitions;
+  tr->ckp.numBranches = pr->perGeneBranchLengths?pr->numberOfPartitions:1;
+  tr->ckp.originalCrunchedLength = tr->originalCrunchedLength;
+  tr->ckp.mxtips = tr->mxtips;
+  strcpy(tr->ckp.seq_file, seq_file);
+
+  /* handle user stupidity */
+
+
+  myfwrite(&(tr->ckp), sizeof(checkPointState), 1, f);
+
+  myfwrite(tr->tree0, sizeof(char), tr->treeStringLength, f);
+  myfwrite(tr->tree1, sizeof(char), tr->treeStringLength, f);
+
+  myfwrite(tr->rateCategory, sizeof(int), tr->originalCrunchedLength, f);
+  myfwrite(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
+  myfwrite(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
+
+  /* need to store this as well in checkpoints, otherwise the branch lengths
+     in the output tree files will be wrong, not the internal branch lengths though */
+
+  //TODO: We have to change the way to store the fracchanges
+  //myfwrite(tr->fracchanges,  sizeof(double), pr->numberOfPartitions, f);
+  myfwrite(&(tr->fracchange),   sizeof(double), 1, f);
+
+
+  /* pInfo */
+
+  for(model = 0; model < pr->numberOfPartitions; model++)
+  {
+    int
+      dataType = pr->partitionData[model]->dataType;
+
+    myfwrite(&(pr->partitionData[model]->numberOfCategories), sizeof(int), 1, f);
+    myfwrite(pr->partitionData[model]->perSiteRates, sizeof(double), tr->maxCategories, f);
+    myfwrite(pr->partitionData[model]->EIGN, sizeof(double), pLengths[dataType].eignLength, f);
+    myfwrite(pr->partitionData[model]->EV, sizeof(double),  pLengths[dataType].evLength, f);
+    myfwrite(pr->partitionData[model]->EI, sizeof(double),  pLengths[dataType].eiLength, f);
+
+    myfwrite(pr->partitionData[model]->frequencies, sizeof(double),  pLengths[dataType].frequenciesLength, f);
+    myfwrite(pr->partitionData[model]->tipVector, sizeof(double),  pLengths[dataType].tipVectorLength, f);
+    myfwrite(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
+    myfwrite(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
+
+    if(pr->partitionData[model]->protModels == PLL_LG4)
+        {
+          int
+            k;
+
+          for(k = 0; k < 4; k++)
+            {
+              myfwrite(pr->partitionData[model]->EIGN_LG4[k], sizeof(double), pLengths[dataType].eignLength, f);
+              myfwrite(pr->partitionData[model]->EV_LG4[k], sizeof(double),  pLengths[dataType].evLength, f);
+              myfwrite(pr->partitionData[model]->EI_LG4[k], sizeof(double),  pLengths[dataType].eiLength, f);
+              myfwrite(pr->partitionData[model]->frequencies_LG4[k], sizeof(double),  pLengths[dataType].frequenciesLength, f);
+              myfwrite(pr->partitionData[model]->tipVector_LG4[k], sizeof(double),  pLengths[dataType].tipVectorLength, f);
+              myfwrite(pr->partitionData[model]->substRates_LG4[k], sizeof(double),  pLengths[dataType].substRatesLength, f);
+            }
+        }
+
+  }
+
+
+
+  writeTree(tr, f);
+
+  fclose(f);
+
+  printBothOpen("\nCheckpoint written to: %s likelihood: %f\n", extendedName, tr->likelihood);
+}
+
+static void restoreTreeDataValuesFromCheckpoint(pllInstance *tr)
+{
+  tr->optimizeRateCategoryInvocations = tr->ckp.tr_optimizeRateCategoryInvocations;
+  tr->thoroughInsertion = tr->ckp.tr_thoroughInsertion;
+  tr->likelihood = tr->ckp.tr_likelihood;
+  tr->lhCutoff = tr->ckp.tr_lhCutoff;
+  tr->lhAVG    = tr->ckp.tr_lhAVG;
+  tr->lhDEC    = tr->ckp.tr_lhDEC;
+  tr->itCount = tr->ckp.tr_itCount;
+  tr->doCutoff = tr->ckp.tr_doCutoff;
+}
+
+/** @brief Write tree to file
+
+    Serialize tree to a file.
+
+    @todo Document this
+*/
+static void writeTree(pllInstance *tr, FILE *f)
+{
+  int
+    x = tr->mxtips + 3 * (tr->mxtips - 1);
+
+  nodeptr
+    base = tr->nodeBaseAddress;
+
+  myfwrite(&(tr->start->number), sizeof(int), 1, f);
+  myfwrite(&base, sizeof(nodeptr), 1, f);
+  myfwrite(tr->nodeBaseAddress, sizeof(node), x, f);
+
+}
 

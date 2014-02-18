@@ -1071,10 +1071,8 @@ typedef struct {
   int    tr_doCutoff;
   int    tr_thoroughInsertion;
   int    tr_optimizeRateCategoryInvocations;
-
  
   /* prevent users from doing stupid things */
-
  
   int searchConvergenceCriterion;
   int rateHetModel;
@@ -1119,7 +1117,6 @@ typedef  struct  {
   double stlenTime;
 #endif
   /* E recomp */
-
   
   boolean fastScaling;
   boolean saveMemory;
@@ -1146,14 +1143,9 @@ typedef  struct  {
   double upper_spacing; 
 
   double *ancestralVector;
+
 //#endif
   
-
-
- 
-  
- 
-
   stringHashtable  *nameHash;
 
   char             *secondaryStructureInput;
@@ -1172,10 +1164,9 @@ typedef  struct  {
 
 
   boolean curvatOK[PLL_NUM_BRANCHES];
+
   /* the stuff below is shared among DNA and AA, span does
      not change depending on datatype */
-
-  
 
   /* model stuff end */
   int              bDeep;            /**< yVectors are 0: shallow-copy, or 1: deep-copy of alignment */
@@ -1184,10 +1175,8 @@ typedef  struct  {
 
   int              secondaryStructureModel;
   int              originalCrunchedLength; /**< Length of alignment after removing duplicate sites in each partition */
- 
- 
-  int              *secondaryStructurePairs;
 
+  int              *secondaryStructurePairs;
 
   double            fracchange;      /**< Average substitution rate */
   double            lhCutoff;
@@ -1212,7 +1201,6 @@ typedef  struct  {
   boolean          searchConvergenceCriterion;
   int              ntips;
   int              nextnode;  
-
 
   boolean          bigCutoff;
   boolean          partitionSmoothed[PLL_NUM_BRANCHES];
@@ -1321,13 +1309,7 @@ typedef  struct
 }
   topolRELL_LIST;
 
-
-
-
-
 /**************************************************************/
-
-
 
 /** @brief Connection within a topology.
 *   */
@@ -1595,22 +1577,19 @@ extern int pllLoadAlignment (pllInstance * tr,
 extern double ** pllBaseFrequenciesGTR (partitionList * pl, 
                          pllAlignmentData * alignmentData);
 
+/* pthreads and MPI */
 extern void pllStartPthreads (pllInstance *tr, partitionList *pr);
 extern void pllStopPthreads (pllInstance * tr);
 extern void pllLockMPI (pllInstance * tr);
 extern void pllInitMPI(int * argc, char **argv[]);
 
 
-/* Handling branch lengths*/
+/* handling branch lengths*/
 extern double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id);
 extern void pllSetBranchLength (pllInstance *tr, nodeptr p, int partition_id, double bl);
-
 extern int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel);
-
 extern void pllOptimizeBranchLengths ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 
-extern char * pllTreeToNewick ( char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames, boolean printLikelihood,
-                           boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport);
 
 extern void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
 extern void pllUpdatePartials (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
@@ -1624,11 +1603,20 @@ extern pllNewickTree * pllNewickParseFile (const char * filename);
 extern int pllValidateNewick (pllNewickTree *);
 extern void pllNewickParseDestroy (pllNewickTree **);
 extern int pllNewickUnroot (pllNewickTree * t);
+extern char * pllTreeToNewick ( char *treestr, pllInstance *tr, partitionList *pr, nodeptr p,
+      boolean printBranchLengths, boolean printNames, boolean printLikelihood,
+      boolean rellTree, boolean finalPrint, int perGene,
+      boolean branchLabelSupport, boolean printSHSupport);
 
 /* partition parser declarations */
 extern void  pllQueuePartitionsDestroy (pllQueue ** partitions);
 extern pllQueue * pllPartitionParse (const char * filename);
 extern void pllPartitionDump (pllQueue * partitions);
+void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
+partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
+int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
+extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
+void pllPartitionsDestroy (pllInstance *, partitionList **);
 
 /* alignment data declarations */
 extern void pllAlignmentDataDestroy (pllAlignmentData *);
@@ -1637,39 +1625,37 @@ extern void pllAlignmentDataDumpConsole (pllAlignmentData * alignmentData);
 extern pllAlignmentData * pllInitAlignmentData (int, int);
 extern pllAlignmentData * pllParseAlignmentFile (int fileType, const char *);
 
-extern char * pllReadFile (const char *, long *);
-extern int * pllssort1main (char ** x, int n);
 
+/* model management */
+int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
 int pllLinkAlphaParameters(char *string, partitionList *pr);
 int pllLinkFrequencies(char *string, partitionList *pr);
 int pllLinkRates(char *string, partitionList *pr);
 int pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
-
 void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
-
+int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
+double pllGetAlpha (partitionList * pr, int pid);
+void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
 extern void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer);
 extern void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
-void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
-double pllGetAlpha (partitionList * pr, int pid);
-
-nodeptr pllGetRandomSubtree(pllInstance *);
-void pllPartitionsDestroy (pllInstance *, partitionList **);
-int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
-partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
-extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
-void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
+
+/* tree topology */
+void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
 void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
 void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
-void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
-void pllDestroyInstance (pllInstance *);
-int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
+extern void pllMakeRandomTree ( pllInstance *tr);
+void pllMakeParsimonyTree(pllInstance *tr);
+extern void pllMakeParsimonyTreeFast(pllInstance *tr, partitionList *pr);
 void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
-int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
+nodeptr pllGetRandomSubtree(pllInstance *);
+extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
+void pllDestroyInstance (pllInstance *);
 
+/* rearrange functions (NNI and SPR) */
 pllRearrangeList * pllCreateRearrangeList (int max);
 void pllDestroyRearrangeList (pllRearrangeList ** bestList);
 void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
@@ -1677,13 +1663,11 @@ void pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo 
 int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
 void pllClearRearrangeHistory (pllInstance * tr);
 int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
-
 void pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
 
-extern void pllMakeRandomTree ( pllInstance *tr);
-void pllMakeParsimonyTree(pllInstance *tr);
-extern void pllMakeParsimonyTreeFast(pllInstance *tr, partitionList *pr);
-extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
+/* other functions */
+extern char * pllReadFile (const char *, long *);
+extern int * pllssort1main (char ** x, int n);
 
 /* ---------------- */
 

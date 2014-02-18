@@ -684,7 +684,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
  */
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
                        double *fc, double lim_inf, double lim_sup, 
-                       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll, double modelEpsilon)
+                       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll)
 {
   double 
     *ulim = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -1249,7 +1249,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 
   assert(pos == numberOfModels);
 
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, whichParameterType, tr, pr, ll, modelEpsilon);
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, whichParameterType, tr, pr, ll);
       
   for(k = 0; k < numberOfModels; k++)
     {

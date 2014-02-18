@@ -1973,6 +1973,8 @@ linkTaxa (pllInstance * pInst, pllNewickTree * nTree, int taxaExist)
        parent->z[j] = child->z[j] = z;
    }
   pllStackClear (&nodeStack);
+
+  return PLL_TRUE;
 }
 
 /** @ingroup instanceLinkingGroup
@@ -2782,8 +2784,6 @@ double pllGetAlpha (partitionList * pr, int pid)
 */
 void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer)
 {
-  int states;
-
   memcpy (outBuffer, pr->partitionData[model]->frequencies, pr->partitionData[model]->states * sizeof (double));
 }
 
