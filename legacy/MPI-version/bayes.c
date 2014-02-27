@@ -706,7 +706,7 @@ static void restoreSubsRates(tree *tr, analdef *adef, int model, int numSubsRate
   for(i=0; i<numSubsRates; i++)
     tr->partitionData[model].substRates[i] = prevSubsRates[i];
 #ifndef _LOCAL_DISCRETIZATION
-  initReversibleGTR(tr, model);
+  pllInitReversibleGTR(tr, model);
 #endif
   /* TODO need to broadcast rates here for parallel version */
 
@@ -752,7 +752,7 @@ static void simpleModelProposal(state * instate)
     }
   //recalculate eigens
 #ifndef _LOCAL_DISCRETIZATION
-  initReversibleGTR(instate->tr, instate->model); /* 1. recomputes Eigenvectors, Eigenvalues etc. for Q decomp. */
+  pllInitReversibleGTR(instate->tr, instate->model); /* 1. recomputes Eigenvectors, Eigenvalues etc. for Q decomp. */
 #endif
 
   /* TODO: need to broadcast rates here for parallel version ! */
@@ -793,7 +793,7 @@ static void simpleGammaProposal(state * instate)
   instate->tr->partitionData[instate->model].alpha = newalpha;
 
 #ifndef _LOCAL_DISCRETIZATION
-  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4);
+  pllMakeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4);
 #endif
 
   /* TODO: for the parallel version: need to broadcast the gamma rates before re-evaluating !!!! 
@@ -807,7 +807,7 @@ static void resetSimpleGammaProposal(state * instate)
 {
   instate->tr->partitionData[instate->model].alpha = instate->curAlpha;
 #ifndef _LOCAL_DISCRETIZATION
-  makeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4);
+  pllMakeGammaCats(instate->tr->partitionData[instate->model].alpha, instate->tr->partitionData[instate->model].gammaRates, 4);
 #endif
 
    /* TODO: for the parallel version: need to broadcast the gamma rates before re-evaluating !!!! 

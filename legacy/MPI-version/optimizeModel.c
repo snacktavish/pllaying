@@ -268,7 +268,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		      int index = ll->ld[i].partitionList[k];		  	      
 		      setRateModel(tr, index, value[pos], rateNumber);  
 
-		      initReversibleGTR(tr, index);		 
+		      pllInitReversibleGTR(tr, index);		 
 		    }
 		}
 	      pos++;
@@ -329,7 +329,7 @@ static void evaluateChange(tree *tr, int rateNumber, double *value, double *resu
 		  tr->executeModel[index] = TRUE;
 		  tr->partitionData[index].alpha = value[i];
 
-		  makeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4, tr->useMedian);
+		  pllMakeGammaCats(tr->partitionData[index].alpha, tr->partitionData[index].gammaRates, 4, tr->useMedian);
 		}
 	    }
 	}
@@ -963,7 +963,7 @@ static void optAlpha(tree *tr, double modelEpsilon, linkageList *ll)
 	    {	      
 	      tr->partitionData[ll->ld[i].partitionList[k]].alpha = startAlpha[i];
 #ifndef _LOCAL_DISCRETIZATION
-	      makeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4, tr->useMedian); 	      
+	      pllMakeGammaCats(tr->partitionData[ll->ld[i].partitionList[k]].alpha, tr->partitionData[ll->ld[i].partitionList[k]].gammaRates, 4, tr->useMedian); 	      
 #endif		
 	    }
 
@@ -1095,7 +1095,7 @@ static void optRates(tree *tr, double modelEpsilon, linkageList *ll, int numberO
 		      int index = ll->ld[k].partitionList[j];
 		      tr->partitionData[index].substRates[i] = startRates[pos * numberOfRates + i];
 #ifndef _LOCAL_DISCRETIZATION 	             	  
-		      initReversibleGTR(tr, index);		     
+		      pllInitReversibleGTR(tr, index);		     
 #endif
 		    }
 
@@ -2819,7 +2819,7 @@ static void autoProtein(tree *tr)
 		{
 		  tr->partitionData[model].autoProtModels = i;
 #ifndef _LOCAL_DISCRETIZATION 
-		  initReversibleGTR(tr, model);  
+		  pllInitReversibleGTR(tr, model);  
 #endif
 		}
 	    }
@@ -2852,7 +2852,7 @@ static void autoProtein(tree *tr)
 	    {
 	      tr->partitionData[model].autoProtModels = bestIndex[model];
 #ifndef _LOCAL_DISCRETIZATION 
-	      initReversibleGTR(tr, model);  
+	      pllInitReversibleGTR(tr, model);  
 #endif
 	      printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[tr->partitionData[model].autoProtModels], bestScores[model]);
 	    }	 

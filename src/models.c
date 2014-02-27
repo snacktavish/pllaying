@@ -3413,8 +3413,6 @@ static void initGeneric(const int states,
   rax_free(EIGN);
 }
 
-
-
 /** @brief Initialize GTR
   *
   * Wrapper function for the decomposition of the substitution rates matrix
@@ -3429,7 +3427,7 @@ static void initGeneric(const int states,
   * @param model
   *   Partition index
   */
-void initReversibleGTR(pllInstance * tr, partitionList * pr, int model)
+void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 { 
  double   
    *ext_EIGN         = pr->partitionData[model]->EIGN,
@@ -3767,10 +3765,6 @@ l4:
    return (ch);
 }
 
-
-
-
-
 /** @brief Compute the gamma rates
     
     Compute the gamma rates
@@ -3790,7 +3784,7 @@ l4:
     @todo
        Document this more.
 */
-void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
+void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
 {
   int 
     i;
@@ -4274,9 +4268,9 @@ void initModel(pllInstance *tr, double **empiricalFrequencies, partitionList * p
      if(partitions->partitionData[model]->dataType == PLL_AA_DATA && partitions->partitionData[model]->protModels == PLL_AUTO)
        partitions->partitionData[model]->autoProtModels = PLL_WAG; /* initialize by WAG per default */
       
-     initReversibleGTR(tr, partitions, model); /* Decomposition of Q matrix */
+     pllInitReversibleGTR(tr, partitions, model); /* Decomposition of Q matrix */
       /* GAMMA model init */
-     makeGammaCats(partitions->partitionData[model]->alpha, partitions->partitionData[model]->gammaRates, 4, tr->useMedian);
+     pllMakeGammaCats(partitions->partitionData[model]->alpha, partitions->partitionData[model]->gammaRates, 4, tr->useMedian);
 
      for(k = 0; k < partitions->partitionData[model]->states; k++)
        partitions->partitionData[model]->freqExponents[k] = 0.0;	

@@ -209,11 +209,11 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
     {
     case RATE_F:
       setRateModel(pr, index, value, rateNumber);  
-      initReversibleGTR(tr, pr, index);          
+      pllInitReversibleGTR(tr, pr, index);          
       break;
     case ALPHA_F:
       pr->partitionData[index]->alpha = value;
-      makeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
+      pllMakeGammaCats(pr->partitionData[index]->alpha, pr->partitionData[index]->gammaRates, 4, tr->useMedian);
       break;
     case FREQ_F:
       {
@@ -232,7 +232,7 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
         for(j = 0; j < states; j++)              
           pr->partitionData[index]->frequencies[j] = exp(pr->partitionData[index]->freqExponents[j]) / w;
         
-        initReversibleGTR(tr, pr, index);
+        pllInitReversibleGTR(tr, pr, index);
       }
       break;
     default:
@@ -2502,7 +2502,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
              if(pr->partitionData[model]->protModels == PLL_AUTO)
               {
                  pr->partitionData[model]->autoProtModels = i;
-                 initReversibleGTR(tr, pr, model);
+                 pllInitReversibleGTR(tr, pr, model);
               }
            }
           
@@ -2535,7 +2535,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
          if(pr->partitionData[model]->protModels == PLL_AUTO)
            {
              pr->partitionData[model]->autoProtModels = bestIndex[model];
-             initReversibleGTR(tr, pr, model);
+             pllInitReversibleGTR(tr, pr, model);
              printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[pr->partitionData[model]->autoProtModels], bestScores[model]);
            }
        }
@@ -2558,7 +2558,7 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
               if(pr->partitionData[model]->protModels == PLL_AUTO)
                 {
                   pr->partitionData[model]->autoProtModels = oldIndex[model];
-                  initReversibleGTR(tr, pr, model);
+                  pllInitReversibleGTR(tr, pr, model);
                 }
             }
           

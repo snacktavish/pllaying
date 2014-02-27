@@ -3163,7 +3163,7 @@ static void initGeneric(const int n, const unsigned int *valueVector, int valueV
 
 
 
-void initReversibleGTR(tree *tr, int model)
+void pllInitReversibleGTR(tree *tr, int model)
 { 
  double   
    *fracchanges      = tr->fracchanges,    
@@ -3440,7 +3440,7 @@ l4:
 
 
 
-void makeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
+void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian)
 {
   int 
     i;
@@ -3831,8 +3831,8 @@ void initModel(tree *tr, double **empiricalFrequencies)
       
                      
 #ifndef _LOCAL_DISCRETIZATION      
-      initReversibleGTR(tr, model);
-      makeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4, tr->useMedian);    
+      pllInitReversibleGTR(tr, model);
+      pllMakeGammaCats(tr->partitionData[model].alpha, tr->partitionData[model].gammaRates, 4, tr->useMedian);    
 #endif 
     }                   		       
   

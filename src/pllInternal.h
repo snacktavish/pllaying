@@ -41,12 +41,10 @@ extern void hookupFull ( nodeptr p, nodeptr q, double *z);
 extern void hookupDefault ( nodeptr p, nodeptr q);
 extern boolean whitechar ( int ch );
 extern void printLog ( pllInstance *tr);
-extern void initReversibleGTR( pllInstance *tr, partitionList *pr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
-extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
 extern void initModel ( pllInstance *tr, double **empiricalFrequencies, partitionList * partitions);
 
 extern void resetBranches ( pllInstance *tr );

@@ -1584,7 +1584,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 	    }
 	}
 
-    makeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
+    pllMakeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
   }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))

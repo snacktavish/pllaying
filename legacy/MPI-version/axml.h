@@ -956,12 +956,12 @@ extern void printStartingTree ( tree *tr, analdef *adef, boolean finalPrint );
 extern void writeInfoFile ( analdef *adef, tree *tr, double t );
 extern int main ( int argc, char *argv[] );
 extern void calcBipartitions ( tree *tr, analdef *adef, char *bestTreeFileName, char *bootStrapFileName );
-extern void initReversibleGTR (tree *tr, int model);
+extern void pllInitReversibleGTR (tree *tr, int model);
 extern double LnGamma ( double alpha );
 extern double IncompleteGamma ( double x, double alpha, double ln_gamma_alpha );
 extern double PointNormal ( double prob );
 extern double PointChi2 ( double prob, double v );
-extern void makeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
+extern void pllMakeGammaCats (double alpha, double *gammaRates, int K, boolean useMedian);
 extern void initModel ( tree *tr, double **empiricalFrequencies);
 extern void doAllInOne ( tree *tr, analdef *adef );
 

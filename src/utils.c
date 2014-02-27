@@ -2720,7 +2720,7 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
 
   //do the discretization of the gamma curve
 
-  makeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
+  pllMakeGammaCats(pr->partitionData[model]->alpha, pr->partitionData[model]->gammaRates, 4, tr->useMedian);
 
   //broadcast the changed parameters to all threads/MPI processes 
 
@@ -2845,7 +2845,7 @@ void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList 
   memcpy(pr->partitionData[model]->frequencies, f, sizeof(double) * length);
 
   //re-calculate the Q matrix 
-  initReversibleGTR(tr, pr, model);
+  pllInitReversibleGTR(tr, pr, model);
 
 
   //broadcast the new Q matrix to all threads/processes 
@@ -2916,7 +2916,7 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
     }
 
   //re-calculate the Q matrix 
-  initReversibleGTR(tr, pr, model);
+  pllInitReversibleGTR(tr, pr, model);
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
@@ -3027,7 +3027,7 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
     }
 
   //re-calculate the Q matrix 
-  initReversibleGTR(tr, pr, model);
+  pllInitReversibleGTR(tr, pr, model);
 
   //broadcast the new Q matrix to all threads/processes 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))

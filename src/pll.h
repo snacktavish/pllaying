@@ -1628,6 +1628,8 @@ extern pllAlignmentData * pllParseAlignmentFile (int fileType, const char *);
 
 /* model management */
 int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
+void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model);
+void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian);
 int pllLinkAlphaParameters(char *string, partitionList *pr);
 int pllLinkFrequencies(char *string, partitionList *pr);
 int pllLinkRates(char *string, partitionList *pr);
