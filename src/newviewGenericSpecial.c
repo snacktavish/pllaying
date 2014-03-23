@@ -373,7 +373,7 @@ static void pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, 
      for (j = 0; j < states; ++ j)
       {
         outBuffer[states * states * i + states * j] = 1.0;
-        for (k = 1; j < states; ++k)
+        for (k = 1; k < states; ++k)
          {
            outBuffer[states * states * i + states * j + k] = d[k] * EI[states * j + k];
          }
