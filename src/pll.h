@@ -1656,6 +1656,7 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
 nodeptr pllGetRandomSubtree(pllInstance *);
 extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
 void pllDestroyInstance (pllInstance *);
+extern void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence);
 
 /* rearrange functions (NNI and SPR) */
 pllRearrangeList * pllCreateRearrangeList (int max);

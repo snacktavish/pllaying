@@ -2872,6 +2872,127 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
   rax_free(a);
 }
 
+void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence)
+{
+#ifdef _USE_PTHREADS
+  size_t 
+    accumulatedOffset = 0;
+#endif
+
+  int
+    j,
+    k,
+    model,
+    globalIndex = 0;
+  
+  /* allocate an array of structs for storing ancestral prob vector info/data */
+
+  ancestralState 
+    *a = (ancestralState *)rax_malloc(sizeof(ancestralState) * tr->originalCrunchedLength);   
+
+  /* loop over partitions */
+
+  for(model = 0; model < pr->numberOfPartitions; model++)
+    {
+      int            
+        i,
+        width = pr->partitionData[model]->upper - pr->partitionData[model]->lower,
+        states = pr->partitionData[model]->states;
+      
+      /* set pointer to ancestral probability vector */
+
+#ifdef _USE_PTHREADS
+      double
+        *ancestral = &tr->ancestralVector[accumulatedOffset];
+#else
+      double 
+        *ancestral = pr->partitionData[model]->ancestralBuffer;
+#endif        
+      
+      /* loop over the sites of the partition */
+
+      for(i = 0; i < width; i++, globalIndex++)
+        {
+          double
+            equal = 1.0 / (double)states,
+            max = -1.0;
+            
+          boolean
+            approximatelyEqual = PLL_TRUE;
+
+          int
+            max_l = -1,
+            l;
+          
+          char 
+            c;
+
+          /* stiore number of states for this site */
+
+          a[globalIndex].states = states;
+
+          /* alloc space for storing marginal ancestral probabilities */
+
+          a[globalIndex].probs = (double *)rax_malloc(sizeof(double) * states);
+          
+          /* loop over states to store probabilities and find the maximum */
+
+          for(l = 0; l < states; l++)
+            {
+              double 
+                value = ancestral[states * i + l];
+
+              if(value > max)
+                {
+                  max = value;
+                  max_l = l;
+                }
+              
+              /* this is used for discretizing the ancestral state sequence, if all marginal ancestral 
+                 probabilities are approximately equal we output a ? */
+
+              approximatelyEqual = approximatelyEqual && (PLL_ABS(equal - value) < 0.000001);
+              
+              a[globalIndex].probs[l] = value;                
+            }
+
+          
+          /* figure out the discrete ancestral nucleotide */
+
+          if(approximatelyEqual)
+            c = '?';      
+          else
+            c = getStateCharacter(pr->partitionData[model]->dataType, max_l);
+          
+          a[globalIndex].c = c;   
+        }
+
+#ifdef _USE_PTHREADS
+      accumulatedOffset += width * states;
+#endif            
+    }
+
+  /* print marginal ancestral probs to terminal */
+
+  for(k = 0; k < tr->originalCrunchedLength; k++)
+    {
+      for(j = 0; j < a[k].states; j++)
+        outProbs[k * a[k].states + j] = a[k].probs[j];
+    }
+ 
+  /* print discrete state ancestrakl sequence to terminal */
+
+  for(k = 0; k < tr->originalCrunchedLength; k++)          
+      outSequence[k] = a[k].c;
+  outSequence[tr->originalCrunchedLength] = 0;
+  
+  /* free the ancestral state data structure */
+          
+  for(j = 0; j < tr->originalCrunchedLength; j++)
+    rax_free(a[j].probs);  
+
+  rax_free(a);
+}
 /* optimized function implementations */
 
 
