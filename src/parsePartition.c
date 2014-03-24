@@ -325,7 +325,7 @@ pllPartitionDump (pllQueue * partitions)
     @brief Parse a partition (model) file
 
     Parses the partition file \a filename and stores the information
-    a queue structure ::pllQueue
+    in a queue structure ::pllQueue
 
     @param filename
       Name of the partition file
@@ -360,5 +360,35 @@ pllPartitionParse (const char * filename)
   destroy_model_names();
   
   rax_free (rawdata);
+  return (partitions);
+}
+
+/** @ingroup parsePartitionFileGroup
+    @brief Parse a partition (model) file
+
+    Parses the partition information stored in string \a p and stores the information
+    in a queue structure ::pllQueue
+
+    @param p
+      Partition information string
+    
+    @return
+      Queue structure with parsed information
+*/
+pllQueue *
+pllPartitionParseString (const char * p)
+{
+  long n;
+  int input;
+  pllQueue * partitions;
+
+  n = strlen(p);
+  init_lexan (p, n);
+  input = get_next_symbol();
+
+  init_model_names();
+  partitions = parse_partition (&input);
+  destroy_model_names();
+  
   return (partitions);
 }

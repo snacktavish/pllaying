@@ -1611,6 +1611,7 @@ extern char * pllTreeToNewick ( char *treestr, pllInstance *tr, partitionList *p
 /* partition parser declarations */
 extern void  pllQueuePartitionsDestroy (pllQueue ** partitions);
 extern pllQueue * pllPartitionParse (const char * filename);
+extern pllQueue * pllPartitionParseString (const char * p);
 extern void pllPartitionDump (pllQueue * partitions);
 void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
 partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
