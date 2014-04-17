@@ -375,6 +375,7 @@ static int pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, n
      numberOfCategories = 4;
    }
 
+  for (i = 0; i < states * states; ++ i) outBuffer[i] = 0;
 
   d[0] = 1.0;
   for (j = 1; j < states; ++ j)
