@@ -579,7 +579,7 @@ pllNewickParseFile (const char * filename)
      return (0);
    }
 
-  printf ("%s\n\n", rawdata);
+  //printf ("%s\n\n", rawdata);
 
   t = pllNewickParseString (rawdata);
 
