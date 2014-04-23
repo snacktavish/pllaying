@@ -1977,6 +1977,59 @@ linkTaxa (pllInstance * pInst, pllNewickTree * nTree, int taxaExist)
   return PLL_TRUE;
 }
 
+/** @brief Get the instantaneous rate matrix
+    
+    Obtain the instantaneous rate matrix (Q) for partitionm \a model
+    of the partition list \a pr, and store it in an array \a outBuffer.
+    
+    @param tr        PLL instance
+    @param pr        List of partitions
+    @param model     Index of partition to use
+    @param outBuffer Where to store the instantaneous rate matrix 
+
+    @todo Currently, the Q matrix can be only obtained for DNA GTR data.
+
+    @return Returns \b PLL_TRUE in case of success, otherwise \b PLL_FALSE
+*/
+int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+{
+  if (pr->partitionData[model]->dataType != PLL_DNA_DATA) return (PLL_FALSE);
+
+  int  i;
+  double mean = 0;
+  double * substRates = pr->partitionData[model]->substRates;
+  double * freqs = pr->partitionData[model]->frequencies;
+  
+  /* normalize substitution rates */
+  for (i = 0; i < 6; ++ i)  substRates[i] /= substRates[5];
+
+  outBuffer[0 * 4 + 1] = (substRates[0] * freqs[1]);
+  outBuffer[0 * 4 + 2] = (substRates[1] * freqs[2]);
+  outBuffer[0 * 4 + 3] = (substRates[2] * freqs[3]);
+
+  outBuffer[1 * 4 + 0] = (substRates[0] * freqs[0]);
+  outBuffer[1 * 4 + 2] = (substRates[3] * freqs[2]);
+  outBuffer[1 * 4 + 3] = (substRates[4] * freqs[3]);
+
+  outBuffer[2 * 4 + 0] = (substRates[1] * freqs[0]);
+  outBuffer[2 * 4 + 1] = (substRates[3] * freqs[1]);
+  outBuffer[2 * 4 + 3] = (substRates[5] * freqs[3]);
+
+  outBuffer[3 * 4 + 0] = (substRates[2] * freqs[0]);
+  outBuffer[3 * 4 + 1] = (substRates[4] * freqs[1]);
+  outBuffer[3 * 4 + 2] = (substRates[5] * freqs[2]);
+
+  outBuffer[0 * 4 + 0] = -(substRates[0] * freqs[1] + substRates[1] * freqs[2] + substRates[2] * freqs[3]);
+  outBuffer[1 * 4 + 1] = -(substRates[0] * freqs[0] + substRates[3] * freqs[2] + substRates[4] * freqs[3]);
+  outBuffer[2 * 4 + 2] = -(substRates[1] * freqs[0] + substRates[3] * freqs[1] + substRates[5] * freqs[3]);
+  outBuffer[3 * 4 + 3] = -(substRates[2] * freqs[0] + substRates[4] * freqs[1] + substRates[5] * freqs[2]);
+
+  for (i = 0; i <  4; ++ i) mean         += freqs[i] * (-outBuffer[i * 4 + i]);
+  for (i = 0; i < 16; ++ i) outBuffer[i] /= mean;
+
+  return (PLL_TRUE);
+}
+
 /** @ingroup instanceLinkingGroup
     @brief Initializes the PLL tree topology according to a parsed newick tree
 
