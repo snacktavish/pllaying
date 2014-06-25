@@ -1670,6 +1670,7 @@ int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estim
 int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
 void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
 int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
+int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
 
 /* other functions */
 extern char * pllReadFile (const char *, long *);

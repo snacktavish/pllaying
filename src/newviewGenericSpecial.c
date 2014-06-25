@@ -2602,6 +2602,86 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
     }
 }
 
+/** @brief Computes the Conditional Likelihood Vector (CLV) for each rate of some internal node.
+
+    Computes the conditional likelihood vectors of node \a p for each rate, given the partition
+    index \a partition. The result is placed in the array \a outProbs, which must be pre-allocated
+    by the caller, and must be of size \a sites * categories * states * sizeof(double). The structure of
+    the resulting array is the following:
+    For each site we have \a categories * states cells of size \a double. Those cells are divided per rate
+    category, i.e. first \a states cells are the probabilities for the states of rate 1 (ordered alphabetically
+    by base name), next \a states cells for rate 2 and so on.
+
+    @param tr   PLL instance
+    @param pr     List of partitions
+    @param p Node for which we want to compute the CLV
+    @param partition   Index of the partition for which to compute the CLV
+    @param outProbs    Pre-allocated array where the result will be stored
+
+    @returns Returns \b PLL_TRUE on success, \b PLL_FALSE on failure
+
+    @todo       Fix to work with CAT
+*/
+int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs)
+{
+  int i, j, k, l;
+
+  if (tr->rateHetModel != PLL_GAMMA) return (PLL_FALSE);
+
+  int p_slot;
+  size_t states = (size_t)pr->partitionData[partition]->states;
+
+  double
+    *term = (double*)rax_malloc(sizeof(double) * states);
+
+  if(tr->useRecom)
+    p_slot = p->number;
+  else
+    p_slot = p->number - tr->mxtips - 1;
+
+  size_t width = (size_t) pr->partitionData[partition]->width;
+  double * diagptable = NULL;
+  double * rateCategories = pr->partitionData[partition]->gammaRates;
+  double * x3 = pr->partitionData[partition]->xVector[p_slot];
+  int categories = 4;
+
+  rax_posix_memalign ((void **)&diagptable, PLL_BYTE_ALIGNMENT, categories * states * states * sizeof (double));
+
+  calc_diagp_Ancestral(rateCategories, pr->partitionData[partition]->EI,  pr->partitionData[partition]->EIGN, categories, diagptable, states);
+
+  for (i = 0; i < width; ++ i)
+   {
+     double
+       *_v  = &x3[categories * states * i],
+       *clv = &outProbs[categories * states * i];
+
+     for (k = 0; k < categories; ++ k)
+      {
+        double
+         sum = 0.0,
+         *v = &(_v[states * k]);
+
+        for (l = 0; l < states; ++ l)
+         {
+           double al = 0.0;
+
+           for (j = 0; j < states; ++ j)
+             al += v[j] * diagptable[k * states * states + l * states + j];
+
+           term[l] = al;
+           sum += al;
+         }
+        for (l = 0; l < states; ++ l)
+           clv[k * categories + l] = term[l] / sum;
+      }
+   }
+
+  rax_free(term);
+  rax_free(diagptable);
+
+  return (PLL_TRUE);
+}
+
 /* this is very similar to pllUpdatePartials, except that it also computes the marginal ancestral probabilities 
    at node p. To simplify the code I am re-using newview() here to first get the likelihood vector p->x at p
    and then I deploy newviewAncestralIterative(tr); that should always only have a traversal descriptor of lenth 1,
