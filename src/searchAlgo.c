@@ -3028,6 +3028,9 @@ int
 pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
     boolean estimateModel)
 {
+  pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+  pllOptimizeBranchLengths(tr, pr, 32);
+
   unsigned int vLength = 0;
   int i, impr, bestTrav, rearrangementsMax = 0, rearrangementsMin = 0,
       thoroughIterations = 0, fastIterations = 0;
@@ -3085,7 +3088,7 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   initInfoList(&iList, 50);
 
   difference = 10.0;
-  epsilon = 0.01;
+  epsilon = tr->likelihoodEpsilon;
 
   tr->thoroughInsertion = 0;
 
@@ -3155,7 +3158,7 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
 
       saveBestTree(bestT, tr,
           pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
-      //printResult(tr, adef, PLL_FALSE);
+
       lh = previousLh = tr->likelihood;
 
       treeOptimizeRapid(tr, pr, 1, bestTrav, bt, &iList);
@@ -3167,11 +3170,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
           recallBestTree(bt, i, tr, pr);
 
           pllOptimizeBranchLengths(tr, pr, 8);
-
-          /*
-           if(adef->rellBootstrap)
-           updateRellTrees(tr, NUM_RELL_BOOTSTRAPS);
-           */
 
           difference = (
               (tr->likelihood > previousLh) ?
@@ -3211,7 +3209,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
       recallBestTree(bestT, 1, tr, pr);
       if (impr)
         {
-          //printResult(tr, adef, PLL_FALSE);
           rearrangementsMin = 1;
           rearrangementsMax = tr->stepwidth;
 
@@ -3286,7 +3283,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
     }
 
   cleanup:
-
 #ifdef _TERRACES
     {
       double
@@ -3331,7 +3327,12 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
 #endif
 
   freeInfoList(&iList);
-  //printResult(tr, adef, PLL_FALSE);
+
+  if (estimateModel) {
+      pllOptimizeModelParameters(tr, pr, epsilon);
+  }
+  pllOptimizeBranchLengths(tr, pr, 64);
+
   return 0;
 }
 
