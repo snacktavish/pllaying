@@ -1230,7 +1230,7 @@ partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignm
   partitionList * pl;
   int * newBounds;
   int k, nparts;
-
+  int tmpvar;
  
 
   dst = k = 0;
@@ -1255,15 +1255,19 @@ partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignm
            if (oi[i] == i)
             {
               swapSite (alignmentData->sequenceData, dst, i, alignmentData->sequenceCount);
-              oi[dst++] = i;
+	      tmpvar = oi[i];
+	      oi[i] = oi[dst];
+              oi[dst++] = tmpvar;
             }
-           else if (oi[i] < i)
+           else
             {
-              j = oi[i];
-              while (j < i) j = oi[j];
+              j = i;
+              while (oi[j] != i) j = oi[j];
 
               swapSite (alignmentData->sequenceData, dst, j, alignmentData->sequenceCount);
-              oi[dst++] = j;
+              tmpvar = oi[j];
+	      oi[j] = oi[dst];
+              oi[dst++] = tmpvar;
             }
          }
       }
