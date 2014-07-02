@@ -1677,12 +1677,10 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
   tr->tipNames = (char **) rax_calloc(tr->mxtips + 1, sizeof (char *));
   for (i = 0; (unsigned int)i < tr->nameHash->size; ++ i)
    {
-     printf ("NAMEHASH SIZE: %d\n", tr->nameHash->size);
      hItem = tr->nameHash->Items[i];
 
      for (; hItem; hItem = hItem->next)
       {
-        printf ("Iterating: %d\n",((nodeptr)hItem->data)->number);
         tr->tipNames[((nodeptr)hItem->data)->number] = hItem->str; 
       }
    }
