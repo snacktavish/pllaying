@@ -1622,6 +1622,7 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
 {
   int i;
   nodeptr node;
+  struct pllHashItem * hItem;
 
   if (tr->mxtips != alignmentData->sequenceCount) return (0);
 
@@ -1669,6 +1670,21 @@ pllLoadAlignment (pllInstance * tr, pllAlignmentData * alignmentData, partitionL
        memcpy (tr->yVector[node->number], alignmentData->sequenceData[i], alignmentData->sequenceLength );
      else
        tr->yVector[node->number] = alignmentData->sequenceData[i];
+   }
+
+  /* Populate tipNames */
+
+  tr->tipNames = (char **) rax_calloc(tr->mxtips + 1, sizeof (char *));
+  for (i = 0; (unsigned int)i < tr->nameHash->size; ++ i)
+   {
+     printf ("NAMEHASH SIZE: %d\n", tr->nameHash->size);
+     hItem = tr->nameHash->Items[i];
+
+     for (; hItem; hItem = hItem->next)
+      {
+        printf ("Iterating: %d\n",((nodeptr)hItem->data)->number);
+        tr->tipNames[((nodeptr)hItem->data)->number] = hItem->str; 
+      }
    }
 
   return (1);
@@ -2453,6 +2469,7 @@ pllDestroyInstance (pllInstance * tr)
   rax_free (tr->tree_string);
   rax_free (tr->tree0);
   rax_free (tr->tree1);
+  rax_free (tr->tipNames);
   
   pllClearRearrangeHistory (tr);
 

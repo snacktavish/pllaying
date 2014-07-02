@@ -179,6 +179,7 @@ static int treeFlushLenString (const char *fp, int *position)
   return 1;
 } 
 
+/*
 static int treeFindTipByLabelString(char  *str, pllInstance *tr)                    
 {
   int lookup = lookupWord(str, tr->nameHash);
@@ -276,7 +277,6 @@ static boolean addElementLenString(const char *fp, pllInstance *tr, nodeptr p, i
 
 
 
-
 void treeReadTopologyString(char *treeString, pllInstance *tr)
 { 
   char 
@@ -356,3 +356,4 @@ void treeReadTopologyString(char *treeString, pllInstance *tr)
   printf("Tree parsed\n");
 
 } 
+*/

@@ -372,6 +372,19 @@ typedef struct
 }
   stringHashtable;
 
+struct pllHashItem
+{
+  void * data;
+  char * str;
+  struct pllHashItem * next;
+};
+
+typedef struct pllHashTable
+{
+  unsigned int size;
+  struct pllHashItem ** Items;
+} pllHashTable;
+
 
 
 
@@ -1146,7 +1159,8 @@ typedef  struct  {
 
 //#endif
   
-  stringHashtable  *nameHash;
+  pllHashTable     *nameHash;
+  char           ** tipNames;
 
   char             *secondaryStructureInput;
 
@@ -1671,6 +1685,13 @@ int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int
 void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
 int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
+
+/* hash functions */
+unsigned int pllHashString (const char * s, unsigned int size);
+int pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item);
+struct pllHashTable * pllHashInit (unsigned int n);
+int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
+void pllHashDestroy (struct pllHashTable ** hTable, int);
 
 /* node specific functions */
 nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);

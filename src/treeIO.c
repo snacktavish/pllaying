@@ -544,7 +544,7 @@ static boolean  treeFlushLabel (FILE *fp)
 
 
 
-
+/*
 static int treeFindTipByLabelString(char  *str, pllInstance *tr)                    
 {
   int lookup = lookupWord(str, tr->nameHash);
@@ -575,7 +575,7 @@ static int treeFindTipName(FILE *fp, pllInstance *tr)
 
   return  n;
 } 
-
+*/
 
 
 static void  treeEchoContext (FILE *fp1, FILE *fp2, int n)
@@ -669,6 +669,7 @@ static boolean treeNeedCh (FILE *fp, int c1, char *where)
 
 
 
+/*
 static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean readBranchLengths, boolean readNodeLabels, int *lcount)
 {   
   nodeptr  q;
@@ -710,9 +711,7 @@ static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean read
       
 	      assert(val == 1);
 
-	      /*printf("LABEL %s Number %d\n", label, support);*/
 	      p->support = q->support = support;
-	      /*printf("%d %d %d %d\n", p->support, q->support, p->number, q->number);*/
 	      assert(p->number > tr->mxtips && q->number > tr->mxtips);
 	      *lcount = *lcount + 1;
 	    }
@@ -735,7 +734,6 @@ static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean read
       if (! treeNeedCh(fp, ':', "in"))                 return PLL_FALSE;
       if (! treeProcessLength(fp, &branch))            return PLL_FALSE;
       
-      /*printf("Branch %8.20f %d\n", branch, tr->numBranches);*/
       hookupFull(p, q, &branch);
     }
   else
@@ -747,7 +745,7 @@ static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean read
     }
   return PLL_TRUE;          
 } 
-
+*/
 
 
 
@@ -846,7 +844,7 @@ static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths
   return  start;
 }
 
-
+/*
 int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly)
 {
   nodeptr  
@@ -916,7 +914,7 @@ int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNo
 	    assert(0);	    
 	}
       else 
-	{                                    /*  A rooted format */
+	{    
 	  tr->rooted = PLL_TRUE;
 	  if (ch != EOF)  (void) ungetc(ch, fp);
 	}	
@@ -971,7 +969,6 @@ int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNo
 
 
 
-
 void getStartingTree(pllInstance *tr)
 {
   FILE *treeFile = myfopen(tree_file, "rb");
@@ -985,5 +982,6 @@ void getStartingTree(pllInstance *tr)
   tr->start = tr->nodep[1];
 }
 
+*/
 
 

@@ -11,7 +11,6 @@
 #include "pll.h"
 #include "genericParallelization.h"
 #include "errcodes.h"
-#include "hash.h"
 #include "lexer.h"
 #include "parsePartition.h"
 #include "mem_alloc.h"
@@ -92,10 +91,11 @@ extern int initBestTree ( bestlist *bt, int newkeep, int numsp );
 extern void resetBestTree ( bestlist *bt );
 extern boolean freeBestTree ( bestlist *bt );
 
-extern int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly);
+
+/* extern int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly);
+extern void getStartingTree (pllInstance *tr); 
 extern void treeReadTopologyString(char *treeString, pllInstance *tr);
-extern void getStartingTree (pllInstance *tr);
-extern double treeLength (pllInstance *tr, int model);
+extern double treeLength (pllInstance *tr, int model);*/
 extern double evaluatePartialGeneric (pllInstance *, partitionList *pr, int i, double ki, int _model);
 extern void newviewAncestralIterative(pllInstance *tr, partitionList *pr);
 extern void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pllInstance *tr, partitionList *pr);

@@ -1396,7 +1396,7 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
 
-
+/*
 static void readCheckpoint(pllInstance *tr, partitionList *pr)
 {
   int  
@@ -1405,9 +1405,9 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
   FILE 
     *f = myfopen(binaryCheckpointInputName, "r");
-
+*/
   /* cdta */   
-
+/*
   myfread(&(tr->ckp), sizeof(checkPointState), 1, f);
 
 
@@ -1490,9 +1490,9 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
 
 
   accumulatedTime = tr->ckp.accumulatedTime;
-
+*/
   /* printf("Accumulated time so far: %f\n", accumulatedTime); */
-
+/*
   tr->optimizeRateCategoryInvocations = tr->ckp.tr_optimizeRateCategoryInvocations;
 
 
@@ -1542,16 +1542,16 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
   myfread(tr->patrat, sizeof(double), tr->originalCrunchedLength, f);
   myfread(tr->patratStored, sizeof(double), tr->originalCrunchedLength, f);
 
-
+*/
   /* need to read this as well in checkpoints, otherwise the branch lengths 
      in the output tree files will be wrong, not the internal branch lengths though */
-
+/*
   //TODO: Same problem as writing the checkpoint
   //myfread(tr->fracchanges,  sizeof(double), pr->numberOfPartitions, f);
   myfread(&(tr->fracchange),   sizeof(double), 1, f);
-
+*/
   /* pInfo */
-
+/*
   for(model = 0; model < pr->numberOfPartitions; model++)
   {
     int 
@@ -1615,7 +1615,7 @@ void restart(pllInstance *tr, partitionList *pr)
       assert(0);
   }
 }
-
+*/
 
 /* The number of maximum smoothing iterations is given explicitely */
 /** @brief Optimize branch lenghts and evaluate likelihood of topology
