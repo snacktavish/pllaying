@@ -2981,6 +2981,8 @@ void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double 
     k,
     model,
     globalIndex = 0;
+     
+  pllUpdatePartialsAncestral(tr, pr, p);
   
   /* allocate an array of structs for storing ancestral prob vector info/data */
 
