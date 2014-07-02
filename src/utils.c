@@ -2060,6 +2060,27 @@ pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * newick, int useDefa
     resetBranches (tr);
 }
 
+/** @brief Get the node oriented pointer from a round-about node
+
+    Returns the pointer of the round-about node $p$ that has the orientation, i.e.
+    has the \a x flag set to 1. In case a tip is passed, then the returned pointer
+    is the same as the input.
+
+    @param pInst  PLL instance
+    @param p      One of the three pointers of a round-about node
+
+    @return  Returns the the pointer that has the orientation
+*/
+nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p)
+{
+  if (p->number <= pInst->mxtips || p->x) return p;
+
+  if (p->next->x) return p->next;
+
+  return p->next->next;
+}
+
+
 //void
 //pllTreeInitTopologyNewick (pllInstance * tr, pllNewickTree * nt, int useDefaultz)
 //{

@@ -1672,6 +1672,9 @@ void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, n
 int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
 
+/* node specific functions */
+nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);
+
 /* other functions */
 extern char * pllReadFile (const char *, long *);
 extern int * pllssort1main (char ** x, int n);
