@@ -1014,11 +1014,11 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 {
   double lz, term;       
   double  d[3];
-  double   *x1, *x2, *lVector; 
+  double   *x1, *x2, *lVector = NULL; 
   int scale = 0, k;
   traversalInfo *trav = &ti[0];
  
-  lVector = rax_posix_memalign ((void **) &lVector, PLL_BYTE_ALIGNMENT, sizeof(double) * 4 * mxtips);    
+  rax_posix_memalign ((void **) &lVector, PLL_BYTE_ALIGNMENT, sizeof(double) * 4 * mxtips);    
 
   assert(isTip(trav->pNumber, mxtips));
      
