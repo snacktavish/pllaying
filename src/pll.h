@@ -1653,11 +1653,12 @@ void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *
 void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
+int pllGetInstRateMatrix (partitionList * pr, int model, double * outBuffer);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
 double pllGetAlpha (partitionList * pr, int pid);
 void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
-extern void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer);
-extern void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
+extern void pllGetBaseFrequencies(partitionList * pr, int model, double * outBuffer);
+extern void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 
 /* tree topology */
@@ -1683,7 +1684,6 @@ void pllClearRearrangeHistory (pllInstance * tr);
 int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
 int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
 void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
-int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer);
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
 
 /* hash functions */

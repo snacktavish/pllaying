@@ -132,7 +132,7 @@ const union __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)))
 #endif
 
 static int pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
-static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
+static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, double * outBuffer);
 
 extern const char dnaStateNames[4];     /**< @brief Array that contains letters for the four DNA base-pairs, i.e. 0 = A, 1 = C, 2 = G, 3 = T */
 extern const char protStateNames[20];   /**< @brief Array that contains letters for the 20 AA base-pairs */
@@ -309,7 +309,7 @@ int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int
    }
 
   if (pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)
-    return (pllGetTransitionMatrixLG4 (pr, p, model, rate, outBuffer));
+    return (pllGetTransitionMatrixLG4 (pr, p, model, outBuffer));
     
     
   return (pllGetTransitionMatrixNormal (tr, pr, p, model, rate, outBuffer));
@@ -317,7 +317,7 @@ int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int
 
 
 /* TODO: Fix this function according to pllGetTransitionMatrixNormal */
-static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, int rate, double * outBuffer)
+static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, double * outBuffer)
 {
   int
     i, j, k,
@@ -352,8 +352,8 @@ static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, 
 static int pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer)
 {
   int 
-    i, j, k, l,
-    numberOfCategories,
+    i, j, k,
+    /* numberOfCategories, */
     states = pr->partitionData[model]->states;
   double
     * d = (double *)rax_malloc(sizeof(double) * states),
@@ -367,12 +367,12 @@ static int pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, n
   if (tr->rateHetModel == PLL_CAT)
    {
      rptr               = pr->partitionData[model]->perSiteRates;
-     numberOfCategories = pr->partitionData[model]->numberOfCategories;
+     /* numberOfCategories = pr->partitionData[model]->numberOfCategories; */
    }
   else
    {
      rptr               = pr->partitionData[model]->gammaRates;
-     numberOfCategories = 4;
+     /* numberOfCategories = 4; */
    }
 
   for (i = 0; i < states * states; ++ i) outBuffer[i] = 0;
@@ -2624,7 +2624,7 @@ void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
 */
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs)
 {
-  int i, j, k, l;
+  size_t i, j, k, l;
 
   if (tr->rateHetModel != PLL_GAMMA) return (PLL_FALSE);
 
@@ -2643,7 +2643,7 @@ int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, d
   double * diagptable = NULL;
   double * rateCategories = pr->partitionData[partition]->gammaRates;
   double * x3 = pr->partitionData[partition]->xVector[p_slot];
-  int categories = 4;
+  size_t categories = 4;
 
   rax_posix_memalign ((void **)&diagptable, PLL_BYTE_ALIGNMENT, categories * states * states * sizeof (double));
 

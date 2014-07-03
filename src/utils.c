@@ -84,6 +84,7 @@ static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
 */
 /***************** UTILITY FUNCTIONS **************************/
 
+#if (!defined(_SVID_SOURCE) && !defined(_BSD_SOURCE) && !defined(_POSIX_C_SOURCE) && !defined(_XOPEN_SOURCE) && !defined(_POSIX_SOURCE))
 static char *
 my_strtok_r (char * s, const char * delim, char **save_ptr)
 {  
@@ -113,7 +114,8 @@ my_strtok_r (char * s, const char * delim, char **save_ptr)
    }
    
   return token;
-}  
+}
+#endif
 
 #if (defined(_SVID_SOURCE) || defined(_BSD_SOURCE) || defined(_POSIX_C_SOURCE) || defined(_XOPEN_SOURCE) || defined(_POSIX_SOURCE))
 #define STRTOK_R strtok_r
@@ -2009,7 +2011,7 @@ linkTaxa (pllInstance * pInst, pllNewickTree * nTree, int taxaExist)
 
     @return Returns \b PLL_TRUE in case of success, otherwise \b PLL_FALSE
 */
-int pllGetInstRateMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+int pllGetInstRateMatrix (partitionList * pr, int model, double * outBuffer)
 {
   if (pr->partitionData[model]->dataType != PLL_DNA_DATA) return (PLL_FALSE);
 
@@ -2875,7 +2877,7 @@ double pllGetAlpha (partitionList * pr, int pid)
     @param model     Index of the partition for which we want to get the base frequencies
     @param outBuffer Buffer where to store the base frequencies
 */
-void pllGetBaseFrequencies(pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+void pllGetBaseFrequencies(partitionList * pr, int model, double * outBuffer)
 {
   memcpy (outBuffer, pr->partitionData[model]->frequencies, pr->partitionData[model]->states * sizeof (double));
 }
@@ -3039,7 +3041,7 @@ int pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr
     @param model     Index of partition for which we want to get the substitution rates
     @param outBuffer Buffer where to store the substitution rates.
 */
-void pllGetSubstitutionMatrix (pllInstance * tr, partitionList * pr, int model, double * outBuffer)
+void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer)
 {
   int 
     rates,

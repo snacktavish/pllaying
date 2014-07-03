@@ -236,12 +236,12 @@ static double getBranchLength(pllInstance *tr, partitionList *pr, int perGene, n
 }
 
 
-  
+/*  
 static char *TreeInner2StringREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport, boolean printInnerNodes)
-{
+{*/
   /* TODOFER simplify this, should be used just to print inner nodes for testing */
-  char  *nameptr;            
+/*  char  *nameptr;            
 
   if(isTip(p->number, tr->mxtips)) 
   {	       	  
@@ -318,7 +318,7 @@ static char *TreeInner2StringREC(char *treestr, pllInstance *tr, partitionList *
   while (*treestr) treestr++;
   return  treestr;
 }
-
+*/
 
 static char *pllTreeToNewickREC(char *treestr, pllInstance *tr, partitionList *pr, nodeptr p, boolean printBranchLengths, boolean printNames,
 			    boolean printLikelihood, boolean rellTree, boolean finalPrint, int perGene, boolean branchLabelSupport, boolean printSHSupport)
@@ -432,37 +432,37 @@ char *pllTreeToNewick(char *treestr, pllInstance *tr, partitionList *pr, nodeptr
 /*  1.0.A  Processing of quotation marks in comment removed
  */
 
+/*
 static int treeFinishCom (FILE *fp, char **strp)
 {
   int  ch;
   
   while ((ch = getc(fp)) != EOF && ch != ']') {
-    if (strp != NULL) *(*strp)++ = ch;    /* save character  */
-    if (ch == '[') {                      /* nested comment; find its end */
+    if (strp != NULL) *(*strp)++ = ch;
+    if (ch == '[') {
       if ((ch = treeFinishCom(fp, strp)) == EOF)  break;
-      if (strp != NULL) *(*strp)++ = ch;  /* save closing ]  */
+      if (strp != NULL) *(*strp)++ = ch;
     }
   }
   
-  if (strp != NULL) **strp = '\0';        /* terminate string  */
+  if (strp != NULL) **strp = '\0';
   return  ch;
-} /* treeFinishCom */
+}
 
-
-static int treeGetCh (FILE *fp)         /* get next nonblank, noncomment character */
-{ /* treeGetCh */
+static int treeGetCh (FILE *fp)
+{ 
   int  ch;
 
   while ((ch = getc(fp)) != EOF) {
     if (whitechar(ch)) ;
-    else if (ch == '[') {                   /* comment; find its end */
+    else if (ch == '[') {
       if ((ch = treeFinishCom(fp, (char **) NULL)) == EOF)  break;
     }
     else  break;
   }
   
   return  ch;
-} /* treeGetCh */
+}
 
 
 static boolean treeLabelEnd (int ch)
@@ -536,15 +536,12 @@ static boolean  treeGetLabel (FILE *fp, char *lblPtr, int maxlen)
   return lblfound;
 }
 
-
 static boolean  treeFlushLabel (FILE *fp)
 { 
   return  treeGetLabel(fp, (char *) NULL, (int) 0);
 } 
 
 
-
-/*
 static int treeFindTipByLabelString(char  *str, pllInstance *tr)                    
 {
   int lookup = lookupWord(str, tr->nameHash);
@@ -578,8 +575,9 @@ static int treeFindTipName(FILE *fp, pllInstance *tr)
 */
 
 
+/*
 static void  treeEchoContext (FILE *fp1, FILE *fp2, int n)
-{ /* treeEchoContext */
+{
   int      ch;
   boolean  waswhite;
   
@@ -596,14 +594,14 @@ static void  treeEchoContext (FILE *fp1, FILE *fp2, int n)
     
     if (ch > '\0') {putc(ch, fp2); n--;}
   }
-} /* treeEchoContext */
+}
 
 
 static boolean treeProcessLength (FILE *fp, double *dptr)
 {
   int  ch;
   
-  if ((ch = treeGetCh(fp)) == EOF)  return PLL_FALSE;    /*  Skip comments */
+  if ((ch = treeGetCh(fp)) == EOF)  return PLL_FALSE;
   (void) ungetc(ch, fp);
   
   if (fscanf(fp, "%lf", dptr) != 1) {
@@ -615,7 +613,6 @@ static boolean treeProcessLength (FILE *fp, double *dptr)
   
   return  PLL_TRUE;
 }
-
 
 static int treeFlushLen (FILE  *fp)
 {
@@ -638,7 +635,6 @@ static int treeFlushLen (FILE  *fp)
   if (ch != EOF) (void) ungetc(ch, fp);
   return 1;
 } 
-
 
 
 
@@ -669,7 +665,6 @@ static boolean treeNeedCh (FILE *fp, int c1, char *where)
 
 
 
-/*
 static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean readBranchLengths, boolean readNodeLabels, int *lcount)
 {   
   nodeptr  q;
@@ -745,16 +740,6 @@ static boolean addElementLen (FILE *fp, pllInstance *tr, nodeptr p, boolean read
     }
   return PLL_TRUE;          
 } 
-*/
-
-
-
-
-
-
-
-
-
 
 static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths, boolean readConstraint, int numBranches)
 {
@@ -789,7 +774,7 @@ static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths
       assert(0);
     }
 
-  q = p->next->back;                  /* remove p from tree */
+  q = p->next->back;
   r = p->next->next->back;
   assert(p->back == (nodeptr)NULL);
     
@@ -819,14 +804,14 @@ static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths
 
   if(tr->ntips > 2 && p->number != n) 
     {    	
-      q = tr->nodep[n];            /* transfer last node's conections to p */
+      q = tr->nodep[n];
       r = q->next;
       s = q->next->next;
       
       if(readConstraint && tr->grouped)	
 	tr->constraintVector[p->number] = tr->constraintVector[q->number];       
       
-      hookup(p,             q->back, q->z, numBranches);   /* move connections to p */
+      hookup(p,             q->back, q->z, numBranches);
       hookup(p->next,       r->back, r->z, numBranches);
       hookup(p->next->next, s->back, s->z, numBranches);
       
@@ -844,7 +829,6 @@ static nodeptr uprootTree (pllInstance *tr, nodeptr p, boolean readBranchLengths
   return  start;
 }
 
-/*
 int treeReadLen (FILE *fp, pllInstance *tr, boolean readBranches, boolean readNodeLabels, boolean topologyOnly)
 {
   nodeptr  

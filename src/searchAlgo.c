@@ -64,7 +64,7 @@ static void pllCreateSprInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr
 static void pllCreateNniInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr);
 static void pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
 static void pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
-static void pllRollbackSPR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
+static void pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri);
 
 extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
@@ -1313,6 +1313,7 @@ void restoreTreeFast(pllInstance *tr, partitionList *pr)
   testInsertRestoreBIG(tr, pr, tr->removeNode, tr->insertNode);
 }
 
+/*
 static void myfwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
   size_t  
@@ -1344,13 +1345,8 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
 
   tr->start = tr->nodep[nodeNumber];
 
-  /*printf("Start: %d %d\n", tr->start->number, nodeNumber);*/
 
   myfread(&startAddress, sizeof(nodeptr), 1, f);
-
-  /*printf("%u %u\n", (size_t)startAddress, (size_t)tr->nodeBaseAddress);*/
-
-
 
   myfread(tr->nodeBaseAddress, sizeof(node), x, f);
 
@@ -1396,7 +1392,6 @@ static void readTree(pllInstance *tr, partitionList *pr, FILE *f)
   printBothOpen("RAxML Restart with likelihood: %1.50f\n", tr->likelihood);
 }
 
-/*
 static void readCheckpoint(pllInstance *tr, partitionList *pr)
 {
   int  
@@ -2716,7 +2711,7 @@ pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranch
       Rollback information
 */
 static void
-pllRollbackSPR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
+pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri)
 {
   int numBranches;
 
@@ -2787,7 +2782,7 @@ pllRearrangeRollback (pllInstance * tr, partitionList * pr)
        pllRollbackNNI (tr, pr, ri);
        break;
      case PLL_REARRANGE_SPR:
-       pllRollbackSPR (tr, pr, ri);
+       pllRollbackSPR (pr, ri);
        break;
      default:
        rax_free (ri);

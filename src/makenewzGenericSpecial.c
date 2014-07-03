@@ -1982,7 +1982,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
 {
   int i;
   double
-    *d, *d_start,
+    *d, *d_start = NULL,
     inv_Li, dlnLidlz, d2lnLidlz2,
     dlnLdlz = 0.0,
     d2lnLdlz2 = 0.0;
@@ -2220,7 +2220,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
     int *wgt, volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *sumtable)
 {
   int i, l;
-  double *d1, *d_start, *sum;
+  double *d1, *d_start = NULL, *sum;
   double 
     e[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 
     s[20] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT))), 

@@ -775,7 +775,7 @@ static double evaluatePartialGTRGAMMAPROT(int i, int counter,  traversalInfo *ti
   double   *x1, *x2; 
   int scale = 0, k, l, j;
   double 
-    *lVector,
+    *lVector = NULL,
     myEI[400]  __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   traversalInfo 
@@ -854,7 +854,7 @@ static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, do
   double   *x1, *x2; 
   int scale = 0, k, l, j;
   double 
-    *lVector,
+    *lVector = NULL,
     myEI[16]  __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
 
   traversalInfo 
@@ -1164,7 +1164,7 @@ static double evaluatePartialGTRCATPROT(int i, double ki, int counter,  traversa
 {
   double lz, term;       
   double  d[20];
-  double   *x1, *x2, *lVector; 
+  double   *x1, *x2, *lVector = NULL; 
   int scale = 0, k;
 
   traversalInfo *trav = &ti[0];
