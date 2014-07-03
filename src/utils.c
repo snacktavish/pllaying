@@ -74,8 +74,9 @@
 #include "globalVariables.h"
 
 static void pllTreeInitDefaults (pllInstance * tr, int tips);
+#if (!defined(_FINE_GRAIN_MPI) && !defined(_USE_PTHREADS))
 static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
-
+#endif
 
 /** @defgroup instanceLinkingGroup Linking topology, partition scheme and alignment to the PLL instance
     
@@ -867,6 +868,7 @@ void pllSetBranchLength (pllInstance *tr, nodeptr p, int partition_id, double bl
   p->z[partition_id] = z;
 }
 
+#if (!defined(_FINE_GRAIN_MPI) && !defined(_USE_PTHREADS))
 static void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
 { 
   size_t
@@ -895,6 +897,7 @@ static void initializePartitionsSequential(pllInstance *tr, partitionList *pr)
 
   initMemorySavingAndRecom(tr, pr);
 }
+#endif
 
 
 /* interface to outside  */
