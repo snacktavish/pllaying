@@ -1663,7 +1663,7 @@ pllOptimizeBranchLengths (pllInstance *tr, partitionList *pr, int maxSmoothItera
 
     @image html nni.png "In case \a swap is set to \b PLL_NNI_P_NEXT then the dashed red edge between \a p and \a r is removed and the blue edges are created. If \a swap is set to \b PLL_INIT_P_NEXTNEXT then the dashed red edge between \a p and \a s is removed and the green edges are created. In both cases the black dashed edge is removed"
 */
-int NNI(pllInstance * tr, nodeptr p, int swap)
+int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap)
 {
   nodeptr       q, r;
 
@@ -1759,7 +1759,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 
 	/* Save the scaling factor */
 	// Now try to do an NNI move of type 1
-	NNI(tr, p, PLL_NNI_P_NEXT);
+	pllTopologyPerformNNI(tr, p, PLL_NNI_P_NEXT);
 	double lh1 = tr->likelihood;
 	/* Update branch lengths */
 	pllUpdatePartials(tr, pr, p, PLL_FALSE);
@@ -1782,7 +1782,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 #endif
 
 	/* Restore previous NNI move */
-	NNI(tr, p, PLL_NNI_P_NEXT);
+	pllTopologyPerformNNI(tr, p, PLL_NNI_P_NEXT);
 	/* Restore the old branch length */
 	for (i = 0; i < pr->numberOfPartitions; i++) {
 		p->z[i] = z0[i];
@@ -1797,7 +1797,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 	printf("Likelihood after restoring from NNI 1: %f\n", tr->likelihood);
 #endif
 	/* Try to do an NNI move of type 2 */
-	NNI(tr, p, 2);
+	pllTopologyPerformNNI(tr, p, 2);
 	double lh2 = tr->likelihood;
 	/* Update branch lengths */
 	pllUpdatePartials(tr, pr, p, PLL_FALSE);
@@ -1822,7 +1822,7 @@ nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p,
 #endif
 
 	/* Restore previous NNI move */
-	NNI(tr, p, 2);
+	pllTopologyPerformNNI(tr, p, 2);
 	pllUpdatePartials(tr, pr, p, PLL_FALSE);
 	pllUpdatePartials(tr, pr, p->back, PLL_FALSE);
 	/* Restore the old branch length */
@@ -1942,7 +1942,7 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 		int numNNI2Apply = ceil(numNonConflictNNI * delta);
 		for (i = 0; i < numNNI2Apply; i++) {
 			// Just do the topological change
-			NNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
+			pllTopologyPerformNNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
 			pllUpdatePartials(tr, pr, nonConfNNIList[i].p, PLL_FALSE);
 			pllUpdatePartials(tr, pr, nonConfNNIList[i].p->back, PLL_FALSE);
 			// Apply the store branch length
@@ -1967,7 +1967,7 @@ int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel) {
 			printf("Rolling back the tree\n");
 #endif
 			for (i = 0; i < numNNI2Apply; i++) {
-				NNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
+				pllTopologyPerformNNI(tr, nonConfNNIList[i].p, nonConfNNIList[i].nniType);
 				// Restore the branch length
 				int j;
 				for (j = 0; j < pr->numberOfPartitions; j++) {
@@ -2448,7 +2448,7 @@ pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapT
    }
 
   /* perform NNI */
-  NNI (tr, p, swapType);
+  pllTopologyPerformNNI(tr, p, swapType);
   /* recompute the likelihood vectors of the two subtrees rooted at p and p->back,
      optimize the branch lengths and evaluate the likelihood  */
   pllUpdatePartials (tr, pr, p,       PLL_FALSE);
@@ -2458,7 +2458,7 @@ pllTestNNILikelihood (pllInstance * tr, partitionList * pr, nodeptr p, int swapT
   lh = tr->likelihood;
 
   /* restore topology */
-  NNI (tr, p, swapType);
+  pllTopologyPerformNNI(tr, p, swapType);
   pllUpdatePartials (tr, pr, p,       PLL_FALSE);
   pllUpdatePartials (tr, pr, p->back, PLL_FALSE);
   //update (tr, pr, p);
@@ -2744,7 +2744,7 @@ pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
 {
   nodeptr p = ri->NNI.origin;
 
-  NNI (tr, p, ri->NNI.swapType);
+  pllTopologyPerformNNI(tr, p, ri->NNI.swapType);
   pllUpdatePartials (tr, pr, p,       PLL_FALSE);
   pllUpdatePartials (tr, pr, p->back, PLL_FALSE);
   update (tr, pr, p);
@@ -2829,7 +2829,7 @@ pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rea
   switch (rearr->rearrangeType)
    {
      case PLL_REARRANGE_NNI:
-       NNI (tr, rearr->NNI.originNode, rearr->NNI.swapType);
+       pllTopologyPerformNNI(tr, rearr->NNI.originNode, rearr->NNI.swapType);
        pllUpdatePartials (tr, pr, rearr->NNI.originNode, PLL_FALSE);
        pllUpdatePartials (tr, pr, rearr->NNI.originNode->back, PLL_FALSE);
        update (tr, pr, rearr->NNI.originNode);

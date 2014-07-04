@@ -1685,6 +1685,7 @@ int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estim
 int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
 void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
+extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 
 /* hash functions */
 unsigned int pllHashString (const char * s, unsigned int size);
@@ -1699,6 +1700,7 @@ nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);
 /* other functions */
 extern char * pllReadFile (const char *, long *);
 extern int * pllssort1main (char ** x, int n);
+extern node ** pllGetInnerBranchEndPoints (pllInstance * tr);
 
 /* ---------------- */
 

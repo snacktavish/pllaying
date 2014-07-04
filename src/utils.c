@@ -74,6 +74,7 @@
 #include "globalVariables.h"
 
 static void pllTreeInitDefaults (pllInstance * tr, int tips);
+static void getInnerBranchEndPointsRecursive (nodeptr p, int tips, int * i, node **nodes);
 #if (!defined(_FINE_GRAIN_MPI) && !defined(_USE_PTHREADS))
 static void initializePartitionsSequential(pllInstance *tr, partitionList *pr);
 #endif
@@ -3557,5 +3558,35 @@ pllReadFile (const char * filename, long * filesize)
   fclose (fp);
 
   return (rawdata);
+}
+
+static void getInnerBranchEndPointsRecursive (nodeptr p, int tips, int * i, node **nodes)
+{
+  if (!isTip (p->next->back->number, tips))
+   {
+     nodes[(*i)++] = p->next;
+     getInnerBranchEndPointsRecursive(p->next->back, tips, i, nodes);
+   }
+  if (!isTip (p->next->next->back->number, tips))
+   {
+     nodes[(*i)++] = p->next->next;
+     getInnerBranchEndPointsRecursive(p->next->next->back, tips, i, nodes);
+   }
+}
+
+node ** pllGetInnerBranchEndPoints (pllInstance * tr)
+{
+  node ** nodes;
+  nodeptr p;
+  int i = 0;
+
+  nodes = (node **) rax_calloc(tr->mxtips - 3, sizeof(node *));
+
+  p = tr->start;
+  assert (isTip(p->number, tr->mxtips));
+
+  getInnerBranchEndPointsRecursive(p->back, tr->mxtips, &i, nodes);
+
+  return nodes;
 }
 
