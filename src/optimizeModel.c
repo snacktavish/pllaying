@@ -2748,8 +2748,12 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     }                   
 
     if(tr->likelihood < currentLikelihood)
-      printf("%f %f\n", tr->likelihood, currentLikelihood);
-    assert(tr->likelihood >= currentLikelihood);
+     {
+      printf("%.20f %.20f\n", tr->likelihood, currentLikelihood);
+      printf("Difference: %.20f\n",tr->likelihood - currentLikelihood);
+    }
+    assert (tr->likelihood - currentLikelihood > 0.000000000000001);
+    //assert(tr->likelihood > currentLikelihood);
 
     printAAmatrix(pr, fabs(currentLikelihood - tr->likelihood));
   }

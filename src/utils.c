@@ -1702,21 +1702,22 @@ pllCreateInstance (pllInstanceAttr * attr)
 
   tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
-  tr->threadID     = 0;
-  tr->rateHetModel = attr->rateHetModel;
-  tr->fastScaling  = attr->fastScaling;
-  tr->saveMemory   = attr->saveMemory;
-  tr->useRecom     = attr->useRecom;
+  tr->threadID          = 0;
+  tr->rateHetModel      = attr->rateHetModel;
+  tr->fastScaling       = attr->fastScaling;
+  tr->saveMemory        = attr->saveMemory;
+  tr->useRecom          = attr->useRecom;
+  tr->likelihoodEpsilon = 0.01;
   
   tr->randomNumberSeed = attr->randomNumberSeed;
 
   /* remove it from the library */
-  tr->useMedian    = PLL_FALSE;
+  tr->useMedian         = PLL_FALSE;
 
-  tr->maxCategories = (attr->rateHetModel == PLL_GAMMA) ? 4 : 25;
+  tr->maxCategories     = (attr->rateHetModel == PLL_GAMMA) ? 4 : 25;
 
-  tr->numberOfThreads  = attr->numberOfThreads;
-  tr->rearrangeHistory = NULL;
+  tr->numberOfThreads   = attr->numberOfThreads;
+  tr->rearrangeHistory  = NULL;
 
   /* Lock the slave processors at this point */
 #ifdef _FINE_GRAIN_MPI
