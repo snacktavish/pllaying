@@ -1755,7 +1755,7 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
   tr->tree_string = (char *) rax_calloc ( tr->treeStringLength, sizeof(char));
   tr->tree0 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
   tr->tree1 = (char*)rax_calloc((size_t)tr->treeStringLength, sizeof(char));
-
+  tr->constraintVector = (int *)rax_malloc((2 * tr->mxtips) * sizeof(int));
   
   p0 = (nodeptr) rax_malloc ((tips + 3 * inner) * sizeof (node));
   assert (p0);
@@ -2475,7 +2475,7 @@ pllDestroyInstance (pllInstance * tr)
   rax_free (tr->tree0);
   rax_free (tr->tree1);
   rax_free (tr->tipNames);
-  
+  rax_free (tr->constraintVector);
   pllClearRearrangeHistory (tr);
 
   rax_free (tr);

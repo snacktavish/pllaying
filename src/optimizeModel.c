@@ -2527,8 +2527,6 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
             }
        }
 
-      printBothOpen("\n\n");
-      
       /* set the protein model of PLL_AUTO partitions to the best computed and reset model parameters */
       for(model = 0; model < pr->numberOfPartitions; model++)
        {           
@@ -2536,10 +2534,8 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
            {
              pr->partitionData[model]->autoProtModels = bestIndex[model];
              pllInitReversibleGTR(tr, pr, model);
-             printBothOpen("Partition: %d best-scoring AA model: %s likelihood %f\n", model, protModels[pr->partitionData[model]->autoProtModels], bestScores[model]);
            }
        }
-      printBothOpen("\n\n");
             
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
       pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
@@ -2755,7 +2751,6 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     assert (tr->likelihood - currentLikelihood > 0.000000000000001);
     //assert(tr->likelihood > currentLikelihood);
 
-    printAAmatrix(pr, fabs(currentLikelihood - tr->likelihood));
   }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
   /* TODO: Why do we check the computed likelihood with the currentLikelihood which is the likelihood before THIS optimization loop? Why dont we
