@@ -1171,7 +1171,7 @@ createPartitions (pllQueue * parts, int * bounds)
      if (pi->dataType == PLL_DNA_DATA)
       {
         pl->partitionData[i]->protModels                = -1;
-        pl->partitionData[i]->protFreqs                 = -1;
+        pl->partitionData[i]->protUseEmpiricalFreqs                 = -1;
         pl->partitionData[i]->dataType                  = PLL_DNA_DATA;
         pl->partitionData[i]->maxTipStates              = 16;
         pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
@@ -1183,7 +1183,7 @@ createPartitions (pllQueue * parts, int * bounds)
 	if(pl->partitionData[i]->protModels != PLL_GTR)
 	  pl->partitionData[i]->optimizeSubstitutionRates = PLL_FALSE;
         pl->partitionData[i]->maxTipStates              = 23;
-        pl->partitionData[i]->protFreqs                 = pi->protFreqs;
+        pl->partitionData[i]->protUseEmpiricalFreqs                 = pi->protUseEmpiricalFreqs;
         pl->partitionData[i]->protModels                = pi->protModels;
         pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
       }

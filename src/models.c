@@ -3434,6 +3434,7 @@ void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model)
    *EV               = pr->partitionData[model]->EV,
    *EI               = pr->partitionData[model]->EI,
    *frequencies      = pr->partitionData[model]->frequencies,
+   *empiricalFrequencies = pr->partitionData[model]->empiricalFrequencies,
    *ext_initialRates = pr->partitionData[model]->substRates,
    *tipVector        = pr->partitionData[model]->tipVector,
    *fracchange       = &(pr->partitionData[model]->fracchange);
@@ -3478,11 +3479,23 @@ void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	       {		 
 		 initProtMat(f, pr->partitionData[model]->protModels, &(pr->partitionData[model]->substRates_LG4[i][0]), i);
 		 
-		 if(!pr->partitionData[model]->protFreqs && !pr->partitionData[model]->optimizeBaseFrequencies)	       	  	  
-		   for(l = 0; l < 20; l++)		
-		     pr->partitionData[model]->frequencies_LG4[i][l] = f[l];
+		 if(!pr->partitionData[model]->optimizeBaseFrequencies)
+		 {
+		   if(!pr->partitionData[model]->protUseEmpiricalFreqs)
+		   {
+		     for(l = 0; l < 20; l++)		
+		       pr->partitionData[model]->frequencies_LG4[i][l] = f[l];
+		   }
+                   else
+		   {
+		     for(l = 0; l < 20; l++)		
+		       pr->partitionData[model]->frequencies_LG4[i][l] = empiricalFrequencies[l];
+		   }
+	 	 }
 		 else
+		 {
 		   memcpy(pr->partitionData[model]->frequencies_LG4[i], frequencies, 20 * sizeof(double));
+		 }
 	       }
 	   }
 	 else
@@ -3495,13 +3508,18 @@ void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model)
 	       }
 
 	     /*if(adef->protEmpiricalFreqs && tr->NumberOfModels == 1)
-	       assert(tr->partitionData[model].protFreqs);*/
+	       assert(tr->partitionData[model].protUseEmpiricalFreqs);*/
 	 
-              if(!pr->partitionData[model]->protFreqs && !pr->partitionData[model]->optimizeBaseFrequencies)
-               {	     	    
-                 for(l = 0; l < 20; l++)		
-                   frequencies[l] = f[l];
-               } 
+              if (!pr->partitionData[model]->optimizeBaseFrequencies) {
+                  if(!pr->partitionData[model]->protUseEmpiricalFreqs)
+                  {	     	    
+                      for(l = 0; l < 20; l++)		
+                         frequencies[l] = f[l];
+                  } else {
+                      for(l = 0; l < 20; l++)		
+                         frequencies[l] = empiricalFrequencies[l];
+                  }
+              }
            }  
        }
                

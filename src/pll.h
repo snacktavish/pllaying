@@ -128,7 +128,7 @@ extern "C" {
 
 #define PLL_BADREAR                             -1
 
-#define PLL_NUM_BRANCHES                        16
+#define PLL_NUM_BRANCHES                        50
 
 #define PLL_TRUE                                1
 #define PLL_FALSE                               0
@@ -895,7 +895,7 @@ typedef unsigned int parsimonyNumber;
 
     If \a protModels is set to \b PLL_AUTO then \a autoProtModels holds the currently detected best fitting protein model for the partition
 
-    @var pInfo::protFreqs
+    @var pInfo::protUseEmpiricalFreqs
 
     @var pInfo::nonGTR
 
@@ -957,7 +957,7 @@ typedef struct {
   double *right;
   double *tipVector;
   
-     /* LG4 */
+  /* LG4 */
 
   double *EIGN_LG4[4];
   double *EV_LG4[4];
@@ -969,18 +969,17 @@ typedef struct {
   
   /* LG4 */
   
-  /* Protein specific ?? */
-  int     protModels;
-  int     autoProtModels;
-  int     protFreqs;                    /** TODO: Is this the flag for empirical protein frequencies? (0 use default) */ 
-  /* specific for secondary structures ?? */
-  boolean nonGTR;
-  boolean optimizeBaseFrequencies;
-  boolean optimizeAlphaParameter;
-  boolean optimizeSubstitutionRates;
-  int    *symmetryVector;
-  int    *frequencyGrouping;
+  /* Protein specific */
+  int     protModels;			/**< Empirical model matrix */
+  int     autoProtModels;		/**< Model selected with "auto" protein model */
+  int     protUseEmpiricalFreqs;	/**< Whether to use empirical frequencies for protein model */
 
+  boolean nonGTR;
+  boolean optimizeBaseFrequencies;	/**< Whether to optimize base frequencies */
+  boolean optimizeAlphaParameter;	/**< Whether to optimize alpha parameters and gamma rates */
+  boolean optimizeSubstitutionRates;	/**< Whether to optimize substitution rates */
+  int    *symmetryVector;		/**< Specify linkage between substitution rate parameters */
+  int    *frequencyGrouping;
 
   /* LIKELIHOOD VECTORS */
 

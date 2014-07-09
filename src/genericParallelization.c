@@ -1937,7 +1937,7 @@ static void assignAndInitPart1(pllInstance *localTree, pllInstance *tr, partitio
       ASSIGN_BUF(      localPr->partitionData[model]->maxTipStates ,          pr->partitionData[model]->maxTipStates, int);
       ASSIGN_BUF(      localPr->partitionData[model]->dataType ,              pr->partitionData[model]->dataType, int);
       ASSIGN_BUF(      localPr->partitionData[model]->protModels ,            pr->partitionData[model]->protModels, int);
-      ASSIGN_BUF(      localPr->partitionData[model]->protFreqs ,             pr->partitionData[model]->protFreqs, int);
+      ASSIGN_BUF(      localPr->partitionData[model]->protUseEmpiricalFreqs ,             pr->partitionData[model]->protUseEmpiricalFreqs, int);
       ASSIGN_BUF(      localPr->partitionData[model]->lower ,                 pr->partitionData[model]->lower, int);
       ASSIGN_BUF(      localPr->partitionData[model]->upper ,                 pr->partitionData[model]->upper, int);
 
