@@ -1659,6 +1659,9 @@ void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
 extern void pllGetBaseFrequencies(partitionList * pr, int model, double * outBuffer);
 extern void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer);
 void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
+extern void pllOptRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll);
+extern void pllOptBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
+extern void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
 
 /* tree topology */
 void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);

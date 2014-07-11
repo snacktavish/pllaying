@@ -1024,7 +1024,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
   * @todo
   *   Implement the LG4X model
   */
-static void optAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
+void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -1379,7 +1379,7 @@ static void optFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, l
  *    Linkage list
  *
  */
-static void optBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
+void pllOptBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -1539,7 +1539,7 @@ static boolean AAisGTR(partitionList *pr)
   * @param ll
   *   Linkage list
   */
-static void optRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
+void pllOptRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll)
 {
   int 
     i,
@@ -2353,88 +2353,6 @@ void resetBranches(pllInstance *tr)
     }
 }
 
-/** @brief Print protein GTR substitution matrix to file
-  *
-  * Print the protein GTR substritution matrix to a file. This is only printed
-  * if we are actually estimating a GTR model for all protein data partitions
-  * in the data
-  *
-  * @aparam pr
-  *  List of partitions
-  *
-  * @param epsilon
-  *   Difference in likelihoods to be  printed in the file
-  */
-static void printAAmatrix(partitionList *pr, double epsilon)
-{
-  if(AAisGTR(pr))
-    {
-      int model;
-      
-      for(model = 0; model < pr->numberOfPartitions; model++)
-        {
-          if(pr->partitionData[model]->dataType == PLL_AA_DATA)
-            {
-              char gtrFileName[1024];
-              char epsilonStr[1024];
-              FILE *gtrFile;
-              double *rates = pr->partitionData[model]->substRates;
-              double *f     = pr->partitionData[model]->frequencies;
-              double q[20][20];
-              int    r = 0;
-              int i, j;
-
-              assert(pr->partitionData[model]->protModels == PLL_GTR);
-
-              sprintf(epsilonStr, "%f", epsilon);
-
-              strcpy(gtrFileName, workdir);
-              strcat(gtrFileName, "RAxML_proteinGTRmodel.");
-              strcat(gtrFileName, run_id);
-              strcat(gtrFileName, "_");
-              strcat(gtrFileName, epsilonStr);
-
-              gtrFile = myfopen(gtrFileName, "wb");
-
-              for(i = 0; i < 20; i++)
-                for(j = 0; j < 20; j++)
-                  q[i][j] = 0.0;
-
-              for(i = 0; i < 19; i++)
-                for(j = i + 1; j < 20; j++)
-                  q[i][j] = rates[r++];
-
-              for(i = 0; i < 20; i++)
-                for(j = 0; j <= i; j++)
-                  {
-                    if(i == j)
-                      q[i][j] = 0.0;
-                    else
-                      q[i][j] = q[j][i];
-                  }
-           
-              for(i = 0; i < 20; i++)
-                {
-                  for(j = 0; j < 20; j++)               
-                    fprintf(gtrFile, "%1.80f ", q[i][j]);
-                
-                  fprintf(gtrFile, "\n");
-                }
-              for(i = 0; i < 20; i++)
-                fprintf(gtrFile, "%1.80f ", f[i]);
-              fprintf(gtrFile, "\n");
-
-              fclose(gtrFile);
-
-              printBothOpen("\nPrinted intermediate AA substitution matrix to file %s\n\n", gtrFileName);
-              
-              break;
-            }
-
-        }         
-    }
-}
-
 /* 
    automatically compute the best protein substitution model for the dataset at hand.
  */
@@ -2680,7 +2598,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
       printf ("start: %f\n", currentLikelihood);
 #endif
 
-    optRatesGeneric(tr, pr, modelEpsilon, rateList);
+    pllOptRatesGeneric(tr, pr, modelEpsilon, rateList);
 
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
@@ -2699,7 +2617,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
-    optBaseFreqs(tr, pr, modelEpsilon, freqList);
+    pllOptBaseFreqs(tr, pr, modelEpsilon, freqList);
     
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
     
@@ -2707,13 +2625,13 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
 
 #ifdef _DEBUG_MOD_OPT
     pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
-    printf("after optBaseFreqs 1 %f\n", tr->likelihood);
+    printf("after pllOptBaseFreqs 1 %f\n", tr->likelihood);
 #endif 
 
     switch(tr->rateHetModel)
     {
       case PLL_GAMMA:      
-        optAlphasGeneric (tr, pr, modelEpsilon, alphaList);
+        pllOptAlphasGeneric (tr, pr, modelEpsilon, alphaList);
         pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 
 #ifdef _DEBUG_MOD_OPT

@@ -3176,7 +3176,7 @@ static void makeEigen(double **_a, const int states, double *d, double *e)
   *   Array where the computed tipVector will be stored
   *
   * @todo
-  *   Perhaps we could change this also to the way optRatesGeneric and other functions are implemented.
+  *   Perhaps we could change this also to the way pllOptRatesGeneric and other functions are implemented.
   *   That is, instead of passing all these parameters, pass the partition index instead and load the
   *   values within the code. Will make the code more readable. 
 */
