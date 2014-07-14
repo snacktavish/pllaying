@@ -693,10 +693,31 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->xSpaceVector = (size_t *)rax_calloc((size_t)localTree->mxtips, sizeof(size_t));
 
-      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->sumBuffer), PLL_BYTE_ALIGNMENT, width *
-										      (size_t)(localPartitions->partitionData[model]->states) *
-										      discreteRateCategories(localTree->rateHetModel) *
+      const size_t span = (size_t)(localPartitions->partitionData[model]->states) *
+              discreteRateCategories(localTree->rateHetModel);
+
+#ifdef __MIC_NATIVE
+
+      // Alexey: sum buffer buffer padding for Xeon PHI
+      const int aligned_width = width % PLL_VECTOR_WIDTH == 0 ? width : width + (PLL_VECTOR_WIDTH - (width % PLL_VECTOR_WIDTH));
+
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->sumBuffer), PLL_BYTE_ALIGNMENT, aligned_width *
+										      span *
 										      sizeof(double));
+
+      // Alexey: fill padding entries with 1. (will be corrected with site weights, s. below)
+      {
+          int k;
+          for (k = width*span; k < aligned_width*span; ++k)
+              localPartitions->partitionData[model]->sumBuffer[k] = 1.;
+      }
+
+#else
+
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->sumBuffer), PLL_BYTE_ALIGNMENT, width *
+                                              span *
+                                              sizeof(double));
+#endif
 
       /* Initialize buffers to store per-site log likelihoods */
 
@@ -739,7 +760,19 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       ancestralVectorWidth += ((size_t)(localPartitions->partitionData[model]->upper - localPartitions->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double));
       /* :TODO: do we have to use the original tree for that   */
 
-      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->wgt), PLL_BYTE_ALIGNMENT,width * sizeof(int));
+#ifdef __MIC_NATIVE
+
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->wgt), PLL_BYTE_ALIGNMENT, aligned_width * sizeof(int));
+
+      // Alexey: fill padding entries with 0.
+      {
+          int k;
+          for (k = width; k < aligned_width; ++k)
+              localPartitions->partitionData[model]->wgt[k] = 0;
+      }
+#else
+      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->wgt), PLL_BYTE_ALIGNMENT, width * sizeof(int));
+#endif
 
       /* rateCategory must be assigned using rax_calloc() at start up there is only one rate category 0 for all sites */
 

@@ -45,9 +45,41 @@
 #include <stdint.h>
 #include <assert.h>
 
+#if defined(__MIC_NATIVE)
 
+#include <immintrin.h>
 
-#if (defined(__SSE3) && !defined(__AVX)) 
+#define INTS_PER_VECTOR 16
+#define LONG_INTS_PER_VECTOR 8
+#define INT_TYPE __m512i
+#define CAST double*
+#define SET_ALL_BITS_ONE _mm512_set1_epi32(0xFFFFFFFF)
+#define SET_ALL_BITS_ZERO _mm512_setzero_epi32()
+#define VECTOR_LOAD _mm512_load_epi32
+#define VECTOR_STORE  _mm512_store_epi32
+#define VECTOR_BIT_AND _mm512_and_epi32
+#define VECTOR_BIT_OR  _mm512_or_epi32
+#define VECTOR_AND_NOT _mm512_andnot_epi32
+
+#elif defined(__AVX)
+
+#include <xmmintrin.h>
+#include <immintrin.h>
+#include <pmmintrin.h>
+
+#define INTS_PER_VECTOR 8
+#define LONG_INTS_PER_VECTOR 4
+#define INT_TYPE __m256d
+#define CAST double*
+#define SET_ALL_BITS_ONE (__m256d)_mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF)
+#define SET_ALL_BITS_ZERO (__m256d)_mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)
+#define VECTOR_LOAD _mm256_load_pd
+#define VECTOR_BIT_AND _mm256_and_pd
+#define VECTOR_BIT_OR  _mm256_or_pd
+#define VECTOR_STORE  _mm256_store_pd
+#define VECTOR_AND_NOT _mm256_andnot_pd
+
+#elif (defined(__SSE3))
 
 #include <xmmintrin.h>
 #include <pmmintrin.h>
@@ -67,26 +99,6 @@
 #define VECTOR_BIT_OR  _mm_or_si128
 #define VECTOR_STORE  _mm_store_si128
 #define VECTOR_AND_NOT _mm_andnot_si128
-
-#endif
-
-#ifdef __AVX
-
-#include <xmmintrin.h>
-#include <immintrin.h>
-#include <pmmintrin.h>
-
-#define INTS_PER_VECTOR 8
-#define LONG_INTS_PER_VECTOR 4
-#define INT_TYPE __m256d
-#define CAST double*
-#define SET_ALL_BITS_ONE (__m256d)_mm256_set_epi32(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF)
-#define SET_ALL_BITS_ZERO (__m256d)_mm256_set_epi32(0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000)
-#define VECTOR_LOAD _mm256_load_pd
-#define VECTOR_BIT_AND _mm256_and_pd
-#define VECTOR_BIT_OR  _mm256_or_pd
-#define VECTOR_STORE  _mm256_store_pd
-#define VECTOR_AND_NOT _mm256_andnot_pd
 
 #endif
 

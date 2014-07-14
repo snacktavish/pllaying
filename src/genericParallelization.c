@@ -33,6 +33,10 @@
 #include <stdint.h>
 #include <limits.h>
 
+#ifdef MEASURE_TIME_PARALLEL
+#include <time.h>
+#endif
+
 #include <assert.h>
 
 #include "genericParallelization.h"

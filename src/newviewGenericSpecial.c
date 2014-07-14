@@ -48,6 +48,11 @@
 #include "pll.h"
 #include "pllInternal.h"
 
+#ifdef __MIC_NATIVE
+#include "mic_native.h"
+#endif
+
+
 #ifdef __SSE3
 #include <stdint.h>
 #include <xmmintrin.h>
@@ -1941,7 +1946,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
               left, right, tr->saveMemory, tr->maxCategories, states);
 
 
-#if (!defined(__SSE3) && !defined(__AVX))
+#if (!defined(__SSE3) && !defined(__AVX) && !defined(__MIC_NATIVE))
         assert(!tr->saveMemory);
 
         /* figure out if we need to compute the CAT or GAMMA model of rate heterogeneity */
@@ -1956,7 +1961,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
          }
         else 
          {
-             newviewGAMMA_FLEX(tInfo->tipCase,
+            newviewGAMMA_FLEX(tInfo->tipCase,
                  x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
                  0, tipX1, tipX2,
                  width, left, right, wgt, &scalerIncrement, fastScaling, states, getUndetermined(pr->partitionData[model]->dataType) + 1);
@@ -1968,6 +1973,18 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         switch(states)
         {               
         case 4: /* DNA */
+#ifdef __MIC_NATIVE
+
+              /* CAT & memory saving are not supported on MIC */
+
+              assert(!tr->saveMemory);
+              assert(tr->rateHetModel == PLL_GAMMA);
+
+              newviewGTRGAMMA_MIC(tInfo->tipCase,
+                                x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
+                                ex3, tipX1, tipX2,
+                                width, left, right, wgt, &scalerIncrement, fastScaling);
+#else
           if(tr->rateHetModel == PLL_CAT)
             {                                
               
@@ -2009,6 +2026,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                                                 width, left, right, wgt, &scalerIncrement, fastScaling,
                                                 x1_gap, x2_gap, x3_gap, 
                                                 x1_gapColumn, x2_gapColumn, x3_gapColumn);
+
 #else
               newviewGTRGAMMA_GAPPED_SAVE(tInfo->tipCase,
                                           x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
@@ -2030,9 +2048,33 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                               width, left, right, wgt, &scalerIncrement, fastScaling);
 #endif
             }
+#endif
 
             break;                  
           case 20: /* proteins */
+
+#ifdef __MIC_NATIVE
+
+			/* CAT & memory saving are not supported on MIC */
+
+			assert(!tr->saveMemory);
+			assert(tr->rateHetModel == PLL_GAMMA);
+
+			if(pr->partitionData[model]->protModels == PLL_LG4)
+			{
+				  newviewGTRGAMMAPROT_LG4_MIC(tInfo->tipCase,
+	                    x1_start, x2_start, x3_start, pr->partitionData[model]->EV_LG4, pr->partitionData[model]->tipVector_LG4,
+	                    tipX1, tipX2,
+	                    width, left, right, wgt, &scalerIncrement);
+			}
+			else
+			{
+				  newviewGTRGAMMAPROT_MIC(tInfo->tipCase,
+						x1_start, x2_start, x3_start, pr->partitionData[model]->EV, pr->partitionData[model]->tipVector,
+						ex3, tipX1, tipX2,
+						width, left, right, wgt, &scalerIncrement, fastScaling);
+			}
+#else
 
             if(tr->rateHetModel == PLL_CAT)
             {
@@ -2123,6 +2165,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 #endif                 
             }   
         }
+#endif
             
             break;      
           default:

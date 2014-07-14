@@ -61,26 +61,29 @@
 extern "C" {
 #endif
 
-#ifdef __AVX
+#ifdef __MIC_NATIVE
+#define PLL_BYTE_ALIGNMENT 64
+#define PLL_VECTOR_WIDTH 8
+#elif defined (__AVX)
 
 #include <xmmintrin.h>
 #include <immintrin.h>
 #include <pmmintrin.h>
 
 #define PLL_BYTE_ALIGNMENT 32
+#define PLL_VECTOR_WIDTH 4
 
-#else
-
-#ifdef __SSE3
+#elif defined (__SSE3)
 
 #include <xmmintrin.h>
 #include <pmmintrin.h>
 
 #define PLL_BYTE_ALIGNMENT 16
+#define PLL_VECTOR_WIDTH 2
 
 #else
 #define PLL_BYTE_ALIGNMENT 1
-#endif
+#define PLL_VECTOR_WIDTH 1
 #endif
 
 #include "stack.h"
