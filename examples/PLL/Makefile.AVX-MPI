@@ -1,7 +1,7 @@
 CC = mpicc
 MAKE = make
-LIBPATH = ../../
-INCPATH = ../../
+LIBPATH = ../../src
+INCPATH = ../../src
 BIN = pll
 PLL = pll
 ARCH = AVX-MPI
