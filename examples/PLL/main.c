@@ -18,11 +18,12 @@ int main (int argc, char * argv[])
   pllInitMPI (&argc, &argv);
 #endif
 
-  if (argc != 4)
+  if (argc < 4)
    {
-     fprintf (stderr, "usage: %s [phylip-file] [newick-file] [partition-file]\n", argv[0]);
+     fprintf (stderr, "usage: %s [phylip-file] [newick-file] [partition-file] [threads]\n", argv[0]);
      return (EXIT_FAILURE);
    }
+
 
   /* Set the PLL instance attributes */
   attr.rateHetModel     = PLL_GAMMA;
@@ -30,7 +31,7 @@ int main (int argc, char * argv[])
   attr.saveMemory       = PLL_FALSE;
   attr.useRecom         = PLL_FALSE;
   attr.randomNumberSeed = 0xDEADBEEF;
-  attr.numberOfThreads  = 8;            /* This only affects the pthreads version */
+  attr.numberOfThreads  = (argc > 4) ? (atoi(argv[4]) > 0 ? atoi(argv[4]) : 8) : 8;            /* This only affects the pthreads version */
 
   /* Create a PLL tree */
   tr = pllCreateInstance (&attr);
