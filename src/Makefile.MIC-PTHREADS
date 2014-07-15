@@ -15,7 +15,7 @@ SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
 GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
-OBJ = hash.o stack.o ssort.o queue.o utils.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o mic_native.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o alignment.o newick.o parsePartition.o
+OBJ = hash.o stack.o ssort.o queue.o utils.o optimizeModel.o trash.o searchAlgo.o topologies.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o mic_native_dna.o mic_native_aa.o fastDNAparsimony.o randomTree.o lexer.o recom.o genericParallelization.o alignment.o newick.o parsePartition.o
 
 
 all: $(STATICLIB)
@@ -52,7 +52,8 @@ alignment.o: alignment.c $(GLOBAL_DEPS)
 newick.o: newick.c $(GLOBAL_DEPS)
 parsePartition.o: parsePartition.c $(GLOBAL_DEPS)
 ssort.o : ssort.c $(GLOBAL_DEPS)
-mic_native.o : mic_native.c $(GLOBAL_DEPS)
+mic_native_dna.o : mic_native_dna.c $(GLOBAL_DEPS)
+mic_native_aa.o : mic_native_aa.c $(GLOBAL_DEPS)
 
 clean : 
 	-$(RM) *.o $(STATICLIB) $(SHAREDOBJ)
