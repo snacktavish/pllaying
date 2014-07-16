@@ -1654,6 +1654,7 @@ int pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int
 void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
 void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
 int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
+void pllSetSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
 int pllGetInstRateMatrix (partitionList * pr, int model, double * outBuffer);
 int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);

@@ -3092,7 +3092,7 @@ void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer
 }
 
 /** @ingroup modelParamsGroups
-     @brief Set all substitution rates to a fixed value for a specific partition
+     @brief Set all substitution rates for a specific partition and disable ML optimization for them
     
     Sets all substitution rates of a partition to fixed values and disables 
     ML optimization of these parameters. It will automatically re-scale the relative rates  
@@ -3118,6 +3118,37 @@ void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer
       test if this works with the parallel versions
 */
 void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr)
+{
+  pllSetSubstitutionMatrix(q, length, model, pr, tr);
+  pr->partitionData[model]->optimizeSubstitutionRates = PLL_FALSE;
+}
+
+/** @ingroup modelParamsGroups
+     @brief Set all substitution rates for a specific partition
+    
+    Sets all substitution rates of a partition to the given values.
+    It will automatically re-scale the relative rates such that the last rate is 1.0 
+
+    @param f
+      array containing the substitution rates
+
+    @param length
+      length of array f, this needs to be as long as: (s * s - s) / 2,
+      i.e., the number of upper diagonal entries of the Q matrix
+
+    @param model
+      Index of the partition for which we want to set/fix the substitution rates
+
+    @param pr
+      List of partitions
+      
+    @param tr
+      Library instance for which we want to fix the substitution rates 
+
+    @todo
+      test if this works with the parallel versions
+*/
+void pllSetSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr)
 {
   int 
     i,
@@ -3167,7 +3198,6 @@ void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionLi
   pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
 #endif
   
-  pr->partitionData[model]->optimizeSubstitutionRates = PLL_FALSE;
 
   pr->dirty = PLL_TRUE;
   updateAllBranchLengths (tr, old_fracchange, tr->fracchange);
