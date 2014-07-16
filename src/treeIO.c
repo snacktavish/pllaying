@@ -54,7 +54,6 @@ extern char *likelihood_key;
 extern char *ntaxa_key;
 extern char *smoothed_key;
 extern int partCount;
-extern double masterTime;
 
 
 

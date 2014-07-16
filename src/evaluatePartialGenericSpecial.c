@@ -251,8 +251,8 @@ static double evaluatePartialCAT_FLEX(int i, double ki, int counter,  traversalI
        a single site, thus we allocate states * mxtips space for storing probability values.
        Essentially  only (states * (mxtips - 2)) space would be required, but I was to lazy 
        to think if it has to be -1 or -2 here */
-    * lVector,   
-    * d,
+    * lVector = NULL,   
+    * d = NULL,
     lz, 
     term, 
     *x1, 

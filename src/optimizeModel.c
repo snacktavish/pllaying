@@ -55,7 +55,6 @@ static const double BRENT_CGOLD =   0.3819660;
 extern int optimizeRatesInvocations;
 extern int optimizeAlphaInvocations;
 extern int optimizeInvarInvocations;
-extern double masterTime;
 extern char ratesFileName[1024];
 extern char workdir[1024];
 extern char run_id[128];

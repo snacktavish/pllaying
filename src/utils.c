@@ -489,42 +489,6 @@ static unsigned int KISS32(void)
   return (x+y+w);
 }
 */
-/*********************************** *********************************************************/
-
-
-
-
-
-
-
-
-/***********************reading and initializing input ******************/
-
-
-/********************PRINTING various INFO **************************************/
-
-
-
-/* Delete it at some point */
-void printLog(pllInstance *tr)
-{
-  FILE *logFile;
-  double t;
-
-
-  t = gettime() - masterTime;
-
-  logFile = myfopen(logFileName, "ab");
-
-  fprintf(logFile, "%f %f\n", t, tr->likelihood);
-
-  fclose(logFile);
-
-
-}
-
-
-/************************************************************************************/
 
 /** @brief Get a random subtree
 
@@ -3470,7 +3434,6 @@ int pllInitModel (pllInstance * tr, partitionList * partitions, pllAlignmentData
 #endif
 #endif 
 
-  masterTime = gettime();         
 #ifdef _USE_PTHREADS
   tr->threadID = 0;
 #ifndef _PORTABLE_PTHREADS

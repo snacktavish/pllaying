@@ -69,7 +69,6 @@ static void pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri);
 extern double accumulatedTime;   /**< Accumulated time for checkpointing */
 
 extern char seq_file[1024];      /**< Checkpointing related file */
-extern double masterTime;        /**< Needed for checkpointing */
 extern partitionLengths pLengths[PLL_MAX_MODEL];
 extern char binaryCheckpointName[1024];  /**< Binary checkpointing file */
 extern char binaryCheckpointInputName[1024];
