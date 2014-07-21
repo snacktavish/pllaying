@@ -73,6 +73,52 @@
 
 #include "globalVariables.h"
 
+/* mappings of DNA/AA alphabet to numbers */
+
+static const char PLL_MAP_NT[256] =
+ {
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 15,
+   -1,  1, 14,  2, 13, -1, -1,  4, 11, -1, -1, 12, -1,  3, 15, 15,
+   -1, -1,  5,  6,  8,  8,  7,  9, 15, 10, -1, -1, -1, -1, -1, -1,
+   -1,  1, 14,  2, 13, -1, -1,  4, 11, -1, -1, 12, -1,  3, 15, 15,
+   -1, -1,  5,  6,  8,  8,  7,  9, 15, 10, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ };
+
+static const char PLL_MAP_AA[256] =
+ {
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 22, -1, -1, 22, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 22,
+   -1,  0, 20,  4,  3,  6, 13,  7,  8,  9, -1, 11, 10, 12,  2, -1,
+   14,  5,  1, 15, 16, -1, 19, 17, 22, 18, 21, -1, -1, -1, -1, -1,
+   -1,  0, 20,  4,  3,  6, 13,  7,  8,  9, -1, 11, 10, 12,  2, -1,
+   14,  5,  1, 15, 16, -1, 19, 17, 22, 18, 21, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+ };
+
+
+
+
+
 static void pllTreeInitDefaults (pllInstance * tr, int tips);
 static void getInnerBranchEndPointsRecursive (nodeptr p, int tips, int * i, node **nodes);
 #if (!defined(_FINE_GRAIN_MPI) && !defined(_USE_PTHREADS))
@@ -2288,125 +2334,22 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
     Transforms the alignment to the PLL internal representation by substituting each base 
     with a specific digit.
 
-    @param alignmentData
-      Multiple sequence alignment
-
-    @param partitions
-      List of partitions
+    @param alignmentData  Multiple sequence alignment
+    @param partitions     List of partitions
+    @todo fix the function
 */
 void
 pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions)
 {
-  char meaningDNA[256];
-  char  meaningAA[256];
-  char * d;
+  const char * d;
   int i, j, k;
 
+  /* TODO: Fix this */
   if (alignmentData->sequenceData[1][1] < 23) return;
-  for (i = 0; i < 256; ++ i)
-   {
-     meaningDNA[i] = -1;
-     meaningAA[i]  = -1;
-   }
-
-  /* DNA data */
-
-  meaningDNA['A'] =  1;
-  meaningDNA['B'] = 14;
-  meaningDNA['C'] =  2;
-  meaningDNA['D'] = 13;
-  meaningDNA['G'] =  4;
-  meaningDNA['H'] = 11;
-  meaningDNA['K'] = 12;
-  meaningDNA['M'] =  3;
-  meaningDNA['R'] =  5;
-  meaningDNA['S'] =  6;
-  meaningDNA['T'] =  8;
-  meaningDNA['U'] =  8;
-  meaningDNA['V'] =  7;
-  meaningDNA['W'] =  9;
-  meaningDNA['Y'] = 10;
-  meaningDNA['a'] =  1;
-  meaningDNA['b'] = 14;
-  meaningDNA['c'] =  2;
-  meaningDNA['d'] = 13;
-  meaningDNA['g'] =  4;
-  meaningDNA['h'] = 11;
-  meaningDNA['k'] = 12;
-  meaningDNA['m'] =  3;
-  meaningDNA['r'] =  5;
-  meaningDNA['s'] =  6;
-  meaningDNA['t'] =  8;
-  meaningDNA['u'] =  8;
-  meaningDNA['v'] =  7;
-  meaningDNA['w'] =  9;
-  meaningDNA['y'] = 10;
-
-  meaningDNA['N'] =
-  meaningDNA['n'] =
-  meaningDNA['O'] =
-  meaningDNA['o'] =
-  meaningDNA['X'] =
-  meaningDNA['x'] =
-  meaningDNA['-'] =
-  meaningDNA['?'] = 15;
- 
-  /* AA data */
-
-  meaningAA['A'] =  0;  /* alanine */
-  meaningAA['R'] =  1;  /* arginine */
-  meaningAA['N'] =  2;  /*  asparagine*/
-  meaningAA['D'] =  3;  /* aspartic */
-  meaningAA['C'] =  4;  /* cysteine */
-  meaningAA['Q'] =  5;  /* glutamine */
-  meaningAA['E'] =  6;  /* glutamic */
-  meaningAA['G'] =  7;  /* glycine */
-  meaningAA['H'] =  8;  /* histidine */
-  meaningAA['I'] =  9;  /* isoleucine */
-  meaningAA['L'] =  10; /* leucine */
-  meaningAA['K'] =  11; /* lysine */
-  meaningAA['M'] =  12; /* methionine */
-  meaningAA['F'] =  13; /* phenylalanine */
-  meaningAA['P'] =  14; /* proline */
-  meaningAA['S'] =  15; /* serine */
-  meaningAA['T'] =  16; /* threonine */
-  meaningAA['W'] =  17; /* tryptophan */
-  meaningAA['Y'] =  18; /* tyrosine */
-  meaningAA['V'] =  19; /* valine */
-  meaningAA['B'] =  20; /* asparagine, aspartic 2 and 3*/
-  meaningAA['Z'] =  21; /*21 glutamine glutamic 5 and 6*/
-  meaningAA['a'] =  0;  /* alanine */
-  meaningAA['r'] =  1;  /* arginine */
-  meaningAA['n'] =  2;  /*  asparagine*/
-  meaningAA['d'] =  3;  /* aspartic */
-  meaningAA['c'] =  4;  /* cysteine */
-  meaningAA['q'] =  5;  /* glutamine */
-  meaningAA['e'] =  6;  /* glutamic */
-  meaningAA['g'] =  7;  /* glycine */
-  meaningAA['h'] =  8;  /* histidine */
-  meaningAA['i'] =  9;  /* isoleucine */
-  meaningAA['l'] =  10; /* leucine */
-  meaningAA['k'] =  11; /* lysine */
-  meaningAA['m'] =  12; /* methionine */
-  meaningAA['f'] =  13; /* phenylalanine */
-  meaningAA['p'] =  14; /* proline */
-  meaningAA['s'] =  15; /* serine */
-  meaningAA['t'] =  16; /* threonine */
-  meaningAA['w'] =  17; /* tryptophan */
-  meaningAA['y'] =  18; /* tyrosine */
-  meaningAA['v'] =  19; /* valine */
-  meaningAA['b'] =  20; /* asparagine, aspartic 2 and 3*/
-  meaningAA['z'] =  21; /*21 glutamine glutamic 5 and 6*/
-
-  meaningAA['X'] = 
-  meaningAA['x'] = 
-  meaningAA['?'] = 
-  meaningAA['*'] = 
-  meaningAA['-'] = 22;
 
   for (i = 0; i < partitions->numberOfPartitions; ++ i)
    {
-     d = (partitions->partitionData[i]->dataType == PLL_DNA_DATA) ? meaningDNA : meaningAA;
+     d = (partitions->partitionData[i]->dataType == PLL_DNA_DATA) ? PLL_MAP_NT: PLL_MAP_AA;
      
      for (j = 1; j <= alignmentData->sequenceCount; ++ j)
       {
