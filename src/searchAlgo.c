@@ -66,12 +66,7 @@ static void pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, i
 static void pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
 static void pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri);
 
-extern double accumulatedTime;   /**< Accumulated time for checkpointing */
-
-extern char seq_file[1024];      /**< Checkpointing related file */
 extern partitionLengths pLengths[PLL_MAX_MODEL];
-extern char binaryCheckpointName[1024];  /**< Binary checkpointing file */
-extern char binaryCheckpointInputName[1024];
 
 boolean initrav (pllInstance *tr, partitionList *pr, nodeptr p)
 { 
@@ -3033,18 +3028,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   bestlist *bestT, *bt;
   infoList iList;
   pllOptimizeBranchLengths(tr, pr, 32);
-#ifdef _TERRACES
-  /* store the 20 best trees found in a dedicated list */
-
-  bestlist
-  *terrace;
-
-  /* output file names */
-
-  char
-  terraceFileName[1024],
-  buf[64];
-#endif
 
   hashtable *h = (hashtable*) NULL;
   unsigned int **bitVectors = (unsigned int**) NULL;
@@ -3066,18 +3049,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   bt = (bestlist *) rax_malloc(sizeof(bestlist));
   bt->ninit = 0;
   initBestTree(bt, 20, tr->mxtips);
-
-#ifdef _TERRACES
-  /* initialize the tree list and the output file name for the current tree search/replicate */
-  terrace = (bestlist *) rax_malloc(sizeof(bestlist));
-  terrace->ninit = 0;
-  initBestTree(terrace, 20, tr->mxtips);
-  strcpy(terraceFileName, workdir);
-  strcat(terraceFileName, "RAxML_terrace.");
-  strcat(terraceFileName, run_id);
-  strcat(terraceFileName, ".BS.");
-  strcat(terraceFileName, buf);
-#endif
 
   initInfoList(&iList, 50);
 
@@ -3257,11 +3228,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
 
           pllOptimizeBranchLengths(tr, pr, 8);
 
-#ifdef _TERRACES
-          /* save all 20 best trees in the terrace tree list */
-          saveBestTree(terrace, tr, pr->perGeneBranchLengths?pr->numberOfPartitions:1);
-#endif
-
           difference = (
               (tr->likelihood > previousLh) ?
                   tr->likelihood - previousLh : previousLh - tr->likelihood);
@@ -3277,30 +3243,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
     }
 
   cleanup:
-#ifdef _TERRACES
-    {
-      double
-      bestLH = tr->likelihood;
-      FILE
-      *f = myfopen(terraceFileName, "w");
-
-      /* print out likelihoods of 20 best trees found during the tree search */
-      for(i = 1; i <= terrace->nvalid; i++)
-        {
-          recallBestTree(terrace, i, tr, pr);
-          /* if the likelihood scores are smaller than some epsilon 0.000001
-           print the tree to file */
-          if(ABS(bestLH - tr->likelihood) < 0.000001)
-            {
-              fprintf(f, "%s\n", tr->tree_string);
-            }
-        }
-      fclose(f);
-      /* increment tree search counter */
-      bCount++;
-    }
-#endif
-
   if (tr->searchConvergenceCriterion)
     {
       freeBitVectors(bitVectors, 2 * tr->mxtips);
@@ -3313,12 +3255,6 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   rax_free(bestT);
   freeBestTree(bt);
   rax_free(bt);
-
-#ifdef _TERRACES
-  /* free terrace tree list */
-  freeBestTree(terrace);
-  rax_free(terrace);
-#endif
 
   freeInfoList(&iList);
 

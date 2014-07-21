@@ -30,22 +30,6 @@
 
 #ifdef GLOBAL_VARIABLES_DEFINITION
 
-double accumulatedTime;
-
-char run_id[128] = "", 
-  workdir[1024] = "", 
-  seq_file[1024] = "", 
-  tree_file[1024]="", 
-  weightFileName[1024] = "",   
-  resultFileName[1024] = "", 
-  logFileName[1024] = "",   
-  infoFileName[1024] = "", 
-  randomFileName[1024] = "",     
-  proteinModelFileName[1024] = "", 
-  binaryCheckpointName[1024] = "",
-  binaryCheckpointInputName[1024] = "",
-  byteFileName[1024] = "";
-
 const char *protModels[PLL_NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
 					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO", "LG4", "GTR"};
 
@@ -175,12 +159,9 @@ MPI_Datatype TRAVERSAL_MPI;
 #endif
 
 #else
-extern char infoFileName[1024];
-extern char resultFileName[1024];
 extern const partitionLengths pLengths[PLL_MAX_MODEL];
 extern const char * protModels[PLL_NUM_PROT_MODELS];
 extern char * secondaryModelList[21];
-extern char logFileName[1024];
 //extern const unsigned int * mask32;
 
 #endif

@@ -48,8 +48,6 @@
 #include "pll.h"
 #include "pllInternal.h"
 
-extern char infoFileName[1024];
-extern char tree_file[1024];
 extern char *likelihood_key;
 extern char *ntaxa_key;
 extern char *smoothed_key;

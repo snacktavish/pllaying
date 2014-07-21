@@ -113,8 +113,6 @@ extern const unsigned int mask32[32];
 
 
 extern double masterTime;
-/*extern char  workdir[1024];
-  extern char run_id[128];*/
 
 /************************************************ pop count stuff ***********************************************/
 

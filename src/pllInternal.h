@@ -137,7 +137,6 @@ extern void freeBitVectors(unsigned int **v, int n);
 extern void freeHashTable(hashtable *h);
 extern stringHashtable *initStringHashTable(hashNumberType n);
 extern void addword(char *s, stringHashtable *h, int nodeNumber);
-extern void printBothOpen(const char* format, ... );
 extern void initRateMatrix(pllInstance *tr, partitionList *pr);
 extern void bitVectorInitravSpecial(unsigned int **bitVectors, nodeptr p, int numsp, unsigned int vectorLength, hashtable *h, int treeNumber, int function, branchInfo *bInf,
                                     int *countBranches, int treeVectorLength, boolean traverseOnly, boolean computeWRF, int processID);

@@ -56,8 +56,6 @@ extern int optimizeRatesInvocations;
 extern int optimizeAlphaInvocations;
 extern int optimizeInvarInvocations;
 extern char ratesFileName[1024];
-extern char workdir[1024];
-extern char run_id[128];
 extern char lengthFileName[1024];
 extern char lengthFileNameModel[1024];
 extern char *protModels[PLL_NUM_PROT_MODELS];

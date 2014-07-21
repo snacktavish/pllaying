@@ -145,6 +145,7 @@ void storeValuesInTraversalDescriptor(pllInstance *tr, partitionList *pr, double
     tr->td[0].parameterValues[model] = value[model];
 }
 
+/*
 void printBothOpen(const char* format, ... )
 {
   FILE *f = myfopen(infoFileName, "ab");
@@ -160,6 +161,7 @@ void printBothOpen(const char* format, ... )
 
   fclose(f);
 }
+*/
 
 /* Marked for deletion 
 boolean getSmoothFreqs(int dataType)
