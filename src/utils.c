@@ -1978,7 +1978,7 @@ linkTaxa (pllInstance * pInst, pllNewickTree * nTree, int taxaExist)
          {
            child = pInst->nodep[leaf];
            pInst->nameList[leaf] = strdup (nodeInfo->name);
-           pllHashAdd (pInst->nameHash, pInst->nameList[leaf], (void *) (pInst->nodep[leaf]));
+           pllHashAdd (pInst->nameHash, pllHashString(pInst->nameList[leaf], pInst->nameHash->size), pInst->nameList[leaf], (void *) (pInst->nodep[leaf]));
            ++ leaf;
          }
       }
@@ -2221,7 +2221,7 @@ pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList)
    {
      tr->nameList[i] = (char *) rax_malloc ((strlen (nameList[i]) + 1) * sizeof (char));
      strcpy (tr->nameList[i], nameList[i]);
-     pllHashAdd (tr->nameHash, tr->nameList[i], (void *) (tr->nodep[i]));
+     pllHashAdd (tr->nameHash, pllHashString(tr->nameList[i], tr->nameHash->size), tr->nameList[i], (void *) (tr->nodep[i]));
    }
   
 
@@ -2258,7 +2258,7 @@ pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentD
    {
      tr->nameList[i] = (char *) rax_malloc ((strlen (nameList[i]) + 1) * sizeof (char));
      strcpy (tr->nameList[i], nameList[i]);
-     pllHashAdd (tr->nameHash, tr->nameList[i], (void *) (tr->nodep[i]));
+     pllHashAdd (tr->nameHash, pllHashString(tr->nameList[i], tr->nameHash->size), tr->nameList[i], (void *) (tr->nodep[i]));
    }
 }
 

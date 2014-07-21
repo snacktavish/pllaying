@@ -2995,6 +2995,17 @@ determineRearrangementSetting(pllInstance *tr, partitionList *pr,
   return bestTrav;
 }
 
+
+static void hash_dealloc_bipentry (void * entry)
+{
+  pllBipartitionEntry * e = (pllBipartitionEntry *)entry;
+
+  if(e->bitVector)     rax_free(e->bitVector);
+  if(e->treeVector)    rax_free(e->treeVector);
+  if(e->supportVector) rax_free(e->supportVector);
+
+}
+
 /** @ingroup rearrangementGroup
     @brief RAxML algorithm for ML search
 
@@ -3029,8 +3040,8 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   infoList iList;
   pllOptimizeBranchLengths(tr, pr, 32);
 
-  //pllHashTable *h = NULL;
-  hashtable *h = NULL;
+  pllHashTable *h = NULL;
+  //hashtable *h = NULL;
   unsigned int **bitVectors = (unsigned int**) NULL;
 
   /* Security check... These variables might have not been initialized! */
@@ -3040,8 +3051,8 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   if (tr->searchConvergenceCriterion)
     {
       bitVectors = initBitVector(tr->mxtips, &vLength);
-      h = initHashTable(tr->mxtips * 4);
-      //h = pllHashInit (tr->mxtips * 4);
+      //h = initHashTable(tr->mxtips * 4);
+      h = pllHashInit (tr->mxtips * 4);
     }
 
   bestT = (bestlist *) rax_malloc(sizeof(bestlist));
@@ -3249,8 +3260,9 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
     {
       freeBitVectors(bitVectors, 2 * tr->mxtips);
       rax_free(bitVectors);
-      freeHashTable(h);
-      rax_free(h);
+      //freeHashTable(h);
+      //rax_free(h);
+      pllHashDestroy(&h, hash_dealloc_bipentry);
     }
 
   freeBestTree(bestT);

@@ -72,13 +72,11 @@ unsigned int pllHashString (const char * s, unsigned int size)
     @param item   Data associated with \a s
     @return       Returns \b PLL_TRUE if added with success, otherwise \b PLL_FALSE
 */
-int pllHashAdd  (pllHashTable * hTable, const char * s, void * item)
+int pllHashAdd  (pllHashTable * hTable, unsigned int hash, const char * s, void * item)
 {
-  unsigned int pos;
   pllHashItem * hItem;
 
-  pos   = pllHashString (s, hTable->size);
-  hItem = hTable->Items[pos];
+  hItem = hTable->Items[hash];
 
   /* If a string was given, check whether the record already exists */
   if (s)
@@ -91,6 +89,7 @@ int pllHashAdd  (pllHashTable * hTable, const char * s, void * item)
 
   hItem = (pllHashItem *) rax_malloc (sizeof (pllHashItem));
 
+  /* store the string together with the element if given */
   if (s)
    {
      hItem->str = (char *) rax_malloc ((strlen(s) + 1) * sizeof (char));
@@ -101,8 +100,9 @@ int pllHashAdd  (pllHashTable * hTable, const char * s, void * item)
 
   hItem->data = item;
 
-  hItem->next = hTable->Items[pos];
-  hTable->Items[pos] = hItem;
+  hItem->next = hTable->Items[hash];
+  hTable->Items[hash] = hItem;
+  hTable->entries += 1;
 
   return (PLL_TRUE);
 }
@@ -139,7 +139,8 @@ pllHashTable * pllHashInit (unsigned int n)
      rax_free (hTable);
      return (NULL);
    }
-  hTable->size  = n;
+  hTable->size    = n;
+  hTable->entries = 0;
  
   return (hTable);
 }

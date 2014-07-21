@@ -60,7 +60,7 @@ static pllHashTable * init_model_names (void)
    {
      item  = (int *) rax_malloc (sizeof (int));
      *item = i;
-     pllHashAdd (hashTable, protModels[i], (void *) item);
+     pllHashAdd (hashTable, pllHashString(protModels[i], hashTable->size), protModels[i], (void *) item);
    }
   return hashTable;
 }

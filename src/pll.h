@@ -308,7 +308,7 @@ typedef unsigned int hashNumberType;
 
 /** @brief ???Hash tables 
  * @todo add explanation of all hash tables  */
-struct ent
+typedef struct pllBipartitionEntry
 {
   unsigned int *bitVector;
   unsigned int *treeVector;
@@ -317,32 +317,30 @@ struct ent
   unsigned int bipNumber;
   unsigned int bipNumber2;
   unsigned int supportFromTreeset[2]; 
-  struct ent *next;
-};
+  struct pllBipartitionEntry *next;
+} pllBipartitionEntry;
 
-typedef struct ent entry;
- 
-typedef struct
-{
-  hashNumberType tableSize;
-  entry **table;
-  hashNumberType entryCount;
-}
-  hashtable;
-struct stringEnt
-{
-  int nodeNumber;
-  char *word;
-  struct stringEnt *next;
-};
-
-typedef struct stringEnt stringEntry;
-typedef struct
-{
-  hashNumberType tableSize;
-  stringEntry **table;
-}
-  stringHashtable;
+//typedef struct
+//{
+//  hashNumberType tableSize;
+//  entry **table;
+//  hashNumberType entryCount;
+//}
+//  hashtable;
+//struct stringEnt
+//{
+//  int nodeNumber;
+//  char *word;
+//  struct stringEnt *next;
+//};
+//
+//typedef struct stringEnt stringEntry;
+//typedef struct
+//{
+//  hashNumberType tableSize;
+//  stringEntry **table;
+//}
+//  stringHashtable;
 
 typedef struct pllHashItem
 {
@@ -355,6 +353,7 @@ typedef struct pllHashTable
 {
   unsigned int size;
   struct pllHashItem ** Items;
+  unsigned int entries;
 } pllHashTable;
 
 
@@ -1225,8 +1224,8 @@ typedef  struct  {
 
   unsigned int vLength;
 
-  //pllHashTable *h;                 /**< hashtable for ML convergence criterion */
-  hashtable *h;
+  pllHashTable *h;                 /**< hashtable for ML convergence criterion */
+  //hashtable *h;
  
   int optimizeRateCategoryInvocations;
 
@@ -1665,7 +1664,7 @@ extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 
 /* hash functions */
 unsigned int pllHashString (const char * s, unsigned int size);
-int pllHashAdd  (pllHashTable * hTable, const char * s, void * item);
+int pllHashAdd  (pllHashTable * hTable, unsigned int hash, const char * s, void * item);
 pllHashTable * pllHashInit (unsigned int n);
 int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
 void pllHashDestroy (struct pllHashTable ** hTable, void (*cbDealloc)(void *));
