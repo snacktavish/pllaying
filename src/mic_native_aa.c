@@ -391,9 +391,9 @@ double evaluateGTRGAMMAPROT_MIC(int *ex1, int *ex2, int *wgt, double *x1_start, 
           }
 
           if(!fastScaling)
-              term = PLL_LOG(0.25 * PLL_FABS(term)) + (ex2[i] * PLL_LOG(PLL_MINLIKELIHOOD));
+              term = log(0.25 * fabs(term)) + (ex2[i] * log(PLL_MINLIKELIHOOD));
           else
-              term = PLL_LOG(0.25 * PLL_FABS(term));
+              term = log(0.25 * fabs(term));
 
           sum += wgt[i] * term;
         }
@@ -423,9 +423,9 @@ double evaluateGTRGAMMAPROT_MIC(int *ex1, int *ex2, int *wgt, double *x1_start, 
               term += x1[j] * x2[j] * diagptable[j];
 
           if(!fastScaling)
-              term = PLL_LOG(0.25 * PLL_FABS(term)) + ((ex1[i] + ex2[i]) * PLL_LOG(PLL_MINLIKELIHOOD));
+              term = log(0.25 * fabs(term)) + ((ex1[i] + ex2[i]) * log(PLL_MINLIKELIHOOD));
           else
-              term = PLL_LOG(0.25 * PLL_FABS(term));
+              term = log(0.25 * fabs(term));
 
           sum += wgt[i] * term;
         }

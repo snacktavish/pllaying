@@ -230,8 +230,8 @@ makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberO
 
     for(j = 1; j < states; j++)
     {
-      d1[j] = EXP(rptr[i] * lz1[j]);
-      d2[j] = EXP(rptr[i] * lz2[j]);
+      d1[j] = exp(rptr[i] * lz1[j]);
+      d2[j] = exp(rptr[i] * lz2[j]);
 
     }
 
@@ -263,8 +263,8 @@ makeP(double z1, double z2, double *rptr, double *EI,  double *EIGN, int numberO
 
     for(j = 1; j < states; j++)
     {
-      d1[j] = EXP (lz1[j]);
-      d2[j] = EXP (lz2[j]);
+      d1[j] = exp (lz1[j]);
+      d2[j] = exp (lz2[j]);
     }
 
     for(j = 0; j < states; j++)
@@ -340,7 +340,7 @@ static int pllGetTransitionMatrixLG4 (partitionList * pr, nodeptr p, int model, 
    {
      for (j = 1; j < states; ++j)
       {
-        d[j] = EXP(rptr[i] * EIGN[i][j] * p->z[model]);
+        d[j] = exp(rptr[i] * EIGN[i][j] * p->z[model]);
       }
      for (j = 0; j < states; ++ j)
       {
@@ -385,7 +385,7 @@ static int pllGetTransitionMatrixNormal (pllInstance * tr, partitionList * pr, n
   d[0] = 1.0;
   for (j = 1; j < states; ++ j)
    {
-     d[j] = EXP(rptr[rate] * EIGN[j] * lz);
+     d[j] = exp(rptr[rate] * EIGN[j] * lz);
    }
 
   for (i = 0; i < states; ++ i)
@@ -484,8 +484,8 @@ static void makeP_FlexLG4(double z1, double z2, double *rptr, double *EI[4],  do
     {
       for(j = 1; j < numStates; j++)
         {
-          d1[j] = EXP (rptr[i] * EIGN[i][j] * z1);
-          d2[j] = EXP (rptr[i] * EIGN[i][j] * z2);
+          d1[j] = exp (rptr[i] * EIGN[i][j] * z1);
+          d2[j] = exp (rptr[i] * EIGN[i][j] * z2);
         }
 
       for(j = 0; j < numStates; j++)
@@ -2535,7 +2535,7 @@ static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int nu
       d1[0] = 1.0;
 
       for(j = 1; j < numStates; j++)    
-        d1[j] = EXP(rptr[i] * lz1[j]);
+        d1[j] = exp(rptr[i] * lz1[j]);
          
       for(j = 0; j < numStates; j++)
         {

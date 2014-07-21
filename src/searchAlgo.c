@@ -3029,7 +3029,8 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
   infoList iList;
   pllOptimizeBranchLengths(tr, pr, 32);
 
-  hashtable *h = (hashtable*) NULL;
+  //pllHashTable *h = NULL;
+  hashtable *h = NULL;
   unsigned int **bitVectors = (unsigned int**) NULL;
 
   /* Security check... These variables might have not been initialized! */
@@ -3040,6 +3041,7 @@ pllRaxmlSearchAlgorithm(pllInstance * tr, partitionList * pr,
     {
       bitVectors = initBitVector(tr->mxtips, &vLength);
       h = initHashTable(tr->mxtips * 4);
+      //h = pllHashInit (tr->mxtips * 4);
     }
 
   bestT = (bestlist *) rax_malloc(sizeof(bestlist));

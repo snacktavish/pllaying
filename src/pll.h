@@ -98,22 +98,13 @@ extern "C" {
 #define PLL_DELTAZ                              0.00001     /* test of net branch length change in update */
 #define PLL_DEFAULTZ                            0.9         /* value of z assigned as starting point */
 #define PLL_UNLIKELY                            -1.0E300    /* low likelihood for initialization */
-
-
 #define PLL_SUMMARIZE_LENGTH                    -3
 #define PLL_SUMMARIZE_LH                        -2
 #define PLL_NO_BRANCHES                         -1
-
 #define PLL_MASK_LENGTH                         32
-#define GET_BITVECTOR_LENGTH(x) ((x % PLL_MASK_LENGTH) ? (x / PLL_MASK_LENGTH + 1) : (x / PLL_MASK_LENGTH))
-
 #define PLL_ZMIN                                1.0E-15  /* max branch prop. to -log(PLL_ZMIN) (= 34) */
 #define PLL_ZMAX                                (1.0 - 1.0E-6) /* min branch prop. to 1.0-zmax (= 1.0E-6) */
-
-#define PLL_TWOTOTHE256 \
-  115792089237316195423570985008687907853269984665640564039457584007913129639936.0  
-                                                     /*  2**256 (exactly)  */
-
+#define PLL_TWOTOTHE256                         115792089237316195423570985008687907853269984665640564039457584007913129639936.0  /*  2**256 (exactly)  */
 #define PLL_MINLIKELIHOOD                       (1.0/PLL_TWOTOTHE256)
 #define PLL_MINUSMINLIKELIHOOD                  -PLL_MINLIKELIHOOD
 
@@ -175,48 +166,23 @@ extern "C" {
    on the other hand 0.001 caused problems with some of the 16-state secondary structure models
 
    For some reason the frequency settings seem to be repeatedly causing numerical problems
-   
 */
 
 #define PLL_ITMAX                               100    /* max number of iterations in brent's algorithm */
 
-
-
 #define PLL_SHFT(a,b,c,d)                       (a)=(b);(b)=(c);(c)=(d);
 #define PLL_SIGN(a,b)                           ((b) > 0.0 ? fabs(a) : -fabs(a))
-
 #define PLL_ABS(x)                              (((x)<0)   ?  (-(x)) : (x))
 #define PLL_MIN(x,y)                            (((x)<(y)) ?    (x)  : (y))
 #define PLL_MAX(x,y)                            (((x)>(y)) ?    (x)  : (y))
-#define PLL_FABS(x)                             fabs(x)
-
-#ifdef _USE_FPGA_LOG
-extern double log_approx (double input);
-#define PLL_LOG(x)  log_approx(x)
-#else
-#define PLL_LOG(x)  log(x)
-#endif
-
-
-#ifdef _USE_FPGA_EXP
-extern double exp_approx (double x);
-#define EXP(x)  exp_approx(x)
-#else
-#define EXP(x)  exp(x)
-#endif
-
-
-
-#define PLL_SWAP(x,y) do{ __typeof__ (x) _t = x; x = y; y = _t; } while(0)
-
-
-#define PointGamma(prob,alpha,beta)  PointChi2(prob,2.0*(alpha))/(2.0*(beta))
+#define PLL_SWAP(x,y)                           do{ __typeof__ (x) _t = x; x = y; y = _t; } while(0)
+#define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
 #define PLL_LIB_VERSION                         "1.0.0"
 #define PLL_LIB_DATE                            "September 2013"
 
-
+/* aminoacid substitution models */
 #define PLL_DAYHOFF                             0
 #define PLL_DCMUT                               1
 #define PLL_JTT                                 2
@@ -238,18 +204,18 @@ extern double exp_approx (double x);
 #define PLL_AUTO                                18
 #define PLL_LG4                                 19
 #define PLL_GTR                                 20  /* GTR always needs to be the last one */
-
 #define PLL_NUM_PROT_MODELS                     21
 
 /* bipartition stuff */
-
 #define PLL_BIPARTITIONS_RF                     4
 
-
+/* scenarios for likelihood computation */
 #define PLL_TIP_TIP                             0
 #define PLL_TIP_INNER                           1
 #define PLL_INNER_INNER                         2
 
+
+/* available data types in PLL */
 #define PLL_MIN_MODEL                          -1
 #define PLL_BINARY_DATA                         0
 #define PLL_DNA_DATA                            1
@@ -289,6 +255,8 @@ extern double exp_approx (double x);
 #define PLL_MK_MULTI_STATE                      1
 #define PLL_GTR_MULTI_STATE                     2
 
+
+/* available models of rate heterogeneity in PLL */
 #define PLL_CAT                                 0
 #define PLL_GAMMA                               1
 
@@ -329,6 +297,17 @@ typedef struct
 
 /** @brief ???
  * @todo add explanation, is this ever used?  */
+ 
+typedef unsigned int hashNumberType;
+
+
+
+/*typedef uint_fast32_t parsimonyNumber;*/
+
+#define PLL_PCF 32
+
+/** @brief ???Hash tables 
+ * @todo add explanation of all hash tables  */
 struct ent
 {
   unsigned int *bitVector;
@@ -342,17 +321,7 @@ struct ent
 };
 
 typedef struct ent entry;
-
-typedef unsigned int hashNumberType;
-
-
-
-/*typedef uint_fast32_t parsimonyNumber;*/
-
-#define PLL_PCF 32
-
-/** @brief ???Hash tables 
- * @todo add explanation of all hash tables  */
+ 
 typedef struct
 {
   hashNumberType tableSize;
@@ -375,12 +344,12 @@ typedef struct
 }
   stringHashtable;
 
-struct pllHashItem
+typedef struct pllHashItem
 {
   void * data;
   char * str;
   struct pllHashItem * next;
-};
+} pllHashItem;
 
 typedef struct pllHashTable
 {
@@ -1256,7 +1225,8 @@ typedef  struct  {
 
   unsigned int vLength;
 
-  hashtable *h;                 /**< hashtable for ML convergence criterion */
+  //pllHashTable *h;                 /**< hashtable for ML convergence criterion */
+  hashtable *h;
  
   int optimizeRateCategoryInvocations;
 
@@ -1695,10 +1665,10 @@ extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 
 /* hash functions */
 unsigned int pllHashString (const char * s, unsigned int size);
-int pllHashAdd  (struct pllHashTable * hTable, const char * s, void * item);
-struct pllHashTable * pllHashInit (unsigned int n);
+int pllHashAdd  (pllHashTable * hTable, const char * s, void * item);
+pllHashTable * pllHashInit (unsigned int n);
 int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
-void pllHashDestroy (struct pllHashTable ** hTable, int);
+void pllHashDestroy (struct pllHashTable ** hTable, void (*cbDealloc)(void *));
 
 /* node specific functions */
 nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);

@@ -1821,7 +1821,7 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
 
   tr->bitVectors = NULL;
   tr->vLength    = 0;
-  tr->h          = NULL;
+  //tr->h          = NULL;
 
   /* TODO: Fix hash type */
   tr->nameHash   = pllHashInit (10 * tr->mxtips);
@@ -2450,7 +2450,7 @@ pllDestroyInstance (pllInstance * tr)
   for (i = 1; i <= tr->mxtips; ++ i)
     rax_free (tr->nameList[i]);
   
-  pllHashDestroy (&(tr->nameHash), PLL_FALSE);
+  pllHashDestroy (&(tr->nameHash), NULL);
   if (tr->yVector)
    {
      if (tr->bDeep == PLL_DEEP_COPY)

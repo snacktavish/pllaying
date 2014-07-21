@@ -3827,7 +3827,7 @@ void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian
 	t = 0.0; 
       
       for(i = 0; i < K; i++)     
-	gammaRates[i] = PointGamma((double)(i * 2 + 1) * middle, alfa, beta);
+	gammaRates[i] = PLL_POINT_GAMMA((double)(i * 2 + 1) * middle, alfa, beta);
       
       for (i = 0; i < K; i++) 
 	t += gammaRates[i];
@@ -3839,7 +3839,7 @@ void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian
       lnga1 = LnGamma(alfa + 1);
 
       for (i = 0; i < K - 1; i++)
-	gammaProbs[i] = PointGamma((i + 1.0) / K, alfa, beta);
+	gammaProbs[i] = PLL_POINT_GAMMA((i + 1.0) / K, alfa, beta);
 
       for (i = 0; i < K - 1; i++)
 	gammaProbs[i] = IncompleteGamma(gammaProbs[i] * beta, alfa + 1, lnga1);   

@@ -458,7 +458,7 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
   {      
     d[states * i] = 1.0;
     for(l = 1; l < states; l++)
-      d[states * i + l] = EXP(dd[l] * rptr[i]);
+      d[states * i + l] = exp(dd[l] * rptr[i]);
   }
 
 
@@ -496,7 +496,7 @@ static void coreCAT_FLEX(int upper, int numberOfCategories, double *sum,
     /* below we are implementing the other mathematical operations that are required 
        to obtain the deirivatives */
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
@@ -555,7 +555,7 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
 
     for(l = 1; l < states; l++)
     {
-      diagptable[i * gammaStates + l * 4]     = EXP(EIGN[l] * ki * lz);
+      diagptable[i * gammaStates + l * 4]     = exp(EIGN[l] * ki * lz);
       diagptable[i * gammaStates + l * 4 + 1] = EIGN[l] * ki;
       diagptable[i * gammaStates + l * 4 + 2] = EIGN[l] * EIGN[l] * kisqr;
     }
@@ -602,7 +602,7 @@ static void coreGAMMA_FLEX(int upper, double *sumtable, volatile double *ext_dln
 
 */
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
@@ -1093,7 +1093,7 @@ static void topLevelMakenewz(pllInstance *tr, partitionList * pr, double *z0, in
           double tantmp = -dlnLdlz[i] / d2lnLdlz2[i];
           if (tantmp < 100)
           {
-            z[i] *= EXP(tantmp);
+            z[i] *= exp(tantmp);
             if (z[i] < PLL_ZMIN)
               z[i] = PLL_ZMIN;
 
@@ -1969,7 +1969,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
 
     for(l = 1; l < 4; l++)
     {
-      diagptable0[i * 4 + l] = EXP(EIGN[l] * ki * lz);
+      diagptable0[i * 4 + l] = exp(EIGN[l] * ki * lz);
       diagptable1[i * 4 + l] = EIGN[l] * ki;
       diagptable2[i * 4 + l] = EIGN[l] * EIGN[l] * kisqr;
     }
@@ -2007,7 +2007,7 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
     _mm_storel_pd(&dlnLidlz, a1);
     _mm_storel_pd(&d2lnLidlz2, a2); 
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;     
@@ -2066,9 +2066,9 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
   for(i = 0; i < numberOfCategories; i++)
   {
     d[i * 4 + 0] = 1.0;
-    d[i * 4 + 1] = EXP(dd1 * rptr[i]);
-    d[i * 4 + 2] = EXP(dd2 * rptr[i]);
-    d[i * 4 + 3] = EXP(dd3 * rptr[i]);
+    d[i * 4 + 1] = exp(dd1 * rptr[i]);
+    d[i * 4 + 2] = exp(dd2 * rptr[i]);
+    d[i * 4 + 3] = exp(dd3 * rptr[i]);
   }
 
   for (i = 0; i < upper; i++)
@@ -2093,7 +2093,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
     _mm_storel_pd(&dlnLidlz, dlnLidlzv);                 
     _mm_storel_pd(&d2lnLidlz2, d2lnLidlz2v);      
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
@@ -2133,7 +2133,7 @@ static void coreGTRGAMMAPROT_LG4(double *gammaRates, double *EIGN[4], double *su
 
       for(l = 1; l < 20; l++)
 	{
-	  diagptable0[i * 20 + l] = EXP(EIGN[i][l] * ki * lz);
+	  diagptable0[i * 20 + l] = exp(EIGN[i][l] * ki * lz);
 	  diagptable1[i * 20 + l] = EIGN[i][l] * ki;
 	  diagptable2[i * 20 + l] = EIGN[i][l] * EIGN[i][l] * kisqr;
 	}
@@ -2171,7 +2171,7 @@ static void coreGTRGAMMAPROT_LG4(double *gammaRates, double *EIGN[4], double *su
       _mm_storel_pd(&dlnLidlz, a1);
       _mm_storel_pd(&d2lnLidlz2, a2);
 
-      inv_Li = 1.0 / PLL_FABS (inv_Li);
+      inv_Li = 1.0 / fabs (inv_Li);
 
       dlnLidlz   *= inv_Li;
       d2lnLidlz2 *= inv_Li;
@@ -2210,7 +2210,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
 
     for(l = 1; l < 20; l++)
     {
-      diagptable0[i * 20 + l] = EXP(EIGN[l] * ki * lz);
+      diagptable0[i * 20 + l] = exp(EIGN[l] * ki * lz);
       diagptable1[i * 20 + l] = EIGN[l] * ki;
       diagptable2[i * 20 + l] = EIGN[l] * EIGN[l] * kisqr;
     }
@@ -2248,7 +2248,7 @@ static void coreGTRGAMMAPROT(double *gammaRates, double *EIGN, double *sumtable,
     _mm_storel_pd(&dlnLidlz, a1);
     _mm_storel_pd(&d2lnLidlz2, a2);
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;
@@ -2293,7 +2293,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
   {      
     d1[20 * i] = 1.0;
     for(l = 1; l < 20; l++)
-      d1[20 * i + l] = EXP(dd[l] * rptr[i]);
+      d1[20 * i + l] = exp(dd[l] * rptr[i]);
   }
 
   for (i = 0; i < upper; i++)
@@ -2326,7 +2326,7 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
     _mm_storel_pd(&dlnLidlz, a1);                 
     _mm_storel_pd(&d2lnLidlz2, a2);
 
-    inv_Li = 1.0 / PLL_FABS (inv_Li);
+    inv_Li = 1.0 / fabs (inv_Li);
 
     dlnLidlz   *= inv_Li;
     d2lnLidlz2 *= inv_Li;

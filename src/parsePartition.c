@@ -45,7 +45,7 @@ extern const char *protModels[PLL_NUM_PROT_MODELS];
 
 static void destroy_model_names(pllHashTable * hashTable)
 {
-  pllHashDestroy (&hashTable, PLL_TRUE);
+  pllHashDestroy (&hashTable, rax_free);
 }
 
 static pllHashTable * init_model_names (void)
