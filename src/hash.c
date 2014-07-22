@@ -60,14 +60,16 @@ unsigned int pllHashString (const char * s, unsigned int size)
 
 /** @brief Add a string and its data to a hashtable
     
-    Add an \a item associated with string \a s to hashtable \a hTable. If
-    another record with the same computed hash and the same associated string
-    exists in the hash table, then the new record will \b not be added and the
+    Add an \a item and possibly a string \a s to hashtable \a hTable at position
+    \a hash, where \a hash must be a value between 0 and \a hTable->size - 1. If
+    string \a s is given and another record with the same computed hash and the
+    same associated string exists in the hash table, then the new record will \b not be added and the
     value \b PLL_FALSE is returned. Otherwise, the new item is added at the
     beginning of the corresponding linked list and the value \b PLL_TRUE is
     returned.
 
     @param hTable Hashtable
+    @param hash   Position where to store in hash table
     @param s      String
     @param item   Data associated with \a s
     @return       Returns \b PLL_TRUE if added with success, otherwise \b PLL_FALSE

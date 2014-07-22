@@ -109,10 +109,6 @@ extern "C" {
 #define PLL_MINUSMINLIKELIHOOD                  -PLL_MINLIKELIHOOD
 
 
-#define PLL_DEEP_COPY                           1 << 0
-#define PLL_SHALLOW_COPY                        1 << 1
-
-
 #define PLL_FORMAT_PHYLIP                       1 
 #define PLL_FORMAT_FASTA                        2
 #define PLL_FORMAT_NEWICK                       3
@@ -682,38 +678,6 @@ typedef  struct noderec
 }
   node, *nodeptr;
 
-/** @struct info
-    
-    @brief A brief line
-
-    @var info::lh
-    @brief this is lh
-
-    Detailed description of lh
-
-    @var info::number
-    @brief This is a number
-    Detailed description of number
-*/
-typedef struct
-  {
-    double lh;
-    int number;
-  }
-  info;
-
-typedef struct bInf {
-  double likelihood;
-  nodeptr node;
-} bestInfo;
-
-typedef struct iL {
-  bestInfo *list;
-  int n;
-  int valid;
-} infoList;
-
-
 typedef unsigned int parsimonyNumber;
 
 /* @brief Alignment, transition model, model of rate heterogenety and likelihood vectors for one partition.
@@ -1153,8 +1117,6 @@ typedef  struct  {
      not change depending on datatype */
 
   /* model stuff end */
-  int              bDeep;            /**< yVectors are 0: shallow-copy, or 1: deep-copy of alignment */
-
   unsigned char    **yVector;        /**< list of raw sequences (parsed from the alignment)*/
 
   int              secondaryStructureModel;
@@ -1525,28 +1487,18 @@ extern pllInstance * pllCreateInstance (pllInstanceAttr * pInst);
  *  @ingroup instanceLinkingGroup
  *  @brief Load alignment to the PLL instance
  *   
- *   Loads (copies) the parsed alignment to the PLL instance. Depending
- *   on how the \a bDeep flag is set, the alignment in the PLL instance
- *   is a deep or shallow copy of \a alignmentData
+ *   Loads (copies) the parsed alignment \a alignmentData to the PLL instance
+ *   as a deep copy.
  * 
  *    @param tr              The library instance
  *    @param alignmentData   The multiple sequence alignment
  *    @param partitions      List of partitions
- *    @param bDeep           Controls how the alignment is used within the PLL
-                             instance. If it is set to \b PLL_DEEP_COPY, then 
-                             new memory will be allocated and the alignment will
-                             be copied there (deep copy). On the other hand, if
-                             \b PLL_SHALLOW_COPY is specified, only the pointers
-                             will be copied and therefore, the alignment will be
-                             shared between the alignment structure and the
-                             library instance (shallow copy).
  *
  *    @return Returns 1 in case of success, 0 otherwise.
  */
 extern int pllLoadAlignment (pllInstance * tr, 
-                         pllAlignmentData * alignmentData, 
-                         partitionList * pList, 
-                         int bDeep);
+                             pllAlignmentData * alignmentData, 
+                             partitionList * pList);
 
 /**
  * @brief Compute the empirical base frequencies for all partitions
@@ -1559,8 +1511,8 @@ extern int pllLoadAlignment (pllInstance * tr,
  * @return   A list of \a pl->numberOfPartitions arrays each of size
              \a pl->partitionData[i]->states, where \a i is the \a i-th partition
 */
-extern double ** pllBaseFrequenciesGTR (partitionList * pl, 
-                         pllAlignmentData * alignmentData);
+extern double ** pllBaseFrequenciesAlignment (pllAlignmentData * alignmentData, partitionList * pl);
+extern double ** pllBaseFrequenciesInstance (pllInstance * tr, partitionList * pl);
 
 /* pthreads and MPI */
 extern void pllStartPthreads (pllInstance *tr, partitionList *pr);
@@ -1598,7 +1550,8 @@ extern void  pllQueuePartitionsDestroy (pllQueue ** partitions);
 extern pllQueue * pllPartitionParse (const char * filename);
 extern pllQueue * pllPartitionParseString (const char * p);
 extern void pllPartitionDump (pllQueue * partitions);
-void pllBaseSubstitute (pllAlignmentData * alignmentData, partitionList * partitions);
+void pllBaseSubstitute (pllInstance * tr, partitionList * partitions);
+//void pllBaseSubstitute (pllAlignmentData * tr, partitionList * partitions);
 partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
 int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
 extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
@@ -1613,7 +1566,7 @@ extern pllAlignmentData * pllParseAlignmentFile (int fileType, const char *);
 
 
 /* model management */
-int pllInitModel (pllInstance *, partitionList *, pllAlignmentData *);
+int pllInitModel (pllInstance *, partitionList *);
 void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model);
 void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian);
 int pllLinkAlphaParameters(char *string, partitionList *pr);

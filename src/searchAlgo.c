@@ -50,6 +50,17 @@
 #include "pll.h"
 #include "pllInternal.h"
 
+typedef struct bInf {
+  double likelihood;
+  nodeptr node;
+} bestInfo;
+
+typedef struct iL {
+  bestInfo *list;
+  int n;
+  int valid;
+} infoList;
+
 double treeOptimizeRapid(pllInstance *tr, partitionList *pr, int mintrav, int maxtrav, bestlist *bt, infoList *iList);
 nniMove getBestNNIForBran(pllInstance* tr, partitionList *pr, nodeptr p, double curLH);
 void evalNNIForSubtree(pllInstance* tr, partitionList *pr, nodeptr p, nniMove* nniList, int* cnt, int* cnt_nni, double curLH);

@@ -88,7 +88,7 @@ int main (int argc, char * argv[])
   pllTreeInitTopologyRandom (tr, alignmentData->sequenceCount, alignmentData->sequenceLabels); */
 
   /* Connect the alignment and partition structure with the tree structure */
-  if (!pllLoadAlignment (tr, alignmentData, partitions, PLL_DEEP_COPY))
+  if (!pllLoadAlignment (tr, alignmentData, partitions))
    {
      fprintf (stderr, "Incompatible tree/alignment combination\n");
      return (EXIT_FAILURE);
@@ -97,7 +97,7 @@ int main (int argc, char * argv[])
   /* Initialize the model. Note that this function will also perform a full
      tree traversal and evaluate the likelihood of the tree. Therefore, you
      have the guarantee that tr->likelihood the valid likelihood */
-  pllInitModel(tr, partitions, alignmentData);
+  pllInitModel(tr, partitions);
 
   pllOptimizeBranchLengths (tr, partitions, 64);
 
