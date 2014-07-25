@@ -74,8 +74,7 @@ static pllHashTable * init_model_names (void)
     @param partitions
       Queue structure with parsed info
 */
-void
-pllQueuePartitionsDestroy (pllQueue ** partitions)
+void pllQueuePartitionsDestroy (pllQueue ** partitions)
 {
   pllPartitionInfo * pi;
   pllPartitionRegion * region;
@@ -94,8 +93,7 @@ pllQueuePartitionsDestroy (pllQueue ** partitions)
   rax_free (*partitions);
 }
 
-static pllQueue *
-parse_partition (int * inp, pllHashTable * proteinModelsHash)
+static pllQueue * parse_partition (int * inp, pllHashTable * proteinModelsHash)
 {
   int input, i;
   pllLexToken token;
@@ -133,7 +131,21 @@ parse_partition (int * inp, pllHashTable * proteinModelsHash)
     // check partition model
     pi->protModels = -1;
 
-    if (!strcmp (pi->partitionModel, "DNA"))
+    if (!strcmp(pi->partitionModel, "BIN"))
+     {
+       pi->protModels = PLL_FALSE;
+       pi->protUseEmpiricalFreqs = PLL_FALSE;
+       pi->dataType = PLL_BINARY_DATA;
+       pi->optimizeBaseFrequencies = PLL_FALSE;
+     }
+    else if (!strcmp(pi->partitionModel, "BINX"))
+     {
+       pi->protModels = PLL_FALSE;
+       pi->protUseEmpiricalFreqs = PLL_FALSE;
+       pi->dataType = PLL_BINARY_DATA;
+       pi->optimizeBaseFrequencies = PLL_TRUE;
+     }
+    else if (!strcmp (pi->partitionModel, "DNA"))
      {
        pi->protModels = PLL_FALSE;
        pi->protUseEmpiricalFreqs  = PLL_FALSE;

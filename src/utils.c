@@ -73,7 +73,27 @@
 
 #include "globalVariables.h"
 
-/* mappings of DNA/AA alphabet to numbers */
+/* mappings of BIN/DNA/AA alphabet to numbers */
+
+static const char PLL_MAP_BIN[256] =
+ {
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  3, -1, -1,
+    1,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  3,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+  };
 
 static const char PLL_MAP_NT[256] =
  {
@@ -92,7 +112,7 @@ static const char PLL_MAP_NT[256] =
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
  };
 
 static const char PLL_MAP_AA[256] =
@@ -112,7 +132,7 @@ static const char PLL_MAP_AA[256] =
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
  };
 
 
@@ -519,9 +539,9 @@ void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr)
       pllUpdatePartialsAncestral(tr, pr, p);
 
       /* and print it to terminal, the two booleans that are set to PLL_TRUE here 
-	 tell the function to print the marginal probabilities as well as 
-	 a discrete inner sequence, that is, ACGT etc., always selecting and printing 
-	 the state that has the highest probability */
+         tell the function to print the marginal probabilities as well as 
+         a discrete inner sequence, that is, ACGT etc., always selecting and printing 
+         the state that has the highest probability */
 
       printAncestralState(p, PLL_TRUE, PLL_TRUE, tr, pr);
     }
@@ -549,19 +569,19 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
     innerNodes = localTree->mxtips - 2;
 
   if(tid > 0)
-      localTree->rateCategory    = (int *)    rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(int));	    
+      localTree->rateCategory    = (int *)    rax_calloc((size_t)localTree->originalCrunchedLength, sizeof(int));           
 
   for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
     {
       size_t 
-	width = localPartitions->partitionData[model]->width;
+        width = localPartitions->partitionData[model]->width;
 
       const partitionLengths 
-	*pl = getPartitionLengths(localPartitions->partitionData[model]);
+        *pl = getPartitionLengths(localPartitions->partitionData[model]);
 
       /* 
-	 globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch
-	 to this end, it must also be initialized with zeros -> calloc
+         globalScaler needs to be 2 * localTree->mxtips such that scalers of inner AND tip nodes can be added without a case switch
+         to this end, it must also be initialized with zeros -> calloc
       */
 
       localPartitions->partitionData[model]->globalScaler    = (unsigned int *)rax_calloc(2 *(size_t)localTree->mxtips, sizeof(unsigned int));
@@ -580,20 +600,20 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       //localPartitions->partitionData[model]->partitionName      = NULL;   // very imporatant since it is deallocated in pllPartitionDestroy
       
        if(localPartitions->partitionData[model]->dataType == PLL_AA_DATA && localPartitions->partitionData[model]->protModels == PLL_LG4)      
-	{	  	  
-	  int 
-	    k;
-	  
-	  for(k = 0; k < 4; k++)
-	    {	    
-	      localPartitions->partitionData[model]->EIGN_LG4[k]              = (double*)rax_malloc(pl->eignLength * sizeof(double));
-	      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->EV_LG4[k]), PLL_BYTE_ALIGNMENT, pl->evLength * sizeof(double));
-	      localPartitions->partitionData[model]->EI_LG4[k]                = (double*)rax_malloc(pl->eiLength * sizeof(double));
-	      localPartitions->partitionData[model]->substRates_LG4[k]        = (double *)rax_malloc(pl->substRatesLength * sizeof(double));
-	      localPartitions->partitionData[model]->frequencies_LG4[k]       = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
-	      rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->tipVector_LG4[k]), PLL_BYTE_ALIGNMENT, pl->tipVectorLength * sizeof(double));
-	    }
-	}
+        {
+          int 
+            k;
+          
+          for(k = 0; k < 4; k++)
+            {       
+              localPartitions->partitionData[model]->EIGN_LG4[k]              = (double*)rax_malloc(pl->eignLength * sizeof(double));
+              rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->EV_LG4[k]), PLL_BYTE_ALIGNMENT, pl->evLength * sizeof(double));
+              localPartitions->partitionData[model]->EI_LG4[k]                = (double*)rax_malloc(pl->eiLength * sizeof(double));
+              localPartitions->partitionData[model]->substRates_LG4[k]        = (double *)rax_malloc(pl->substRatesLength * sizeof(double));
+              localPartitions->partitionData[model]->frequencies_LG4[k]       = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
+              rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->tipVector_LG4[k]), PLL_BYTE_ALIGNMENT, pl->tipVectorLength * sizeof(double));
+            }
+        }
 
       localPartitions->partitionData[model]->symmetryVector    = (int *)rax_malloc((size_t)pl->symmetryVectorLength  * sizeof(int));
       localPartitions->partitionData[model]->frequencyGrouping = (int *)rax_malloc((size_t)pl->frequencyGroupingLength  * sizeof(int));
@@ -610,15 +630,15 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
 
       /* 
-	 Initializing the xVector array like this is absolutely required !!!!
-	 I don't know which programming genious removed this, but it must absolutely stay in here!!!!
+         Initializing the xVector array like this is absolutely required !!!!
+         I don't know which programming genious removed this, but it must absolutely stay in here!!!!
       */
       
       {
-	int k;
-	
-	for(k = 0; k < localTree->mxtips; k++)
-	      localPartitions->partitionData[model]->xVector[k] = (double*)NULL;       
+        int k;
+        
+        for(k = 0; k < localTree->mxtips; k++)
+              localPartitions->partitionData[model]->xVector[k] = (double*)NULL;       
       }
 
 
@@ -633,8 +653,8 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       const int aligned_width = width % PLL_VECTOR_WIDTH == 0 ? width : width + (PLL_VECTOR_WIDTH - (width % PLL_VECTOR_WIDTH));
 
       rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->sumBuffer), PLL_BYTE_ALIGNMENT, aligned_width *
-										      span *
-										      sizeof(double));
+                                                                                      span *
+                                                                                      sizeof(double));
 
       // Alexey: fill padding entries with 1. (will be corrected with site weights, s. below)
       {
@@ -657,34 +677,34 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       /* initialize data structures for per-site likelihood scaling */
 
       if(localTree->fastScaling)
-	{
-	   localPartitions->partitionData[model]->expVector      = (int **)NULL;
-	   localPartitions->partitionData[model]->expSpaceVector = (size_t *)NULL;
-	}
+        {
+           localPartitions->partitionData[model]->expVector      = (int **)NULL;
+           localPartitions->partitionData[model]->expSpaceVector = (size_t *)NULL;
+        }
       else
-	{	 
-	  localPartitions->partitionData[model]->expVector      = (int **)rax_malloc(sizeof(int*) * innerNodes);
-	   
-	  /* 
-	     Initializing the expVector array like this is absolutely required !!!!
-	     Not doing this can (and did) cause segmentation faults !!!!
-	  */
-	  
-	  {
-	    int k;
+        {        
+          localPartitions->partitionData[model]->expVector      = (int **)rax_malloc(sizeof(int*) * innerNodes);
+           
+          /* 
+             Initializing the expVector array like this is absolutely required !!!!
+             Not doing this can (and did) cause segmentation faults !!!!
+          */
+          
+          {
+            int k;
 
-	    for(k = 0; k < innerNodes; k++)
-	      localPartitions->partitionData[model]->expVector[k] = (int*)NULL; 
-	  }
+            for(k = 0; k < innerNodes; k++)
+              localPartitions->partitionData[model]->expVector[k] = (int*)NULL; 
+          }
 
-	  localPartitions->partitionData[model]->expSpaceVector = (size_t *)rax_calloc(innerNodes, sizeof(size_t));
-	}
+          localPartitions->partitionData[model]->expSpaceVector = (size_t *)rax_calloc(innerNodes, sizeof(size_t));
+        }
 
       /* data structure to store the marginal ancestral probabilities in the sequential version or for each thread */
 
       rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->ancestralBuffer), PLL_BYTE_ALIGNMENT, width *
-										 (size_t)(localPartitions->partitionData[model]->states) *
-										 sizeof(double));
+                                                                                 (size_t)(localPartitions->partitionData[model]->states) *
+                                                                                 sizeof(double));
 
       /* count and accumulate how many bytes we will need for storing a full ancestral vector. for this we addf over the per-partition space requirements in bytes */
       /* ancestralVectorWidth += ((size_t)(pr->partitionData[model]->upper - pr->partitionData[model]->lower) * (size_t)(localPartitions->partitionData[model]->states) * sizeof(double)); */
@@ -710,20 +730,20 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       localPartitions->partitionData[model]->rateCategory = (int *)rax_calloc(width, sizeof(int));
 
       if(width > 0 && localTree->saveMemory)
-	{
-	  localPartitions->partitionData[model]->gapVectorLength = ((int)width / 32) + 1;
-	  assert(4 == sizeof(unsigned int));
-	  localPartitions->partitionData[model]->gapVector = (unsigned int*)rax_calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
-	  rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->gapColumn),PLL_BYTE_ALIGNMENT, ((size_t)localTree->mxtips) *
-									       ((size_t)(localPartitions->partitionData[model]->states)) *
-									       discreteRateCategories(localTree->rateHetModel) * sizeof(double));
-	}
+        {
+          localPartitions->partitionData[model]->gapVectorLength = ((int)width / 32) + 1;
+          assert(4 == sizeof(unsigned int));
+          localPartitions->partitionData[model]->gapVector = (unsigned int*)rax_calloc((size_t)localPartitions->partitionData[model]->gapVectorLength * 2 * (size_t)localTree->mxtips, sizeof(unsigned int));
+          rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->gapColumn),PLL_BYTE_ALIGNMENT, ((size_t)localTree->mxtips) *
+                                                                               ((size_t)(localPartitions->partitionData[model]->states)) *
+                                                                               discreteRateCategories(localTree->rateHetModel) * sizeof(double));
+        }
       else
-	{
-	  localPartitions->partitionData[model]->gapVectorLength = 0;
-	  localPartitions->partitionData[model]->gapVector = (unsigned int*)NULL;
-	  localPartitions->partitionData[model]->gapColumn = (double*)NULL;
-	}              
+        {
+          localPartitions->partitionData[model]->gapVectorLength = 0;
+          localPartitions->partitionData[model]->gapVector = (unsigned int*)NULL;
+          localPartitions->partitionData[model]->gapColumn = (double*)NULL;
+        }              
     }
 }
 
@@ -746,23 +766,23 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
   if(localTree->saveMemory)
     {
       for(model = 0; model < (size_t)localPartitions->numberOfPartitions; model++)
-	{
-	  int        
-	    undetermined = getUndetermined(localPartitions->partitionData[model]->dataType);
+        {
+          int        
+            undetermined = getUndetermined(localPartitions->partitionData[model]->dataType);
 
-	  size_t
-	    i,
-	    j,
-	    width =  localPartitions->partitionData[model]->width;
+          size_t
+            i,
+            j,
+            width =  localPartitions->partitionData[model]->width;
 
-	  if(width > 0)
-	    {	   	    	      	    	     
-	      for(j = 1; j <= (size_t)(localTree->mxtips); j++)
-		for(i = 0; i < width; i++)
-		  if(localPartitions->partitionData[model]->yVector[j][i] == undetermined)
-		    localPartitions->partitionData[model]->gapVector[localPartitions->partitionData[model]->gapVectorLength * j + i / 32] |= mask32[i % 32];
-	    }     
-	}
+          if(width > 0)
+            {                                        
+              for(j = 1; j <= (size_t)(localTree->mxtips); j++)
+                for(i = 0; i < width; i++)
+                  if(localPartitions->partitionData[model]->yVector[j][i] == undetermined)
+                    localPartitions->partitionData[model]->gapVector[localPartitions->partitionData[model]->gapVectorLength * j + i / 32] |= mask32[i % 32];
+            }     
+        }
     }
   /* recom */
   if(localTree->useRecom)
@@ -1085,25 +1105,21 @@ swapSite (unsigned char ** buf, int s1, int s2, int nTaxa)
     the partition scheme \b AFTER the sites have been repositioned in contiguous
     regions according to the partition scheme.
 
-    @param bounds
-      An array of the new starting and ending posititons of sites in the alignment for each partition.
-      This array is of size 2 * \a nparts. The elements are always couples (lower,upper). The upper
-      bounds is a site that is not included in the partition
+    @param bounds  An array of the new starting and ending posititons of sites
+    in the alignment for each partition.  This array is of size 2 * \a nparts.
+    The elements are always couples (lower,upper). The upper bounds is a site
+    that is not included in the partition
 
-    @todo
-      Fix the bug in PLL 
+    @param nparts The number of partitions to be created
 
-    @param nparts
-      The number of partitions to be created
-      
+    @todo Fix the bug in PLL 
 */
-static partitionList *
-createPartitions (pllQueue * parts, int * bounds)
+static partitionList * createPartitions (pllQueue * parts, int * bounds)
 {
   partitionList * pl;
   pllPartitionInfo * pi;
   struct pllQueueItem * elm;
-  int i;
+  int i, j;
 
   pl = (partitionList *) rax_malloc (sizeof (partitionList));
   
@@ -1116,6 +1132,21 @@ createPartitions (pllQueue * parts, int * bounds)
   for (i = 0, elm = parts->head; elm; elm = elm->next, ++ i)
    {
      pi = (pllPartitionInfo *) elm->item;
+
+     /* check whether the data type is valid, and in case it's not, deallocate
+        and return NULL */
+     if (pi->dataType <= PLL_MIN_MODEL || pi->dataType >= PLL_MAX_MODEL)
+      {
+        for (j = 0; j < i; ++ j)
+         {
+           rax_free (pl->partitionData[j]->partitionName);
+           rax_free (pl->partitionData[j]);
+         }
+        rax_free (pl->partitionData);
+        rax_free (pl);
+        return (NULL);
+      }
+
      pl->partitionData[i] = (pInfo *) rax_malloc (sizeof (pInfo));
 
      pl->partitionData[i]->lower = bounds[i << 1];
@@ -1131,27 +1162,22 @@ createPartitions (pllQueue * parts, int * bounds)
      
      pl->partitionData[i]->optimizeAlphaParameter    = PLL_TRUE;
      pl->partitionData[i]->optimizeSubstitutionRates = PLL_TRUE;
+     pl->partitionData[i]->dataType                  = pi->dataType;
+     pl->partitionData[i]->protModels                = -1;
+     pl->partitionData[i]->protUseEmpiricalFreqs     = -1;
+     pl->partitionData[i]->maxTipStates              = pLengths[pi->dataType].undetermined + 1;
+     pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
 
-     if (pi->dataType == PLL_DNA_DATA)
+
+
+     if (pi->dataType == PLL_AA_DATA)
       {
-        pl->partitionData[i]->protModels                = -1;
-        pl->partitionData[i]->protUseEmpiricalFreqs                 = -1;
-        pl->partitionData[i]->dataType                  = PLL_DNA_DATA;
-        pl->partitionData[i]->maxTipStates              = 16;
-        pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
-      }
-     else /* PLL_AA_DATA */
-      {
-        pl->partitionData[i]->dataType                  = PLL_AA_DATA; 
+        if(pl->partitionData[i]->protModels != PLL_GTR)
+          pl->partitionData[i]->optimizeSubstitutionRates = PLL_FALSE;
+        pl->partitionData[i]->protUseEmpiricalFreqs     = pi->protUseEmpiricalFreqs;
         pl->partitionData[i]->protModels                = pi->protModels;
-	if(pl->partitionData[i]->protModels != PLL_GTR)
-	  pl->partitionData[i]->optimizeSubstitutionRates = PLL_FALSE;
-        pl->partitionData[i]->maxTipStates              = 23;
-        pl->partitionData[i]->protUseEmpiricalFreqs                 = pi->protUseEmpiricalFreqs;
-        pl->partitionData[i]->protModels                = pi->protModels;
-        pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
       }
-     
+
      pl->partitionData[i]->states                = pLengths[pl->partitionData[i]->dataType].states;
      pl->partitionData[i]->numberOfCategories    =        1;
      pl->partitionData[i]->autoProtModels        =        0;
@@ -1225,8 +1251,8 @@ partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignm
            if (oi[i] == i)
             {
               swapSite (alignmentData->sequenceData, dst, i, alignmentData->sequenceCount);
-	      tmpvar = oi[i];
-	      oi[i] = oi[dst];
+              tmpvar = oi[i];
+              oi[i] = oi[dst];
               oi[dst++] = tmpvar;
             }
            else
@@ -1236,16 +1262,18 @@ partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignm
 
               swapSite (alignmentData->sequenceData, dst, j, alignmentData->sequenceCount);
               tmpvar = oi[j];
-	      oi[j] = oi[dst];
+              oi[j] = oi[dst];
               oi[dst++] = tmpvar;
             }
          }
       }
      newBounds[(k << 1) + 1] = dst;    /* set the uppwer limit for this partition */
    }
-  pl = createPartitions (parts, newBounds);
-  pl->numberOfPartitions = nparts;
-  pl->dirty = PLL_FALSE;
+  if ((pl = createPartitions (parts, newBounds)))
+   { 
+     pl->numberOfPartitions = nparts;
+     pl->dirty = PLL_FALSE;
+   }
   
   rax_free (newBounds);
   rax_free (oi);
@@ -1446,6 +1474,8 @@ static int genericBaseFrequenciesAlignment (pInfo * partition,
   
   switch (partition->dataType)
    {
+     case PLL_BINARY_DATA:
+       map = PLL_MAP_BIN;
      case PLL_DNA_DATA:
        map = PLL_MAP_NT;
        break;
@@ -1460,92 +1490,92 @@ static int genericBaseFrequenciesAlignment (pInfo * partition,
   lower    = partition->lower;
   upper    = partition->upper;
 
-  for(l = 0; l < numFreqs; l++)	    
+  for(l = 0; l < numFreqs; l++)     
     pfreqs[l] = 1.0 / ((double)numFreqs);
-	  
+          
   for (k = 1; k <= 8; k++) 
-    {	     	   	    	      			
+    {                                                   
       for(l = 0; l < numFreqs; l++)
-	sumf[l] = 0.0;
-	      
+        sumf[l] = 0.0;
+              
       for (i = 1; i <= alignmentData->sequenceCount; i++) 
-	{		 
+        {                
           yptr = alignmentData->sequenceData[i];
-	  
-	  for(j = lower; j < upper; j++) 
-	    {
+          
+          for(j = lower; j < upper; j++) 
+            {
               if (map[yptr[j]] < 0) return (0);
-	      unsigned int code = bitMask[(unsigned char)map[yptr[j]]];
-	      assert(code >= 1);
-	      
-	      for(l = 0; l < numFreqs; l++)
-		{
-		  if((code >> l) & 1)
-		    temp[l] = pfreqs[l];
-		  else
-		    temp[l] = 0.0;
-		}		      	      
-	      
-	      for(l = 0, acc = 0.0; l < numFreqs; l++)
-		{
-		  if(temp[l] != 0.0)
-		    acc += temp[l];
-		}
-	      
-	      wj = alignmentData->siteWeights[j] / acc;
-	      
-	      for(l = 0; l < numFreqs; l++)
-		{
-		  if(temp[l] != 0.0)		    
-		    sumf[l] += wj * temp[l];			     				   			     		   
-		}
-	    }
-	}	    	      
+              unsigned int code = bitMask[(unsigned char)map[yptr[j]]];
+              assert(code >= 1);
+              
+              for(l = 0; l < numFreqs; l++)
+                {
+                  if((code >> l) & 1)
+                    temp[l] = pfreqs[l];
+                  else
+                    temp[l] = 0.0;
+                }                             
+              
+              for(l = 0, acc = 0.0; l < numFreqs; l++)
+                {
+                  if(temp[l] != 0.0)
+                    acc += temp[l];
+                }
+              
+              wj = alignmentData->siteWeights[j] / acc;
+              
+              for(l = 0; l < numFreqs; l++)
+                {
+                  if(temp[l] != 0.0)                
+                    sumf[l] += wj * temp[l];                                                                                               
+                }
+            }
+        }                     
       
       for(l = 0, acc = 0.0; l < numFreqs; l++)
-	{
-	  if(sumf[l] != 0.0)
-	    acc += sumf[l];
-	}
-	      
+        {
+          if(sumf[l] != 0.0)
+            acc += sumf[l];
+        }
+              
       for(l = 0; l < numFreqs; l++)
-	pfreqs[l] = sumf[l] / acc;	     
+        pfreqs[l] = sumf[l] / acc;           
     }
 
    /* TODO: What is that? */
 /*
   if(smoothFrequencies)         
    {;
-    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));	   
+    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));     
    }
   else    
     {
       boolean 
-	zeroFreq = PLL_FALSE;
+        zeroFreq = PLL_FALSE;
 
       char 
-	typeOfData[1024];
+        typeOfData[1024];
 
       getDataTypeString(tr, model, typeOfData);  
 
       for(l = 0; l < numFreqs; l++)
-	{
-	  if(pfreqs[l] == 0.0)
-	    {
-	      printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
-	      printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
-	      zeroFreq = PLL_TRUE;
-	    }
-	}
+        {
+          if(pfreqs[l] == 0.0)
+            {
+              printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
+              printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
+              zeroFreq = PLL_TRUE;
+            }
+        }
 
       if(zeroFreq)
-	exit(-1);
+        exit(-1);
 
       for(l = 0; l < numFreqs; l++)
-	{
-	  assert(pfreqs[l] > 0.0);
-	  tr->partitionData[model].frequencies[l] = pfreqs[l];
-	}     
+        {
+          assert(pfreqs[l] > 0.0);
+          tr->partitionData[model].frequencies[l] = pfreqs[l];
+        }     
     }  
 */
   return (1);
@@ -1579,91 +1609,91 @@ static void  genericBaseFrequenciesInstance (pInfo * partition,
   lower    = partition->lower;
   upper    = partition->upper;
 
-  for(l = 0; l < numFreqs; l++)	    
+  for(l = 0; l < numFreqs; l++)     
     pfreqs[l] = 1.0 / ((double)numFreqs);
-	  
+          
   for (k = 1; k <= 8; k++) 
-    {	     	   	    	      			
+    {                                                   
       for(l = 0; l < numFreqs; l++)
-	sumf[l] = 0.0;
-	      
+        sumf[l] = 0.0;
+              
       for (i = 1; i <= tr->mxtips; i++) 
-	{		 
+        {                
           yptr = tr->yVector[i];
-	  
-	  for(j = lower; j < upper; j++) 
-	    {
-	      unsigned int code = bitMask[yptr[j]];
-	      assert(code >= 1);
-	      
-	      for(l = 0; l < numFreqs; l++)
-		{
-		  if((code >> l) & 1)
-		    temp[l] = pfreqs[l];
-		  else
-		    temp[l] = 0.0;
-		}		      	      
-	      
-	      for(l = 0, acc = 0.0; l < numFreqs; l++)
-		{
-		  if(temp[l] != 0.0)
-		    acc += temp[l];
-		}
-	      
-	      wj = tr->aliaswgt[j] / acc;
-	      
-	      for(l = 0; l < numFreqs; l++)
-		{
-		  if(temp[l] != 0.0)		    
-		    sumf[l] += wj * temp[l];			     				   			     		   
-		}
-	    }
-	}	    	      
+          
+          for(j = lower; j < upper; j++) 
+            {
+              unsigned int code = bitMask[yptr[j]];
+              assert(code >= 1);
+              
+              for(l = 0; l < numFreqs; l++)
+                {
+                  if((code >> l) & 1)
+                    temp[l] = pfreqs[l];
+                  else
+                    temp[l] = 0.0;
+                }                             
+              
+              for(l = 0, acc = 0.0; l < numFreqs; l++)
+                {
+                  if(temp[l] != 0.0)
+                    acc += temp[l];
+                }
+              
+              wj = tr->aliaswgt[j] / acc;
+              
+              for(l = 0; l < numFreqs; l++)
+                {
+                  if(temp[l] != 0.0)                
+                    sumf[l] += wj * temp[l];                                                                                               
+                }
+            }
+        }                     
       
       for(l = 0, acc = 0.0; l < numFreqs; l++)
-	{
-	  if(sumf[l] != 0.0)
-	    acc += sumf[l];
-	}
-	      
+        {
+          if(sumf[l] != 0.0)
+            acc += sumf[l];
+        }
+              
       for(l = 0; l < numFreqs; l++)
-	pfreqs[l] = sumf[l] / acc;	     
+        pfreqs[l] = sumf[l] / acc;           
     }
 
    /* TODO: What is that? */
 /*
   if(smoothFrequencies)         
    {;
-    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));	   
+    smoothFreqs(numFreqs, pfreqs,  tr->partitionData[model].frequencies, &(tr->partitionData[model]));     
    }
   else    
     {
       boolean 
-	zeroFreq = PLL_FALSE;
+        zeroFreq = PLL_FALSE;
 
       char 
-	typeOfData[1024];
+        typeOfData[1024];
 
       getDataTypeString(tr, model, typeOfData);  
 
       for(l = 0; l < numFreqs; l++)
-	{
-	  if(pfreqs[l] == 0.0)
-	    {
-	      printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
-	      printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
-	      zeroFreq = PLL_TRUE;
-	    }
-	}
+        {
+          if(pfreqs[l] == 0.0)
+            {
+              printBothOpen("Empirical base frequency for state number %d is equal to zero in %s data partition %s\n", l, typeOfData, tr->partitionData[model].partitionName);
+              printBothOpen("Since this is probably not what you want to do, RAxML will soon exit.\n\n");
+              zeroFreq = PLL_TRUE;
+            }
+        }
 
       if(zeroFreq)
-	exit(-1);
+        exit(-1);
 
       for(l = 0; l < numFreqs; l++)
-	{
-	  assert(pfreqs[l] > 0.0);
-	  tr->partitionData[model].frequencies[l] = pfreqs[l];
-	}     
+        {
+          assert(pfreqs[l] > 0.0);
+          tr->partitionData[model].frequencies[l] = pfreqs[l];
+        }     
     }  
 */
 
@@ -1693,7 +1723,8 @@ double ** pllBaseFrequenciesAlignment (pllAlignmentData * alignmentData, partiti
       freqs[model] = (double *) rax_malloc (pl->partitionData[model]->states * sizeof (double));
       
       switch  (pl->partitionData[model]->dataType)
-	{
+        {
+        case PLL_BINARY_DATA:
         case PLL_AA_DATA:
         case PLL_DNA_DATA:
           if (!genericBaseFrequenciesAlignment (pl->partitionData[model], 
@@ -1701,17 +1732,17 @@ double ** pllBaseFrequenciesAlignment (pllAlignmentData * alignmentData, partiti
                                                 pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
                                                 pLengths[pl->partitionData[model]->dataType].bitVector,
                                                 freqs[model]
-			                       ))
+                                               ))
             return (NULL);
           break;
-	default:
-	  {
-	    errno = PLL_UNKNOWN_MOLECULAR_DATA_TYPE;
+        default:
+          {
+            errno = PLL_UNKNOWN_MOLECULAR_DATA_TYPE;
             for (i = 0; i <= model; ++ i) rax_free (freqs[i]);
             rax_free (freqs);
-	    return (double **)NULL;
-	  }
-	}
+            return (double **)NULL;
+          }
+        }
     }
   
   return (freqs);
@@ -1740,24 +1771,25 @@ double ** pllBaseFrequenciesInstance (pllInstance * tr, partitionList * pl)
       freqs[model] = (double *) rax_malloc (pl->partitionData[model]->states * sizeof (double));
       
       switch  (pl->partitionData[model]->dataType)
-	{
+        {
         case PLL_AA_DATA:
         case PLL_DNA_DATA:
+        case PLL_BINARY_DATA:
           genericBaseFrequenciesInstance (pl->partitionData[model], 
                                           tr, 
                                           pLengths[pl->partitionData[model]->dataType].smoothFrequencies,
                                           pLengths[pl->partitionData[model]->dataType].bitVector,
                                           freqs[model]
-				          );
+                                          );
           break;
-	default:
-	  {
-	    errno = PLL_UNKNOWN_MOLECULAR_DATA_TYPE;
+        default:
+          {
+            errno = PLL_UNKNOWN_MOLECULAR_DATA_TYPE;
             for (i = 0; i <= model; ++ i) rax_free (freqs[i]);
             rax_free (freqs);
-	    return (double **)NULL;
-	  }
-	}
+            return (double **)NULL;
+          }
+        }
     }
   
   return (freqs);
@@ -2436,15 +2468,27 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
     @param alignmentData  Multiple sequence alignment
     @param partitions     List of partitions
 */
-void
-pllBaseSubstitute (pllInstance * tr, partitionList * partitions)
+void pllBaseSubstitute (pllInstance * tr, partitionList * partitions)
 {
   const char * d;
   int i, j, k;
 
   for (i = 0; i < partitions->numberOfPartitions; ++ i)
    {
-     d = (partitions->partitionData[i]->dataType == PLL_DNA_DATA) ? PLL_MAP_NT: PLL_MAP_AA;
+     switch (partitions->partitionData[i]->dataType)
+      {
+        case PLL_DNA_DATA:
+          d = PLL_MAP_NT;
+          break;
+        case PLL_BINARY_DATA:
+          d = PLL_MAP_BIN;
+          break;
+        case PLL_AA_DATA:
+          d = PLL_MAP_AA;
+          break;
+        default:
+          assert(0);
+      }
      
      for (j = 1; j <= tr->mxtips; ++ j)
       {
@@ -2553,12 +2597,12 @@ static int init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int 
     {
       token = STRTOK_R(str1, ",", &saveptr);
       if(token == (char *)NULL)
-	break;
+        break;
       if(!(j < numberOfRates))
-	{
-	  errno = PLL_SUBSTITUTION_RATE_OUT_OF_BOUNDS;
-	  return PLL_FALSE;
-	}
+        {
+          errno = PLL_SUBSTITUTION_RATE_OUT_OF_BOUNDS;
+          return PLL_FALSE;
+        }
       list[j] = atoi(token);     
     }
   
@@ -2567,19 +2611,19 @@ static int init_Q_MatrixSymmetries(char *linkageString, partitionList * pr, int 
   for(j = 0; j < numberOfRates; j++)
     {
       if(!(list[j] <= j))
-	{
-	  errno = PLL_INVALID_Q_MATRIX_SYMMETRY;
-	  return PLL_FALSE;
-	}
+        {
+          errno = PLL_INVALID_Q_MATRIX_SYMMETRY;
+          return PLL_FALSE;
+        }
       
       if(!(list[j] <= max + 1))
-	{
-	  errno = PLL_Q_MATRIX_SYMMETRY_OUT_OF_BOUNDS;
-	  return PLL_FALSE;
-	}
+        {
+          errno = PLL_Q_MATRIX_SYMMETRY_OUT_OF_BOUNDS;
+          return PLL_FALSE;
+        }
       
       if(list[j] > max)
-	max = list[j];
+        max = list[j];
     }  
   
   for(j = 0; j < numberOfRates; j++)  
@@ -2616,167 +2660,167 @@ static int checkLinkageConsistency(partitionList *pr)
   if(pr->dirty)
     {
       int 
-	i;
+        i;
       
       linkageList 
-	*ll;
+        *ll;
 
       /* first deal with rates */
 
       ll = pr->rateList;
-	
+        
       for(i = 0; i < ll->entries; i++)
-	{
-	  int
-	    partitions = ll->ld[i].partitions,
-	    reference = ll->ld[i].partitionList[0];
-	  
-	  if(pr->partitionData[reference]->dataType == PLL_AA_DATA)
-	    {
-	      if(pr->partitionData[reference]->protModels == PLL_GTR || pr->partitionData[reference]->nonGTR)				  
-		{
-		  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_TRUE))
-		    {
-		      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
-		      return PLL_FALSE;
-		    }
-		}
-	      else		
-		{
-		  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_FALSE))
-		    {
-		      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
-		      return PLL_FALSE;
-		    }
-		}		  
-	    }
+        {
+          int
+            partitions = ll->ld[i].partitions,
+            reference = ll->ld[i].partitionList[0];
+          
+          if(pr->partitionData[reference]->dataType == PLL_AA_DATA)
+            {
+              if(pr->partitionData[reference]->protModels == PLL_GTR || pr->partitionData[reference]->nonGTR)                             
+                {
+                  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_TRUE))
+                    {
+                      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
+                      return PLL_FALSE;
+                    }
+                }
+              else              
+                {
+                  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == PLL_FALSE))
+                    {
+                      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
+                      return PLL_FALSE;
+                    }
+                }                 
+            }
 
-	  if(partitions > 1)
-	    {
-	      int
-		j,
-		k;
-	      
-	      for(k = 1; k < partitions; k++)
-		{
-		  int 
-		    index = ll->ld[i].partitionList[k];
-		  
-		  int
-		    states = pr->partitionData[index]->states,
-		    rates = ((states * states - states) / 2);
-		  
-		  if(!(pr->partitionData[reference]->nonGTR == pr->partitionData[index]->nonGTR))
-		    {
-		      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
-		      return PLL_FALSE;
-		    }
-		  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == pr->partitionData[index]->optimizeSubstitutionRates))
-		    {
-		      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
-		      return PLL_FALSE;
-		    }
-		
-		  
-		  if(pr->partitionData[reference]->nonGTR)
-		    {		   
-		      
-		      for(j = 0; j < rates; j++)			
-			{
-			  if(!(pr->partitionData[reference]->symmetryVector[j] == pr->partitionData[index]->symmetryVector[j]))
-			    {
-			      errno = PLL_INCONSISTENT_Q_MATRIX_SYMMETRIES_ACROSS_LINKED_PARTITIONS;
-			      return PLL_FALSE;
-			    }
-			}
-		    }
-		  
-		 
-		  for(j = 0; j < rates; j++)
-		    {
-		      if(!(pr->partitionData[reference]->substRates[j] == pr->partitionData[index]->substRates[j]))
-			{
-			  errno = PLL_INCONSISTENT_Q_MATRIX_ENTRIES_ACROSS_LINKED_PARTITIONS;
-			  return PLL_FALSE;
-			}
-		    }
-		}	    
-	    }
-	}
+          if(partitions > 1)
+            {
+              int
+                j,
+                k;
+              
+              for(k = 1; k < partitions; k++)
+                {
+                  int 
+                    index = ll->ld[i].partitionList[k];
+                  
+                  int
+                    states = pr->partitionData[index]->states,
+                    rates = ((states * states - states) / 2);
+                  
+                  if(!(pr->partitionData[reference]->nonGTR == pr->partitionData[index]->nonGTR))
+                    {
+                      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
+                      return PLL_FALSE;
+                    }
+                  if(!(pr->partitionData[reference]->optimizeSubstitutionRates == pr->partitionData[index]->optimizeSubstitutionRates))
+                    {
+                      errno = PLL_INCONSISTENT_SUBST_RATE_OPTIMIZATION_SETTING;
+                      return PLL_FALSE;
+                    }
+                
+                  
+                  if(pr->partitionData[reference]->nonGTR)
+                    {              
+                      
+                      for(j = 0; j < rates; j++)                        
+                        {
+                          if(!(pr->partitionData[reference]->symmetryVector[j] == pr->partitionData[index]->symmetryVector[j]))
+                            {
+                              errno = PLL_INCONSISTENT_Q_MATRIX_SYMMETRIES_ACROSS_LINKED_PARTITIONS;
+                              return PLL_FALSE;
+                            }
+                        }
+                    }
+                  
+                 
+                  for(j = 0; j < rates; j++)
+                    {
+                      if(!(pr->partitionData[reference]->substRates[j] == pr->partitionData[index]->substRates[j]))
+                        {
+                          errno = PLL_INCONSISTENT_Q_MATRIX_ENTRIES_ACROSS_LINKED_PARTITIONS;
+                          return PLL_FALSE;
+                        }
+                    }
+                }           
+            }
+        }
       
       /* then deal with alpha parameters */
 
       ll = pr->alphaList;
 
       for(i = 0; i < ll->entries; i++)
-	{
-	  int
-	    partitions = ll->ld[i].partitions;
-	  
-	  if(partitions > 1)
-	    {
-	      int
-		k, 
-		reference = ll->ld[i].partitionList[0];
-	      
-	      for(k = 1; k < partitions; k++)
-		{
-		  int 
-		    index = ll->ld[i].partitionList[k];		  		 
+        {
+          int
+            partitions = ll->ld[i].partitions;
+          
+          if(partitions > 1)
+            {
+              int
+                k, 
+                reference = ll->ld[i].partitionList[0];
+              
+              for(k = 1; k < partitions; k++)
+                {
+                  int 
+                    index = ll->ld[i].partitionList[k];                          
 
-		  if(!(pr->partitionData[reference]->optimizeAlphaParameter == pr->partitionData[index]->optimizeAlphaParameter))
-		    {
-		      errno = PLL_INCONSISTENT_ALPHA_STATES_ACROSS_LINKED_PARTITIONS;
-		      return PLL_FALSE;
-		    }
-		  if(!(pr->partitionData[reference]->alpha == pr->partitionData[index]->alpha))
-		    {
-		      errno = PLL_INCONSISTENT_ALPHA_VALUES_ACROSS_LINKED_PARTITIONS;
-		      return PLL_FALSE;
-		    }
-		}	    
-	    }
-	}
+                  if(!(pr->partitionData[reference]->optimizeAlphaParameter == pr->partitionData[index]->optimizeAlphaParameter))
+                    {
+                      errno = PLL_INCONSISTENT_ALPHA_STATES_ACROSS_LINKED_PARTITIONS;
+                      return PLL_FALSE;
+                    }
+                  if(!(pr->partitionData[reference]->alpha == pr->partitionData[index]->alpha))
+                    {
+                      errno = PLL_INCONSISTENT_ALPHA_VALUES_ACROSS_LINKED_PARTITIONS;
+                      return PLL_FALSE;
+                    }
+                }           
+            }
+        }
 
       /* and then deal with base frequencies */
 
       ll = pr->freqList;
 
       for(i = 0; i < ll->entries; i++)
-	{
-	  int	  
-	    partitions = ll->ld[i].partitions;
-	  
-	  if(partitions > 1)
-	    {
-	      int		
-		k, 
-		reference = ll->ld[i].partitionList[0];
-	      
-	      for(k = 1; k < partitions; k++)
-		{
-		  int
-		    j,
-		    index = ll->ld[i].partitionList[k],
-		    states = pr->partitionData[index]->states;		  		 
+        {
+          int     
+            partitions = ll->ld[i].partitions;
+          
+          if(partitions > 1)
+            {
+              int               
+                k, 
+                reference = ll->ld[i].partitionList[0];
+              
+              for(k = 1; k < partitions; k++)
+                {
+                  int
+                    j,
+                    index = ll->ld[i].partitionList[k],
+                    states = pr->partitionData[index]->states;                           
 
-		  if(!(pr->partitionData[reference]->optimizeBaseFrequencies == pr->partitionData[index]->optimizeBaseFrequencies))
-		    {
-		      errno = PLL_INCONSISTENT_FREQUENCY_STATES_ACROSS_LINKED_PARTITIONS;
-		      return PLL_FALSE;
-		    }
+                  if(!(pr->partitionData[reference]->optimizeBaseFrequencies == pr->partitionData[index]->optimizeBaseFrequencies))
+                    {
+                      errno = PLL_INCONSISTENT_FREQUENCY_STATES_ACROSS_LINKED_PARTITIONS;
+                      return PLL_FALSE;
+                    }
 
-		  for(j = 0; j < states; j++)
-		    {
-		      if(!(pr->partitionData[reference]->frequencies[j] == pr->partitionData[index]->frequencies[j]))
-			{
-			  errno = PLL_INCONSISTENT_FREQUENCY_VALUES_ACROSS_LINKED_PARTITIONS;
-			  return PLL_FALSE;
-			}
-		    }
-		}	    
-	    }
-	}
+                  for(j = 0; j < states; j++)
+                    {
+                      if(!(pr->partitionData[reference]->frequencies[j] == pr->partitionData[index]->frequencies[j]))
+                        {
+                          errno = PLL_INCONSISTENT_FREQUENCY_VALUES_ACROSS_LINKED_PARTITIONS;
+                          return PLL_FALSE;
+                        }
+                    }
+                }           
+            }
+        }
       
       pr->dirty = PLL_FALSE;
     }
@@ -3184,7 +3228,7 @@ void pllSetSubstitutionMatrix(double *q, int length, int model, partitionList * 
   for(i = 0; i < length; i++)
     {
       double
-	r = q[i] * scaler;
+        r = q[i] * scaler;
       
       assert(r >= PLL_RATE_MIN && r <= PLL_RATE_MAX);
       
@@ -3236,19 +3280,19 @@ linkageList* initLinkageList(int *linkList, partitionList *pr)
   for(i = 0; i < pr->numberOfPartitions; i++)
     {
       if(!(linkList[i] >= 0 && linkList[i] < pr->numberOfPartitions))
-	{
-	  errno = PLL_LINKAGE_LIST_OUT_OF_BOUNDS;
-	  return (linkageList*)NULL;
-	}
+        {
+          errno = PLL_LINKAGE_LIST_OUT_OF_BOUNDS;
+          return (linkageList*)NULL;
+        }
 
       if(!(linkList[i] <= i && linkList[i] <= numberOfModels + 1))
-	{
-	  errno = PLL_LINKAGE_LIST_OUT_OF_BOUNDS;
-	  return (linkageList*)NULL;
-	}
+        {
+          errno = PLL_LINKAGE_LIST_OUT_OF_BOUNDS;
+          return (linkageList*)NULL;
+        }
 
       if(linkList[i] > numberOfModels)
-	numberOfModels = linkList[i];
+        numberOfModels = linkList[i];
 
     }
 
@@ -3268,10 +3312,10 @@ linkageList* initLinkageList(int *linkList, partitionList *pr)
   for(i = 0; i < numberOfModels; i++)
     {
       /* 
-	 the valid flag is used for distinguishing between DNA and protein data partitions.
-	 This can be used to enable/disable parameter optimization for the paremeter 
-	 associated to the corresponding partitions. This deature is used in optRatesGeneric 
-	 to first optimize all DNA GTR rate matrices and then all PROT GTR rate matrices */
+         the valid flag is used for distinguishing between DNA and protein data partitions.
+         This can be used to enable/disable parameter optimization for the paremeter 
+         associated to the corresponding partitions. This deature is used in optRatesGeneric 
+         to first optimize all DNA GTR rate matrices and then all PROT GTR rate matrices */
 
       ll->ld[i].valid = PLL_TRUE;
       partitions = 0;
@@ -3279,8 +3323,8 @@ linkageList* initLinkageList(int *linkList, partitionList *pr)
       /* now figure out how many partitions share this joint parameter */
 
       for(k = 0; k < pr->numberOfPartitions; k++)
-	if(linkList[k] == i)
-	  partitions++;	    
+        if(linkList[k] == i)
+          partitions++;     
 
       /* assign a list to store the partitions that share the parameter */
 
@@ -3290,8 +3334,8 @@ linkageList* initLinkageList(int *linkList, partitionList *pr)
       /* now store the respective partition indices in this list */
       
       for(k = 0, pos = 0; k < pr->numberOfPartitions; k++)
-	if(linkList[k] == i)
-	  ll->ld[i].partitionList[pos++] = k;
+        if(linkList[k] == i)
+          ll->ld[i].partitionList[pos++] = k;
     }
 
   /* return the linkage list for the parameter */
@@ -3324,7 +3368,7 @@ static linkageList* initLinkageListString(char *linkageString, partitionList * p
     {
       token = STRTOK_R(str1, ",", &saveptr);
       if(token == (char *)NULL)
-	break;
+        break;
       assert(j < pr->numberOfPartitions);
       list[j] = atoi(token);
     }

@@ -148,6 +148,14 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
 
 #endif
 
+static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
+                                      double *x1_start, double *x2_start, 
+                                      double *tipVector, 
+                                      unsigned char *tipX1, const int n, double *diagptable, const boolean fastScaling);
+
+static double evaluateGTRCAT_BINARY (int *ex1, int *ex2, int *cptr, int *wptr,
+                                     double *x1_start, double *x2_start, double *tipVector,                   
+                                     unsigned char *tipX1, int n, double *diagptable_start, const boolean fastScaling);
 
 
 /* 
@@ -178,23 +186,12 @@ extern const unsigned int mask32[32];
     rate categories \a rptr for a single partition. The diagonal is then stored in
     \a diagptable. 
 
-    @param z
-      Length of edge
-
-    @param states
-      Number of states
-
-    @param numberOfCategories
-      Number of categories in the rate heterogeneity rate arrays
-
-    @param rptr
-      Rate heterogeneity rate arrays
-
-    @param EIGN
-      Eigenvalues
-
-    @param diagptable
-      Where to store the resulting P matrix
+    @param z                  Length of edge
+    @param states             Number of states
+    @param numberOfCategories Number of categories in the rate heterogeneity rate arrays
+    @param rptr               Rate heterogeneity rate arrays
+    @param EIGN               Eigenvalues
+    @param diagptable         Where to store the resulting P matrix
 */
 static void calcDiagptable(const double z, const int states, const int numberOfCategories, const double *rptr, const double *EIGN, double *diagptable)
 {
@@ -215,7 +212,7 @@ static void calcDiagptable(const double z, const int states, const int numberOfC
 
   /* do some pre-computations to avoid redundant computations further below */
 
-  for(i = 0; i < states; i++)      
+  for(i = 1; i < states; i++)      
     lza[i] = EIGN[i] * lz; 
 
   /* loop over the number of per-site or discrete gamma rate categories */
@@ -1200,7 +1197,7 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
           if(pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)                                        
             calcDiagptableFlex_LG4(z, 4, pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN_LG4, diagptable, 20);
           else
-          calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
+            calcDiagptable(z, states, categories, rateCategories, pr->partitionData[model]->EIGN, diagptable);
           
 #if (!defined(__SSE3) && !defined(__AVX) && !defined(__MIC_NATIVE))
           
@@ -1214,7 +1211,7 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                                                 x1_start, x2_start, pr->partitionData[model]->tipVector,
                                                 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
           else
-              partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
+            partitionLikelihood = evaluateGAMMA_FLEX(fastScaling, ex1, ex2, pr->partitionData[model]->wgt,
                                                 x1_start, x2_start, pr->partitionData[model]->tipVector,
                                                 tip, width, diagptable, states, pr->partitionData[model]->perSiteLikelihoods, getPerSiteLikelihoods);
 #else
@@ -1225,10 +1222,10 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
           if(getPerSiteLikelihoods)
             {         
 #ifdef __MIC_NATIVE
-			  // not supported on MIC!
- 			  assert(0 && "Per-site LH calculations is not implemented on Intel MIC");
+                          // not supported on MIC!
+                          assert(0 && "Per-site LH calculations is not implemented on Intel MIC");
 #else
-        	  if(tr->rateHetModel == PLL_CAT)
+               if(tr->rateHetModel == PLL_CAT)
                 {
                    if(tr->saveMemory)
                      partitionLikelihood = evaluateCAT_FLEX_SAVE(fastScaling, ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
@@ -1262,6 +1259,21 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
               
               switch(states)
                 {         
+                case 2: /* binary */
+                  assert (!tr->saveMemory);
+                  if (tr->rateHetModel == PLL_CAT)
+                   {
+                     partitionLikelihood =  evaluateGTRCAT_BINARY(ex1, ex2, pr->partitionData[model]->rateCategory, pr->partitionData[model]->wgt,
+                                                                  x1_start, x2_start, pr->partitionData[model]->tipVector, 
+                                                                  tip, width, diagptable, fastScaling);
+                   }
+                  else
+                   {
+                     partitionLikelihood = evaluateGTRGAMMA_BINARY(ex1, ex2, pr->partitionData[model]->wgt,
+                                                                   x1_start, x2_start, pr->partitionData[model]->tipVector,
+                                                                   tip, width, diagptable, fastScaling);                 
+                   }
+                  break;
                 case 4: /* DNA */
                   {
 
@@ -1317,19 +1329,19 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                                                                     x1_start, x2_start, pr->partitionData[model]->tipVector_LG4,
                                                                     tip, width, diagptable);
                   else
-                	partitionLikelihood =  evaluateGTRGAMMAPROT_MIC(ex1, ex2, pr->partitionData[model]->wgt,
+                        partitionLikelihood =  evaluateGTRGAMMAPROT_MIC(ex1, ex2, pr->partitionData[model]->wgt,
                                               x1_start, x2_start, pr->partitionData[model]->tipVector,
                                               tip, width, diagptable, fastScaling);
 
 //                  printf("tip: %p, width: %d,  lh: %f\n", tip, width, partitionLikelihood);
 //                  int g;
 //                  if (x1_start)
-//					  for (g = 0; g < 20; ++g)
-//						  printf("%f \t", x1_start[g]);
+//                                        for (g = 0; g < 20; ++g)
+//                                                printf("%f \t", x1_start[g]);
 //                  printf("\n");
 //                  if (x2_start)
-//					  for (g = 0; g < 20; ++g)
-//						  printf("%f \t", x2_start[g]);
+//                                        for (g = 0; g < 20; ++g)
+//                                                printf("%f \t", x2_start[g]);
 #else
 
                       if(tr->rateHetModel == PLL_CAT)
@@ -1755,6 +1767,192 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
 }
 
+static double evaluateGTRCAT_BINARY (int *ex1, int *ex2, int *cptr, int *wptr,
+                                     double *x1_start, double *x2_start, double *tipVector,                   
+                                     unsigned char *tipX1, int n, double *diagptable_start, const boolean fastScaling)
+{
+  double  sum = 0.0, term;       
+  int     i;
+#if (!defined(__SSE3) && !defined(__AVX))
+  int j;  
+#endif
+  double  *diagptable, *x1, *x2;                            
+ 
+  if(tipX1)
+    {          
+      for (i = 0; i < n; i++) 
+        {
+#if (defined(__SSE3) || defined(__AVX))
+          double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
+#endif
+          x1 = &(tipVector[2 * tipX1[i]]);
+          x2 = &(x2_start[2 * i]);
+          
+          diagptable = &(diagptable_start[2 * cptr[i]]);                          
+        
+#if (defined(__SSE3) || defined(__AVX))
+          _mm_store_pd(t, _mm_mul_pd(_mm_load_pd(x1), _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(diagptable))));
+          
+          if(fastScaling)
+            term = log(fabs(t[0] + t[1]));
+          else
+            term = log(fabs(t[0] + t[1])) + (ex2[i] * log(PLL_MINLIKELIHOOD));                           
+#else               
+          for(j = 0, term = 0.0; j < 2; j++)                         
+            term += x1[j] * x2[j] * diagptable[j];            
+                 
+          if(fastScaling)
+            term = log(fabs(term));
+          else
+            term = log(fabs(term)) + (ex2[i] * log(PLL_MINLIKELIHOOD));                                                      
+#endif    
+
+          sum += wptr[i] * term;
+        }       
+    }               
+  else
+    {
+      for (i = 0; i < n; i++) 
+        {       
+#if (defined(__SSE3) || defined(__AVX))
+          double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));                                 
+#endif                  
+          x1 = &x1_start[2 * i];
+          x2 = &x2_start[2 * i];
+          
+          diagptable = &diagptable_start[2 * cptr[i]];            
+#if (defined(__SSE3) || defined(__AVX))
+          _mm_store_pd(t, _mm_mul_pd(_mm_load_pd(x1), _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(diagptable))));
+          
+          if(fastScaling)
+            term = log(fabs(t[0] + t[1]));
+          else
+            term = log(fabs(t[0] + t[1])) + ((ex1[i] + ex2[i]) * log(PLL_MINLIKELIHOOD));                        
+#else     
+          for(j = 0, term = 0.0; j < 2; j++)
+            term += x1[j] * x2[j] * diagptable[j];   
+          
+          if(fastScaling)
+            term = log(fabs(term));
+          else
+            term = log(fabs(term)) + ((ex1[i] + ex2[i]) * log(PLL_MINLIKELIHOOD));
+#endif
+          
+          sum += wptr[i] * term;
+        }          
+    }
+       
+  return  sum;         
+} 
+
+
+static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
+                                      double *x1_start, double *x2_start, 
+                                      double *tipVector, 
+                                      unsigned char *tipX1, const int n, double *diagptable, const boolean fastScaling)
+{
+  double   sum = 0.0, term;    
+  int     i, j;
+#if (!defined(__SSE3) && !defined(__AVX))
+  int k;
+#endif 
+  double  *x1, *x2;             
+
+  if(tipX1)
+    {          
+      for (i = 0; i < n; i++)
+        {
+#if (defined(__SSE3) || defined(__AVX))
+          double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
+          __m128d termv, x1v, x2v, dv;
+#endif
+          x1 = &(tipVector[2 * tipX1[i]]);       
+          x2 = &x2_start[8 * i];                                
+#if (defined(__SSE3) || defined(__AVX))
+          termv = _mm_set1_pd(0.0);                
+          
+          for(j = 0; j < 4; j++)
+            {
+              x1v = _mm_load_pd(&x1[0]);
+              x2v = _mm_load_pd(&x2[j * 2]);
+              dv   = _mm_load_pd(&diagptable[j * 2]);
+              
+              x1v = _mm_mul_pd(x1v, x2v);
+              x1v = _mm_mul_pd(x1v, dv);
+              
+              termv = _mm_add_pd(termv, x1v);                 
+            }
+          
+          _mm_store_pd(t, termv);               
+          
+          if(fastScaling)
+            term = log(0.25 * (fabs(t[0] + t[1])));
+          else
+            term = log(0.25 * (fabs(t[0] + t[1]))) + (ex2[i] * log(PLL_MINLIKELIHOOD));       
+#else
+          for(j = 0, term = 0.0; j < 4; j++)
+            for(k = 0; k < 2; k++)
+              term += x1[k] * x2[j * 2 + k] * diagptable[j * 2 + k];                                                
+          
+          if(fastScaling)
+            term = log(0.25 * fabs(term));
+          else
+            term = log(0.25 * fabs(term)) + ex2[i] * log(PLL_MINLIKELIHOOD);
+#endif   
+          
+          sum += wptr[i] * term;
+        }         
+    }
+  else
+    {         
+      for (i = 0; i < n; i++) 
+        {
+#if (defined(__SSE3) || defined(__AVX))
+          double t[2] __attribute__ ((aligned (PLL_BYTE_ALIGNMENT)));
+          __m128d termv, x1v, x2v, dv;
+#endif                            
+          x1 = &x1_start[8 * i];
+          x2 = &x2_start[8 * i];
+                  
+#if (defined(__SSE3) || defined(__AVX))
+          termv = _mm_set1_pd(0.0);                
+          
+          for(j = 0; j < 4; j++)
+            {
+              x1v = _mm_load_pd(&x1[j * 2]);
+              x2v = _mm_load_pd(&x2[j * 2]);
+              dv   = _mm_load_pd(&diagptable[j * 2]);
+              
+              x1v = _mm_mul_pd(x1v, x2v);
+              x1v = _mm_mul_pd(x1v, dv);
+              
+              termv = _mm_add_pd(termv, x1v);                 
+            }
+          
+          _mm_store_pd(t, termv);
+          
+          
+          if(fastScaling)
+            term = log(0.25 * (fabs(t[0] + t[1])));
+          else
+            term = log(0.25 * (fabs(t[0] + t[1]))) + ((ex1[i] +ex2[i]) * log(PLL_MINLIKELIHOOD));     
+#else     
+          for(j = 0, term = 0.0; j < 4; j++)
+            for(k = 0; k < 2; k++)
+              term += x1[j * 2 + k] * x2[j * 2 + k] * diagptable[j * 2 + k];                                          
+
+          if(fastScaling)
+            term = log(0.25 * fabs(term));
+          else
+            term = log(0.25 * fabs(term)) + (ex1[i] + ex2[i]) * log(PLL_MINLIKELIHOOD);
+#endif
+
+          sum += wptr[i] * term;
+        }                       
+    }
+
+  return sum;
+} 
 
 
 
@@ -1784,7 +1982,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
     {               
       for (i = 0; i < n; i++) 
         {
-#ifdef __SSE3
+#if (defined(__SSE3) || defined(__AVX))
           __m128d tv = _mm_setzero_pd();
                                   
           for(j = 0, term = 0.0; j < 4; j++)
@@ -1823,7 +2021,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
     {
       for (i = 0; i < n; i++) 
         {                                    
-#ifdef __SSE3
+#if (defined(__SSE3) || defined(__AVX))
           __m128d tv = _mm_setzero_pd();                          
               
           for(j = 0, term = 0.0; j < 4; j++)

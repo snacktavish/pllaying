@@ -408,7 +408,8 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
   /* switch over the number of states of the data in the current model/partition */
   switch(states)
     {
-   
+    case 2:   /* BINARY */
+      
     case 4:   /* DNA */
       /* switch over CAT versus GAMMA and pass all model parameters for the respective partition to the respective functions */
       if(tr->rateHetModel == PLL_CAT)      

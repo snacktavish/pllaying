@@ -30,8 +30,11 @@
 
 #ifdef GLOBAL_VARIABLES_DEFINITION
 
+
 const char *protModels[PLL_NUM_PROT_MODELS] = {"DAYHOFF", "DCMUT", "JTT", "MTREV", "WAG", "RTREV", "CPREV", "VT", "BLOSUM62", "MTMAM", "LG", "MTART", "MTZOA", "PMB", 
 					   "HIVB", "HIVW", "JTTDCMUT", "FLU", "AUTO", "LG4", "GTR"};
+
+const char binaryStateNames[2]   = {'0', '1'};  
 
 const char dnaStateNames[4]      = {'A', 'C', 'G', 'T'};
 
@@ -110,7 +113,7 @@ const char *secondaryModelList[21] = { "S6A (GTR)", "S6B", "S6C", "S6D", "S6E", 
 const partitionLengths pLengths[PLL_MAX_MODEL] = {
   
   /* BINARY */
-  {4,   4,   2,  4,  2, 1, 2,  8, 2, 2, PLL_FALSE, PLL_FALSE, 3, inverseMeaningBINARY, 2, PLL_FALSE, bitVectorIdentity},
+  {4,   4,   2,  4,  4, 1, 2,  8, 2, 2, PLL_FALSE, PLL_FALSE, 3, inverseMeaningBINARY, 2, PLL_FALSE, bitVectorIdentity},
   
   /* DNA */
   {16,  16,  4, 16, 16, 6, 4, 64, 6, 4, PLL_FALSE, PLL_FALSE, 15, inverseMeaningDNA, 4, PLL_FALSE, bitVectorIdentity},
