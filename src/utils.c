@@ -628,6 +628,18 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
 
       localPartitions->partitionData[model]->xVector = (double **)rax_calloc(sizeof(double*), (size_t)localTree->mxtips);
 
+      if (localPartitions->partitionData[model]->ascBias)
+       {
+         localPartitions->partitionData[model]->ascOffset    = 4 * localPartitions->partitionData[model]->states * localPartitions->partitionData[model]->states;
+         localPartitions->partitionData[model]->ascVector    = (double *)rax_malloc(innerNodes * 
+                                                                                    localPartitions->partitionData[model]->ascOffset * 
+                                                                                    sizeof(double));
+         localPartitions->partitionData[model]->ascExpVector = (int *)rax_calloc(innerNodes *
+                                                                                 localPartitions->partitionData[model]->states,
+                                                                                 sizeof(int));
+         localPartitions->partitionData[model]->ascSumBuffer = (double *)rax_malloc(localPartitions->partitionData[model]->ascOffset * sizeof(double)); 
+       }
+
 
       /* 
          Initializing the xVector array like this is absolutely required !!!!
@@ -1167,6 +1179,7 @@ static partitionList * createPartitions (pllQueue * parts, int * bounds)
      pl->partitionData[i]->protUseEmpiricalFreqs     = -1;
      pl->partitionData[i]->maxTipStates              = pLengths[pi->dataType].undetermined + 1;
      pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
+     pl->partitionData[i]->ascBias                   = pi->ascBias;
 
 
 

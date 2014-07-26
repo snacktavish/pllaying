@@ -287,6 +287,221 @@ static void calcDiagptableFlex_LG4(double z, int numberOfCategories, double *rpt
     }        
 }
 
+static void ascertainmentBiasSequence(unsigned char tip[32], int numStates)
+{ 
+  assert(numStates <= 32 && numStates > 1);
+
+  switch(numStates)
+    {
+    case 2:     
+      tip[0] = 1;
+      tip[1] = 2;
+      break;
+    case 4:
+      tip[0] = 1;
+      tip[1] = 2;
+      tip[2] = 4;
+      tip[3] = 8;
+      break;
+    default:
+      {
+	int 
+	  i;
+	for(i = 0; i < numStates; i++)
+	  {
+	    tip[i] = i;
+	    //printf("%c ", inverseMeaningPROT[i]);
+	  }
+	//printf("\n");
+      }
+      break;
+    }
+}
+
+static double evaluateCatAsc(int *ex1, int *ex2,
+			     double *x1, double *x2,  
+			     double *tipVector, 
+			     unsigned char *tipX1, int n, double *diagptable, const int numStates)
+{
+  double
+    exponent,
+    logMin = log(PLL_TWOTOTHE256),
+    sum = 0.0, 
+    unobserved,
+    term,
+    *left, 
+    *right;
+  
+  int     
+    i,    
+    l;   
+         
+  unsigned char 
+    tip[32];
+
+  ascertainmentBiasSequence(tip, numStates);
+   
+  if(tipX1)
+    {               
+      for (i = 0; i < n; i++) 
+	{
+	  left = &(tipVector[numStates * tip[i]]);	  	  
+	  right = &(x2[i * numStates]);
+
+	  term = 0.0;
+	         	      
+	  for(l = 0; l < numStates; l++)
+	    term += left[l] * right[l] * diagptable[l];	      	 	 	  	 
+
+	  exponent = ((double)ex2[i] * logMin);	  
+
+	  assert(exponent < 700.0);
+
+	  unobserved = fabs(term) * exp(exponent);	    
+	  
+#ifdef _DEBUG_ASC
+	  if(ex2[i] > 0)
+	    {
+	      printf("s %d\n", ex2[i]);
+	      assert(0);
+	    }
+#endif	  
+	    
+	  sum += unobserved;
+	}              
+    }              
+  else
+    {           
+      for (i = 0; i < n; i++) 
+	{	  	 
+	  term = 0.0;
+	  	 
+	  left  = &(x1[i * numStates]);
+	  right = &(x2[i * numStates]);	    
+	      
+	  for(l = 0; l < numStates; l++)
+	    term += left[l] * right[l] * diagptable[l];		  
+	  
+	  //because of the way we scale for sites that only consist of a single character
+	  //ex1 and ex2 will mostly be zero, so there is no re-scaling that needs to be done
+
+	  exponent = ((double)(ex1[i] + ex2[i]) * logMin);
+	  
+#ifdef _DEBUG_ASC
+	  if(ex2[i] > 0 || ex1[i] > 0)
+	    {
+	      printf("s %d %d\n", ex1[i], ex2[i]);
+	      assert(0);
+	    }
+#endif
+
+	  assert(exponent < 700.0);
+	  
+	  unobserved = fabs(term) * exp(exponent);	  	  
+  
+	  sum += unobserved;
+	}             
+    }        
+
+  return  sum;
+}
+
+
+static double evaluateGammaAsc(int *ex1, int *ex2,
+				double *x1, double *x2,  
+				double *tipVector, 
+				unsigned char *tipX1, int n, double *diagptable, const int numStates)
+{
+  double
+    exponent,
+    logMin = log(PLL_TWOTOTHE256),
+    sum = 0.0, 
+    unobserved,
+    term,
+    *left, 
+    *right;
+  
+  int     
+    i, 
+    j, 
+    l;   
+  
+  const int 
+    gammaStates = numStates * 4;
+         
+  unsigned char 
+    tip[32];
+
+  ascertainmentBiasSequence(tip, numStates);
+   
+  if(tipX1)
+    {               
+      for (i = 0; i < n; i++) 
+	{
+	  left = &(tipVector[numStates * tip[i]]);	  	  
+	  
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      right = &(x2[gammaStates * i + numStates * j]);
+	      
+	      for(l = 0; l < numStates; l++)
+		term += left[l] * right[l] * diagptable[j * numStates + l];	      
+	    }	 	  	 
+
+	  exponent = ((double)ex2[i] * logMin);	  
+
+	  assert(exponent < 700.0);
+
+	  unobserved = 0.25 * fabs(term) * exp(exponent);	    
+	  
+#ifdef _DEBUG_ASC
+	  if(ex2[i] > 0)
+	    {
+	      printf("s %d\n", ex2[i]);
+	      assert(0);
+	    }
+#endif	  
+	    
+	  sum += unobserved;
+	}              
+    }              
+  else
+    {           
+      for (i = 0; i < n; i++) 
+	{	  	 	             
+	  
+	  for(j = 0, term = 0.0; j < 4; j++)
+	    {
+	      left  = &(x1[gammaStates * i + numStates * j]);
+	      right = &(x2[gammaStates * i + numStates * j]);	    
+	      
+	      for(l = 0; l < numStates; l++)
+		term += left[l] * right[l] * diagptable[j * numStates + l];	
+	    }
+	  
+	  //because of the way we scale for sites that only consist of a single character
+	  //ex1 and ex2 will mostly be zero, so there is no re-scaling that needs to be done
+
+	  exponent = ((double)(ex1[i] + ex2[i]) * logMin);
+	  
+#ifdef _DEBUG_ASC
+	  if(ex2[i] > 0 || ex1[i] > 0)
+	    {
+	      printf("s %d %d\n", ex1[i], ex2[i]);
+	      assert(0);
+	    }
+#endif
+
+	  assert(exponent < 700.0);
+	  
+	  unobserved = 0.25 * fabs(term) * exp(exponent);	  	  
+  
+	  sum += unobserved;
+	}             
+    }        
+
+  return  sum;
+}
 
 
 /** @ingroup evaluateLikelihoodGroup
@@ -1041,20 +1256,25 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
             rateHet = (int)discreteRateCategories(tr->rateHetModel),
 #endif
             categories,
+            ascWidth = pr->partitionData[model]->states,
             
             /* get the number of states in the partition, e.g.: 4 = DNA, 20 = Protein */
             
             states = pr->partitionData[model]->states,
-            *ex1 = (int*)NULL,
-            *ex2 = (int*)NULL;
+            *ex1 = NULL,
+            *ex2 = NULL,
+            *ex1_asc = NULL,
+            *ex2_asc = NULL;
           
           double 
             *rateCategories = (double*)NULL,
             z, 
-            partitionLikelihood = 0.0,     
-            *x1_start   = (double*)NULL, 
-            *x2_start   = (double*)NULL,
-            *diagptable = (double*)NULL; 
+            partitionLikelihood = 0.0,
+            *x1_start           = NULL,
+            *x2_start           = NULL,
+            *diagptable         = NULL,
+            *x1_start_asc       = NULL,
+            *x2_start_asc       = NULL;
 
 #if (defined(__SSE3) || defined(__AVX))
           double
@@ -1117,6 +1337,17 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                   /* get the corresponding tip vector */
                   
                   tip      = pr->partitionData[model]->yVector[qNumber];
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+                  if (tr->threadID == 0 && pr->partitionData[model]->ascBias)
+#else
+                  if (pr->partitionData[model]->ascBias)
+#endif
+                   {
+                     x2_start_asc  = &pr->partitionData[model]->ascVector[(pNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+                     ex2_asc       = &pr->partitionData[model]->ascExpVector[(pNumber - tr->mxtips - 1) * ascWidth];
+                   }
+
                   
                   /* memory saving stuff, let's deal with this later or ask Fernando ;-) */
                   
@@ -1138,6 +1369,17 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                   
                   x2_start = pr->partitionData[model]->xVector[q_slot];
                   tip = pr->partitionData[model]->yVector[pNumber];
+
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+                  if (tr->threadID == 0 && pr->partitionData[model]->ascBias)
+#else
+                  if (pr->partitionData[model]->ascBias)
+#endif
+                   {
+                     x2_start_asc  = &pr->partitionData[model]->ascVector[(qNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+                     ex2_asc       = &pr->partitionData[model]->ascExpVector[(qNumber - tr->mxtips - 1) * ascWidth];
+                   }
                   
 #if (defined(__SSE3) || defined(__AVX))
                   if(tr->saveMemory)
@@ -1181,6 +1423,22 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                   ex1      = pr->partitionData[model]->expVector[p_slot];
                   ex2      = pr->partitionData[model]->expVector[q_slot];     
                 }
+              
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+              if (tr->threadID == 0 && pr->partitionData[model]->ascBias)
+#else
+              if (pr->partitionData[model]->ascBias)
+#endif
+               {
+                 x1_start_asc  = &pr->partitionData[model]->ascVector[(pNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+                 x2_start_asc  = &pr->partitionData[model]->ascVector[(qNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+
+                 ex1_asc       = &pr->partitionData[model]->ascExpVector[(pNumber - tr->mxtips - 1) * ascWidth];
+                 ex2_asc       = &pr->partitionData[model]->ascExpVector[(qNumber - tr->mxtips - 1) * ascWidth];
+               }
+
+
+
             }
           
           
@@ -1405,6 +1663,68 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
           
           /* finally, we also store the per partition log likelihood which is important for optimizing the alpha parameter 
              of this partition for example */
+
+          /* asc bias stuff */
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+          if (tr->threadID == 0 && pr->partitionData[model]->ascBias)
+#else
+          if (pr->partitionData[model]->ascBias)
+#endif
+           {
+             size_t
+               i;
+             
+             int        
+               w = 0;
+             
+             double                                
+               correction;
+
+             switch(tr->rateHetModel)
+               {
+               case PLL_CAT:
+                 {
+                   double 
+                     rates = 1.0;
+                   
+                   //need to re-calculate P-matrix for the correction here assuming a rate of 1.0 
+                   calcDiagptable(z, states, 1, &rates, pr->partitionData[model]->EIGN, diagptable);
+                   
+                   
+                   correction = evaluateCatAsc(ex1_asc, ex2_asc, x1_start_asc, x2_start_asc, pr->partitionData[model]->tipVector,
+                                               tip, ascWidth, diagptable, ascWidth);
+                 }
+                 break;
+               case PLL_GAMMA:                       
+                 correction = evaluateGammaAsc(ex1_asc, ex2_asc, x1_start_asc, x2_start_asc, pr->partitionData[model]->tipVector,
+                                               tip, ascWidth, diagptable, ascWidth);
+                 break;
+               default:
+                 assert(0);
+               }
+             
+             
+             
+             for(i = (size_t)pr->partitionData[model]->lower; i < (size_t)pr->partitionData[model]->upper; i++)
+               w += tr->aliaswgt[i];
+
+             partitionLikelihood = partitionLikelihood - (double)w * log(1.0 - correction);                  
+              
+           }
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+          if(!(pr->partitionData[model]->ascBias && tr->threadID == 0))
+           {
+#endif
+             if(partitionLikelihood >= 0.0)
+               {
+                 printf("positive log like: %f for partition %d\n", partitionLikelihood, model);
+                 assert(0);
+               }
+#ifdef _USE_PTHREADS          
+           }
+#endif
+
           
           pr->partitionData[model]->partitionLH = partitionLikelihood;
         }
@@ -1423,7 +1743,6 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
     }
 
 
-/* #define DEBUG_PERSITE_LNL */
 #ifdef DEBUG_PERSITE_LNL
   /* per persite-stuff */
   {

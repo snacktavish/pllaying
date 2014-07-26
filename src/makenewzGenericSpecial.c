@@ -75,10 +75,10 @@ extern const unsigned int mask32[32];
 static void sumGAMMA_BINARY(int tipCase, double *sumtable, double *x1_start, double *x2_start, double *tipVector,
                             unsigned char *tipX1, unsigned char *tipX2, int n);
 static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
-				volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr);
+                                volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr);
 static void coreGTRCAT_BINARY(int upper, int numberOfCategories, double *sum,
-			      volatile double *d1, volatile double *d2, 
-			      double *rptr, double *EIGN, int *cptr, double lz, int *wgt);
+                              volatile double *d1, volatile double *d2, 
+                              double *rptr, double *EIGN, int *cptr, double lz, int *wgt);
 
 static void sumCAT_BINARY(int tipCase, double *sum, double *x1_start, double *x2_start, double *tipVector,
                           unsigned char *tipX1, unsigned char *tipX2, int n)
@@ -142,8 +142,16 @@ static void sumCAT_BINARY(int tipCase, double *sum, double *x1_start, double *x2
 
 /* generic function to get the required pointers to the data associated with the left and right node that define a branch */
 
-static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, unsigned char **tipX2, double **x1_start, double **x2_start, int *tipCase, int model,
-    double **x1_gapColumn, double **x2_gapColumn, unsigned int **x1_gap, unsigned int **x2_gap)
+static void getVects(pllInstance *tr, 
+                     partitionList *pr, 
+                     unsigned char **tipX1, unsigned char **tipX2, 
+                     double **x1_start, double **x2_start, 
+                     int *tipCase, 
+                     int model, 
+                     double **x1_gapColumn, double **x2_gapColumn, 
+                     unsigned int **x1_gap, unsigned int **x2_gap,
+                     double ** x1_start_asc,
+                     double ** x2_start_asc)
 {
   int    
     rateHet = (int)discreteRateCategories(tr->rateHetModel),
@@ -173,9 +181,13 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
   /* initialize to NULL */
 
   *x1_start = (double*)NULL,
-    *x2_start = (double*)NULL;
+  *x2_start = (double*)NULL;
+  
   *tipX1 = (unsigned char*)NULL,
-    *tipX2 = (unsigned char*)NULL;
+  *tipX2 = (unsigned char*)NULL;
+
+  *x1_start_asc = NULL;
+  *x2_start_asc = NULL;
 
   /* switch over the different tip cases again here */
 
@@ -189,6 +201,15 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
         *tipX1 = pr->partitionData[model]->yVector[qNumber];
         *x2_start = pr->partitionData[model]->xVector[p_slot];
 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+        if(pr->partitionData[model]->ascBias && tr->threadID == 0)
+#else
+          if(pr->partitionData[model]->ascBias)
+#endif
+          {
+            *x2_start_asc = &pr->partitionData[model]->ascVector[(pNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+          }
+
         if(tr->saveMemory)
         {
           *x2_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
@@ -199,6 +220,15 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
       {
         *tipX1 = pr->partitionData[model]->yVector[pNumber];
         *x2_start = pr->partitionData[model]->xVector[q_slot];
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+        if(pr->partitionData[model]->ascBias && tr->threadID == 0)
+#else
+          if(pr->partitionData[model]->ascBias)
+#endif  
+          {
+            *x2_start_asc = &pr->partitionData[model]->ascVector[(qNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+          }
 
         if(tr->saveMemory)
         {
@@ -225,6 +255,15 @@ static void getVects(pllInstance *tr, partitionList *pr, unsigned char **tipX1, 
     *x1_start = pr->partitionData[model]->xVector[p_slot];
     *x2_start = pr->partitionData[model]->xVector[q_slot];
 
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+      if(pr->partitionData[model]->ascBias && tr->threadID == 0)
+#else
+        if(pr->partitionData[model]->ascBias)
+#endif
+        {
+          *x1_start_asc = &pr->partitionData[model]->ascVector[(pNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+          *x2_start_asc = &pr->partitionData[model]->ascVector[(qNumber - tr->mxtips - 1) * pr->partitionData[model]->ascOffset];
+        }           
     if(tr->saveMemory)
     {
       *x1_gap = &(pr->partitionData[model]->gapVector[pNumber * pr->partitionData[model]->gapVectorLength]);
@@ -470,7 +509,281 @@ static void coreGTRCATPROT(double *EIGN, double lz, int numberOfCategories, doub
 /* now this is the core function of the newton-Raphson based branch length optimization that actually computes 
    the first and second derivative of the likelihood given a new proposed branch length lz */
 
+static void ascertainmentBiasSequence(unsigned char tip[32], int numStates)
+{ 
+  assert(numStates <= 32 && numStates > 1);
 
+  switch(numStates)
+    {
+    case 2:     
+      tip[0] = 1;
+      tip[1] = 2;
+      break;
+    case 4:
+      tip[0] = 1;
+      tip[1] = 2;
+      tip[2] = 4;
+      tip[3] = 8;
+      break;
+    default:
+      {
+	int 
+	  i;
+	for(i = 0; i < numStates; i++)
+	  {
+	    tip[i] = i;
+	    //printf("%c ", inverseMeaningPROT[i]);
+	  }
+	//printf("\n");
+      }
+      break;
+    }
+}
+
+static double coreCatAsc(double *EIGN, double *sumtable, int upper,
+			 volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates)
+{
+  double  
+    diagptable[1024], 
+    lh = 0.0,
+    dlnLdlz = 0.0,
+    d2lnLdlz2 = 0.0,
+    ki, 
+    kisqr;
+
+  int     
+    i,     
+    l;  
+
+ 
+  ki = 1.0;
+  kisqr = 1.0;
+
+  for(l = 1; l < numStates; l++)
+    {
+      diagptable[l * 4]     = exp(EIGN[l-1] * ki * lz);
+      diagptable[l * 4 + 1] = EIGN[l-1] * ki;
+      diagptable[l * 4 + 2] = EIGN[l-1] * EIGN[l-1] * kisqr;
+    }
+
+  for (i = 0; i < upper; i++)
+    {
+      double
+	*sum = &sumtable[i * numStates],
+	tmp,
+	inv_Li   = 0.0,
+	dlnLidlz = 0.0,
+	d2lnLidlz2 = 0.0;
+
+    
+      inv_Li += sum[0];
+
+      for(l = 1; l < numStates; l++)
+	{
+	  inv_Li     += (tmp = diagptable[l * 4] * sum[l]);
+	  dlnLidlz   += tmp * diagptable[l * 4 + 1];
+	  d2lnLidlz2 += tmp * diagptable[l * 4 + 2];
+	}	            
+            
+      inv_Li = fabs(inv_Li);             
+       
+      lh        += inv_Li;	  	 
+      dlnLdlz   += dlnLidlz;
+      d2lnLdlz2 += d2lnLidlz2;       
+    } 
+
+  *ext_dlnLdlz   = (dlnLdlz / (lh - 1.0));
+  *ext_d2lnLdlz2 = (((lh - 1.0) * (d2lnLdlz2) - (dlnLdlz * dlnLdlz)) / ((lh - 1.0) * (lh - 1.0)));  
+
+  return lh;
+}
+
+
+static double coreGammaAsc(double *gammaRates, double *EIGN, double *sumtable, int upper,
+			   volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates)
+{
+  double  
+    diagptable[1024], 
+    lh = 0.0,
+    dlnLdlz = 0.0,
+    d2lnLdlz2 = 0.0,
+    ki, 
+    kisqr;
+
+  int     
+    i, 
+    j, 
+    l;  
+
+  const int 
+    gammaStates = 4 * numStates;
+
+  for(i = 0; i < 4; i++)
+    {
+      ki = gammaRates[i];
+      kisqr = ki * ki;
+
+      for(l = 1; l < numStates; l++)
+	{
+	  diagptable[i * gammaStates + l * 4]     = exp(EIGN[l-1] * ki * lz);
+	  diagptable[i * gammaStates + l * 4 + 1] = EIGN[l-1] * ki;
+	  diagptable[i * gammaStates + l * 4 + 2] = EIGN[l-1] * EIGN[l-1] * kisqr;
+	}
+    }
+
+  for (i = 0; i < upper; i++)
+    {
+      double
+	*sum = &sumtable[i * gammaStates],
+	tmp,
+	inv_Li   = 0.0,
+	dlnLidlz = 0.0,
+	d2lnLidlz2 = 0.0;
+
+      for(j = 0; j < 4; j++)
+	{
+	  inv_Li += sum[j * numStates];
+
+	  for(l = 1; l < numStates; l++)
+	    {
+	      inv_Li     += (tmp = diagptable[j * gammaStates + l * 4] * sum[j * numStates + l]);
+	      dlnLidlz   += tmp * diagptable[j * gammaStates + l * 4 + 1];
+	      d2lnLidlz2 += tmp * diagptable[j * gammaStates + l * 4 + 2];
+	    }	  
+	}    
+            
+      inv_Li = 0.25 * fabs(inv_Li);         
+      dlnLidlz *= 0.25;
+      d2lnLidlz2 *= 0.25;
+       
+      lh        += inv_Li;	  	 
+      dlnLdlz   += dlnLidlz;
+      d2lnLdlz2 += d2lnLidlz2;       
+    } 
+
+  *ext_dlnLdlz   = (dlnLdlz / (lh - 1.0));
+  *ext_d2lnLdlz2 = (((lh - 1.0) * (d2lnLdlz2) - (dlnLdlz * dlnLdlz)) / ((lh - 1.0) * (lh - 1.0)));  
+
+  return lh;
+}
+
+static void sumCatAsc(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
+			int n, const int numStates)
+{
+  int i, k;
+  double *left, *right, *sum;
+
+  unsigned char 
+    tip[32];
+
+  ascertainmentBiasSequence(tip, numStates);
+
+  switch(tipCase)
+    {
+    case PLL_TIP_TIP:
+      for(i = 0; i < n; i++)
+	{
+	  left  = &(tipVector[numStates * tip[i]]);
+	  right = &(tipVector[numStates * tip[i]]);
+
+	  
+	  sum = &sumtable[i * numStates];
+	  
+	  for(k = 0; k < numStates; k++)
+	    sum[k] = left[k] * right[k];	  
+	}
+      break;
+    case PLL_TIP_INNER:
+      for(i = 0; i < n; i++)
+	{
+	  left = &(tipVector[numStates * tip[i]]);
+
+	  
+	  right = &(x2[i * numStates]);
+	  sum = &sumtable[i * numStates];
+
+	  for(k = 0; k < numStates; k++)
+	    sum[k] = left[k] * right[k];	 
+	}
+      break;
+    case PLL_INNER_INNER:
+      for(i = 0; i < n; i++)
+	{
+	  left  = &(x1[i * numStates]);
+	  right = &(x2[i * numStates]);
+	  sum   = &(sumtable[i * numStates]);
+
+	  for(k = 0; k < numStates; k++)
+	    sum[k] = left[k] * right[k];	 
+	}
+      break;
+    default:
+      assert(0);
+    }
+}
+
+static void sumGammaAsc(int tipCase, double *sumtable, double *x1, double *x2, double *tipVector,
+			int n, const int numStates)
+{
+  int i, l, k;
+  double *left, *right, *sum;
+
+  const int gammaStates = numStates * 4;
+
+  unsigned char 
+    tip[32];
+
+  ascertainmentBiasSequence(tip, numStates);
+
+  switch(tipCase)
+    {
+    case PLL_TIP_TIP:
+      for(i = 0; i < n; i++)
+	{
+	  left  = &(tipVector[numStates * tip[i]]);
+	  right = &(tipVector[numStates * tip[i]]);
+
+	  for(l = 0; l < 4; l++)
+	    {
+	      sum = &sumtable[i * gammaStates + l * numStates];
+	      for(k = 0; k < numStates; k++)
+		sum[k] = left[k] * right[k];
+	    }
+	}
+      break;
+    case PLL_TIP_INNER:
+      for(i = 0; i < n; i++)
+	{
+	  left = &(tipVector[numStates * tip[i]]);
+
+	  for(l = 0; l < 4; l++)
+	    {
+	      right = &(x2[gammaStates * i + l * numStates]);
+	      sum = &sumtable[i * gammaStates + l * numStates];
+
+	      for(k = 0; k < numStates; k++)
+		sum[k] = left[k] * right[k];
+	    }
+	}
+      break;
+    case PLL_INNER_INNER:
+      for(i = 0; i < n; i++)
+	{
+	  for(l = 0; l < 4; l++)
+	    {
+	      left  = &(x1[gammaStates * i + l * numStates]);
+	      right = &(x2[gammaStates * i + l * numStates]);
+	      sum   = &(sumtable[i * gammaStates + l * numStates]);
+
+	      for(k = 0; k < numStates; k++)
+		sum[k] = left[k] * right[k];
+	    }
+	}
+      break;
+    default:
+      assert(0);
+    }
+}
 
 
 
@@ -712,8 +1025,10 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
     tipCase;
 
   double
-    *x1_start = (double*)NULL,
-    *x2_start = (double*)NULL;
+    *x1_start     = NULL,
+    *x2_start     = NULL,
+    *x1_start_asc = NULL,
+    *x2_start_asc = NULL;
 
 
   unsigned char
@@ -750,7 +1065,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
         states = pr->partitionData[model]->states;
 
 
-      getVects(tr, pr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap);
+      getVects(tr, pr, &tipX1, &tipX2, &x1_start, &x2_start, &tipCase, model, &x1_gapColumn, &x2_gapColumn, &x1_gap, &x2_gap, &x1_start_asc, &x2_start_asc);
 
 #if (!defined(__SSE3) && !defined(__AVX) && !defined(__MIC_NATIVE))
       assert(!tr->saveMemory);
@@ -845,6 +1160,17 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
           assert(0);
       }
 #endif
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+      if (pr->partitionData[model]->ascBias && tr->threadID == 0)
+#else
+      if (pr->partitionData[model]->ascBias)
+#endif
+       {
+         if (tr->rateHetModel == PLL_CAT)
+           sumCatAsc  (tipCase, pr->partitionData[model]->ascSumBuffer, x1_start_asc, x2_start_asc, pr->partitionData[model]->tipVector, states, states);
+         else
+           sumGammaAsc(tipCase, pr->partitionData[model]->ascSumBuffer, x1_start_asc, x2_start_asc, pr->partitionData[model]->tipVector, states, states);
+       }
     }
   }
 }
@@ -1022,9 +1348,53 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
 #endif
 
       /* store first and second derivative */
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+     if(pr->partitionData[model]->ascBias && tr->threadID == 0)
+#else
+     if(pr->partitionData[model]->ascBias)
+#endif  
+       {
+         size_t
+           i;
 
-      _dlnLdlz[branchIndex]   = _dlnLdlz[branchIndex]   + dlnLdlz;
-      _d2lnLdlz2[branchIndex] = _d2lnLdlz2[branchIndex] + d2lnLdlz2;
+         double 
+           correction;
+
+         int            
+           w = 0;
+         
+         volatile double 
+           d1 = 0.0,
+           d2 = 0.0;                   
+         
+         for(i = (size_t)pr->partitionData[model]->lower; i < (size_t)pr->partitionData[model]->upper; i++)
+           w += tr->aliaswgt[i];     
+         
+          switch(tr->rateHetModel)
+            {
+            case PLL_CAT:
+              correction = coreCatAsc(pr->partitionData[model]->EIGN, pr->partitionData[model]->ascSumBuffer, states,
+                                        &d1,  &d2, lz, states);
+              break;
+            case PLL_GAMMA:
+              correction = coreGammaAsc(pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN, pr->partitionData[model]->ascSumBuffer, states,
+                                        &d1,  &d2, lz, states);      
+              break;
+            default:
+              assert(0);
+            }
+        
+         correction = 1.0 - correction;
+     
+         _dlnLdlz[branchIndex]   =  _dlnLdlz[branchIndex] + dlnLdlz - (double)w * d1;
+         _d2lnLdlz2[branchIndex] =  _d2lnLdlz2[branchIndex] + d2lnLdlz2-  (double)w * d2;
+           
+       }  
+      else
+       {
+         _dlnLdlz[branchIndex]   = _dlnLdlz[branchIndex]   + dlnLdlz;
+         _d2lnLdlz2[branchIndex] = _d2lnLdlz2[branchIndex] + d2lnLdlz2;
+       }
     }
     else
     {
@@ -2194,8 +2564,8 @@ static void coreGTRGAMMA(const int upper, double *sumtable,
 }
 
 static void coreGTRCAT_BINARY(int upper, int numberOfCategories, double *sum,
-			      volatile double *d1, volatile double *d2, 
-			      double *rptr, double *EIGN, int *cptr, double lz, int *wgt)
+                              volatile double *d1, volatile double *d2, 
+                              double *rptr, double *EIGN, int *cptr, double lz, int *wgt)
 {
   int i;
   double
@@ -2220,9 +2590,9 @@ static void coreGTRCAT_BINARY(int upper, int numberOfCategories, double *sum,
   for (i = 0; i < upper; i++)
     {
       double
-	r = rptr[cptr[i]],
-	wr1 = r * wgt[i],
-	wr2 = r * r * wgt[i];
+        r = rptr[cptr[i]],
+        wr1 = r * wgt[i],
+        wr2 = r * r * wgt[i];
       
       d = &d_start[cptr[i]];
 
@@ -2335,7 +2705,7 @@ static void coreGTRCAT(int upper, int numberOfCategories, double *sum,
 
 #if (!defined(__SSE3) && !defined(__AVX))
 static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
-				volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr)
+                                volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr)
 {
   int i, j;
   double
@@ -2366,14 +2736,14 @@ static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
       d2lnLidlz2  = 0.0;
 
       for(j = 0; j < 4; j++)
-	{
-	  inv_Li += sum[2 * j];
+        {
+          inv_Li += sum[2 * j];
 
-	  tmp_1      =  diagptable[3 * j] * sum[2 * j + 1];
-	  inv_Li     += tmp_1;
-	  dlnLidlz   += tmp_1 * diagptable[3 * j + 1];
-	  d2lnLidlz2 += tmp_1 * diagptable[3 * j + 2];
-	}
+          tmp_1      =  diagptable[3 * j] * sum[2 * j + 1];
+          inv_Li     += tmp_1;
+          dlnLidlz   += tmp_1 * diagptable[3 * j + 1];
+          d2lnLidlz2 += tmp_1 * diagptable[3 * j + 2];
+        }
 
       inv_Li = 1.0 / fabs(inv_Li);
 
@@ -2392,7 +2762,7 @@ static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
 }
 #else
 static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
-				volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr)
+                                volatile double *d1,   volatile double *d2, double *EIGN, double *gammaRates, double lz, int *wrptr)
 {
   double 
     dlnLdlz = 0.0,
@@ -2434,18 +2804,18 @@ static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
       sum = &sumtable[i * 8];         
 
       for(j = 0; j < 4; j++)
-	{	 	  	
-	  double 	   
-	    *d0 = &diagptable0[j * 2],
-	    *d1 = &diagptable1[j * 2],
-	    *d2 = &diagptable2[j * 2];
-  	 	 	 
-	  __m128d tmpv = _mm_mul_pd(_mm_load_pd(d0), _mm_load_pd(&sum[j * 2]));
-	  a0 = _mm_add_pd(a0, tmpv);
-	  a1 = _mm_add_pd(a1, _mm_mul_pd(tmpv, _mm_load_pd(d1)));
-	  a2 = _mm_add_pd(a2, _mm_mul_pd(tmpv, _mm_load_pd(d2)));
-	    	 	  
-	}
+        {                       
+          double           
+            *d0 = &diagptable0[j * 2],
+            *d1 = &diagptable1[j * 2],
+            *d2 = &diagptable2[j * 2];
+                         
+          __m128d tmpv = _mm_mul_pd(_mm_load_pd(d0), _mm_load_pd(&sum[j * 2]));
+          a0 = _mm_add_pd(a0, tmpv);
+          a1 = _mm_add_pd(a1, _mm_mul_pd(tmpv, _mm_load_pd(d1)));
+          a2 = _mm_add_pd(a2, _mm_mul_pd(tmpv, _mm_load_pd(d2)));
+                          
+        }
 
       a0 = _mm_hadd_pd(a0, a0);
       a1 = _mm_hadd_pd(a1, a1);

@@ -891,6 +891,14 @@ typedef struct {
   double *left;
   double *right;
   double *tipVector;
+
+
+  /* asc bias */
+  boolean       ascBias;
+  int           ascOffset;
+  int         * ascExpVector;
+  double      * ascSumBuffer;
+  double      * ascVector;
   
   /* LG4 */
 
