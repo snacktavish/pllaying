@@ -1721,7 +1721,7 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                  printf("positive log like: %f for partition %d\n", partitionLikelihood, model);
                  assert(0);
                }
-#ifdef _USE_PTHREADS          
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
            }
 #endif
 
