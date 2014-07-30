@@ -122,6 +122,8 @@ static void newviewGTRCATPROT_SAVE(int tipCase, double *extEV,
                                    unsigned int *x1_gap, unsigned int *x2_gap, unsigned int *x3_gap,
                                    double *x1_gapColumn, double *x2_gapColumn, double *x3_gapColumn, const int maxCats);
 
+#endif
+#if (defined(__AVX) || defined(__SSE3))
 static void newviewGTRCAT_BINARY( int tipCase,  double *EV,  int *cptr,
                                   double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
                                   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -132,7 +134,6 @@ static void newviewGTRGAMMA_BINARY(int tipCase,
                                    int *ex3, unsigned char *tipX1, unsigned char *tipX2,
                                    const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling);
 #endif
-
 
 /* required to compute the absolute values of double precision numbers with SSE3 */
 
@@ -1610,7 +1611,7 @@ static void newviewGTRCAT( int tipCase,  double *EV,  int *cptr,
 
 }
 */
-
+#if 0
 static void newviewGTRGAMMA_BINARY(int tipCase,
                                    double *x1_start, double *x2_start, double *x3_start,
                                    double *EV, double *tipVector,
@@ -1703,7 +1704,7 @@ static void newviewGTRGAMMA_BINARY(int tipCase,
 
              scale = 1;
              for(l = 0; scale && (l < 8); l++)
-               scale = (ABS(x3[l]) <  PLL_MINLIKELIHOOD);
+               scale = (PLL_ABS(x3[l]) <  PLL_MINLIKELIHOOD);
 
              if(scale)
                {
@@ -1760,7 +1761,7 @@ static void newviewGTRGAMMA_BINARY(int tipCase,
          
          scale = 1;
          for(l = 0; scale && (l < 8); l++)
-           scale = (ABS(x3[l]) <  PLL_MINLIKELIHOOD);
+           scale = (PLL_ABS(x3[l]) <  PLL_MINLIKELIHOOD);
 
 
          if(scale)
@@ -1785,6 +1786,157 @@ static void newviewGTRGAMMA_BINARY(int tipCase,
 
 }
 
+static void newviewGTRCAT_BINARY( int tipCase,  double *EV,  int *cptr,
+				  double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
+				  int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+				  int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
+{
+  double
+    *le,
+    *ri,
+    *x1, *x2, *x3;
+  double
+    ump_x1, ump_x2, x1px2[2];
+  int i, j, k, scale, addScale = 0;
+
+  switch(tipCase)
+    {
+    case PLL_TIP_TIP:
+      {
+	for (i = 0; i < n; i++)
+	  {
+	    x1 = &(tipVector[2 * tipX1[i]]);
+	    x2 = &(tipVector[2 * tipX2[i]]);
+	    x3 = &x3_start[2 * i];	    
+
+	    le =  &left[cptr[i] * 4];
+	    ri =  &right[cptr[i] * 4];
+
+	    for(j = 0; j < 2; j++)
+	      {
+		ump_x1 = 0.0;
+		ump_x2 = 0.0;
+		for(k = 0; k < 2; k++)
+		  {
+		    ump_x1 += x1[k] * le[j * 2 + k];
+		    ump_x2 += x2[k] * ri[j * 2 + k];
+		  }
+		x1px2[j] = ump_x1 * ump_x2;
+	      }
+
+	    for(j = 0; j < 2; j++)
+	      x3[j] = 0.0;
+
+	    for(j = 0; j < 2; j++)
+	      for(k = 0; k < 2; k++)
+		x3[k] += x1px2[j] * EV[j * 2 + k];	   
+	  }
+      }
+      break;
+    case PLL_TIP_INNER:
+      {
+	for (i = 0; i < n; i++)
+	  {
+	    x1 = &(tipVector[2 * tipX1[i]]);
+	    x2 = &x2_start[2 * i];
+	    x3 = &x3_start[2 * i];
+	    
+	    le =  &left[cptr[i] * 4];
+	    ri =  &right[cptr[i] * 4];
+
+	    for(j = 0; j < 2; j++)
+	      {
+		ump_x1 = 0.0;
+		ump_x2 = 0.0;
+		for(k = 0; k < 2; k++)
+		  {
+		    ump_x1 += x1[k] * le[j * 2 + k];
+		    ump_x2 += x2[k] * ri[j * 2 + k];
+		  }
+		x1px2[j] = ump_x1 * ump_x2;
+	      }
+
+	    for(j = 0; j < 2; j++)
+	      x3[j] = 0.0;
+
+	    for(j = 0; j < 2; j++)
+	      for(k = 0; k < 2; k++)
+		x3[k] +=  x1px2[j] *  EV[2 * j + k];	   
+
+	    scale = 1;
+	    for(j = 0; j < 2 && scale; j++)
+	      scale = (x3[j] < PLL_MINLIKELIHOOD && x3[j] > PLL_MINUSMINLIKELIHOOD);
+
+	    if(scale)
+	      {
+		for(j = 0; j < 2; j++)
+		  x3[j] *= PLL_TWOTOTHE256;
+
+		if(useFastScaling)
+		  addScale += wgt[i];
+		else
+		  ex3[i]  += 1;	       
+	      }
+	  }
+      }
+      break;
+    case PLL_INNER_INNER:
+      for (i = 0; i < n; i++)
+	{
+	  x1 = &x1_start[2 * i];
+	  x2 = &x2_start[2 * i];
+	  x3 = &x3_start[2 * i];
+
+	  le = &left[cptr[i] * 4];
+	  ri = &right[cptr[i] * 4];
+
+	  for(j = 0; j < 2; j++)
+	    {
+	      ump_x1 = 0.0;
+	      ump_x2 = 0.0;
+	      for(k = 0; k < 2; k++)
+		{
+		  ump_x1 += x1[k] * le[j * 2 + k];
+		  ump_x2 += x2[k] * ri[j * 2 + k];
+		}
+	      x1px2[j] = ump_x1 * ump_x2;
+	    }
+
+	  for(j = 0; j < 2; j++)
+	    x3[j] = 0.0;
+
+	  for(j = 0; j < 2; j++)
+	    for(k = 0; k < 2; k++)
+	      x3[k] +=  x1px2[j] *  EV[2 * j + k];	  
+
+	  scale = 1;
+	  for(j = 0; j < 2 && scale; j++)
+	    scale = (x3[j] < PLL_MINLIKELIHOOD && x3[j] > PLL_MINUSMINLIKELIHOOD);
+
+	  if(scale)
+	    {
+	      for(j = 0; j < 2; j++)
+		x3[j] *= PLL_TWOTOTHE256;
+
+	      if(useFastScaling)
+		addScale += wgt[i];
+	      else
+		ex3[i]  += 1;	   
+	    }
+	}
+      break;
+    default:
+      assert(0);
+    }
+
+  if(useFastScaling)
+    *scalerIncrement = addScale;
+
+}
+#endif    /* end if 0 */
+#endif
+
+#if (defined(__AVX) || defined(__SSE3))
 static void newviewGTRCAT_BINARY( int tipCase,  double *EV,  int *cptr,
                                   double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
                                   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
@@ -1939,6 +2091,183 @@ static void newviewGTRCAT_BINARY( int tipCase,  double *EV,  int *cptr,
            }             
         }
       break;
+    default:
+      assert(0);
+    }
+
+  if(useFastScaling)
+    *scalerIncrement = addScale;
+
+}
+
+static void newviewGTRGAMMA_BINARY(int tipCase,
+				   double *x1_start, double *x2_start, double *x3_start,
+				   double *EV, double *tipVector,
+				   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
+				   const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling
+				   )
+{
+  double
+    *x1, *x2, *x3;
+ 
+  int i, k, l, scale, addScale = 0; 
+
+  switch(tipCase)
+    {
+    case PLL_TIP_TIP:
+      for (i = 0; i < n; i++)
+       {
+	 x1  = &(tipVector[2 * tipX1[i]]);
+	 x2  = &(tipVector[2 * tipX2[i]]);
+	 
+	 for(k = 0; k < 4; k++)
+	   {	     	     	    
+	     x3 = &(x3_start[8 * i + 2 * k]);	     
+	    	         
+	     _mm_store_pd(x3, _mm_setzero_pd());	    
+	    	     
+	     for(l = 0; l < 2; l++)
+	       {		 		 						   		  		 		 
+		 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
+		 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
+		 		       
+		 al = _mm_hadd_pd(al, al);
+		 ar = _mm_hadd_pd(ar, ar);
+		   
+		 al = _mm_mul_pd(al, ar);
+		   
+		 __m128d vv  = _mm_load_pd(x3);
+		 __m128d EVV = _mm_load_pd(&EV[2 * l]);
+		 
+		 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
+		 
+		 _mm_store_pd(x3, vv);		     	  		   		  
+	       }	     	    
+	   }
+       }
+      break;
+    case PLL_TIP_INNER:
+      for (i = 0; i < n; i++)
+       {
+	 x1  = &(tipVector[2 * tipX1[i]]);
+	 
+	 for(k = 0; k < 4; k++)
+	   {	     	     
+	     x2 = &(x2_start[8 * i + 2 * k]);
+	     x3 = &(x3_start[8 * i + 2 * k]);	     
+	    	         
+	     _mm_store_pd(x3, _mm_setzero_pd());	    
+	    	     
+	     for(l = 0; l < 2; l++)
+	       {		 		 						   		  		 		 
+		 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
+		 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
+		 		       
+		 al = _mm_hadd_pd(al, al);
+		 ar = _mm_hadd_pd(ar, ar);
+		   
+		 al = _mm_mul_pd(al, ar);
+		   
+		 __m128d vv  = _mm_load_pd(x3);
+		 __m128d EVV = _mm_load_pd(&EV[2 * l]);
+		 
+		 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
+		 
+		 _mm_store_pd(x3, vv);		     	  		   		  
+	       }	     	    
+	   }
+	
+	 x3 = &(x3_start[8 * i]);
+	 __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
+	 
+	 scale = 1;
+	 for(l = 0; scale && (l < 8); l += 2)
+	   {
+	     __m128d vv = _mm_load_pd(&x3[l]);
+	     __m128d v1 = _mm_and_pd(vv, absMask.m);
+	     v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
+	     if(_mm_movemask_pd( v1 ) != 3)
+	       scale = 0;
+	   }	    	         
+	 
+	 if(scale)
+	   {
+	     __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
+	     
+	     for(l = 0; l < 8; l+=2)
+	       {
+		 __m128d ex3v = _mm_load_pd(&x3[l]);		  
+		 _mm_store_pd(&x3[l], _mm_mul_pd(ex3v,twoto));	
+	       }		   		  
+	     
+	     if(useFastScaling)
+	       addScale += wgt[i];
+	     else
+	       ex3[i]  += 1;	  
+	   }	 
+       }      
+      break;
+    case PLL_INNER_INNER:
+      for (i = 0; i < n; i++)
+       {	 
+	 for(k = 0; k < 4; k++)
+	   {	     
+	     x1 = &(x1_start[8 * i + 2 * k]);
+	     x2 = &(x2_start[8 * i + 2 * k]);
+	     x3 = &(x3_start[8 * i + 2 * k]);	     
+	    	         
+	     _mm_store_pd(x3, _mm_setzero_pd());	    
+	    	     
+	     for(l = 0; l < 2; l++)
+	       {		 		 						   		  		 		 
+		 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
+		 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
+		 		       
+		 al = _mm_hadd_pd(al, al);
+		 ar = _mm_hadd_pd(ar, ar);
+		   
+		 al = _mm_mul_pd(al, ar);
+		   
+		 __m128d vv  = _mm_load_pd(x3);
+		 __m128d EVV = _mm_load_pd(&EV[2 * l]);
+		 
+		 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
+		 
+		 _mm_store_pd(x3, vv);		     	  		   		  
+	       }	     	    
+	   }
+	
+	 x3 = &(x3_start[8 * i]);
+	 __m128d minlikelihood_sse = _mm_set1_pd( PLL_MINLIKELIHOOD );
+	 
+	 scale = 1;
+	 for(l = 0; scale && (l < 8); l += 2)
+	   {
+	     __m128d vv = _mm_load_pd(&x3[l]);
+	     __m128d v1 = _mm_and_pd(vv, absMask.m);
+	     v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
+	     if(_mm_movemask_pd( v1 ) != 3)
+	       scale = 0;
+	   }	    	         
+	 
+	 if(scale)
+	   {
+	     __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
+	     
+	     for(l = 0; l < 8; l+=2)
+	       {
+		 __m128d ex3v = _mm_load_pd(&x3[l]);		  
+		 _mm_store_pd(&x3[l], _mm_mul_pd(ex3v,twoto));	
+	       }		   		  
+	     
+	     if(useFastScaling)
+	       addScale += wgt[i];
+	     else
+	       ex3[i]  += 1;	  
+	   }	 
+       }
+      break;
+
     default:
       assert(0);
     }
@@ -4850,344 +5179,6 @@ static void newviewGTRGAMMA_GAPPED_SAVE(int tipCase,
 }
 
 
-static void newviewGTRCAT_BINARY( int tipCase,  double *EV,  int *cptr,
-                                  double *x1_start,  double *x2_start,  double *x3_start,  double *tipVector,
-                                  int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                  int n,  double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
-{
-  double
-    *le,
-    *ri,
-    *x1, *x2, *x3;
-  int i, l, scale, addScale = 0;
-
-  switch(tipCase)
-    {
-    case PLL_TIP_TIP:
-      {
-        for(i = 0; i < n; i++)
-          {
-            x1 = &(tipVector[2 * tipX1[i]]);
-            x2 = &(tipVector[2 * tipX2[i]]);
-            x3 = &x3_start[2 * i];         
-
-            le =  &left[cptr[i] * 4];
-            ri =  &right[cptr[i] * 4];
-
-            _mm_store_pd(x3, _mm_setzero_pd());     
-                     
-            for(l = 0; l < 2; l++)
-              {                                                                                                                          
-                __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&le[l * 2]));
-                __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&ri[l * 2]));
-                
-                al = _mm_hadd_pd(al, al);
-                ar = _mm_hadd_pd(ar, ar);
-                
-                al = _mm_mul_pd(al, ar);
-                
-                __m128d vv  = _mm_load_pd(x3);
-                __m128d EVV = _mm_load_pd(&EV[2 * l]);
-                
-                vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-                
-                _mm_store_pd(x3, vv);                                                     
-              }            
-          }
-      }
-      break;
-    case PLL_TIP_INNER:
-      {
-        for (i = 0; i < n; i++)
-          {
-            x1 = &(tipVector[2 * tipX1[i]]);
-            x2 = &x2_start[2 * i];
-            x3 = &x3_start[2 * i];
-            
-            le =  &left[cptr[i] * 4];
-            ri =  &right[cptr[i] * 4];
-
-            _mm_store_pd(x3, _mm_setzero_pd());     
-                     
-            for(l = 0; l < 2; l++)
-              {                                                                                                                          
-                __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&le[l * 2]));
-                __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&ri[l * 2]));
-                
-                al = _mm_hadd_pd(al, al);
-                ar = _mm_hadd_pd(ar, ar);
-                
-                al = _mm_mul_pd(al, ar);
-                
-                __m128d vv  = _mm_load_pd(x3);
-                __m128d EVV = _mm_load_pd(&EV[2 * l]);
-                
-                vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-                
-                _mm_store_pd(x3, vv);                                                     
-              }  
-            
-            __m128d minlikelihood_sse = _mm_set1_pd(PLL_MINLIKELIHOOD);
-         
-            scale = 1;
-            
-            __m128d v1 = _mm_and_pd(_mm_load_pd(x3), absMask.m);
-            v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
-            if(_mm_movemask_pd( v1 ) != 3)
-              scale = 0;                         
-            
-            if(scale)
-              {
-                __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
-                
-                __m128d ex3v = _mm_load_pd(x3);           
-                _mm_store_pd(x3, _mm_mul_pd(ex3v,twoto));                                                 
-                
-                if(useFastScaling)
-                  addScale += wgt[i];
-                else
-                  ex3[i]  += 1;   
-              }                    
-          }
-      }
-      break;
-    case PLL_INNER_INNER:
-      for (i = 0; i < n; i++)
-        {
-          x1 = &x1_start[2 * i];
-          x2 = &x2_start[2 * i];
-          x3 = &x3_start[2 * i];
-
-          le = &left[cptr[i] * 4];
-          ri = &right[cptr[i] * 4];
-
-          _mm_store_pd(x3, _mm_setzero_pd());       
-          
-          for(l = 0; l < 2; l++)
-            {                                                                                                                            
-              __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&le[l * 2]));
-              __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&ri[l * 2]));
-              
-              al = _mm_hadd_pd(al, al);
-              ar = _mm_hadd_pd(ar, ar);
-              
-              al = _mm_mul_pd(al, ar);
-              
-              __m128d vv  = _mm_load_pd(x3);
-              __m128d EVV = _mm_load_pd(&EV[2 * l]);
-              
-              vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-              
-              _mm_store_pd(x3, vv);                                                       
-            }                             
-
-          __m128d minlikelihood_sse = _mm_set1_pd(PLL_MINLIKELIHOOD);
-         
-          scale = 1;
-                  
-          __m128d v1 = _mm_and_pd(_mm_load_pd(x3), absMask.m);
-          v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
-          if(_mm_movemask_pd( v1 ) != 3)
-            scale = 0;                   
-         
-          if(scale)
-            {
-              __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
-                    
-              __m128d ex3v = _mm_load_pd(x3);             
-              _mm_store_pd(x3, _mm_mul_pd(ex3v,twoto));                                           
-             
-              if(useFastScaling)
-                addScale += wgt[i];
-              else
-                ex3[i]  += 1;     
-           }             
-        }
-      break;
-    default:
-      assert(0);
-    }
-
-  if(useFastScaling)
-    *scalerIncrement = addScale;
-
-}
-
-static void newviewGTRGAMMA_BINARY(int tipCase,
-                                   double *x1_start, double *x2_start, double *x3_start,
-                                   double *EV, double *tipVector,
-                                   int *ex3, unsigned char *tipX1, unsigned char *tipX2,
-                                   const int n, double *left, double *right, int *wgt, int *scalerIncrement, const boolean useFastScaling)
-{
-  double
-    *x1, *x2, *x3;
- 
-  int i, k, l, scale, addScale = 0; 
-
-  switch(tipCase)
-    {
-    case PLL_TIP_TIP:
-      for (i = 0; i < n; i++)
-       {
-         x1  = &(tipVector[2 * tipX1[i]]);
-         x2  = &(tipVector[2 * tipX2[i]]);
-         
-         for(k = 0; k < 4; k++)
-           {                        
-             x3 = &(x3_start[8 * i + 2 * k]);        
-                         
-             _mm_store_pd(x3, _mm_setzero_pd());            
-                     
-             for(l = 0; l < 2; l++)
-               {                                                                                                                                 
-                 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
-                 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
-                                       
-                 al = _mm_hadd_pd(al, al);
-                 ar = _mm_hadd_pd(ar, ar);
-                   
-                 al = _mm_mul_pd(al, ar);
-                   
-                 __m128d vv  = _mm_load_pd(x3);
-                 __m128d EVV = _mm_load_pd(&EV[2 * l]);
-                 
-                 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-                 
-                 _mm_store_pd(x3, vv);                                                    
-               }                    
-           }
-       }
-      break;
-    case PLL_TIP_INNER:
-      for (i = 0; i < n; i++)
-       {
-         x1  = &(tipVector[2 * tipX1[i]]);
-         
-         for(k = 0; k < 4; k++)
-           {                 
-             x2 = &(x2_start[8 * i + 2 * k]);
-             x3 = &(x3_start[8 * i + 2 * k]);        
-                         
-             _mm_store_pd(x3, _mm_setzero_pd());            
-                     
-             for(l = 0; l < 2; l++)
-               {                                                                                                                                 
-                 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
-                 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
-                                       
-                 al = _mm_hadd_pd(al, al);
-                 ar = _mm_hadd_pd(ar, ar);
-                   
-                 al = _mm_mul_pd(al, ar);
-                   
-                 __m128d vv  = _mm_load_pd(x3);
-                 __m128d EVV = _mm_load_pd(&EV[2 * l]);
-                 
-                 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-                 
-                 _mm_store_pd(x3, vv);                                                    
-               }                    
-           }
-        
-         x3 = &(x3_start[8 * i]);
-         __m128d minlikelihood_sse = _mm_set1_pd(PLL_MINLIKELIHOOD);
-         
-         scale = 1;
-         for(l = 0; scale && (l < 8); l += 2)
-           {
-             __m128d vv = _mm_load_pd(&x3[l]);
-             __m128d v1 = _mm_and_pd(vv, absMask.m);
-             v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
-             if(_mm_movemask_pd( v1 ) != 3)
-               scale = 0;
-           }                     
-         
-         if(scale)
-           {
-             __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
-             
-             for(l = 0; l < 8; l+=2)
-               {
-                 __m128d ex3v = _mm_load_pd(&x3[l]);              
-                 _mm_store_pd(&x3[l], _mm_mul_pd(ex3v,twoto));  
-               }                                  
-             
-             if(useFastScaling)
-               addScale += wgt[i];
-             else
-               ex3[i]  += 1;      
-           }     
-       }      
-      break;
-    case PLL_INNER_INNER:
-      for (i = 0; i < n; i++)
-       {         
-         for(k = 0; k < 4; k++)
-           {         
-             x1 = &(x1_start[8 * i + 2 * k]);
-             x2 = &(x2_start[8 * i + 2 * k]);
-             x3 = &(x3_start[8 * i + 2 * k]);        
-                         
-             _mm_store_pd(x3, _mm_setzero_pd());            
-                     
-             for(l = 0; l < 2; l++)
-               {                                                                                                                                 
-                 __m128d al = _mm_mul_pd(_mm_load_pd(x1), _mm_load_pd(&left[k * 4 + l * 2]));
-                 __m128d ar = _mm_mul_pd(_mm_load_pd(x2), _mm_load_pd(&right[k * 4 + l * 2]));
-                                       
-                 al = _mm_hadd_pd(al, al);
-                 ar = _mm_hadd_pd(ar, ar);
-                   
-                 al = _mm_mul_pd(al, ar);
-                   
-                 __m128d vv  = _mm_load_pd(x3);
-                 __m128d EVV = _mm_load_pd(&EV[2 * l]);
-                 
-                 vv = _mm_add_pd(vv, _mm_mul_pd(al, EVV));
-                 
-                 _mm_store_pd(x3, vv);                                                    
-               }                    
-           }
-        
-         x3 = &(x3_start[8 * i]);
-         __m128d minlikelihood_sse = _mm_set1_pd(PLL_MINLIKELIHOOD);
-         
-         scale = 1;
-         for(l = 0; scale && (l < 8); l += 2)
-           {
-             __m128d vv = _mm_load_pd(&x3[l]);
-             __m128d v1 = _mm_and_pd(vv, absMask.m);
-             v1 = _mm_cmplt_pd(v1,  minlikelihood_sse);
-             if(_mm_movemask_pd( v1 ) != 3)
-               scale = 0;
-           }                     
-         
-         if(scale)
-           {
-             __m128d twoto = _mm_set_pd(PLL_TWOTOTHE256, PLL_TWOTOTHE256);
-             
-             for(l = 0; l < 8; l+=2)
-               {
-                 __m128d ex3v = _mm_load_pd(&x3[l]);              
-                 _mm_store_pd(&x3[l], _mm_mul_pd(ex3v,twoto));  
-               }                                  
-             
-             if(useFastScaling)
-               addScale += wgt[i];
-             else
-               ex3[i]  += 1;      
-           }     
-       }
-      break;
-
-    default:
-      assert(0);
-    }
-
-  if(useFastScaling)
-    *scalerIncrement = addScale;
-
-}
 
 /** @ingroup group1
  *  @brief Computation of conditional likelihood arrray for GTR GAMMA (Optimized SSE3 version for DNA data)

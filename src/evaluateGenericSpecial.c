@@ -148,6 +148,7 @@ static double evaluateGTRCAT (const boolean fastScaling, int *ex1, int *ex2, int
 
 #endif
 
+#if (defined(__AVX) || defined(__SSE3))
 static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
                                       double *x1_start, double *x2_start, 
                                       double *tipVector, 
@@ -156,6 +157,7 @@ static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
 static double evaluateGTRCAT_BINARY (int *ex1, int *ex2, int *cptr, int *wptr,
                                      double *x1_start, double *x2_start, double *tipVector,                   
                                      unsigned char *tipX1, int n, double *diagptable_start, const boolean fastScaling);
+#endif
 
 
 /* 
@@ -2086,6 +2088,7 @@ void perSiteLogLikelihoods(pllInstance *tr, partitionList *pr, double *logLikeli
 
 }
 
+#if (defined(__SSE3) || defined(__AVX))
 static double evaluateGTRCAT_BINARY (int *ex1, int *ex2, int *cptr, int *wptr,
                                      double *x1_start, double *x2_start, double *tipVector,                   
                                      unsigned char *tipX1, int n, double *diagptable_start, const boolean fastScaling)
@@ -2272,9 +2275,11 @@ static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
 
   return sum;
 } 
+#endif
 
 
 
+#if (defined(__SSE3) || defined(__AVX))
 /* below are the optimized function versions with geeky intrinsics */
 
 /** @ingroup evaluateLikelihoodGroup
@@ -2380,7 +2385,6 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
   return  sum;
 }
 
-#if (defined(__SSE3) || defined(__AVX))
 /** @ingroup evaluateLikelihoodGroup
     @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
     and the memory saving technique (Optimized SSE3 version for AA data)

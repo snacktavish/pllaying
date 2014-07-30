@@ -72,6 +72,7 @@ void branchLength_parallelReduce(pllInstance *tr, double *dlnLdlz,  double *d2ln
 
 extern const unsigned int mask32[32];
 
+#if (defined(__SSE3) || defined(__AVX))
 static void sumGAMMA_BINARY(int tipCase, double *sumtable, double *x1_start, double *x2_start, double *tipVector,
                             unsigned char *tipX1, unsigned char *tipX2, int n);
 static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
@@ -79,64 +80,10 @@ static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
 static void coreGTRCAT_BINARY(int upper, int numberOfCategories, double *sum,
                               volatile double *d1, volatile double *d2, 
                               double *rptr, double *EIGN, int *cptr, double lz, int *wgt);
-
 static void sumCAT_BINARY(int tipCase, double *sum, double *x1_start, double *x2_start, double *tipVector,
-                          unsigned char *tipX1, unsigned char *tipX2, int n)
-{
-  int i;
-  
-#if (!defined(__SSE3) && !defined(__AVX))
-  int j;
+                          unsigned char *tipX1, unsigned char *tipX2, int n);
 #endif
-  double *x1, *x2;
 
-  switch(tipCase)
-    {
-    case PLL_TIP_TIP:
-      for (i = 0; i < n; i++)
-        {
-          x1 = &(tipVector[2 * tipX1[i]]);
-          x2 = &(tipVector[2 * tipX2[i]]);
-
-#if (!defined(__SSE3) && !defined(__AVX))
-          for(j = 0; j < 2; j++)
-            sum[i * 2 + j]     = x1[j] * x2[j];
-#else
-          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));
-#endif
-        }
-      break;
-    case PLL_TIP_INNER:
-      for (i = 0; i < n; i++)
-        {
-          x1 = &(tipVector[2 * tipX1[i]]);
-          x2 = &x2_start[2 * i];
-
-#if (!defined(__SSE3) && !defined(__AVX))
-          for(j = 0; j < 2; j++)
-            sum[i * 2 + j]     = x1[j] * x2[j];
-#else
-          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));  
-#endif
-        }
-      break;
-    case PLL_INNER_INNER:
-      for (i = 0; i < n; i++)
-        {
-          x1 = &x1_start[2 * i];
-          x2 = &x2_start[2 * i];
-#if (!defined(__SSE3) && !defined(__AVX))
-          for(j = 0; j < 2; j++)
-            sum[i * 2 + j]     = x1[j] * x2[j];
-#else
-          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));   
-#endif
-        }
-      break;
-    default:
-      assert(0);
-    }
-}
 /*******************/
 
 
@@ -1748,6 +1695,64 @@ void makenewzGeneric(pllInstance *tr, partitionList * pr, nodeptr p, nodeptr q, 
 #if (defined(__SSE3) || defined(__AVX))
 
 
+static void sumCAT_BINARY(int tipCase, double *sum, double *x1_start, double *x2_start, double *tipVector,
+                          unsigned char *tipX1, unsigned char *tipX2, int n)
+
+{
+  int i;
+  
+#if (!defined(__SSE3) && !defined(__AVX))
+  int j;
+#endif
+  double *x1, *x2;
+
+  switch(tipCase)
+    {
+    case PLL_TIP_TIP:
+      for (i = 0; i < n; i++)
+        {
+          x1 = &(tipVector[2 * tipX1[i]]);
+          x2 = &(tipVector[2 * tipX2[i]]);
+
+#if (!defined(__SSE3) && !defined(__AVX))
+          for(j = 0; j < 2; j++)
+            sum[i * 2 + j]     = x1[j] * x2[j];
+#else
+          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));
+#endif
+        }
+      break;
+    case PLL_TIP_INNER:
+      for (i = 0; i < n; i++)
+        {
+          x1 = &(tipVector[2 * tipX1[i]]);
+          x2 = &x2_start[2 * i];
+
+#if (!defined(__SSE3) && !defined(__AVX))
+          for(j = 0; j < 2; j++)
+            sum[i * 2 + j]     = x1[j] * x2[j];
+#else
+          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));  
+#endif
+        }
+      break;
+    case PLL_INNER_INNER:
+      for (i = 0; i < n; i++)
+        {
+          x1 = &x1_start[2 * i];
+          x2 = &x2_start[2 * i];
+#if (!defined(__SSE3) && !defined(__AVX))
+          for(j = 0; j < 2; j++)
+            sum[i * 2 + j]     = x1[j] * x2[j];
+#else
+          _mm_store_pd(&sum[i * 2], _mm_mul_pd( _mm_load_pd(x1), _mm_load_pd(x2)));   
+#endif
+        }
+      break;
+    default:
+      assert(0);
+    }
+}
 
 
 static void sumCAT_SAVE(int tipCase, double *sum, double *x1_start, double *x2_start, double *tipVector,
