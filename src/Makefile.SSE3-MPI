@@ -10,7 +10,7 @@ SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
 GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
-OBJ = hash.o stack.o ssort.o queue.o utils.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o lexer.o alignment.o ssort.o newick.o parsePartition.o
+OBJ = hash.o stack.o ssort.o queue.o utils.o randomTree.o optimizeModel.o trash.o searchAlgo.o topologies.o fastDNAparsimony.o treeIO.o models.o evaluatePartialGenericSpecial.o evaluateGenericSpecial.o newviewGenericSpecial.o makenewzGenericSpecial.o bipartitionList.o restartHashTable.o recom.o  genericParallelization.o lexer.o alignment.o ssort.o newick.o parsePartition.o parsimony.o
 
 all : $(STATICLIB)
 
@@ -20,6 +20,7 @@ $(STATICLIB) : $(OBJ)
 	ln -sf $(STATICLIB) $(TARGET)-$(ARCH).a
 
 fastDNAparsimony.o : fastDNAparsimony.c $(GLOBAL_DEPS)
+parsimony.o : parsimony.c $(GLOBAL_DEPS)
 bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)
 optimizeModel.o : optimizeModel.c $(GLOBAL_DEPS)
 trash.o : trash.c $(GLOBAL_DEPS)

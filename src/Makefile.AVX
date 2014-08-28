@@ -10,7 +10,7 @@ SHAREDOBJ = $(TARGET)-$(ARCH).so.$(VERSION)	# shared object
 GLOBAL_DEPS = pll.h globalVariables.h
 RM = rm -f
 
-OBJ = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o optimizeModel.o recom.o trash.o lexer.o alignment.o ssort.o newick.o parsePartition.o
+OBJ = avxLikelihood.o evaluateGenericSpecial.o hash.o models.o queue.o restartHashTable.o stack.o treeIO.o evaluatePartialGenericSpecial.o makenewzGenericSpecial.o newviewGenericSpecial.o randomTree.o searchAlgo.o topologies.o utils.o bipartitionList.o fastDNAparsimony.o optimizeModel.o recom.o trash.o lexer.o alignment.o ssort.o newick.o parsePartition.o parsimony.o
 
 all: $(STATICLIB)
 
@@ -23,6 +23,9 @@ avxLikelihood.o : avxLikelihood.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -mavx -c -o $@ $<
 
 fastDNAparsimony.o : fastDNAparsimony.c $(GLOBAL_DEPS)
+	$(CC) $(CFLAGS) -mavx -c -o $@ $<
+
+parsimony.o : parsimony.c $(GLOBAL_DEPS)
 	$(CC) $(CFLAGS) -mavx -c -o $@ $<
 
 bipartitionList.o : bipartitionList.c $(GLOBAL_DEPS)

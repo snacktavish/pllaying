@@ -1045,6 +1045,7 @@ pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData)
 
   /* boolean array for marking that a site was assigned a partition */
   used = (char *) rax_calloc (alignmentData->sequenceLength, sizeof (char));
+  printf ("Sequence length : %d\n", alignmentData->sequenceLength);
 
   /* traverse all partitions and their respective regions and mark sites */
   for (elm = parts->head; elm; elm = elm->next)
@@ -1054,6 +1055,12 @@ pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData)
      for (regionItem = pi->regionList->head; regionItem; regionItem = regionItem->next)
       {
         region = (pllPartitionRegion *) regionItem->item;
+        
+        if (region->start < 1 || region->end > alignmentData->sequenceLength) 
+         {
+           rax_free (used);
+           return (0);
+         }
 
         for (i = region->start - 1; i < region->end; i += region->stride)
          {
@@ -1180,6 +1187,7 @@ static partitionList * createPartitions (pllQueue * parts, int * bounds)
      pl->partitionData[i]->maxTipStates              = pLengths[pi->dataType].undetermined + 1;
      pl->partitionData[i]->optimizeBaseFrequencies   = pi->optimizeBaseFrequencies;
      pl->partitionData[i]->ascBias                   = pi->ascBias;
+     pl->partitionData[i]->parsVect                  = NULL;
 
 
 
@@ -1259,7 +1267,7 @@ partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignm
       {
         region = (pllPartitionRegion *) regionItem->item;
 
-        for (i = region->start - 1; i < region->end; i += region->stride)
+        for (i = region->start - 1; i < region->end && i < alignmentData->sequenceLength; i += region->stride)
          {
            if (oi[i] == i)
             {
@@ -1900,6 +1908,7 @@ pllInstance * pllCreateInstance (pllInstanceAttr * attr)
   tr->likelihoodEpsilon = 0.01;
   
   tr->randomNumberSeed = attr->randomNumberSeed;
+  tr->parsimonyScore   = NULL;
 
   /* remove it from the library */
   tr->useMedian         = PLL_FALSE;
