@@ -92,6 +92,7 @@ AC_ARG_ENABLE(sse3-mpi,AC_HELP_STRING([--enable-sse3-mpi],[build MPI SSE3 versio
 
 AX_MPI([have_mpi=yes],[have_mpi=no])
 
+AM_INIT_AUTOMAKE([subdir-objects])
 AM_CONDITIONAL(BUILD_GENERIC, test "x${have_generic}" = "xyes")
 AM_CONDITIONAL(BUILD_AVX, test "x${have_avx}" = "xyes")
 AM_CONDITIONAL(BUILD_AVX_PTHREADS, test "x${have_avx_pthreads}" = "xyes")
