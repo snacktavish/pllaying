@@ -1045,7 +1045,6 @@ pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData)
 
   /* boolean array for marking that a site was assigned a partition */
   used = (char *) rax_calloc (alignmentData->sequenceLength, sizeof (char));
-  printf ("Sequence length : %d\n", alignmentData->sequenceLength);
 
   /* traverse all partitions and their respective regions and mark sites */
   for (elm = parts->head; elm; elm = elm->next)
