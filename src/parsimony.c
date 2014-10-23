@@ -122,7 +122,7 @@ static inline unsigned int vectorPopcount(INT_TYPE v)
   VECTOR_STORE((CAST)counts, v);
 
   for(i = 0; i < LONG_INTS_PER_VECTOR; i++)
-     sum += __builtin_popcount(counts[i]);
+     sum += __builtin_popcountl(counts[i]);
 
   return ((unsigned int)sum);
 }
@@ -663,7 +663,6 @@ static void newviewParsimonyIterativeFast(pllInstance *tr, partitionList *pr, bo
               }
             }            
         }
-
       tr->parsimonyScore[pNumber] = totalScore + tr->parsimonyScore[rNumber] + tr->parsimonyScore[qNumber];      
     }
 }
@@ -723,9 +722,6 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                  sum += vectorPopcount(v_N);
                   if (perSiteScores)
                     storePerSiteScores (pr, model, v_N, i);
-                 
-                 if(sum >= bestScore)
-                   return sum;                         
                }
            }
            break;
@@ -755,9 +751,6 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                  sum += vectorPopcount(v_N);
                   if (perSiteScores)
                     storePerSiteScores (pr, model, v_N, i);
-                 
-                 if(sum >= bestScore)            
-                   return sum;          
                }                 
            }
            break;
@@ -793,9 +786,6 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                   sum += vectorPopcount(v_N);          
                   if (perSiteScores)
                     storePerSiteScores (pr, model, v_N, i);
-                  
-                  if(sum >= bestScore)      
-                    return sum;                        
                 }
            }
            break;
@@ -833,9 +823,6 @@ static unsigned int evaluateParsimonyIterativeFast(pllInstance *tr, partitionLis
                  sum += vectorPopcount(v_N);           
                  if (perSiteScores)
                    storePerSiteScores (pr, model, v_N, i);
-                 
-                 if(sum >= bestScore)         
-                   return sum;                 
                }
            }
          }
