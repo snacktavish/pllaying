@@ -175,8 +175,8 @@ extern "C" {
 #define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
-#define PLL_LIB_VERSION                         "1.0.0"
-#define PLL_LIB_DATE                            "September 2013"
+#define PLL_LIB_VERSION                         "1.0.1"
+#define PLL_LIB_DATE                            "November 3 2014"
 
 /* aminoacid substitution models */
 #define PLL_DAYHOFF                             0

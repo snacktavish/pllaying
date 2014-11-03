@@ -81,6 +81,15 @@ static double evaluatePartialGTRCAT(int i, double ki, int counter,  traversalInf
 				    double *tipVector, unsigned  char **yVector, 
 				    int branchReference, int mxtips);
 
+static inline void computeVectorGTRCAT_BINARY(double *lVector, int *eVector, double ki, int i, double qz, double rz,
+					      traversalInfo *ti, double *EIGN, double *EI, double *EV, double *tipVector, 
+					      unsigned char **yVector, int mxtips);
+
+static double evaluatePartialGTRCAT_BINARY(int i, double ki, int counter,  traversalInfo *ti, double qz,
+					   int w, double *EIGN, double *EI, double *EV,
+					   double *tipVector, unsigned  char **yVector, 
+					   int branchReference, int mxtips);
+
 static double evaluatePartialGTRGAMMA(int i, int counter,  traversalInfo *ti, double qz,
 				      int w, double *EIGN, double *EI, double *EV,
 				      double *tipVector, unsigned char **yVector, 
@@ -409,6 +418,20 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
   switch(states)
     {
     case 2:   /* BINARY */
+      assert(!tr->saveMemory);
+      assert(tr->rateHetModel == PLL_CAT);
+
+      result = evaluatePartialGTRCAT_BINARY(index, ki, tr->td[0].count, tr->td[0].ti, 
+                                            tr->td[0].ti[0].qz[branchReference],
+                                            pr->partitionData[_model]->wgt[index],
+                                            pr->partitionData[_model]->EIGN,
+                                            pr->partitionData[_model]->EI,
+                                            pr->partitionData[_model]->EV,
+                                            pr->partitionData[_model]->tipVector,
+                                            pr->partitionData[_model]->yVector, 
+                                            branchReference, 
+                                            tr->mxtips);
+      break;
       
     case 4:   /* DNA */
       /* switch over CAT versus GAMMA and pass all model parameters for the respective partition to the respective functions */
@@ -466,6 +489,131 @@ double evaluatePartialGeneric (pllInstance *tr, partitionList *pr, int i, double
    DNA data. 
    The structure is analoguous as above with some data- and model-specific optimizations and vectorizations.
 */
+
+static inline void computeVectorGTRCAT_BINARY(double *lVector, int *eVector, double ki, int i, double qz, double rz,
+					      traversalInfo *ti, double *EIGN, double *EI, double *EV, double *tipVector, 
+					      unsigned char **yVector, int mxtips)
+{       
+  double  d1, d2,  ump_x1, ump_x2, x1px2[2], lz1, lz2; 
+  double *x1, *x2, *x3;
+  int 
+    j, k,
+    pNumber = ti->pNumber,
+    rNumber = ti->rNumber,
+    qNumber = ti->qNumber;
+ 
+  x3  = &lVector[2 * (pNumber  - mxtips)];  
+
+  switch(ti->tipCase)
+    {
+    case PLL_TIP_TIP:     
+      x1 = &(tipVector[2 * yVector[qNumber][i]]);
+      x2 = &(tipVector[2 * yVector[rNumber][i]]);   
+      break;
+    case PLL_TIP_INNER:     
+      x1 = &(tipVector[2 * yVector[qNumber][i]]);
+      x2 = &lVector[2 * (rNumber - mxtips)];                    
+      break;
+    case PLL_INNER_INNER:            
+      x1 = &lVector[2 * (qNumber - mxtips)];
+      x2 = &lVector[2 * (rNumber - mxtips)];               
+      break;
+    default:
+      assert(0);
+    }
+     
+  lz1 = qz * ki;  
+  lz2 = rz * ki;
+  
+ 
+  d1 = x1[1] * exp(EIGN[1] * lz1);
+  d2 = x2[1] * exp(EIGN[1] * lz2);	        
+ 
+  for(j = 0; j < 2; j++)
+    {     
+      ump_x1 = x1[0];
+      ump_x2 = x2[0];
+      
+      ump_x1 += d1 * EI[j * 2 + 1];
+      ump_x2 += d2 * EI[j * 2 + 1];
+	
+      x1px2[j] = ump_x1 * ump_x2;
+    }
+  
+  for(j = 0; j < 2; j++)
+    x3[j] = 0.0;
+
+  for(j = 0; j < 2; j++)          
+    for(k = 0; k < 2; k++)	
+      x3[k] +=  x1px2[j] *  EV[2 * j + k];	   
+      
+  
+  if (x3[0] < PLL_MINLIKELIHOOD && x3[0] > PLL_MINUSMINLIKELIHOOD &&
+      x3[1] < PLL_MINLIKELIHOOD && x3[1] > PLL_MINUSMINLIKELIHOOD 
+      )
+    {	     
+      x3[0]   *= PLL_TWOTOTHE256;
+      x3[1]   *= PLL_TWOTOTHE256;     
+      *eVector = *eVector + 1;
+    }	              
+
+  return;
+}
+
+static double evaluatePartialGTRCAT_BINARY(int i, double ki, int counter,  traversalInfo *ti, double qz,
+					   int w, double *EIGN, double *EI, double *EV,
+					   double *tipVector, unsigned  char **yVector, 
+					   int branchReference, int mxtips)
+{
+  double lz, term;       
+  double  d;
+  double   *x1, *x2; 
+  int scale = 0, k;
+  double *lVector = (double *)malloc(sizeof(double) * 2 * mxtips);  
+  traversalInfo *trav = &ti[0];
+ 
+  assert(isTip(trav->pNumber, mxtips));
+     
+  x1 = &(tipVector[2 *  yVector[trav->pNumber][i]]);   
+
+  for(k = 1; k < counter; k++)  
+    {
+      double 
+	qz = ti[k].qz[branchReference],
+	rz = ti[k].rz[branchReference];
+      
+      qz = (qz > PLL_ZMIN) ? log(qz) : log(PLL_ZMIN);
+      rz = (rz > PLL_ZMIN) ? log(rz) : log(PLL_ZMIN);
+
+      computeVectorGTRCAT_BINARY(lVector, &scale, ki, i, qz, rz, &ti[k], 
+				 EIGN, EI, EV, 
+				 tipVector, yVector, mxtips);       
+    }
+   
+  x2 = &lVector[2 * (trav->qNumber - mxtips)];
+     
+  assert(0 <=  (trav->qNumber - mxtips) && (trav->qNumber - mxtips) < mxtips);  
+       
+  if(qz < PLL_ZMIN) 
+    lz = PLL_ZMIN;
+  lz  = log(qz); 
+  lz *= ki;  
+  
+  d = exp(EIGN[1] * lz);
+  
+  term =  x1[0] * x2[0];
+  term += x1[1] * x2[1] * d; 
+
+  term = log(fabs(term)) + (scale * log(PLL_MINLIKELIHOOD));   
+
+  term = term * w;
+
+  free(lVector);
+  
+  return  term;
+}
+
+
 
 static inline void computeVectorGTRGAMMAPROT(double *lVector, int *eVector, double *gammaRates, int i, double qz, double rz,
 					     traversalInfo *ti, double *EIGN, double *EI, double *EV, double *tipVector, 
