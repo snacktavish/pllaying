@@ -2726,9 +2726,9 @@ static void coreGTRGAMMA_BINARY(const int upper, double *sumtable,
       ki = gammaRates[i];
       kisqr = ki * ki;
 
-      diagptable[i * 3]     = exp (EIGN[0] * ki * lz);
-      diagptable[i * 3 + 1] = EIGN[0] * ki;
-      diagptable[i * 3 + 2] = EIGN[0] * EIGN[0] * kisqr;
+      diagptable[i * 3]     = exp (EIGN[1] * ki * lz);
+      diagptable[i * 3 + 1] = EIGN[1] * ki;
+      diagptable[i * 3 + 2] = EIGN[1] * EIGN[1] * kisqr;
     }
 
   for (i = 0; i < upper; i++)
