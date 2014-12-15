@@ -2387,6 +2387,103 @@ void resetBranches(pllInstance *tr)
     }
 }
 
+/**
+ * @brief Adjust frequencies in case some base frequency is close to zero.
+ */
+static void smoothFrequencies(double *frequencies, int numberOfFrequencies) {
+	int countScale = 0, l, loopCounter = 0;
+
+	for (l = 0; l < numberOfFrequencies; l++)
+		if (frequencies[l] < PLL_FREQ_MIN)
+			countScale++;
+
+	if (countScale > 0) {
+		while (countScale > 0) {
+			double correction = 0.0, factor = 1.0;
+
+			for (l = 0; l < numberOfFrequencies; l++) {
+				if (frequencies[l] == 0.0)
+					correction += PLL_FREQ_MIN;
+				else if (frequencies[l] < PLL_FREQ_MIN) {
+					correction += (PLL_FREQ_MIN - frequencies[l]);
+					factor -= (PLL_FREQ_MIN - frequencies[l]);
+				}
+			}
+
+			countScale = 0;
+
+			for (l = 0; l < numberOfFrequencies; l++) {
+				if (frequencies[l] >= PLL_FREQ_MIN)
+					frequencies[l] = frequencies[l] - (frequencies[l] * correction * factor);
+				else
+					frequencies[l] = PLL_FREQ_MIN;
+
+				if (frequencies[l] < PLL_FREQ_MIN)
+					countScale++;
+			}
+			assert(loopCounter < 100);
+			loopCounter++;
+		}
+	}
+}
+
+/**
+ * @brief Evaluate all possible protein models
+ */
+static void optimizeProteinModels(pllInstance *tr, partitionList * pr, int *bestIndex, double *bestScores, boolean empiricalFreqs)
+{
+	int modelIndex, partitionIndex,
+	    numProteinModels = PLL_AUTO;
+
+	for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+		bestIndex[partitionIndex] = -1;
+		bestScores[partitionIndex] = PLL_UNLIKELY;
+	}
+
+	if (empiricalFreqs) {
+		double ** freqs = pllBaseFrequenciesInstance(tr, pr);
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			smoothFrequencies(freqs[partitionIndex], PLL_NUM_AA_STATES);
+			memcpy(pr->partitionData[partitionIndex]->empiricalFrequencies, freqs[partitionIndex], PLL_NUM_AA_STATES*sizeof(double));
+		}
+		free(freqs);
+	}
+
+	for (modelIndex = 0; modelIndex < numProteinModels; modelIndex++) {
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO) {
+
+				pr->partitionData[partitionIndex]->autoProtModels = modelIndex;
+				pr->partitionData[partitionIndex]->protUseEmpiricalFreqs =
+						empiricalFreqs;
+
+				assert(!pr->partitionData[partitionIndex]->optimizeBaseFrequencies);
+
+				pllInitReversibleGTR(tr, pr, partitionIndex);
+			}
+		}
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+		pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
+#endif
+
+		/* optimize branch lengths */
+		resetBranches(tr);
+		pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+		pllOptimizeBranchLengths(tr, pr, 16);
+
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO) {
+				if (pr->partitionData[partitionIndex]->partitionLH > bestScores[partitionIndex]) {
+					/* improved best score */
+					bestScores[partitionIndex] = pr->partitionData[partitionIndex]->partitionLH;
+					bestIndex[partitionIndex] = modelIndex;
+				}
+			}
+		}
+	}
+}
+
 /* 
    automatically compute the best protein substitution model for the dataset at hand.
  */
@@ -2405,133 +2502,228 @@ void resetBranches(pllInstance *tr)
   */
 static void autoProtein(pllInstance *tr, partitionList *pr)
 {
-  int 
-    countAutos = 0,
-    model;
-    
-  /* count the number of partitions with model set to PLL_AUTO */
-  for(model = 0; model < pr->numberOfPartitions; model++)
-    if(pr->partitionData[model]->protModels == PLL_AUTO)
-      countAutos++;
-  
-  /* if there are partitions with model set to PLL_AUTO compute the best model */
-  if(countAutos > 0)
-    {
-      int 
-        i,
-        numProteinModels = PLL_AUTO,
-        *bestIndex = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions),
-        *oldIndex  = (int*)rax_malloc(sizeof(int) * pr->numberOfPartitions);
+	int countAutos = 0, partitionIndex;
 
-      double
-        startLH,
-        *bestScores = (double*)rax_malloc(sizeof(double) * pr->numberOfPartitions);
+	/* count the number of partitions with model set to PLL_AUTO */
+	for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++)
+		if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO)
+			countAutos++;
 
-      topolRELL_LIST 
-        *rl = (topolRELL_LIST *)rax_malloc(sizeof(topolRELL_LIST));
+	/* if there are partitions with model set to PLL_AUTO compute the best model */
+	if (countAutos > 0) {
+		int *bestIndex = (int*) rax_malloc(
+				sizeof(int) * pr->numberOfPartitions),
+		    *bestIndexEmpFreqs = (int*) rax_malloc(
+				sizeof(int) * pr->numberOfPartitions),
+		    *oldIndex =
+				(int*) rax_malloc(sizeof(int) * pr->numberOfPartitions);
 
-      initTL(rl, tr, 1);
-      saveTL(rl, tr, 0);
+		boolean *oldFreqs = (boolean*) malloc(
+				sizeof(boolean) * pr->numberOfPartitions);
 
-      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE); 
+		double startLH,
+		      *bestScores = (double*) rax_malloc(
+				sizeof(double) * pr->numberOfPartitions),
+			  *bestScoresEmpFreqs = (double*) rax_malloc(
+				sizeof(double) * pr->numberOfPartitions);
 
-      /* store the initial likelihood of the tree with the currently assigned protein models */
-      startLH = tr->likelihood;
-      
-      /* save the currently assigned protein model for each PLL_AUTO partition */
-      for(model = 0; model < pr->numberOfPartitions; model++)
-        {
-          oldIndex[model] = pr->partitionData[model]->autoProtModels;
-          bestIndex[model] = -1;
-          bestScores[model] = PLL_UNLIKELY;
-        }
+		topolRELL_LIST *rl = (topolRELL_LIST *) rax_malloc(
+				sizeof(topolRELL_LIST));
 
-      /* check what is the likelihood for every possible protein model */
-      for(i = 0; i < numProteinModels; i++)
-       {
-         for(model = 0; model < pr->numberOfPartitions; model++)
-           {       
-             if(pr->partitionData[model]->protModels == PLL_AUTO)
-              {
-                 pr->partitionData[model]->autoProtModels = i;
-                 pllInitReversibleGTR(tr, pr, model);
-              }
-           }
-          
+		initTL(rl, tr, 1);
+		saveTL(rl, tr, 0);
+
+		pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+
+		/* store the initial likelihood of the tree with the currently assigned protein models */
+		startLH = tr->likelihood;
+
+		/* save the currently assigned protein model for each PLL_AUTO partition */
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			oldIndex[partitionIndex] = pr->partitionData[partitionIndex]->autoProtModels;
+			oldFreqs[partitionIndex] = pr->partitionData[partitionIndex]->protUseEmpiricalFreqs;
+			bestIndex[partitionIndex] = -1;
+			bestScores[partitionIndex] = PLL_UNLIKELY;
+		}
+
+		/* evaluate all models with fixed base frequencies */
+		optimizeProteinModels(tr, pr, bestIndex, bestScores, PLL_FALSE);
+		/* evaluate all models with fixed empirical frequencies */
+		optimizeProteinModels(tr, pr, bestIndexEmpFreqs, bestScoresEmpFreqs, PLL_TRUE);
+
+		/* model selection */
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO) {
+				int bestIndexFixed = bestIndex[partitionIndex],
+				    bestIndexEmp = bestIndexEmpFreqs[partitionIndex];
+
+				double bestLhFixed = bestScores[partitionIndex],
+					   bestLhEmp = bestScoresEmpFreqs[partitionIndex],
+					   samples = 0.0,
+					   freeParamsFixed = 0.0,
+					   freeParamsEmp = 0.0;
+
+				samples = pr->partitionData[partitionIndex]->partitionWeight;
+				assert(samples > 0.0 && samples >= pr->partitionData[partitionIndex]->width);
+
+				assert(tr->ntips == tr->mxtips);
+				freeParamsFixed = freeParamsEmp = (2 * tr->ntips - 3);
+				freeParamsEmp += 19.0;
+
+				switch (tr->rateHetModel) {
+				case PLL_CAT:
+					freeParamsFixed +=
+							(double) pr->partitionData[partitionIndex]->numberOfCategories;
+					freeParamsEmp +=
+							(double) pr->partitionData[partitionIndex]->numberOfCategories;
+					break;
+				case PLL_GAMMA:
+					freeParamsFixed += 1.0;
+					freeParamsEmp += 1.0;
+					break;
+				default:
+					assert(0);
+				}
+
+				switch (tr->autoProteinSelectionType) {
+				case PLL_AUTO_ML:
+					if (bestLhFixed > bestLhEmp) {
+						pr->partitionData[partitionIndex]->autoProtModels =
+								bestIndexFixed;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 0;
+					} else {
+						pr->partitionData[partitionIndex]->autoProtModels = bestIndexEmp;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 1;
+					}
+					break;
+				case PLL_AUTO_BIC: {
+					//BIC: -2 * lnL + k * ln(n)
+					double bicFixed = -2.0 * bestLhFixed
+							+ freeParamsFixed * log(samples),
+						   bicEmp = -2.0
+							* bestLhEmp + freeParamsEmp * log(samples);
+
+					if (bicFixed < bicEmp) {
+						pr->partitionData[partitionIndex]->autoProtModels =
+								bestIndexFixed;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 0;
+					} else {
+						pr->partitionData[partitionIndex]->autoProtModels = bestIndexEmp;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 1;
+					}
+				}
+					break;
+				case PLL_AUTO_AIC: {
+					//AIC: 2 * (k - lnL)
+					double aicFixed = 2.0 * (freeParamsFixed - bestLhFixed),
+							aicEmp = 2.0 * (freeParamsEmp - bestLhEmp);
+
+					if (aicFixed < aicEmp) {
+						pr->partitionData[partitionIndex]->autoProtModels =
+								bestIndexFixed;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 0;
+					} else {
+						pr->partitionData[partitionIndex]->autoProtModels = bestIndexEmp;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 1;
+					}
+				}
+					break;
+				case PLL_AUTO_AICC: {
+					//AICc: AIC + (2 * k * (k + 1))/(n - k - 1)
+					double aiccFixed, aiccEmp;
+
+					/*
+					 * Even though samples and freeParamsFixed are fp variables, they are actually integers.
+					 * That's why we are comparing with a 0.5 threshold.
+					 */
+
+					if (fabs(samples - freeParamsFixed - 1.0) < 0.5)
+						aiccFixed = 0.0;
+					else
+						aiccFixed = (2.0 * (freeParamsFixed - bestLhFixed))
+								+ ((2.0 * freeParamsFixed
+										* (freeParamsFixed + 1.0))
+										/ (samples - freeParamsFixed - 1.0));
+
+					if (fabs(samples - freeParamsEmp - 1.0) < 0.5)
+						aiccEmp = 0.0;
+					else
+						aiccEmp = (2.0 * (freeParamsEmp - bestLhEmp))
+								+ ((2.0 * freeParamsEmp * (freeParamsEmp + 1.0))
+										/ (samples - freeParamsEmp - 1.0));
+
+					if (aiccFixed < aiccEmp) {
+						pr->partitionData[partitionIndex]->autoProtModels =
+								bestIndexFixed;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 0;
+					} else {
+						pr->partitionData[partitionIndex]->autoProtModels = bestIndexEmp;
+						pr->partitionData[partitionIndex]->protUseEmpiricalFreqs = 1;
+					}
+				}
+					break;
+				default:
+					assert(0);
+				}
+
+				pllInitReversibleGTR(tr, pr, partitionIndex);
+			}
+		}
+
+		resetBranches(tr);
+		pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+		pllOptimizeBranchLengths(tr, pr, 64);
+
+		/* set the protein model of PLL_AUTO partitions to the best computed and reset model parameters */
+		for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+			if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO) {
+				pr->partitionData[partitionIndex]->autoProtModels = bestIndex[partitionIndex];
+				pllInitReversibleGTR(tr, pr, partitionIndex);
+			}
+		}
+
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-           pllMasterBarrier (tr, pr, PLL_THREAD_COPY_RATES);
-#endif
-          
-           resetBranches(tr);
-           pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-           pllOptimizeBranchLengths(tr, pr, 16);// 0.5 * 32 = 16.0
-
-           for(model = 0; model < pr->numberOfPartitions; model++)
-            {
-              if(pr->partitionData[model]->protModels == PLL_AUTO)
-               {
-                 if(pr->partitionData[model]->partitionLH > bestScores[model])
-                  {
-                    bestScores[model] = pr->partitionData[model]->partitionLH;
-                    bestIndex[model] = i;                     
-                  }
-               }
-            }
-       }
-
-      /* set the protein model of PLL_AUTO partitions to the best computed and reset model parameters */
-      for(model = 0; model < pr->numberOfPartitions; model++)
-       {           
-         if(pr->partitionData[model]->protModels == PLL_AUTO)
-           {
-             pr->partitionData[model]->autoProtModels = bestIndex[model];
-             pllInitReversibleGTR(tr, pr, model);
-           }
-       }
-            
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+		pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
 #endif
 
-      /* compute again the likelihood of the tree */
-      resetBranches(tr);
-      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
-      pllOptimizeBranchLengths(tr, pr, 64); // 0.5 * 32 = 16
-      
-      /* check if the likelihood of the tree with the new protein models assigned to PLL_AUTO partitions is better than the with the old protein models */
-      if(tr->likelihood < startLH)
-        {       
-          for(model = 0; model < pr->numberOfPartitions; model++)
-            {
-              if(pr->partitionData[model]->protModels == PLL_AUTO)
-                {
-                  pr->partitionData[model]->autoProtModels = oldIndex[model];
-                  pllInitReversibleGTR(tr, pr, model);
-                }
-            }
-          
-          //this barrier needs to be called in the library        
-          //#ifdef _USE_PTHREADS        
-          //pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
-          //#endif 
+		/* compute again the likelihood of the tree */
+		resetBranches(tr);
+		pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+		pllOptimizeBranchLengths(tr, pr, 64);
 
-          /* Restore the topology. rl holds the topology before the optimization. However,
-             since the topology doesn't change - only the branch lengths do - maybe we
-             could write a new routine that will store only the branch lengths and restore them */
-          restoreTL(rl, tr, 0, pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);  
-          pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);              
-        }
-      
-      assert(tr->likelihood >= startLH);
-      /*printf("Exit: %f\n", tr->likelihood);*/
+		/* check if the likelihood of the tree with the new protein models assigned to PLL_AUTO partitions is better than the with the old protein models */
+		if (tr->likelihood < startLH) {
+			for (partitionIndex = 0; partitionIndex < pr->numberOfPartitions; partitionIndex++) {
+				if (pr->partitionData[partitionIndex]->protModels == PLL_AUTO) {
+					pr->partitionData[partitionIndex]->autoProtModels = oldIndex[partitionIndex];
+					pllInitReversibleGTR(tr, pr, partitionIndex);
+				}
+			}
 
-      freeTL(rl);   
-      rax_free(rl); 
-      
-      rax_free(oldIndex);
-      rax_free(bestIndex);
-      rax_free(bestScores);
-    }
+			//this barrier needs to be called in the library
+			//#ifdef _USE_PTHREADS
+			//pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+			//#endif
+
+			/* Restore the topology. rl holds the topology before the optimization. However,
+			 since the topology doesn't change - only the branch lengths do - maybe we
+			 could write a new routine that will store only the branch lengths and restore them */
+			restoreTL(rl, tr, 0,
+					pr->perGeneBranchLengths ? pr->numberOfPartitions : 1);
+			pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+		}
+
+		assert(tr->likelihood >= startLH);
+
+		freeTL(rl);
+		rax_free(rl);
+
+		rax_free(oldIndex);
+		rax_free(bestIndex);
+		rax_free(bestIndexEmpFreqs);
+		rax_free(bestScores);
+		rax_free(bestScoresEmpFreqs);
+	}
 }
 
 

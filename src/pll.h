@@ -153,6 +153,11 @@ extern "C" {
 #define PLL_RATE_MIN                            0.0000001
 #define PLL_RATE_MAX                            1000000.0
 
+#define PLL_FREQ_MIN                            0.001
+
+#define PLL_NUM_AA_STATES                       20
+#define PLL_NUM_DNA_STATES                      4
+
 /* 
    previous values between 0.001 and 0.000001
 
@@ -201,6 +206,12 @@ extern "C" {
 #define PLL_LG4                                 19
 #define PLL_GTR                                 20  /* GTR always needs to be the last one */
 #define PLL_NUM_PROT_MODELS                     21
+
+/* information criteria for auto protein model selection */
+#define PLL_AUTO_ML   0
+#define PLL_AUTO_BIC  1
+#define PLL_AUTO_AIC  2
+#define PLL_AUTO_AICC 3
 
 /* bipartition stuff */
 #define PLL_BIPARTITIONS_RF                     4
@@ -964,6 +975,7 @@ typedef struct {
   boolean executeModel;
   double fracchange;
   double partitionContribution;
+  double partitionWeight;
   double partitionLH;
 
 // #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
@@ -1203,6 +1215,8 @@ typedef  struct  {
   checkPointState ckp;
   boolean thoroughInsertion; /**< true if the neighbor branches should be optimized when a subtree is inserted (slower)*/
   boolean useMedian;
+
+  int autoProteinSelectionType;
 
   pllStack * rearrangeHistory;
 
@@ -1454,6 +1468,7 @@ typedef struct
  {
    int              sequenceCount;      /**< @brief Number of sequences */
    int              sequenceLength;     /**< @brief Length of sequences */
+   int              originalSeqLength;  /**< @brief Original length of sequences (not modified after removing duplicates) */
    char          ** sequenceLabels;     /**< @brief An array of where the \a i-th element is the name of the \a i-th sequence */
    unsigned char ** sequenceData;       /**< @brief The actual sequence data */
    int            * siteWeights;        /**< @brief An array where the \a i-th element indicates how many times site \a i appeared (prior to duplicates removal) in the alignment */

@@ -135,6 +135,8 @@ pllInitAlignmentData (int sequenceCount, int sequenceLength)
 
    alignmentData->sequenceCount  = sequenceCount;
    alignmentData->sequenceLength = sequenceLength;
+   alignmentData->originalSeqLength = sequenceLength;
+
    /** TODO: remove siteWeights from alignment */
    alignmentData->siteWeights    = NULL;
 

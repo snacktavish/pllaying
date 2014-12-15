@@ -1170,6 +1170,7 @@ static partitionList * createPartitions (pllQueue * parts, int * bounds)
      pl->partitionData[i]->lower = bounds[i << 1];
      pl->partitionData[i]->upper = bounds[(i << 1) + 1];
      pl->partitionData[i]->width = bounds[(i << 1) + 1] - bounds[i << 1];
+     pl->partitionData[i]->partitionWeight = 1.0 * (double) pl->partitionData[i]->width;
 
      //the two flags below are required to allow users to set 
      //alpha parameters and substitution rates in the Q matrix 
@@ -1961,6 +1962,9 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
 
   tr->nameList         = (char **)   rax_malloc ((tips + 1) * sizeof (char *));
   tr->nodep            = (nodeptr *) rax_malloc ((2 * tips) * sizeof (nodeptr));
+
+  tr->autoProteinSelectionType = PLL_AUTO_ML;
+
   assert (tr->nameList && tr->nodep);
 
   tr->nodep[0] = NULL;          
