@@ -171,11 +171,41 @@ static void setRateModel(partitionList *pr, int model, double rate, int position
 
 /* free linkage list data structure */
 
+#define ALPHA_F    0
+#define RATE_F     1
+#define FREQ_F     2
+#define LXRATE_F   3
+#define LXWEIGHT_F 4
 
+static void updateWeights(partitionList *pr, int model, int rate, double value)
+{
+    int j;
+    double w = 0.0;
+    assert(rate >= 0 && rate < 4);
+    pr->partitionData[model]->lg4x_weightExponents[rate] = value;
+    for (j = 0; j < 4; j++)
+        w += exp(pr->partitionData[model]->lg4x_weightExponents[j]);
+    for (j = 0; j < 4; j++)
+        pr->partitionData[model]->lg4x_weights[j] = exp(
+                pr->partitionData[model]->lg4x_weightExponents[j]) / w;
+}
 
-#define ALPHA_F 0
-#define RATE_F  1
-#define FREQ_F  2
+static void optimizeWeights(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll,
+        int numberOfModels)
+{
+    int i;
+    double initialLH = 0.0, finalLH = 0.0;
+    pllEvaluateLikelihood(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+    initialLH = tr->likelihood;
+    for (i = 0; i < 4; i++)
+        optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, i, -1000000.0,
+                200.0, LXWEIGHT_F);
+    pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    finalLH = tr->likelihood;
+    if (finalLH < initialLH)
+        printf("Final: %f initial: %f\n", finalLH, initialLH);
+    assert(finalLH >= initialLH);
+}
 
 /** @brief Wrapper function for changing a specific model parameter to the specified value
   *
@@ -232,6 +262,12 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
         pllInitReversibleGTR(tr, pr, index);
       }
       break;
+    case LXRATE_F:
+        pr->partitionData[index]->gammaRates[rateNumber] = value;
+        break;
+    case LXWEIGHT_F:
+        updateWeights(pr, index, rateNumber, value);
+        break;
     default:
       assert(0);
     }
@@ -270,16 +306,18 @@ static void changeModelParameters(int index, int rateNumber, double value, int w
  *  @param ll
  *    Linkage list
  *
- *  @todo
- *     Removed argument modelEpsilon as it is not used in this function. Maybe more things can be refactored.
+ *  @param modelEpsilon
+ *    Epsilon threshold
  */
-static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll)
-//static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
+static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, double *value, double *result, boolean* converged, int whichFunction, int numberOfModels, linkageList *ll, double modelEpsilon)
 { 
   int 
     i, 
     k, 
     pos;
+
+  boolean
+    atLeastOnePartition = PLL_FALSE;
 
   for(i = 0, pos = 0; i < ll->entries; i++)
     {
@@ -292,6 +330,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
             }
           else
             {
+              atLeastOnePartition = PLL_TRUE;
               for(k = 0; k < ll->ld[i].partitions; k++)
                 {
                   int 
@@ -312,7 +351,68 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
 
   assert(pos == numberOfModels);
 
-#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))      
+    //some error checks for individual model parameters
+    switch (whichFunction)
+    {
+    case RATE_F:
+        assert(rateNumber != -1);
+        break;
+    case ALPHA_F:
+        break;
+    case LXRATE_F:
+        assert(rateNumber != -1);
+        break;
+    case LXWEIGHT_F:
+        assert(rateNumber != -1);
+        break;
+    case FREQ_F:
+        break;
+    default:
+        assert(0);
+    }
+
+    switch (whichFunction)
+    {
+    case RATE_F:
+    case ALPHA_F:
+    case LXRATE_F:
+    case FREQ_F:
+        pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+        break;
+    case LXWEIGHT_F:
+        pllEvaluateLikelihood(tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+        break;
+    default:
+        assert(0);
+    }
+    //nested optimization for LX4 model, now optimize the weights!
+    if (whichFunction == LXRATE_F && atLeastOnePartition)
+    {
+        boolean *buffer = (boolean*) malloc(
+                pr->numberOfPartitions* sizeof(boolean));
+
+        for (i = 0; i < pr->numberOfPartitions; i++) {
+            buffer[i] = pr->partitionData[i]->executeModel;
+            pr->partitionData[i]->executeModel = PLL_FALSE;
+        }
+
+        for (i = 0, pos = 0; i < ll->entries; i++)
+        {
+            int index = ll->ld[i].partitionList[0];
+            if (ll->ld[i].valid)
+                pr->partitionData[index]->executeModel = PLL_TRUE;
+        }
+        optimizeWeights(tr, pr, modelEpsilon, ll, numberOfModels);
+
+        for (i = 0; i < pr->numberOfPartitions; i++) {
+            pr->partitionData[i]->executeModel = buffer[i];
+        }
+
+        free(buffer);
+    }
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+    /* TODO: Add LG4X parameters here? */
    switch (whichFunction)
     {
       case RATE_F:
@@ -324,12 +424,16 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
       case FREQ_F:
         pllMasterBarrier(tr, pr, PLL_THREAD_OPT_RATE);
         break;
+      case LXRATE_F:
+        break;
+      case LXWEIGHT_F:
+        break;
       default:
         break;
     }
 #else
-      /* and compute the likelihood by doing a full tree traversal :-) */
-      pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+   //commented out evaluate below in the course of the LG4X integration
+   //pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
 #endif     
 
 
@@ -345,7 +449,6 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
                 index = ll->ld[i].partitionList[k];
 
               assert(pr->partitionData[index]->partitionLH <= 0.0);
-              
               result[pos] -= pr->partitionData[index]->partitionLH;
               
             }
@@ -551,8 +654,7 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
             }
         }
                  
-      //evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
-      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll);
+      evaluateChange(tr, pr, rateNumber, u, fu, converged, whichFunction, numberOfModels, ll, tol);
 
       for(i = 0; i < numberOfModels; i++)
         {
@@ -681,7 +783,8 @@ static void brentGeneric(double *ax, double *bx, double *cx, double *fb, double 
  */
 static int brakGeneric(double *param, double *ax, double *bx, double *cx, double *fa, double *fb, 
                        double *fc, double lim_inf, double lim_sup, 
-                       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr, linkageList *ll)
+                       int numberOfModels, int rateNumber, int whichFunction, pllInstance *tr, partitionList *pr,
+                       linkageList *ll, double modelEpsilon)
 {
   double 
     *ulim = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -722,8 +825,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
    
   
-  //evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, modelEpsilon);
-  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, pr, rateNumber, param, fa, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
 
   for(i = 0; i < numberOfModels; i++)
@@ -737,8 +839,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
       assert(param[i] >= lim_inf && param[i] <= lim_sup);
     }
   
-  //evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, modelEpsilon);
-  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll);
+  evaluateChange(tr, pr, rateNumber, param, fb, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
   for(i = 0; i < numberOfModels; i++)  
     {
@@ -761,8 +862,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
     }
   
  
-  //evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, modelEpsilon);
-  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll);
+  evaluateChange(tr, pr, rateNumber, param, fc, converged, whichFunction, numberOfModels,  ll, modelEpsilon);
 
    while(1) 
      {       
@@ -906,8 +1006,7 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
              }
          }
              
-       //evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
-       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll);
+       evaluateChange(tr, pr, rateNumber, param, temp, converged, whichFunction, numberOfModels, ll, modelEpsilon);
 
        for(i = 0; i < numberOfModels; i++)
          {
@@ -995,6 +1094,49 @@ static int brakGeneric(double *param, double *ax, double *bx, double *cx, double
    return(0);
 }
 
+/*******************************************************************************************************/
+/******** LG4X ***************************************************************************************/
+
+void pllOptLG4X(pllInstance *tr, partitionList * pr, double modelEpsilon,
+        linkageList *ll, int numberOfModels)
+{
+    int i;
+    double lg4xScaler, *lg4xScalers = (double *) calloc(pr->numberOfPartitions,
+            sizeof(double)), wgtsum = 0.0;
+    for (i = 0; i < 4; i++)
+        optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, i, PLL_LG4X_RATE_MIN,
+                PLL_LG4X_RATE_MAX, LXRATE_F);
+    for (i = 0; i < pr->numberOfPartitions; i++)
+        lg4xScalers[i] = 1.0;
+    for (i = 0; i < ll->entries; i++)
+    {
+        if (ll->ld[i].valid)
+        {
+            int j, index = ll->ld[i].partitionList[0];
+            double averageRate = 0.0;
+            assert(ll->ld[i].partitions == 1);
+            for (j = 0; j < 4; j++)
+                averageRate += pr->partitionData[index]->gammaRates[j];
+            averageRate /= 4.0;
+            lg4xScalers[index] = averageRate;
+        }
+    }
+    if (pr->numberOfPartitions > 1)
+    {
+        for (i = 0; i < pr->numberOfPartitions; i++)
+            pr->partitionData[i]->fracchange = pr->partitionData[i]->rawFracchange * (1.0 / lg4xScalers[i]);
+    }
+    for (i = 0; i < pr->numberOfPartitions; i++)
+        wgtsum += (double) pr->partitionData[i]->partitionWeight;
+    lg4xScaler = 0.0;
+    for (i = 0; i < pr->numberOfPartitions; i++)
+    {
+        double fraction = (double) pr->partitionData[i]->partitionWeight / wgtsum;
+        lg4xScaler += (fraction * lg4xScalers[i]);
+    }
+    tr->fracchange = tr->rawFracchange * (1.0 / lg4xScaler);
+    free(lg4xScalers);
+}
 
 /**********************************************************************************************************/
 /* ALPHA PARAM ********************************************************************************************/
@@ -1044,32 +1186,33 @@ void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilo
         case PLL_SECONDARY_DATA_7:
         case PLL_GENERIC_32:
         case PLL_GENERIC_64:
-	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
-	    {
-	      ll->ld[i].valid = PLL_TRUE;
-	      non_LG4X_Partitions++;
-	    }
-	  else
-	     ll->ld[i].valid = PLL_FALSE;
-          break;
-        case PLL_AA_DATA:     
-          //to be implemented later-on 
-          /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)
+            if (pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
             {
-              LG4X_Partitions++;              
-              ll->ld[i].valid = FALSE;
+                ll->ld[i].valid = PLL_TRUE;
+                non_LG4X_Partitions++;
             }
-            else*/ 
-	  if(pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
+            else
+                ll->ld[i].valid = PLL_FALSE;
+            break;
+        case PLL_AA_DATA:
+            if (pr->partitionData[ll->ld[i].partitionList[0]]->optimizeAlphaParameter)
             {
-              ll->ld[i].valid = PLL_TRUE;
-              non_LG4X_Partitions++;
+                if (pr->partitionData[ll->ld[i].partitionList[0]]->protModels == PLL_LG4X)
+                {
+                    LG4X_Partitions++;
+                    ll->ld[i].valid = PLL_FALSE;
+                }
+                else
+                {
+                    ll->ld[i].valid = PLL_TRUE;
+                    non_LG4X_Partitions++;
+                }
             }
-	  else
-	    ll->ld[i].valid = PLL_FALSE;
-          break;
+            else
+                ll->ld[i].valid = PLL_FALSE;
+            break;
         default:
-          assert(0);
+            assert(0);
         }      
     }   
 
@@ -1078,10 +1221,6 @@ void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilo
   if(non_LG4X_Partitions > 0)    
     optParamGeneric(tr, pr, modelEpsilon, ll, non_LG4X_Partitions, -1, PLL_ALPHA_MIN, PLL_ALPHA_MAX, ALPHA_F);
   
-  //right now this assertion shouldn't fail, undo when implementing LG4X  
-  assert(LG4X_Partitions == 0);
- 
-
   /* then LG4x partitions */
 
   for(i = 0; ll && i < ll->entries; i++)
@@ -1098,10 +1237,9 @@ void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilo
           ll->ld[i].valid = PLL_FALSE;    
           break;
         case PLL_AA_DATA:     
-          //deal with this later-on
-          /*if(tr->partitionData[ll->ld[i].partitionList[0]].protModels == LG4X)              
-            ll->ld[i].valid = TRUE;        
-            else*/
+          if(pr->partitionData[ll->ld[i].partitionList[0]]->protModels == PLL_LG4X)
+            ll->ld[i].valid = PLL_TRUE;
+          else
             ll->ld[i].valid = PLL_FALSE;                    
           break;
         default:
@@ -1109,8 +1247,8 @@ void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilo
         }      
     }   
   
-  //if(LG4X_Partitions > 0)
-  //  optLG4X(tr, modelEpsilon, ll, LG4X_Partitions);
+  if(LG4X_Partitions > 0)
+    pllOptLG4X(tr, pr, modelEpsilon, ll, LG4X_Partitions);
 
   for(i = 0; ll && i < ll->entries; i++)
     ll->ld[i].valid = PLL_TRUE;
@@ -1160,7 +1298,10 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     j, 
     pos;
     
-  double 
+  double
+    *startRates     = (double *)rax_malloc(sizeof(double) * numberOfModels * 4),
+    *startWeights   = (double *)rax_malloc(sizeof(double) * numberOfModels * 4),
+    *startExponents = (double *)rax_malloc(sizeof(double) * numberOfModels * 4),
     *startValues = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *startLH     = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *endLH       = (double *)rax_malloc(sizeof(double) * numberOfModels),
@@ -1171,9 +1312,21 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     *_fb         = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *_fc         = (double *)rax_malloc(sizeof(double) * numberOfModels),
     *_param      = (double *)rax_malloc(sizeof(double) * numberOfModels),
-    *_x          = (double *)rax_malloc(sizeof(double) * numberOfModels); 
+    *_x          = (double *)rax_malloc(sizeof(double) * numberOfModels);
    
   pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+    if (whichParameterType == LXWEIGHT_F)
+        pllEvaluateLikelihood (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+    else
+    {
+        pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+        if (whichParameterType == LXRATE_F)
+        {
+            int j;
+            for (j = 0; j < pr->numberOfPartitions; j++)
+                pr->partitionData[j]->lg4x_weightLikelihood = pr->partitionData[j]->partitionLH;
+        }
+    }
   
 #ifdef  _DEBUG_MOD_OPT
   double
@@ -1211,6 +1364,25 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
                 case FREQ_F:
                   startValues[pos] = pr->partitionData[index]->freqExponents[rateNumber];
                   break;
+                case LXRATE_F:
+                    assert(rateNumber >= 0 && rateNumber < 4);
+                    startValues[pos] =
+                            pr->partitionData[index]->gammaRates[rateNumber];
+                    memcpy(&startRates[pos * 4],
+                            pr->partitionData[index]->gammaRates,
+                            4 * sizeof(double));
+                    memcpy(&startExponents[pos * 4],
+                            pr->partitionData[index]->lg4x_weightExponents,
+                            4 * sizeof(double));
+                    memcpy(&startWeights[pos * 4],
+                            pr->partitionData[index]->lg4x_weights,
+                            4 * sizeof(double));
+                    break;
+                case LXWEIGHT_F:
+                    assert(rateNumber >= 0 && rateNumber < 4);
+                    startValues[pos] =
+                            pr->partitionData[index]->lg4x_weightExponents[rateNumber];
+                    break;
                 default:
                   assert(0);
                 }
@@ -1246,7 +1418,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 
   assert(pos == numberOfModels);
 
-  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, whichParameterType, tr, pr, ll);
+  brakGeneric(_param, _a, _b, _c, _fa, _fb, _fc, lim_inf, lim_sup, numberOfModels, rateNumber, whichParameterType, tr, pr, ll, modelEpsilon);
       
   for(k = 0; k < numberOfModels; k++)
     {
@@ -1271,6 +1443,16 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
                   int 
                     index = ll->ld[k].partitionList[j];
                   
+                  if (whichParameterType == LXRATE_F)
+                    {
+                        memcpy(pr->partitionData[index]->lg4x_weights,
+                                &startWeights[pos * 4], sizeof(double) * 4);
+                        memcpy(pr->partitionData[index]->gammaRates,
+                                &startRates[pos * 4], sizeof(double) * 4);
+                        memcpy(pr->partitionData[index]->lg4x_weightExponents,
+                                &startExponents[pos * 4], 4 * sizeof(double));
+                    }
+
                     changeModelParameters(index, rateNumber, startValues[pos], whichParameterType, tr, pr); 
                 }
             }
@@ -1285,7 +1467,33 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
                   int 
                     index = ll->ld[k].partitionList[j];
                   
-                  changeModelParameters(index, rateNumber, _x[pos], whichParameterType, tr, pr); 
+                  changeModelParameters(index, rateNumber, _x[pos], whichParameterType, tr, pr);
+
+                  if (whichParameterType == LXWEIGHT_F)
+                    {
+                        if (endLH[pos]
+                                > pr->partitionData[index]->lg4x_weightLikelihood)
+                        {
+                            memcpy(pr->partitionData[index]->lg4x_weightsBuffer,
+                                    pr->partitionData[index]->lg4x_weights,
+                                    sizeof(double) * 4);
+                            memcpy(
+                                    pr->partitionData[index]->lg4x_weightExponentsBuffer,
+                                    pr->partitionData[index]->lg4x_weightExponents,
+                                    sizeof(double) * 4);
+                            pr->partitionData[index]->lg4x_weightLikelihood =
+                                    endLH[pos];
+                        }
+                    }
+                    if (whichParameterType == LXRATE_F)
+                    {
+                        memcpy(pr->partitionData[index]->lg4x_weights,
+                                pr->partitionData[index]->lg4x_weightsBuffer,
+                                sizeof(double) * 4);
+                        memcpy(pr->partitionData[index]->lg4x_weightExponents,
+                                pr->partitionData[index]->lg4x_weightExponentsBuffer,
+                                sizeof(double) * 4);
+                    }
                 }
             }
           pos++;
@@ -1308,8 +1516,11 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
   rax_free(_fb);
   rax_free(_fc);
   rax_free(_param);
-  rax_free(_x);  
+  rax_free(_x);
   rax_free(startValues);
+  rax_free(startRates);
+  rax_free(startWeights);
+  rax_free(startExponents);
 
 #ifdef _DEBUG_MOD_OPT
   pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);

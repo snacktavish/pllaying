@@ -1568,7 +1568,7 @@ static void readCheckpoint(pllInstance *tr, partitionList *pr)
     myfread(pr->partitionData[model]->substRates, sizeof(double),  pLengths[dataType].substRatesLength, f);
     myfread(&(pr->partitionData[model]->alpha), sizeof(double), 1, f);
     
-    if(pr->partitionData[model]->protModels == PLL_LG4)
+    if(pr->partitionData[model]->protModels == PLL_LG4M || pr->partitionData[model]->protModels == PLL_LG4X)
 	{
 	  int 
 	    k;

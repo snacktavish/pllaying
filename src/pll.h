@@ -153,6 +153,9 @@ extern "C" {
 #define PLL_RATE_MIN                            0.0000001
 #define PLL_RATE_MAX                            1000000.0
 
+#define PLL_LG4X_RATE_MIN                       0.0000001
+#define PLL_LG4X_RATE_MAX                       1000.0
+
 #define PLL_FREQ_MIN                            0.001
 
 #define PLL_NUM_AA_STATES                       20
@@ -203,9 +206,10 @@ extern "C" {
 #define PLL_JTTDCMUT                            16
 #define PLL_FLU                                 17 
 #define PLL_AUTO                                18
-#define PLL_LG4                                 19
-#define PLL_GTR                                 20  /* GTR always needs to be the last one */
-#define PLL_NUM_PROT_MODELS                     21
+#define PLL_LG4M                                 19
+#define PLL_LG4X                                20
+#define PLL_GTR                                 21  /* GTR always needs to be the last one */
+#define PLL_NUM_PROT_MODELS                     22
 
 /* information criteria for auto protein model selection */
 #define PLL_AUTO_ML   0
@@ -921,7 +925,13 @@ typedef struct {
   double *tipVector_LG4[4];
   double *substRates_LG4[4];
   
-  /* LG4 */
+  /* LG4X */
+
+  double lg4x_weights[4];
+  double lg4x_weightExponents[4];
+  double lg4x_weightsBuffer[4];
+  double lg4x_weightExponentsBuffer[4];
+  double lg4x_weightLikelihood;
   
   /* Protein specific */
   int     protModels;			/**< Empirical model matrix */
@@ -974,6 +984,7 @@ typedef struct {
   /* From tree */
   boolean executeModel;
   double fracchange;
+  double rawFracchange;
   double partitionContribution;
   double partitionWeight;
   double partitionLH;
@@ -1146,6 +1157,7 @@ typedef  struct  {
   int              *secondaryStructurePairs;
 
   double            fracchange;      /**< Average substitution rate */
+  double            rawFracchange;
   double            lhCutoff;
   double            lhAVG;
   unsigned long     lhDEC;
@@ -1612,6 +1624,7 @@ void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models
 extern void pllOptRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll);
 extern void pllOptBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
 extern void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
+extern void pllOptLG4X(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels);
 
 /* tree topology */
 void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);

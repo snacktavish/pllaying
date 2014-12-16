@@ -635,7 +635,8 @@ int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int
      if (rate >= 4) return (PLL_FALSE);
    }
 
-  if (pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)
+  if (pr->partitionData[model]->dataType == PLL_AA_DATA &&
+		  (pr->partitionData[model]->protModels == PLL_LG4M || pr->partitionData[model]->protModels == PLL_LG4X))
     return (pllGetTransitionMatrixLG4 (pr, p, model, outBuffer));
     
     
@@ -2987,7 +2988,8 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
 
         /* compute the left and right P matrices */
 
-        if(pr->partitionData[model]->dataType == PLL_AA_DATA && pr->partitionData[model]->protModels == PLL_LG4)                     
+        if(pr->partitionData[model]->dataType == PLL_AA_DATA &&
+        		(pr->partitionData[model]->protModels == PLL_LG4M || pr->partitionData[model]->protModels == PLL_LG4X))
                 makeP_FlexLG4(qz, rz, pr->partitionData[model]->gammaRates,
                               pr->partitionData[model]->EI_LG4,
                               pr->partitionData[model]->EIGN_LG4,
@@ -3130,7 +3132,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                         assert(!tr->saveMemory);
                         assert(tr->rateHetModel == PLL_GAMMA);
 
-                        if(pr->partitionData[model]->protModels == PLL_LG4)
+                        if(pr->partitionData[model]->protModels == PLL_LG4M || pr->partitionData[model]->protModels == PLL_LG4X)
                         {
                                   newviewGTRGAMMAPROT_LG4_MIC(tInfo->tipCase,
                             x1_start, x2_start, x3_start, pr->partitionData[model]->EV_LG4, pr->partitionData[model]->tipVector_LG4,
@@ -3202,7 +3204,7 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
             
              else
                         {
-                          if(pr->partitionData[model]->protModels == PLL_LG4)
+                          if(pr->partitionData[model]->protModels == PLL_LG4M || pr->partitionData[model]->protModels == PLL_LG4X)
                             {
 #ifdef __AVX 
                               newviewGTRGAMMAPROT_AVX_LG4(tInfo->tipCase,

@@ -591,7 +591,6 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       localPartitions->partitionData[model]->EIGN              = (double*)rax_malloc((size_t)pl->eignLength * sizeof(double));
       rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->EV),    PLL_BYTE_ALIGNMENT, (size_t)pl->evLength * sizeof(double));
       localPartitions->partitionData[model]->EI                = (double*)rax_malloc((size_t)pl->eiLength * sizeof(double));
-
       localPartitions->partitionData[model]->substRates        = (double *)rax_malloc((size_t)pl->substRatesLength * sizeof(double));
       localPartitions->partitionData[model]->frequencies       = (double*)rax_malloc((size_t)pl->frequenciesLength * sizeof(double));
       localPartitions->partitionData[model]->freqExponents     = (double*)rax_malloc(pl->frequenciesLength * sizeof(double));
@@ -599,7 +598,8 @@ void initializePartitionData(pllInstance *localTree, partitionList * localPartit
       rax_posix_memalign ((void **)&(localPartitions->partitionData[model]->tipVector), PLL_BYTE_ALIGNMENT, (size_t)pl->tipVectorLength * sizeof(double));
       //localPartitions->partitionData[model]->partitionName      = NULL;   // very imporatant since it is deallocated in pllPartitionDestroy
       
-       if(localPartitions->partitionData[model]->dataType == PLL_AA_DATA && localPartitions->partitionData[model]->protModels == PLL_LG4)      
+       if(localPartitions->partitionData[model]->dataType == PLL_AA_DATA
+               && (localPartitions->partitionData[model]->protModels == PLL_LG4M || localPartitions->partitionData[model]->protModels == PLL_LG4X))
         {
           int 
             k;
@@ -1970,8 +1970,9 @@ static void pllTreeInitDefaults (pllInstance * tr, int tips)
   tr->nodep[0] = NULL;          
 
 
-  /* TODO: FIX THIS! */
-  //tr->fracchange = -1;
+  /* TODO: The line below was commented... why? */
+  tr->fracchange = -1;
+  tr->rawFracchange = -1;
 
   for (i = 1; i <= tips; ++ i)
    {
