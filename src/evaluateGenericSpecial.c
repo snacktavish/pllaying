@@ -1899,7 +1899,6 @@ void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boole
   /* start the parallel region and tell all threads to compute the log likelihood for 
      their fraction of the data. This call is implemented in the case switch of execFunction in axml.c
      */
-
   if(getPerSiteLikelihoods)
     {
       memset(tr->lhs, 0, sizeof(double) * tr->originalCrunchedLength); 
@@ -2288,7 +2287,6 @@ static double evaluateGTRGAMMA_BINARY(int *ex1, int *ex2, int *wptr,
 
 
 
-#if (defined(__SSE3) || defined(__AVX))
 /* below are the optimized function versions with geeky intrinsics */
 
 /** @ingroup evaluateLikelihoodGroup
@@ -2340,6 +2338,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
           tv = _mm_hadd_pd(tv, tv);
           _mm_storel_pd(&term, tv);
           
+
 #else                             
           for(j = 0, term = 0.0; j < 4; j++)
             {
@@ -2347,6 +2346,7 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
 
               left = &(tipVector[j][20 * tipX1[i]]);
               right = &(x2[80 * i + 20 * j]);
+
               for(l = 0; l < 20; l++)
                 t += left[l] * right[l] * diagptable[j * 20 + l];
 
@@ -2358,8 +2358,9 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
             term = log(fabs(term));
           else
             term = log(fabs(term)) + (ex2[i] * log(PLL_MINLIKELIHOOD));
-          
+
           sum += wptr[i] * term;
+
         }               
     }              
   else
@@ -2412,10 +2413,11 @@ static double evaluateGTRGAMMAPROT_LG4(int *ex1, int *ex2, int *wptr,
           sum += wptr[i] * term;
         }         
     }
-       
+
   return  sum;
 }
 
+#if (defined(__SSE3) || defined(__AVX))
 /** @ingroup evaluateLikelihoodGroup
     @brief Evaluation of log likelihood of a tree using the \b GAMMA model of rate heterogeneity 
     and the memory saving technique (Optimized SSE3 version for AA data)

@@ -200,6 +200,11 @@ static void optimizeWeights(pllInstance *tr, partitionList *pr, double modelEpsi
     for (i = 0; i < 4; i++)
         optParamGeneric(tr, pr, modelEpsilon, ll, numberOfModels, i, -1000000.0,
                 200.0, LXWEIGHT_F);
+
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+    pllMasterBarrier(tr, pr, PLL_THREAD_COPY_LG4X_RATES);
+#endif
+
     pllEvaluateLikelihood(tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
     finalLH = tr->likelihood;
     if (finalLH < initialLH)
@@ -412,7 +417,7 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
     }
 
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    /* TODO: Add LG4X parameters here? */
+
    switch (whichFunction)
     {
       case RATE_F:
@@ -425,8 +430,10 @@ static void evaluateChange(pllInstance *tr, partitionList *pr, int rateNumber, d
         pllMasterBarrier(tr, pr, PLL_THREAD_OPT_RATE);
         break;
       case LXRATE_F:
+        pllMasterBarrier(tr, pr, PLL_THREAD_OPT_LG4X_RATE);
         break;
       case LXWEIGHT_F:
+        pllMasterBarrier(tr, pr, PLL_THREAD_OPT_LG4X_RATE);
         break;
       default:
         break;
@@ -1297,7 +1304,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     k, 
     j, 
     pos;
-    
+
   double
     *startRates     = (double *)rax_malloc(sizeof(double) * numberOfModels * 4),
     *startWeights   = (double *)rax_malloc(sizeof(double) * numberOfModels * 4),
@@ -1501,7 +1508,29 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
     }
 
   #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-    pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+      if (whichParameterType == LXRATE_F || whichParameterType == LXWEIGHT_F) {
+        pllMasterBarrier(tr, pr, PLL_THREAD_COPY_LG4X_RATES);
+      } else {
+        pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+      }
+
+//    switch(whichParameterType)
+//      {
+//      case FREQ_F:
+//      case RATE_F:
+//          pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+//        break;
+//      case ALPHA_F:
+//          pllMasterBarrier(tr, pr, PLL_THREAD_COPY_ALPHA);
+//        break;
+//      case LXRATE_F:
+//      case LXWEIGHT_F:
+//          pllMasterBarrier(tr, pr, PLL_THREAD_COPY_LG4X_RATES);
+//        break;
+//      default:
+//        assert(0);
+//      }
+
   #endif    
 
     
