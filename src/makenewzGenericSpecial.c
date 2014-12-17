@@ -489,7 +489,8 @@ static void ascertainmentBiasSequence(unsigned char tip[32], int numStates)
 }
 
 static double coreCatAsc(double *EIGN, double *sumtable, int upper,
-			 volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates)
+			 volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates,
+			 double *ascScaler)
 {
   double  
     diagptable[1024], 
@@ -535,9 +536,9 @@ static double coreCatAsc(double *EIGN, double *sumtable, int upper,
             
       inv_Li = fabs(inv_Li);             
        
-      lh        += inv_Li;	  	 
-      dlnLdlz   += dlnLidlz;
-      d2lnLdlz2 += d2lnLidlz2;       
+      lh        += inv_Li * ascScaler[i];
+      dlnLdlz   += dlnLidlz * ascScaler[i];
+      d2lnLdlz2 += d2lnLidlz2 * ascScaler[i];
     } 
 
   *ext_dlnLdlz   = (dlnLdlz / (lh - 1.0));
@@ -548,7 +549,8 @@ static double coreCatAsc(double *EIGN, double *sumtable, int upper,
 
 
 static double coreGammaAsc(double *gammaRates, double *EIGN, double *sumtable, int upper,
-			   volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates)
+			   volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double lz, const int numStates,
+			   double *ascScaler)
 {
   double  
     diagptable[1024], 
@@ -604,9 +606,9 @@ static double coreGammaAsc(double *gammaRates, double *EIGN, double *sumtable, i
       dlnLidlz *= 0.25;
       d2lnLidlz2 *= 0.25;
        
-      lh        += inv_Li;	  	 
-      dlnLdlz   += dlnLidlz;
-      d2lnLdlz2 += d2lnLidlz2;       
+      lh        += inv_Li * ascScaler[i];
+      dlnLdlz   += dlnLidlz * ascScaler[i];
+      d2lnLdlz2 += d2lnLidlz2 * ascScaler[i];
     } 
 
   *ext_dlnLdlz   = (dlnLdlz / (lh - 1.0));
@@ -1114,6 +1116,40 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
       if (pr->partitionData[model]->ascBias)
 #endif
        {
+            int pNumber = tr->td[0].ti[0].pNumber, qNumber =
+                    tr->td[0].ti[0].qNumber, i, *ex1_asc =
+                    &pr->partitionData[model]->ascExpVector[(pNumber
+                            - tr->mxtips - 1) * states], *ex2_asc =
+                    &pr->partitionData[model]->ascExpVector[(qNumber
+                            - tr->mxtips - 1) * states];
+            switch (tipCase)
+            {
+            case PLL_TIP_TIP:
+                assert(0);
+                break;
+            case PLL_TIP_INNER:
+                if (isTip(pNumber, tr->mxtips))
+                {
+                    for (i = 0; i < states; i++)
+                        pr->partitionData[model]->ascScaler[i] = pow(
+                                PLL_MINLIKELIHOOD, (double) ex2_asc[i]);
+                }
+                else
+                {
+                    for (i = 0; i < states; i++)
+                        pr->partitionData[model]->ascScaler[i] = pow(
+                                PLL_MINLIKELIHOOD, (double) ex1_asc[i]);
+                }
+                break;
+            case PLL_INNER_INNER:
+                for (i = 0; i < states; i++)
+                    pr->partitionData[model]->ascScaler[i] = pow(
+                            PLL_MINLIKELIHOOD,
+                            (double) (ex1_asc[i] + ex2_asc[i]));
+                break;
+            default:
+                assert(0);
+            }
          if (tr->rateHetModel == PLL_CAT)
            sumCatAsc  (tipCase, pr->partitionData[model]->ascSumBuffer, x1_start_asc, x2_start_asc, pr->partitionData[model]->tipVector, states, states);
          else
@@ -1322,11 +1358,11 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
             {
             case PLL_CAT:
               correction = coreCatAsc(pr->partitionData[model]->EIGN, pr->partitionData[model]->ascSumBuffer, states,
-                                        &d1,  &d2, lz, states);
+                                        &d1,  &d2, lz, states, pr->partitionData[model]->ascScaler);
               break;
             case PLL_GAMMA:
               correction = coreGammaAsc(pr->partitionData[model]->gammaRates, pr->partitionData[model]->EIGN, pr->partitionData[model]->ascSumBuffer, states,
-                                        &d1,  &d2, lz, states);      
+                                        &d1,  &d2, lz, states, pr->partitionData[model]->ascScaler);
               break;
             default:
               assert(0);
@@ -1334,6 +1370,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
         
          correction = 1.0 - correction;
      
+         /* Lewis correction */
          _dlnLdlz[branchIndex]   =  _dlnLdlz[branchIndex] + dlnLdlz - (double)w * d1;
          _d2lnLdlz2[branchIndex] =  _d2lnLdlz2[branchIndex] + d2lnLdlz2-  (double)w * d2;
            

@@ -914,6 +914,7 @@ typedef struct {
   int         * ascExpVector;
   double      * ascSumBuffer;
   double      * ascVector;
+  double        ascScaler[64];
   
   /* LG4 */
 

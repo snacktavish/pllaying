@@ -328,7 +328,6 @@ static double evaluateCatAsc(int *ex1, int *ex2,
 {
   double
     exponent,
-    logMin = log(PLL_TWOTOTHE256),
     sum = 0.0, 
     unobserved,
     term,
@@ -356,12 +355,16 @@ static double evaluateCatAsc(int *ex1, int *ex2,
 	  for(l = 0; l < numStates; l++)
 	    term += left[l] * right[l] * diagptable[l];	      	 	 	  	 
 
-	  exponent = ((double)ex2[i] * logMin);	  
+	  /* assumes that pow behaves as expected/specified for underflows
+	     from the man page:
+	       If result underflows, and is not representable,
+	       a range error occurs and 0.0 is returned.
+	 */
 
-	  assert(exponent < 700.0);
+	  exponent = pow(PLL_MINLIKELIHOOD, (double)ex2[i]);
 
-	  unobserved = fabs(term) * exp(exponent);	    
-	  
+	  unobserved = fabs(term) * exponent;
+
 #ifdef _DEBUG_ASC
 	  if(ex2[i] > 0)
 	    {
@@ -385,10 +388,15 @@ static double evaluateCatAsc(int *ex1, int *ex2,
 	  for(l = 0; l < numStates; l++)
 	    term += left[l] * right[l] * diagptable[l];		  
 	  
-	  //because of the way we scale for sites that only consist of a single character
-	  //ex1 and ex2 will mostly be zero, so there is no re-scaling that needs to be done
+	  /* assumes that pow behaves as expected/specified for underflows
+	     from the man page:
+	       If result underflows, and is not representable,
+	       a range error occurs and 0.0 is returned.
+	  */
 
-	  exponent = ((double)(ex1[i] + ex2[i]) * logMin);
+	  exponent = pow(PLL_MINLIKELIHOOD, (double)(ex1[i] + ex2[i]));
+
+	  unobserved = fabs(term) * exponent;
 	  
 #ifdef _DEBUG_ASC
 	  if(ex2[i] > 0 || ex1[i] > 0)
@@ -398,10 +406,6 @@ static double evaluateCatAsc(int *ex1, int *ex2,
 	    }
 #endif
 
-	  assert(exponent < 700.0);
-	  
-	  unobserved = fabs(term) * exp(exponent);	  	  
-  
 	  sum += unobserved;
 	}             
     }        
@@ -417,7 +421,6 @@ static double evaluateGammaAsc(int *ex1, int *ex2,
 {
   double
     exponent,
-    logMin = log(PLL_TWOTOTHE256),
     sum = 0.0, 
     unobserved,
     term,
@@ -451,11 +454,15 @@ static double evaluateGammaAsc(int *ex1, int *ex2,
 		term += left[l] * right[l] * diagptable[j * numStates + l];	      
 	    }	 	  	 
 
-	  exponent = ((double)ex2[i] * logMin);	  
+      /* assumes that pow behaves as expected/specified for underflows
+         from the man page:
+           If result underflows, and is not representable,
+           a range error occurs and 0.0 is returned.
+      */
 
-	  assert(exponent < 700.0);
+      exponent = pow(PLL_MINLIKELIHOOD, (double)ex2[i]);
 
-	  unobserved = 0.25 * fabs(term) * exp(exponent);	    
+      unobserved = fabs(term) * exponent;
 	  
 #ifdef _DEBUG_ASC
 	  if(ex2[i] > 0)
@@ -482,10 +489,15 @@ static double evaluateGammaAsc(int *ex1, int *ex2,
 		term += left[l] * right[l] * diagptable[j * numStates + l];	
 	    }
 	  
-	  //because of the way we scale for sites that only consist of a single character
-	  //ex1 and ex2 will mostly be zero, so there is no re-scaling that needs to be done
+	  /* assumes that pow behaves as expected/specified for underflows
+	     from the man page:
+	       If result underflows, and is not representable,
+	       a range error occurs and 0.0 is returned.
+	  */
 
-	  exponent = ((double)(ex1[i] + ex2[i]) * logMin);
+	  exponent = pow(PLL_MINLIKELIHOOD, (double)(ex1[i] + ex2[i]));
+
+	  unobserved = fabs(term) * exponent;
 	  
 #ifdef _DEBUG_ASC
 	  if(ex2[i] > 0 || ex1[i] > 0)
@@ -495,10 +507,6 @@ static double evaluateGammaAsc(int *ex1, int *ex2,
 	    }
 #endif
 
-	  assert(exponent < 700.0);
-	  
-	  unobserved = 0.25 * fabs(term) * exp(exponent);	  	  
-  
 	  sum += unobserved;
 	}             
     }        
