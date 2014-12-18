@@ -954,176 +954,187 @@ void newviewGTRGAMMAPROT_LG4_MIC(int tipCase,
 
 
 double evaluateGTRGAMMAPROT_LG4_MIC(int *wgt, double *x1_start, double *x2_start, double *tipVector[4],
-                 unsigned char *tipX1, const int n, double *diagptable)
+                 unsigned char *tipX1, const int n, double *diagptable, double *weights)
 {
-    double sum = 0.0;
+  double wtable[span] __attribute__((align(PLL_BYTE_ALIGNMENT)));
 
-    /* the left node is a tip */
-    if(tipX1)
+  /* pre-multiply diagptable entries with the corresponding weights */
+  for(int j = 0; j < 4; j++)
+    for(int k = 0; k < states; k++)
     {
-        double aTipVec[1840] __attribute__((align(PLL_BYTE_ALIGNMENT)));
-        for(int k = 0; k < 23; k++)
-        {
-            for(int j = 0; j < 4; j++)
-            {
-				for(int l = 0; l < states; l++)
-				{
-					aTipVec[k*span + j*states + l] = tipVector[j][k*states + l];
-				}
-            }
-        }
-
-        /* loop over the sites of this partition */
-        for (int i = 0; i < n; i++)
-        {
-			/* access pre-computed tip vector values via a lookup table */
-			const double *x1 = &(aTipVec[span * tipX1[i]]);
-			/* access the other(inner) node at the other end of the branch */
-			const double *x2 = &(x2_start[span * i]);
-
-			#pragma unroll(10)
-			for (int k = 0; k < span; k += 8)
-			{
-				_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
-			}
-
-			double term = 0.;
-
-			#pragma ivdep
-			#pragma vector aligned
-			#pragma noprefetch x2
-			for(int j = 0; j < span; j++) {
-			  term += x1[j] * x2[j] * diagptable[j];
-			}
-
-			term = log(0.25 * fabs(term));
-
-			sum += wgt[i] * term;
-        }
-    }
-    else
-    {
-        for (int i = 0; i < n; i++)
-        {
-			#pragma unroll(10)
-			for (int k = 0; k < span; k += 8)
-			{
-				_mm_prefetch((const char *) &x1_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x1_start[span*(i+1) + k], _MM_HINT_T0);
-
-				_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
-			}
-
-			const double *x1 = &(x1_start[span * i]);
-			const double *x2 = &(x2_start[span * i]);
-
-			double term = 0.;
-
-			#pragma ivdep
-			#pragma vector aligned
-			#pragma noprefetch x1 x2
-			for(int j = 0; j < span; j++)
-			  term += x1[j] * x2[j] * diagptable[j];
-
-			term = log(0.25 * fabs(term));
-
-			sum += wgt[i] * term;
-        }
+      wtable[j * states + k] = diagptable[j * states + k] * weights[j];
     }
 
-    return sum;
+  double sum = 0.0;
+
+  /* the left node is a tip */
+  if(tipX1)
+  {
+    double aTipVec[1840] __attribute__((align(PLL_BYTE_ALIGNMENT)));
+    for(int k = 0; k < 23; k++)
+    {
+      for(int j = 0; j < 4; j++)
+      {
+	for(int l = 0; l < states; l++)
+	{
+	  aTipVec[k*span + j*states + l] = tipVector[j][k*states + l];
+	}
+      }
+    }
+
+    /* loop over the sites of this partition */
+    for (int i = 0; i < n; i++)
+    {
+      /* access pre-computed tip vector values via a lookup table */
+      const double *x1 = &(aTipVec[span * tipX1[i]]);
+      /* access the other(inner) node at the other end of the branch */
+      const double *x2 = &(x2_start[span * i]);
+
+      #pragma unroll(10)
+      for (int k = 0; k < span; k += 8)
+      {
+	_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
+	_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
+      }
+
+      double term = 0.;
+
+      #pragma ivdep
+      #pragma vector aligned
+      #pragma noprefetch x2
+      for(int j = 0; j < span; j++)
+      {
+	term += x1[j] * x2[j] * wtable[j];
+      }
+
+      term = log(fabs(term));
+
+      sum += wgt[i] * term;
+    }
+  }
+  else
+  {
+    for (int i = 0; i < n; i++)
+    {
+      #pragma unroll(10)
+      for (int k = 0; k < span; k += 8)
+      {
+	_mm_prefetch((const char *) &x1_start[span*(i+2) + k], _MM_HINT_T1);
+	_mm_prefetch((const char *) &x1_start[span*(i+1) + k], _MM_HINT_T0);
+
+	_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
+	_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
+      }
+
+      const double *x1 = &(x1_start[span * i]);
+      const double *x2 = &(x2_start[span * i]);
+
+      double term = 0.;
+
+      #pragma ivdep
+      #pragma vector aligned
+      #pragma noprefetch x1 x2
+      for(int j = 0; j < span; j++)
+	term += x1[j] * x2[j] * wtable[j];
+
+      term = log(fabs(term));
+
+      sum += wgt[i] * term;
+    }
+  }
+
+  return sum;
 }
 
 void sumGTRGAMMAPROT_LG4_MIC(int tipCase, double *sumtable, double *x1_start, double *x2_start, double *tipVector[4],
     unsigned char *tipX1, unsigned char *tipX2, int n)
 {
-    double aTipVec[1840] __attribute__((align(PLL_BYTE_ALIGNMENT)));
-    for(int k = 0; k < maxStateValue; k++)
+  double aTipVec[1840] __attribute__((align(PLL_BYTE_ALIGNMENT)));
+  for(int k = 0; k < maxStateValue; k++)
+  {
+    for(int j = 0; j < 4; j++)
     {
-        for(int j = 0; j < 4; j++)
-        {
-			for(int l = 0; l < states; l++)
-			{
-				aTipVec[k*span + j*states + l] = tipVector[j][k*states + l];
-			}
-        }
+      for(int l = 0; l < states; l++)
+      {
+	aTipVec[k*span + j*states + l] = tipVector[j][k*states + l];
+      }
     }
+  }
 
-    switch(tipCase)
+  switch(tipCase)
+  {
+    case PLL_TIP_TIP:
     {
-      case PLL_TIP_TIP:
+      for(int i = 0; i < n; i++)
       {
-        for(int i = 0; i < n; i++)
-        {
-            const double *left  = &(aTipVec[span * tipX1[i]]);
-            const double *right = &(aTipVec[span * tipX2[i]]);
+	const double *left  = &(aTipVec[span * tipX1[i]]);
+	const double *right = &(aTipVec[span * tipX2[i]]);
 
-            #pragma ivdep
-            #pragma vector aligned nontemporal
-            for(int l = 0; l < span; l++)
-            {
-                sumtable[i * span + l] = left[l] * right[l];
-            }
-        }
-      } break;
-      case PLL_TIP_INNER:
+	#pragma ivdep
+	#pragma vector aligned nontemporal
+	for(int l = 0; l < span; l++)
+	{
+	    sumtable[i * span + l] = left[l] * right[l];
+	}
+      }
+    } break;
+    case PLL_TIP_INNER:
+    {
+      for(int i = 0; i < n; i++)
       {
-        for(int i = 0; i < n; i++)
-        {
-			#pragma unroll(10)
-			for (int k = 0; k < span; k += 8)
-			{
-				_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
-			}
+	#pragma unroll(10)
+	for (int k = 0; k < span; k += 8)
+	{
+	  _mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
+	  _mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
+	}
 
-          const double *left = &(aTipVec[span * tipX1[i]]);
-          const double *right = &(x2_start[span * i]);
+	const double *left = &(aTipVec[span * tipX1[i]]);
+	const double *right = &(x2_start[span * i]);
 
-          #pragma ivdep
-          #pragma vector aligned nontemporal
-		  #pragma noprefetch right
-          for(int l = 0; l < span; l++)
-          {
-              sumtable[i * span + l] = left[l] * right[l];
-          }
-        }
-      } break;
-      case PLL_INNER_INNER:
+	#pragma ivdep
+	#pragma vector aligned nontemporal
+	#pragma noprefetch right
+	for(int l = 0; l < span; l++)
+	{
+	  sumtable[i * span + l] = left[l] * right[l];
+	}
+      }
+    } break;
+    case PLL_INNER_INNER:
+    {
+      for(int i = 0; i < n; i++)
       {
-        for(int i = 0; i < n; i++)
-        {
-			#pragma unroll(10)
-			for (int k = 0; k < span; k += 8)
-			{
-				_mm_prefetch((const char *) &x1_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x1_start[span*(i+1) + k], _MM_HINT_T0);
+	  #pragma unroll(10)
+	  for (int k = 0; k < span; k += 8)
+	  {
+	    _mm_prefetch((const char *) &x1_start[span*(i+2) + k], _MM_HINT_T1);
+	    _mm_prefetch((const char *) &x1_start[span*(i+1) + k], _MM_HINT_T0);
 
-				_mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
-			}
+	    _mm_prefetch((const char *) &x2_start[span*(i+2) + k], _MM_HINT_T1);
+	    _mm_prefetch((const char *) &x2_start[span*(i+1) + k], _MM_HINT_T0);
+	  }
 
-            const double *left  = &(x1_start[span * i]);
-            const double *right = &(x2_start[span * i]);
+	  const double *left  = &(x1_start[span * i]);
+	  const double *right = &(x2_start[span * i]);
 
-            #pragma ivdep
-            #pragma vector aligned nontemporal
-			#pragma noprefetch left right
-            for(int l = 0; l < span; l++)
-            {
-                sumtable[i * span + l] = left[l] * right[l];
-            }
-        }
-      } break;
-  //    default:
-  //      assert(0);
-    }
+	  #pragma ivdep
+	  #pragma vector aligned nontemporal
+	  #pragma noprefetch left right
+	  for(int l = 0; l < span; l++)
+	  {
+	    sumtable[i * span + l] = left[l] * right[l];
+	  }
+      }
+    } break;
+//    default:
+//      assert(0);
+  }
 }
 
 void coreGTRGAMMAPROT_LG4_MIC(const int upper, double *sumtable,
-    volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *EIGN[4], double *gammaRates, double lz, int *wgt)
+    volatile double *ext_dlnLdlz,  volatile double *ext_d2lnLdlz2, double *EIGN[4], double *gammaRates,
+    double lz, int *wgt, double *weights)
 {
     double diagptable0[span] __attribute__((align(PLL_BYTE_ALIGNMENT)));
     double diagptable1[span] __attribute__((align(PLL_BYTE_ALIGNMENT)));
@@ -1135,26 +1146,26 @@ void coreGTRGAMMAPROT_LG4_MIC(const int upper, double *sumtable,
 
     for(int i = 0; i < 4; i++)
     {
-        const double ki = gammaRates[i];
-        const double kisqr = ki * ki;
+      const double ki = gammaRates[i];
+      const double kisqr = ki * ki;
 
-        diagptable0[i*states] = 1.;
-        diagptable1[i*states] = 0.;
-        diagptable2[i*states] = 0.;
+      diagptable0[i*states] = 1. * weights[i];
+      diagptable1[i*states] = 0.;
+      diagptable2[i*states] = 0.;
 
-        for(int l = 1; l < states; l++)
-        {
-          diagptable0[i * states + l]  = exp(EIGN[i][l] * ki * lz);
-          diagptable1[i * states + l] = EIGN[i][l] * ki;
-          diagptable2[i * states + l] = EIGN[i][l] * EIGN[i][l] * kisqr;
-        }
+      for(int l = 1; l < states; l++)
+      {
+	diagptable0[i * states + l]  = exp(EIGN[i][l] * ki * lz) * weights[i];
+	diagptable1[i * states + l] = EIGN[i][l] * ki;
+	diagptable2[i * states + l] = EIGN[i][l] * EIGN[i][l] * kisqr;
+      }
     }
 
     #pragma ivdep
     for(int i = 0; i < span; i++)
     {
-        diagptable01[i] = diagptable0[i] * diagptable1[i];
-        diagptable02[i] = diagptable0[i] * diagptable2[i];
+      diagptable01[i] = diagptable0[i] * diagptable1[i];
+      diagptable02[i] = diagptable0[i] * diagptable2[i];
     }
 
     /* loop over sites in this partition */
@@ -1168,84 +1179,83 @@ void coreGTRGAMMAPROT_LG4_MIC(const int upper, double *sumtable,
 
     for (int i = 0; i < aligned_width; i++)
     {
-        /* access the array with pre-computed values */
-        const double *sum = &sumtable[i * span * 8];
+      /* access the array with pre-computed values */
+      const double *sum = &sumtable[i * span * 8];
 
-        /* initial per-site likelihood and 1st and 2nd derivatives */
+      /* initial per-site likelihood and 1st and 2nd derivatives */
 
-        double invBuf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
-        double d1Buf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
-        double d2Buf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
+      double invBuf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
+      double d1Buf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
+      double d2Buf[8] __attribute__((align(PLL_BYTE_ALIGNMENT)));
 
-        __m512d invVec;
-        __m512d d1Vec;
-        __m512d d2Vec;
-        int mask = 0x01;
+      __m512d invVec;
+      __m512d d1Vec;
+      __m512d d2Vec;
+      int mask = 0x01;
 
-        #pragma noprefetch sum
-        #pragma unroll(8)
-        for(int j = 0; j < 8; j++)
-        {
+      #pragma noprefetch sum
+      #pragma unroll(8)
+      for(int j = 0; j < 8; j++)
+      {
+	#pragma unroll(10)
+	for (int k = 0; k < span; k += 8)
+	{
+	  _mm_prefetch((const char *) &sum[span*(j+2) + k], _MM_HINT_T1);
+	  _mm_prefetch((const char *) &sum[span*(j+1) + k], _MM_HINT_T0);
+	}
 
-        	#pragma unroll(10)
-			for (int k = 0; k < span; k += 8)
-			{
-				_mm_prefetch((const char *) &sum[span*(j+2) + k], _MM_HINT_T1);
-				_mm_prefetch((const char *) &sum[span*(j+1) + k], _MM_HINT_T0);
-			}
+	__m512d inv_1 = _mm512_setzero_pd();
+	__m512d d1_1 = _mm512_setzero_pd();
+	__m512d d2_1 = _mm512_setzero_pd();
 
-            __m512d inv_1 = _mm512_setzero_pd();
-            __m512d d1_1 = _mm512_setzero_pd();
-            __m512d d2_1 = _mm512_setzero_pd();
+	for (int offset = 0; offset < span; offset += 8)
+	{
+	  __m512d d0_1 = _mm512_load_pd(&diagptable0[offset]);
+	  __m512d d01_1 = _mm512_load_pd(&diagptable01[offset]);
+	  __m512d d02_1 = _mm512_load_pd(&diagptable02[offset]);
+	  __m512d s_1 = _mm512_load_pd(&sum[j*span + offset]);
 
-            for (int offset = 0; offset < span; offset += 8)
-            {
-                __m512d d0_1 = _mm512_load_pd(&diagptable0[offset]);
-                __m512d d01_1 = _mm512_load_pd(&diagptable01[offset]);
-                __m512d d02_1 = _mm512_load_pd(&diagptable02[offset]);
-                __m512d s_1 = _mm512_load_pd(&sum[j*span + offset]);
+	  inv_1 = _mm512_fmadd_pd(d0_1, s_1, inv_1);
+	  d1_1 = _mm512_fmadd_pd(d01_1, s_1, d1_1);
+	  d2_1 = _mm512_fmadd_pd(d02_1, s_1, d2_1);
+	}
 
-                inv_1 = _mm512_fmadd_pd(d0_1, s_1, inv_1);
-                d1_1 = _mm512_fmadd_pd(d01_1, s_1, d1_1);
-                d2_1 = _mm512_fmadd_pd(d02_1, s_1, d2_1);
-            }
+	__mmask8 k1 = _mm512_int2mask(mask);
+	mask <<= 1;
 
-            __mmask8 k1 = _mm512_int2mask(mask);
-            mask <<= 1;
+	// reduce
+	inv_1 = _mm512_add_pd (inv_1, _mm512_swizzle_pd(inv_1, _MM_SWIZ_REG_CDAB));
+	inv_1 = _mm512_add_pd (inv_1, _mm512_swizzle_pd(inv_1, _MM_SWIZ_REG_BADC));
+	inv_1 = _mm512_add_pd (inv_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(inv_1), _MM_PERM_BADC)));
+	invVec = _mm512_mask_mov_pd(invVec, k1, inv_1);
 
-            // reduce
-            inv_1 = _mm512_add_pd (inv_1, _mm512_swizzle_pd(inv_1, _MM_SWIZ_REG_CDAB));
-            inv_1 = _mm512_add_pd (inv_1, _mm512_swizzle_pd(inv_1, _MM_SWIZ_REG_BADC));
-            inv_1 = _mm512_add_pd (inv_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(inv_1), _MM_PERM_BADC)));
-            invVec = _mm512_mask_mov_pd(invVec, k1, inv_1);
+	d1_1 = _mm512_add_pd (d1_1, _mm512_swizzle_pd(d1_1, _MM_SWIZ_REG_CDAB));
+	d1_1 = _mm512_add_pd (d1_1, _mm512_swizzle_pd(d1_1, _MM_SWIZ_REG_BADC));
+	d1_1 = _mm512_add_pd (d1_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(d1_1), _MM_PERM_BADC)));
+	d1Vec = _mm512_mask_mov_pd(d1Vec, k1, d1_1);
 
-            d1_1 = _mm512_add_pd (d1_1, _mm512_swizzle_pd(d1_1, _MM_SWIZ_REG_CDAB));
-            d1_1 = _mm512_add_pd (d1_1, _mm512_swizzle_pd(d1_1, _MM_SWIZ_REG_BADC));
-            d1_1 = _mm512_add_pd (d1_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(d1_1), _MM_PERM_BADC)));
-            d1Vec = _mm512_mask_mov_pd(d1Vec, k1, d1_1);
+	d2_1 = _mm512_add_pd (d2_1, _mm512_swizzle_pd(d2_1, _MM_SWIZ_REG_CDAB));
+	d2_1 = _mm512_add_pd (d2_1, _mm512_swizzle_pd(d2_1, _MM_SWIZ_REG_BADC));
+	d2_1 = _mm512_add_pd (d2_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(d2_1), _MM_PERM_BADC)));
+	d2Vec = _mm512_mask_mov_pd(d2Vec, k1, d2_1);
+      }
 
-            d2_1 = _mm512_add_pd (d2_1, _mm512_swizzle_pd(d2_1, _MM_SWIZ_REG_CDAB));
-            d2_1 = _mm512_add_pd (d2_1, _mm512_swizzle_pd(d2_1, _MM_SWIZ_REG_BADC));
-            d2_1 = _mm512_add_pd (d2_1, _mm512_castsi512_pd(_mm512_permute4f128_epi32(_mm512_castpd_si512(d2_1), _MM_PERM_BADC)));
-            d2Vec = _mm512_mask_mov_pd(d2Vec, k1, d2_1);
-        }
+      _mm512_store_pd(&invBuf[0], invVec);
+      _mm512_store_pd(&d1Buf[0], d1Vec);
+      _mm512_store_pd(&d2Buf[0], d2Vec);
 
-        _mm512_store_pd(&invBuf[0], invVec);
-        _mm512_store_pd(&d1Buf[0], d1Vec);
-        _mm512_store_pd(&d2Buf[0], d2Vec);
+      #pragma ivdep
+      #pragma vector aligned
+      for (int j = 0; j < 8; ++j)
+      {
+	const double inv_Li = 1.0 / invBuf[j];
 
-        #pragma ivdep
-        #pragma vector aligned
-        for (int j = 0; j < 8; ++j)
-        {
-            const double inv_Li = 1.0 / invBuf[j];
+	const double d1 = d1Buf[j] * inv_Li;
+	const double d2 = d2Buf[j] * inv_Li;
 
-            const double d1 = d1Buf[j] * inv_Li;
-            const double d2 = d2Buf[j] * inv_Li;
-
-            dlnLdlz += wgt[i * 8 + j] * d1;
-            d2lnLdlz2 += wgt[i * 8 + j] * (d2 - d1 * d1);
-        }
+	dlnLdlz += wgt[i * 8 + j] * d1;
+	d2lnLdlz2 += wgt[i * 8 + j] * (d2 - d1 * d1);
+      }
     } // site loop
 
     *ext_dlnLdlz   = dlnLdlz;

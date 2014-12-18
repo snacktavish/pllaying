@@ -1529,6 +1529,9 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
               switch(states)
                 {         
                 case 2: /* binary */
+#ifdef __MIC_NATIVE
+             assert(0 && "Binary data model is not implemented on Intel MIC");
+#else
                   assert (!tr->saveMemory);
                   if (tr->rateHetModel == PLL_CAT)
                    {
@@ -1542,10 +1545,10 @@ void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSite
                                                                    x1_start, x2_start, pr->partitionData[model]->tipVector,
                                                                    tip, width, diagptable, fastScaling);                 
                    }
+#endif
                   break;
                 case 4: /* DNA */
                   {
-
 #ifdef __MIC_NATIVE
 
                   /* CAT & memory saving are not supported on MIC */

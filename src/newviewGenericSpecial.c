@@ -3027,6 +3027,9 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
         switch(states)
         {               
         case 2:
+#ifdef __MIC_NATIVE
+          assert(0 && "Binary data model is not implemented on Intel MIC");
+#else
           assert (!tr->saveMemory);
           if (tr->rateHetModel == PLL_CAT)
            {
@@ -3042,8 +3045,8 @@ void pllNewviewIterative (pllInstance *tr, partitionList *pr, int startIndex)
                                     ex3, tipX1, tipX2,
                                     width, left, right, wgt, &scalerIncrement, fastScaling);                  
            }
+#endif
           break;
-
         case 4: /* DNA */
 #ifdef __MIC_NATIVE
 

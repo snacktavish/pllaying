@@ -1030,6 +1030,9 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
       switch(states)
       {
       case 2: /* BINARY */
+#ifdef __MIC_NATIVE
+          assert(0 && "Binary data model is not implemented on Intel MIC");
+#else
           assert(!tr->saveMemory);
           if (tr->rateHetModel == PLL_CAT)
             sumCAT_BINARY(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
@@ -1037,6 +1040,7 @@ void makenewzIterative(pllInstance *tr, partitionList * pr)
           else
             sumGAMMA_BINARY(tipCase, pr->partitionData[model]->sumBuffer, x1_start, x2_start, pr->partitionData[model]->tipVector, tipX1, tipX2,
                             width);
+#endif
           break;
       case 4: /* DNA */
 #ifdef __MIC_NATIVE
@@ -1245,6 +1249,9 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
       switch(states)
        {    
          case 2: /* BINARY */
+#ifdef __MIC_NATIVE
+          assert(0 && "Binary data model is not implemented on Intel MIC");
+#else
            if (tr->rateHetModel == PLL_CAT)
               coreGTRCAT_BINARY(width, 
                                 pr->partitionData[model]->numberOfCategories, 
@@ -1265,6 +1272,7 @@ void execCore(pllInstance *tr, partitionList *pr, volatile double *_dlnLdlz, vol
                                    pr->partitionData[model]->gammaRates, 
                                    lz,
                                    pr->partitionData[model]->wgt);
+#endif
            break;
          case 4: /* DNA */
 #ifdef __MIC_NATIVE
