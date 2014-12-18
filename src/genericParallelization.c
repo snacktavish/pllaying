@@ -1015,26 +1015,64 @@ static void broadCastLg4xWeights(partitionList *localPr, partitionList *pr)
   SEND_BUF(bufDbl, bufSize, MPI_BYTE);
 }
 
-static void copyLG4(partitionList *localPr, partitionList *pr, int model, const partitionLengths *pl)
+static void copyLG4(partitionList *localPr, partitionList *pr)
 {
-    pInfo * localInfo = localPr->partitionData[model];
-    pInfo * info = pr->partitionData[model];
+    int model, i, k;
 
-  if(info->protModels == PLL_LG4M || info->protModels == PLL_LG4X)
+    /* determine size of buffer needed first */
+    int bufSize = 0;
+
+#ifdef _FINE_GRAIN_MPI
+    for(model = 0; model < localPr->numberOfPartitions; ++model )
+      {
+        const partitionLengths *pl = getPartitionLengths(pr->partitionData[model]);
+        bufSize += 4*(pl->eignLength + pl->evLength + pl->eiLength + pl->tipVectorLength + pl->substRatesLength + pl->frequenciesLength) * sizeof(double) ;
+      }
+#endif
+
+    char
+      bufDbl[bufSize];
+    char *bufPtrDbl = bufDbl;
+
+    RECV_BUF(bufDbl, bufSize, MPI_BYTE);
+
+    for (model = 0; model < localPr->numberOfPartitions; model++)
     {
-      int
-        k;
+        pInfo * localInfo = localPr->partitionData[model];
+        pInfo * info = pr->partitionData[model];
 
-      for(k = 0; k < 4; k++)
+        if (info->protModels == PLL_LG4M || info->protModels == PLL_LG4X)
         {
-           memcpy(localInfo->EIGN_LG4[k],        info->EIGN_LG4[k],        pl->eignLength * sizeof(double));
-           memcpy(localInfo->EV_LG4[k],          info->EV_LG4[k],          pl->evLength * sizeof(double));
-           memcpy(localInfo->EI_LG4[k],          info->EI_LG4[k],          pl->eiLength * sizeof(double));
-           memcpy(localInfo->substRates_LG4[k],  info->substRates_LG4[k],  pl->substRatesLength * sizeof(double));
-           memcpy(localInfo->frequencies_LG4[k], info->frequencies_LG4[k], pl->frequenciesLength * sizeof(double));
-           memcpy(localInfo->tipVector_LG4[k],   info->tipVector_LG4[k],   pl->tipVectorLength * sizeof(double));
+            for (k = 0; k < 4; k++)
+            {
+                const partitionLengths *pl = getPartitionLengths(pr->partitionData[model]);
+
+                for (i = 0; i < pl->eignLength; ++i)
+                    ASSIGN_BUF_DBL(
+                            localPr->partitionData[model]->EIGN_LG4[k][i],
+                            pr->partitionData[model]->EIGN_LG4[k][i]);
+                for (i = 0; i < pl->evLength; ++i)
+                    ASSIGN_BUF_DBL(localPr->partitionData[model]->EV_LG4[k][i],
+                            pr->partitionData[model]->EV_LG4[k][i]);
+                for (i = 0; i < pl->eiLength; ++i)
+                    ASSIGN_BUF_DBL(localPr->partitionData[model]->EI_LG4[k][i],
+                            pr->partitionData[model]->EI_LG4[k][i]);
+                for (i = 0; i < pl->substRatesLength; ++i)
+                    ASSIGN_BUF_DBL(
+                            localPr->partitionData[model]->substRates_LG4[k][i],
+                            pr->partitionData[model]->substRates_LG4[k][i]);
+                for (i = 0; i < pl->frequenciesLength; ++i)
+                    ASSIGN_BUF_DBL(
+                            localPr->partitionData[model]->frequencies_LG4[k][i],
+                            pr->partitionData[model]->frequencies_LG4[k][i]);
+                for (i = 0; i < pl->tipVectorLength; ++i)
+                    ASSIGN_BUF_DBL(
+                            localPr->partitionData[model]->tipVector_LG4[k][i],
+                            pr->partitionData[model]->tipVector_LG4[k][i]);
+            }
         }
     }
+    SEND_BUF(bufDbl, bufSize, MPI_BYTE); /*  */
 }
 
 /** @brief Master broadcasts rates.
@@ -1049,21 +1087,18 @@ static void broadCastRates(partitionList *localPr, partitionList *pr)
     model;
 
   /* determine size of buffer needed first */
+  int bufSize = 0;
 #ifdef _FINE_GRAIN_MPI
-  int bufSize = 0; 
-
   for(model = 0; model < localPr->numberOfPartitions; ++model )
     {	  
       const partitionLengths *pl = getPartitionLengths(pr->partitionData[model]); /* this is constant, isnt it?  */
       bufSize += (pl->eignLength + pl->evLength + pl->eiLength + pl->tipVectorLength) * sizeof(double) ;
     }
+#endif
 
   char
-    bufDbl[bufSize]; 
-  char *bufPtrDbl = bufDbl; 
-#endif      
- 
-  
+      bufDbl[bufSize];
+    char *bufPtrDbl = bufDbl;
 
   RECV_BUF(bufDbl, bufSize, MPI_BYTE);
   int i ; 
@@ -1080,10 +1115,10 @@ static void broadCastRates(partitionList *localPr, partitionList *pr)
 	ASSIGN_BUF_DBL(localPr->partitionData[model]->EI[i], pr->partitionData[model]->EI[i]);
       for(i = 0; i < pl->tipVectorLength; ++i)
 	ASSIGN_BUF_DBL(localPr->partitionData[model]->tipVector[i],   pr->partitionData[model]->tipVector[i]);
-
-      copyLG4(localPr, pr, model, pl);
     }
   SEND_BUF(bufDbl, bufSize, MPI_BYTE); /*  */
+
+  copyLG4(localPr, pr);
 }
 
 /** @brief Evaluate the likelihood of this topology (PThreads/MPI implementation)
@@ -1464,17 +1499,6 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
       break;
     case PLL_THREAD_COPY_LG4X_RATES:
 
-//        if (tid > 0)
-//        {
-//            for (model = 0; model < localPr->numberOfPartitions; model++)
-//            {
-//                memcpy(localPr->partitionData[model]->lg4x_weights,
-//                        pr->partitionData[model]->lg4x_weights, sizeof(double) * 4);
-////                memcpy(localPr->partitionData[model]->gammaRates,
-////                        pr->partitionData[model]->gammaRates, sizeof(double) * 4);
-//            }
-//        }
-
         broadCastLg4xWeights(localPr, pr);
         broadCastAlpha(localPr, pr);
 
@@ -1482,18 +1506,6 @@ static boolean execFunction(pllInstance *tr, pllInstance *localTree, partitionLi
 
         break;
     case PLL_THREAD_OPT_LG4X_RATE:
-
-//        if (tid > 0)
-//        {
-//            for (model = 0; model < localPr->numberOfPartitions; model++)
-//            {
-//                localPr->partitionData[model]->executeModel = pr->partitionData[model]->executeModel;
-//                memcpy(localPr->partitionData[model]->lg4x_weights,
-//                        pr->partitionData[model]->lg4x_weights, sizeof(double) * 4);
-////                memcpy(localPr->partitionData[model]->gammaRates,
-////                        pr->partitionData[model]->gammaRates, sizeof(double) * 4);
-//            }
-//        }
 
         broadCastLg4xWeights(localPr, pr);
         broadCastAlpha(localPr, pr);
