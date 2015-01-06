@@ -183,8 +183,8 @@ extern "C" {
 #define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
-#define PLL_LIB_VERSION                         "1.0.1"
-#define PLL_LIB_DATE                            "November 3 2014"
+#define PLL_LIB_VERSION                         "1.0.2"
+#define PLL_LIB_DATE                            "January 6 2015"
 
 /* aminoacid substitution models */
 #define PLL_DAYHOFF                             0
@@ -205,11 +205,12 @@ extern "C" {
 #define PLL_HIVW                                15
 #define PLL_JTTDCMUT                            16
 #define PLL_FLU                                 17 
-#define PLL_AUTO                                18
-#define PLL_LG4M                                 19
-#define PLL_LG4X                                20
-#define PLL_GTR                                 21  /* GTR always needs to be the last one */
-#define PLL_NUM_PROT_MODELS                     22
+#define PLL_STMTREV                             18
+#define PLL_AUTO                                19
+#define PLL_LG4M                                20
+#define PLL_LG4X                                21
+#define PLL_GTR                                 22  /* GTR always needs to be the last one */
+#define PLL_NUM_PROT_MODELS                     23
 
 /* information criteria for auto protein model selection */
 #define PLL_AUTO_ML   0
