@@ -1,10 +1,10 @@
 CC = gcc 
 MAKE = make
-LIBPATH = ../../src
-INCPATH = ../../src
+LIBPATH = /usr/local/lib/
+INCPATH = /usr/local/include/pll/
 BIN = pll
 PLL = pll
-ARCH = SSE3-PTHREADS
+ARCH = sse3-pthreads 
 LIBRARIES = -l$(PLL)-$(ARCH) -lm -lpthread
 TARGET = $(BIN)-$(ARCH)
 RM = rm -f
@@ -12,7 +12,6 @@ RM = rm -f
 all: $(BIN)-$(ARCH)
 
 $(BIN)-$(ARCH): main.c
-	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
 	$(CC) -D_USE_PTHREADS $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 

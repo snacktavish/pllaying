@@ -1,10 +1,10 @@
-CC = mpicc
+CC = clang
 MAKE = make
 LIBPATH = /usr/local/lib/
 INCPATH = /usr/local/include/pll/
 BIN = pll
 PLL = pll
-ARCH = sse3-mpi
+ARCH = sse3
 LIBRARIES = -l$(PLL)-$(ARCH) -lm
 TARGET = $(BIN)-$(ARCH)
 RM = rm -f
@@ -13,8 +13,9 @@ all: $(BIN)-$(ARCH)
 
 $(BIN)-$(ARCH): main.c
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
-	$(CC) -D_FINE_GRAIN_MPI $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
+	$(CC) -g $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 
 clean : 
 	-$(RM) $(BIN)-$(ARCH)
+
 .PHONY: all clean

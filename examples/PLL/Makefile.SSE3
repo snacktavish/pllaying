@@ -1,16 +1,15 @@
 CC = gcc 
 MAKE = make
-LIBPATH = ../../src
-INCPATH = ../../src
+LIBPATH = /usr/local/lib/
+INCPATH = /usr/local/include/pll/
 BIN = pll
 PLL = pll
-ARCH = SSE3
+ARCH = sse3
 LIBRARIES = -l$(PLL)-$(ARCH) -lm
 TARGET = $(BIN)-$(ARCH)
 RM = rm -f
 
 $(BIN)-$(ARCH): main.c
-	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
 	$(CC) $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 

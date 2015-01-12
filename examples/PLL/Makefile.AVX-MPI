@@ -1,10 +1,10 @@
 CC = mpicc
 MAKE = make
-LIBPATH = ../../src
-INCPATH = ../../src
+LIBPATH = /usr/local/lib/
+INCPATH = /usr/local/include/pll/
 BIN = pll
 PLL = pll
-ARCH = AVX-MPI
+ARCH = avx-mpi
 LIBRARIES = -l$(PLL)-$(ARCH) -lm
 TARGET = $(BIN)-$(ARCH)
 RM = rm -f
@@ -12,7 +12,6 @@ RM = rm -f
 all: $(BIN)-$(ARCH)
 
 $(BIN)-$(ARCH): main.c
-	$(MAKE) -C $(LIBPATH) -f Makefile.$(ARCH)
 	@echo "==> Building PLL example ($(BIN)-$(ARCH))"
 	$(CC) -D_FINE_GRAIN_MPI $+ -L $(LIBPATH) -I $(INCPATH) $(LIBRARIES) -o $@ 
 
