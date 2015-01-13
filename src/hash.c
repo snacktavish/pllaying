@@ -200,6 +200,9 @@ void pllHashDestroy (pllHashTable ** hTable, void (*cbDealloc)(void *))
   unsigned int i;
   pllHashItem * hItem;
   pllHashItem * tmp;
+  
+  assert(hTable); 
+  assert(*hTable);
 
   for (i = 0; i < (*hTable)->size; ++ i)
   {
