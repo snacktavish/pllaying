@@ -2966,6 +2966,20 @@ static void autoProtein(pllInstance *tr, partitionList *pr)
 	}
 }
 
+static void checkTolerance(double l1, double l2)
+{
+  if(l1 < l2)
+    {   
+      double 
+	tolerance = fabs(PLL_MAX(l1, l2) * 0.000000000001);
+
+      if(fabs(l1 - l2) > PLL_MIN(0.1, tolerance))
+	{
+	  printf("Likelihood problem in model optimization l1: %1.40f l2: %1.40f tolerance: %1.40f\n", l1, l2, tolerance);
+	  assert(0);	
+	}
+    }
+}
 
 /* iterative procedure for optimizing all model parameters */
 
@@ -3126,7 +3140,10 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
       default:
         assert(0);
     }                   
+    
+    checkTolerance(tr->likelihood, currentLikelihood);
 
+    /*
     if(tr->likelihood < currentLikelihood)
      {
       printf("%.20f %.20f\n", tr->likelihood, currentLikelihood);
@@ -3134,11 +3151,10 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
     }
     assert (tr->likelihood - currentLikelihood > 0.000000000000001);
     //assert(tr->likelihood > currentLikelihood);
+    */
 
   }
   while(fabs(currentLikelihood - tr->likelihood) > likelihoodEpsilon);  
-  /* TODO: Why do we check the computed likelihood with the currentLikelihood which is the likelihood before THIS optimization loop? Why dont we
-     rather check it with the initial likelihood (the one before calling modOpt)? Isn't it possible to have a deadlock? */
 
   
 }
