@@ -27,6 +27,7 @@
  * @file hash.c
  */
 #include <stdio.h>
+#include <assert.h>
 #include <string.h>
 #include "pll.h"
 #include "mem_alloc.h"
