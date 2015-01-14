@@ -183,8 +183,8 @@ extern "C" {
 #define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
-#define PLL_LIB_VERSION                         "1.0.2"
-#define PLL_LIB_DATE                            "January 6 2015"
+#define PLL_LIB_VERSION                         "1.0.3"
+#define PLL_LIB_DATE                            "January 13 2015"
 
 /* aminoacid substitution models */
 #define PLL_DAYHOFF                             0
@@ -1579,8 +1579,8 @@ extern int pllValidateNewick (pllNewickTree *);
 extern void pllNewickParseDestroy (pllNewickTree **);
 extern int pllNewickUnroot (pllNewickTree * t);
 extern char * pllTreeToNewick ( char *treestr, pllInstance *tr, partitionList *pr, nodeptr p,
-      boolean printBranchLengths, boolean printNames, boolean printLikelihood,
-      boolean rellTree, boolean finalPrint, int perGene,
+      boolean printBranchLengths, boolean printNames, boolean printInternalNodeLabels,
+      boolean printLikelihood, boolean rellTree, int perGene,
       boolean branchLabelSupport, boolean printSHSupport);
 
 /* partition parser declarations */
