@@ -536,7 +536,7 @@ void computeAllAncestralVectors(nodeptr p, pllInstance *tr, partitionList *pr)
       
       /* then compute the ancestral state at node p */
 
-      pllUpdatePartialsAncestral(tr, pr, p);
+      pllUpdatePartialsAncestral(tr, pr, p, PLL_FALSE);
 
       /* and print it to terminal, the two booleans that are set to PLL_TRUE here 
          tell the function to print the marginal probabilities as well as 

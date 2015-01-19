@@ -183,8 +183,8 @@ extern "C" {
 #define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
-#define PLL_LIB_VERSION                         "1.0.3"
-#define PLL_LIB_DATE                            "January 13 2015"
+#define PLL_LIB_VERSION                         "1.0.4"
+#define PLL_LIB_DATE                            "January 19 2015"
 
 /* aminoacid substitution models */
 #define PLL_DAYHOFF                             0
@@ -1568,7 +1568,7 @@ extern void pllOptimizeBranchLengths ( pllInstance *tr, partitionList *pr, int m
 
 extern void pllEvaluateLikelihood (pllInstance *tr, partitionList *pr, nodeptr p, boolean fullTraversal, boolean getPerSiteLikelihoods);
 extern void pllUpdatePartials (pllInstance *tr, partitionList *pr, nodeptr p, boolean masked);
-extern void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p);
+extern void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p, int atRoot);
 extern void pllNewviewIterative(pllInstance *tr, partitionList *pr, int startIndex);
 extern void pllEvaluateIterative(pllInstance *tr, partitionList *pr, boolean getPerSiteLikelihoods);
 
@@ -1639,7 +1639,7 @@ void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partiti
 nodeptr pllGetRandomSubtree(pllInstance *);
 extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
 void pllDestroyInstance (pllInstance *);
-extern void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence);
+extern void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence, int atRoot);
 unsigned int pllEvaluateParsimony(pllInstance *tr, partitionList *pr, nodeptr p, boolean full, boolean perSiteScores);
 void pllInitParsimonyStructures(pllInstance *tr, partitionList *pr, boolean perSiteScores);
 

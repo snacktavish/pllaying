@@ -3555,7 +3555,7 @@ static void ancestralCat(double *x3, double *ancestralBuffer, double *diagptable
       Number of GAMMA categories times number of states
       
  */
-static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, const int gammaStates)
+static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptable, const int n, const int numStates, const int gammaStates, int atRoot)
 {
   int 
     i;
@@ -3570,7 +3570,7 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
     {
       double 
         sum = 0.0,
-        *_v = &x3[gammaStates * i],
+        *_v,
         *ancestral = &ancestralBuffer[numStates * i];  
       
       int
@@ -3578,6 +3578,8 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
         j,
         l;
       
+    	  _v  = &x3[gammaStates * i];
+
       for(l = 0; l < numStates; l++)
         term[l] = 0.0;
 
@@ -3591,16 +3593,18 @@ static void ancestralGamma(double *x3, double *ancestralBuffer, double *diagptab
               double
                 al = 0.0;
               
-              for(j = 0; j < numStates; j++)        
+              for(j = 0; j < numStates; j++) {
                 al += v[j] * diagptable[k * statesSquare + l * numStates + j];
+              }
           
               term[l] += al;
               sum += al;
             }
         }
   
-      for(l = 0; l < numStates; l++)        
-        ancestral[l] = term[l] / sum;       
+      for(l = 0; l < numStates; l++) {
+        ancestral[l] = term[l] / sum;
+      }
     }
    
   rax_free(term);
@@ -3672,98 +3676,273 @@ static void calc_diagp_Ancestral(double *rptr, double *EI,  double *EIGN, int nu
  *
  *
  */
-void newviewAncestralIterative(pllInstance *tr, partitionList *pr)
-{
-  traversalInfo 
-    *ti    = tr->td[0].ti,
-    *tInfo = &ti[0];
+void newviewAncestralIterative(pllInstance *tr, partitionList *pr) {
+	traversalInfo *ti = tr->td[0].ti, *tInfo = &ti[0];
 
-  int    
-    model,
-    p_slot = -1;
+	int i;
+	int model, p_slot = -1;
+	int atRoot;
 
-  /* make sure that the traversal descriptor has length 1 */
+	/* make sure that the traversal descriptor has length 1 */
 
-  assert(tr->td[0].count == 1);
-  assert(!tr->saveMemory);
+	assert(tr->td[0].count == 1);
+	assert(!tr->saveMemory);
 
-  /* get the index to the conditional likelihood vector depending on whether recomputation is used or not */
+	/* get the index to the conditional likelihood vector depending on whether recomputation is used or not */
 
-  if(tr->useRecom)    
-    p_slot = tInfo->slot_p;         
-  else    
-    p_slot = tInfo->pNumber - tr->mxtips - 1;         
+	if (tr->useRecom)
+		p_slot = tInfo->slot_p;
+	else
+		p_slot = tInfo->pNumber - tr->mxtips - 1;
 
-  /* now loop over all partitions for nodes p of the current traversal vector entry */
+	/* now loop over all partitions for nodes p of the current traversal vector entry */
 
-  for(model = 0; model < pr->numberOfPartitions; model++)
-    {
-      /* number of sites in this partition */
-      size_t            
-        width  = (size_t)pr->partitionData[model]->width;
+	for (model = 0; model < pr->numberOfPartitions; model++) {
+		/* number of sites in this partition */
+		size_t width = (size_t) pr->partitionData[model]->width;
 
-      /* this conditional statement is exactly identical to what we do in pllEvaluateIterative */
+		/* this conditional statement is exactly identical to what we do in pllEvaluateIterative */
 
-      if(tr->td[0].executeModel[model] && width > 0)
-        {             
-          double         
-            *x3_start = pr->partitionData[model]->xVector[p_slot],
-//          *left     = (double*)NULL,
-//          *right    = (double*)NULL,                 
-            *rateCategories = (double*)NULL,
-            *diagptable = (double*)NULL;
+		if (tr->td[0].executeModel[model] && width > 0) {
+			double *x3_start,
+          *left     = (double*)NULL,
+          *right    = (double*)NULL,
+					*rateCategories = (double*) NULL, *diagptable =
+							(double*) NULL;
 
-          int
-            categories;
-        
-          size_t                  
-            states = (size_t)pr->partitionData[model]->states,
-            availableLength = pr->partitionData[model]->xSpaceVector[p_slot],
-            requiredLength = 0,
-            rateHet = discreteRateCategories(tr->rateHetModel);   
+			left = pr->partitionData[model]->left;
+			right = pr->partitionData[model]->right;
 
-        /* figure out what kind of rate heterogeneity approach we are using */
+			int categories;
 
-          if(tr->rateHetModel == PLL_CAT)
-            {            
-              rateCategories = pr->partitionData[model]->perSiteRates;
-              categories     = pr->partitionData[model]->numberOfCategories;
-            }
-          else
-            {                            
-              rateCategories = pr->partitionData[model]->gammaRates;
-              categories     = 4;
-            }
-          
-          /* allocate some space for a special P matrix with a branch length of 0 into which we mingle 
-             the eignevalues. This will allow us to obtain real probabilites from the internal RAxML 
-             representation */
+			size_t states = (size_t) pr->partitionData[model]->states,
+					availableLength, requiredLength = 0, rateHet =
+							discreteRateCategories(tr->rateHetModel);
 
-          rax_posix_memalign ((void **)&diagptable, PLL_BYTE_ALIGNMENT, categories * states * states * sizeof(double));
-          
-          requiredLength  =  virtual_width( width ) * rateHet * states * sizeof(double);
-          
-          /* make sure that this vector had already been allocated. This must be PLL_TRUE since we first invoked a standard newview() on this */
+			/* figure out what kind of rate heterogeneity approach we are using */
 
-          assert(requiredLength == availableLength);                                     
+			if (tr->rateHetModel == PLL_CAT) {
+				rateCategories = pr->partitionData[model]->perSiteRates;
+				categories = pr->partitionData[model]->numberOfCategories;
+			} else {
+				rateCategories = pr->partitionData[model]->gammaRates;
+				categories = 4;
+			}
 
-          /* now compute the special P matrix */
+			/* allocate some space for a special P matrix with a branch length of 0 into which we mingle
+			 the eignevalues. This will allow us to obtain real probabilites from the internal RAxML
+			 representation */
 
-          calc_diagp_Ancestral(rateCategories, pr->partitionData[model]->EI,  pr->partitionData[model]->EIGN, categories, diagptable, states);
-          
-          /* switch over the rate heterogeneity model 
-             and call generic functions that compute the marginal ancestral states and 
-             store them in pr->partitionData[model]->ancestralBuffer
-          */
+			rax_posix_memalign((void **) &diagptable, PLL_BYTE_ALIGNMENT,
+					categories * states * states * sizeof(double));
 
-          if(tr->rateHetModel == PLL_CAT)       
-            ancestralCat(x3_start, pr->partitionData[model]->ancestralBuffer, diagptable, width, states, pr->partitionData[model]->rateCategory);
-          else
-            ancestralGamma(x3_start, pr->partitionData[model]->ancestralBuffer, diagptable, width, states, categories * states);
-          
-          rax_free(diagptable);                   
-        }       
-    }
+			/* now compute the special P matrix */
+			nodeptr nodeq = tr->nodep[tInfo->qNumber];
+			nodeptr noder = tr->nodep[tInfo->rNumber];
+
+			/* if q and r nodes are not connected through p node, we are at root case */
+			atRoot = !((nodeq->back->number == tInfo->pNumber
+								|| nodeq->next->back->number == tInfo->pNumber
+								|| nodeq->next->next->back->number == tInfo->pNumber)
+								&& (noder->back->number == tInfo->pNumber
+										|| noder->next->back->number == tInfo->pNumber
+										|| noder->next->next->back->number == tInfo->pNumber));
+
+			if (atRoot) {
+				/*
+				 * An additional P matrix has to be computed in the
+				 * virtual root node located between q and r.
+				 */
+				makeP(tInfo->qz[model], tInfo->rz[model], pr->partitionData[model]->gammaRates,
+							   pr->partitionData[model]->EI,
+							   pr->partitionData[model]->EIGN,
+							   categories, left, right, tr->saveMemory, tr->maxCategories, (int)states);
+			}
+
+			calc_diagp_Ancestral(rateCategories, pr->partitionData[model]->EI,
+					pr->partitionData[model]->EIGN, categories, diagptable,
+					states);
+
+			if (atRoot) {
+
+				/*
+				 * In the root case, we need to create the CLVs of the
+				 * virtual root node out of x1 and x2.
+				 */
+				double *v;
+				double *vl, *vr, al, ar;
+				double *x1, *x2;
+				unsigned int k, l, j;
+				unsigned char *tipX1 = (unsigned char *) NULL, *tipX2 =
+						(unsigned char *) NULL;
+				const unsigned int gammaStates = 4 * states;
+				int scale;
+				double x1px2;
+				double * extEV = pr->partitionData[model]->EV;
+
+				x3_start = (double*) rax_malloc(
+						sizeof(double) * (size_t) gammaStates * width);
+
+				switch (tInfo->tipCase) {
+				case PLL_TIP_TIP: {
+					tipX1 = pr->partitionData[model]->yVector[tInfo->qNumber];
+					tipX2 = pr->partitionData[model]->yVector[tInfo->rNumber];
+					for (i = 0; i < pr->partitionData[model]->width; i++) {
+						for (k = 0; k < 4; k++) {
+							vl = &(pr->partitionData[model]->tipVector[states
+									* tipX1[i]]);
+							vr = &(pr->partitionData[model]->tipVector[states
+									* tipX2[i]]);
+							v = &(x3_start[gammaStates * i + states * k]);
+
+							for (l = 0; l < states; l++) {
+								v[l] = 0;
+							}
+
+							for (l = 0; l < states; l++) {
+								al = 0.0;
+								ar = 0.0;
+								for (j = 0; j < states; j++) {
+									al += vl[j]
+											* left[k * states * states
+													+ l * states + j];
+									ar += vr[j]
+											* right[k * states * states
+													+ l * states + j];
+								}
+
+								x1px2 = al * ar;
+								for (j = 0; j < states; j++)
+									v[j] += x1px2 * extEV[states * l + j];
+							}
+						}
+
+					}
+				}
+					break;
+				case PLL_TIP_INNER: {
+					tipX1 = pr->partitionData[model]->yVector[tInfo->qNumber];
+					x2 = pr->partitionData[model]->xVector[tInfo->rNumber
+							- tr->mxtips - 1];
+
+					for (i = 0; i < pr->partitionData[model]->width; i++) {
+						for (k = 0; k < 4; k++) {
+							vl = &(pr->partitionData[model]->tipVector[states
+									* tipX1[i]]);
+							vr = &(x2[gammaStates * i + states * k]);
+							v = &(x3_start[gammaStates * i + states * k]);
+
+							for (l = 0; l < states; l++)
+								v[l] = 0;
+
+							for (l = 0; l < states; l++) {
+								al = 0.0;
+								ar = 0.0;
+								for (j = 0; j < states; j++) {
+									al += vl[j]
+											* left[k * states * states
+													+ l * states + j];
+									ar += vr[j]
+											* right[k * states * states
+													+ l * states + j];
+								}
+
+								x1px2 = al * ar;
+								for (j = 0; j < states; j++) {
+									v[j] += x1px2 * extEV[states * l + j];
+								}
+							}
+						}
+
+						v = x3_start;
+
+						scale = 1;
+						for (l = 0; scale && (l < gammaStates); l++)
+							scale = (fabs(v[l]) < PLL_MINLIKELIHOOD);
+
+						if (scale) {
+							for (l = 0; l < gammaStates; l++)
+								v[l] *= PLL_TWOTOTHE256;
+						}
+					}
+				}
+					break;
+				case PLL_INNER_INNER:
+					x1 = pr->partitionData[model]->xVector[tInfo->qNumber
+							- tr->mxtips - 1];
+					x2 = pr->partitionData[model]->xVector[tInfo->rNumber
+							- tr->mxtips - 1];
+					for (i = 0; i < pr->partitionData[model]->width; i++) {
+						for (k = 0; k < 4; k++) {
+							vl = &(x1[gammaStates * i + states * k]);
+							vr = &(x2[gammaStates * i + states * k]);
+							v = &(x3_start[gammaStates * i + states * k]);
+
+							for (l = 0; l < states; l++)
+								v[l] = 0;
+
+							for (l = 0; l < states; l++) {
+								al = 0.0;
+								ar = 0.0;
+								for (j = 0; j < states; j++) {
+									al += vl[j]
+											* left[k * states * states
+													+ l * states + j];
+									ar += vr[j]
+											* right[k * states * states
+													+ l * states + j];
+								}
+
+								x1px2 = al * ar;
+								for (j = 0; j < states; j++)
+									v[j] += x1px2 * extEV[states * l + j];
+							}
+						}
+
+						v = x3_start;
+						scale = 1;
+						for (l = 0; scale && (l < gammaStates); l++)
+							scale = ((fabs(v[l]) < PLL_MINLIKELIHOOD));
+
+						if (scale) {
+							for (l = 0; l < gammaStates; l++)
+								v[l] *= PLL_TWOTOTHE256;
+						}
+
+					}
+					break;
+				default:
+					assert(0);
+				}
+			} else {
+				x3_start = pr->partitionData[model]->xVector[p_slot];
+			}
+			availableLength = pr->partitionData[model]->xSpaceVector[p_slot];
+			requiredLength = virtual_width(width) * rateHet * states
+					* sizeof(double);
+			/* make sure that this vector had already been allocated. This must be
+			 * PLL_TRUE since we first invoked a standard newview() on this */
+			assert(requiredLength == availableLength);
+
+			/* switch over the rate heterogeneity model
+			 and call generic functions that compute the marginal ancestral states and
+			 store them in pr->partitionData[model]->ancestralBuffer
+			 */
+			if (tr->rateHetModel == PLL_CAT)
+				ancestralCat(x3_start,
+						pr->partitionData[model]->ancestralBuffer, diagptable,
+						width, states, pr->partitionData[model]->rateCategory);
+			else
+				ancestralGamma(x3_start,
+						pr->partitionData[model]->ancestralBuffer, diagptable,
+						width, states, categories * states, atRoot);
+
+			if (atRoot) {
+				rax_free(x3_start);
+			}
+			rax_free(diagptable);
+		}
+	}
 }
 
 /** @brief Computes the Conditional Likelihood Vector (CLV) for each rate of some internal node.
@@ -3846,6 +4025,56 @@ int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, d
   return (PLL_TRUE);
 }
 
+static void traversalInfoAncestralRoot(nodeptr p, traversalInfo *ti,
+		int *counter, int maxTips, int numberOfPartitions) {
+	int i;
+
+	nodeptr q = p, r = p->back;
+
+	for (i = 0; i < numberOfPartitions; i++) {
+		double z = sqrt(q->z[i]);
+		if (z < PLL_ZMIN)
+			z = PLL_ZMIN;
+		if (z > PLL_ZMAX)
+			z = PLL_ZMAX;
+
+		z = log(z);
+
+		ti[*counter].qz[i] = z;
+		ti[*counter].rz[i] = z;
+	}
+
+	if (isTip(r->number, maxTips) && isTip(q->number, maxTips)) {
+		ti[*counter].tipCase = PLL_TIP_TIP;
+		ti[*counter].qNumber = q->number;
+		ti[*counter].rNumber = r->number;
+
+		*counter = *counter + 1;
+	} else {
+		if (isTip(r->number, maxTips) || isTip(q->number, maxTips)) {
+			nodeptr tmp;
+
+			if (isTip(r->number, maxTips)) {
+				tmp = r;
+				r = q;
+				q = tmp;
+			}
+
+			ti[*counter].tipCase = PLL_TIP_INNER;
+			ti[*counter].qNumber = q->number;
+			ti[*counter].rNumber = r->number;
+
+			*counter = *counter + 1;
+		} else {
+			ti[*counter].tipCase = PLL_INNER_INNER;
+			ti[*counter].qNumber = q->number;
+			ti[*counter].rNumber = r->number;
+
+			*counter = *counter + 1;
+		}
+	}
+}
+
 /* this is very similar to pllUpdatePartials, except that it also computes the marginal ancestral probabilities 
    at node p. To simplify the code I am re-using newview() here to first get the likelihood vector p->x at p
    and then I deploy newviewAncestralIterative(tr); that should always only have a traversal descriptor of lenth 1,
@@ -3871,14 +4100,17 @@ int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, d
     @param p
       Node for which we want to compute the ancestral vector
 
+	@param atRoot
+	  If PLL_TRUE, special case where p points to the root branch
+
     @note
       This function is not implemented with the saveMemory technique. 
 */
-void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
+void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p, int atRoot)
 {
   /* error check, we don't need to compute anything for tips */
   
-  if(isTip(p->number, tr->mxtips))
+  if(!atRoot && isTip(p->number, tr->mxtips))
     {
       printf("You are trying to compute the ancestral states on a tip node of the tree\n");
       assert(0);
@@ -3900,20 +4132,37 @@ void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p)
 
   /* now let's compute the ancestral states using this vector ! */
   
-  /* to make things easy and reduce code size, let's re-compute a standard traversal descriptor for node p,
-     hence we need to set the count to 0 */
+  if (atRoot) {
+	  /* to make things easy and reduce code size, let's re-compute a standard traversal descriptor for node p,
+		 hence we need to set the count to 0 */
 
-  tr->td[0].count = 0;
+	  tr->td[0].count = 0;
 
-  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions : 1, PLL_TRUE, tr->rvec, tr->useRecom);
+	  traversalInfoAncestralRoot(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->numberOfPartitions);
 
-  tr->td[0].traversalHasChanged = PLL_TRUE;
+	  printf("ROOTTRAV: %d %d %d , %f %f\n", tr->td[0].ti->pNumber, tr->td[0].ti->qNumber, tr->td[0].ti->rNumber, tr->td[0].ti->qz[0], tr->td[0].ti->rz[0]);
+
+	  tr->td[0].traversalHasChanged = PLL_TRUE;
+  } else {
+
+	  /* to make things easy and reduce code size, let's re-compute a standard traversal descriptor for node p,
+		 hence we need to set the count to 0 */
+
+	  tr->td[0].count = 0;
+
+	  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions : 1, PLL_TRUE, tr->rvec, tr->useRecom);
+
+	  printf("TRAVERSAL: %d %d %d , %f %f\n", tr->td[0].ti->pNumber, tr->td[0].ti->qNumber, tr->td[0].ti->rNumber, tr->td[0].ti->qz[0], tr->td[0].ti->rz[0]);
+
+	  tr->td[0].traversalHasChanged = PLL_TRUE;
+
+  }
 
   /* here we actually assert, that the traversal descriptor only contains one node triplet p, p->next->back, p->next->next->back
      this must be PLL_TRUE because we have alread invoked the standard pllUpdatePartials() on p.
-  */ 
+  */
 
-  assert(tr->td[0].count == 1);  
+  assert(tr->td[0].count == 1);
   
 #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
   /* use the pthreads barrier to invoke newviewAncestralIterative() on a per-thread basis */
@@ -4136,7 +4385,7 @@ void printAncestralState(nodeptr p, boolean printStates, boolean printProbs, pll
   rax_free(a);
 }
 
-void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence)
+void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence, int atRoot)
 {
 #ifdef _USE_PTHREADS
   size_t 
@@ -4149,7 +4398,7 @@ void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double 
     model,
     globalIndex = 0;
      
-  pllUpdatePartialsAncestral(tr, pr, p);
+  pllUpdatePartialsAncestral(tr, pr, p, atRoot);
   
   /* allocate an array of structs for storing ancestral prob vector info/data */
 
