@@ -4140,8 +4140,6 @@ void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p, i
 
 	  traversalInfoAncestralRoot(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->numberOfPartitions);
 
-	  printf("ROOTTRAV: %d %d %d , %f %f\n", tr->td[0].ti->pNumber, tr->td[0].ti->qNumber, tr->td[0].ti->rNumber, tr->td[0].ti->qz[0], tr->td[0].ti->rz[0]);
-
 	  tr->td[0].traversalHasChanged = PLL_TRUE;
   } else {
 
@@ -4151,8 +4149,6 @@ void pllUpdatePartialsAncestral(pllInstance *tr, partitionList *pr, nodeptr p, i
 	  tr->td[0].count = 0;
 
 	  computeTraversalInfo(p, &(tr->td[0].ti[0]), &(tr->td[0].count), tr->mxtips, pr->perGeneBranchLengths?pr->numberOfPartitions : 1, PLL_TRUE, tr->rvec, tr->useRecom);
-
-	  printf("TRAVERSAL: %d %d %d , %f %f\n", tr->td[0].ti->pNumber, tr->td[0].ti->qNumber, tr->td[0].ti->rNumber, tr->td[0].ti->qz[0], tr->td[0].ti->rz[0]);
 
 	  tr->td[0].traversalHasChanged = PLL_TRUE;
 
