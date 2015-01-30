@@ -90,6 +90,12 @@ extern "C" {
 #include "newick.h"
 #include "queue.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#else
+#define PACKAGE_VERSION x.x.x
+#endif
+
 #define PLL_MAX_TIP_EV                          0.999999999 /* max tip vector value, sum of EVs needs to be smaller than 1.0, otherwise the numerics break down */
 #define PLL_MAX_LOCAL_SMOOTHING_ITERATIONS      32          /** @brief maximum iterations of smoothings per insert in the */
 #define PLL_ITERATIONS                          10          /* maximum iterations of iterations per insert */
@@ -183,7 +189,7 @@ extern "C" {
 #define PLL_POINT_GAMMA(prob,alpha,beta)        PointChi2(prob,2.0*(alpha))/(2.0*(beta))
 
 #define PLL_LIB_NAME                            "PLL"
-#define PLL_LIB_VERSION                         "1.0.4"
+#define PLL_LIB_VERSION                         PACKAGE_VERSION
 #define PLL_LIB_DATE                            "January 19 2015"
 
 /* aminoacid substitution models */

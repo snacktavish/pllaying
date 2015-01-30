@@ -2,13 +2,13 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.68])
-AC_INIT([libpll], [1.0.0], [Tomas.Flouri@h-its.org])
+AC_INIT([libpll], [1.0.4], [Tomas.Flouri@h-its.org])
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
 
 # AM_MAINTAINER_MODE
 
-LIBPLL_VERSION=1.0.0
+LIBPLL_VERSION=1.0.4
 LIBPLL_MAJOR=1
 LIBPLL_MINOR=0
 LIBPLL_REV=0
@@ -119,5 +119,6 @@ AC_CONFIG_FILES([Makefile
                  MPI/Makefile
                  src/Makefile
                  man/Makefile
-                 examples/Makefile])
+                 examples/Makefile
+		 examples/PLL/Makefile])
 AC_OUTPUT
