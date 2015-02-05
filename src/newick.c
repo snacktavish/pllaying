@@ -577,7 +577,7 @@ pllNewickParseFile (const char * filename)
   rawdata = pllReadFile (filename, &n);
   if (!rawdata)
    {
-     fprintf (stderr, "Error while opening/reading file %s\n", filename);
+     //fprintf (stderr, "Error while opening/reading file %s\n", filename);
      return (0);
    }
 

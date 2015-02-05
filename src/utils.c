@@ -1898,6 +1898,10 @@ pllInstance * pllCreateInstance (pllInstanceAttr * attr)
 
   if (attr->rateHetModel != PLL_GAMMA && attr->rateHetModel != PLL_CAT) return NULL;
 
+#ifdef _USE_PTHREADS
+  if (attr->numberOfThreads <= 0) return NULL;
+#endif
+
   tr = (pllInstance *) rax_calloc (1, sizeof (pllInstance));
 
   tr->threadID          = 0;
