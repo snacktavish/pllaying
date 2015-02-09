@@ -1662,6 +1662,12 @@ void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, n
 int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
 extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 
+/* TBR moves */
+int pllTbrRemoveBranch(pllInstance * tr, partitionList * pr, nodeptr p);
+int pllTbrConnectSubtreesML(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q);
+int pllTbrConnectSubtreesBL(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pBl, double * pbBl,
+                            double * qBl, double * qbBl, double * rBl);
+
 /* hash functions */
 unsigned int pllHashString (const char * s, unsigned int size);
 int pllHashAdd  (pllHashTable * hTable, unsigned int hash, const char * s, void * item);
