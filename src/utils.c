@@ -3743,6 +3743,7 @@ pllTbrRemoveBranch (pllInstance * tr, partitionList * pr, nodeptr p)
   nodeptr p1, p2, q1, q2;
   nodeptr tmpNode;
   double * nextZ;
+  int numBranchLengths;
 
   // Evaluate pre-conditions
   // ( p in tr )
@@ -3785,28 +3786,29 @@ pllTbrRemoveBranch (pllInstance * tr, partitionList * pr, nodeptr p)
     }
 
   // Connect p neighbors (sum branches)
-  nextZ = (double *) rax_malloc ( (size_t) pr->numberOfPartitions * sizeof(double));
+  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  nextZ = (double *) rax_malloc ( (size_t) numBranchLengths * sizeof(double));
   if (!nextZ) {
       return PLL_FALSE;
   }
 
   if (p1 && p2)
     {
-      for (i = 0; i < pr->numberOfPartitions; i++)
+      for (i = 0; i < numBranchLengths; i++)
         {
               nextZ[i] = exp(log(p1->z[i]) + log(p2->z[i]));
         }
-        hookup (p1, p2, nextZ, pr->numberOfPartitions);
+        hookup (p1, p2, nextZ, numBranchLengths);
     }
 
   // Connect p* neighbors (sum branches)
   if (q1 && q2)
     {
-      for (i = 0; i < pr->numberOfPartitions; i++)
+      for (i = 0; i < numBranchLengths; i++)
         {
           nextZ[i] = exp (log (q1->z[i]) + log (q2->z[i]));
         }
-      hookup (q1, q2, nextZ, pr->numberOfPartitions);
+      hookup (q1, q2, nextZ, numBranchLengths);
     }
 
   free(nextZ);
