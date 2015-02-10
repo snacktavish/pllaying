@@ -3742,11 +3742,11 @@ pllTbrRemoveBranch (pllInstance * tr, partitionList * pr, nodeptr p)
   int i;
   nodeptr p1, p2, q1, q2;
   nodeptr tmpNode;
-  double * nextZ;
+  double * nextZP, * nextZQ;
   int numBranchLengths;
 
   // Evaluate pre-conditions
-  // ( p in tr )
+  // P1 : ( p in tr )
   for (tmpNode = tr->start->next->back; tmpNode != tr->start && tmpNode != p;
       tmpNode = tmpNode->next->back)
     ;
@@ -3754,64 +3754,40 @@ pllTbrRemoveBranch (pllInstance * tr, partitionList * pr, nodeptr p)
       errno = PLL_TBR_INVALID_NODE;
       return PLL_FALSE;
   }
-
-  if (p->number > tr->mxtips && p->back->number > tr->mxtips)
-    {
-      // inner branch
-      p1 = p->next->back;
-      p2 = p->next->next->back;
-      q1 = p->back->next->back;
-      q2 = p->back->next->next->back;
-    }
-  else
-    {
-      // branch connecting tip node
-      q1 = 0;
-      q2 = 0;
-      if (p->number > tr->mxtips)
-        {
-          p1 = p->next->back;
-          p2 = p->next->next->back;
-        }
-      else if (p->back->number > tr->mxtips)
-        {
-          p1 = p->back->next->back;
-          p2 = p->back->next->next->back;
-        }
-      else
-        {
-          errno = PLL_TBR_TIP_TIP_BRANCH;
-          return PLL_FALSE;
-        }
-    }
-
-  // Connect p neighbors (sum branches)
-  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
-  nextZ = (double *) rax_malloc ( (size_t) numBranchLengths * sizeof(double));
-  if (!nextZ) {
+  // P2 : ( p is an inner branch )
+  if (!(p->number > tr->mxtips && p->back->number > tr->mxtips))
+  {
+      errno = PLL_TBR_NOT_INNER_BRANCH;
       return PLL_FALSE;
   }
 
-  if (p1 && p2)
-    {
-      for (i = 0; i < numBranchLengths; i++)
-        {
-              nextZ[i] = exp(log(p1->z[i]) + log(p2->z[i]));
-        }
-        hookup (p1, p2, nextZ, numBranchLengths);
-    }
+  p1 = p->next->back;
+  p2 = p->next->next->back;
+  q1 = p->back->next->back;
+  q2 = p->back->next->next->back;
 
-  // Connect p* neighbors (sum branches)
-  if (q1 && q2)
-    {
-      for (i = 0; i < numBranchLengths; i++)
-        {
-          nextZ[i] = exp (log (q1->z[i]) + log (q2->z[i]));
-        }
-      hookup (q1, q2, nextZ, numBranchLengths);
-    }
+  // Connect p neighbors (sum branches)
+  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  nextZP = (double *) rax_malloc ( (size_t) numBranchLengths * sizeof(double));
+  if (!nextZP) {
+      return PLL_FALSE;
+  }
+  nextZQ = (double *) rax_malloc ( (size_t) numBranchLengths * sizeof(double));
+  if (!nextZQ) {
+      free(nextZP);
+      return PLL_FALSE;
+  }
 
-  free(nextZ);
+  for (i = 0; i < numBranchLengths; i++)
+  {
+      nextZP[i] = exp(log(p1->z[i]) + log(p2->z[i]));
+      nextZQ[i] = exp(log(q1->z[i]) + log(q2->z[i]));
+  }
+  hookup (p1, p2, nextZP, numBranchLengths);
+  hookup (q1, q2, nextZQ, numBranchLengths);
+
+  free(nextZP);
+  free(nextZQ);
 
   // Disconnect p->p* branch
   p->next->back = 0;
@@ -3850,7 +3826,8 @@ pllTbrConnectSubtreesML (pllInstance * tr, partitionList * pr, nodeptr p, nodept
   }
 
   // TODO: Verify this operation
-  pllNewviewIterative(tr, pr, 1);
+  regionalSmooth(tr, pr, p, 64, 1);
+  regionalSmooth(tr, pr, q, 64, 1);
   pllOptimizeBranchLengths(tr, pr, 64);
 
   return PLL_TRUE;

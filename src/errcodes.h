@@ -58,7 +58,7 @@
 #define PLL_NEWICK_BAD_STRUCTURE        1 << 1          /**< @brief Errornous tree detected */
 
 #define PLL_TBR_INVALID_NODE                1         /**< @brief Node p does not belong to the tree */
-#define PLL_TBR_TIP_TIP_BRANCH              2         /**< @brief Selected branch is connecting 2 tips */
+#define PLL_TBR_NOT_INNER_BRANCH            2         /**< @brief Selected branch is connecting 2 tips */
 #define PLL_TBR_MISSING_FREE_BRANCH         3         /**< @brief There is no missing branch for joining the subtrees */
 
 #define PLL_ERROR_PHYLIP_HEADER_SYNTAX         5
