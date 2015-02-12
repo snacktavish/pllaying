@@ -73,9 +73,11 @@ static int pllTestInsertBIG (pllInstance * tr, partitionList * pr, nodeptr p, no
 static int pllTestSPR (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
 static void pllCreateSprInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
 static void pllCreateNniInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr);
+static void pllCreateTbrInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
 static void pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches);
 static void pllRollbackNNI (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
 static void pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri);
+static void pllRollbackTBR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri);
 
 extern partitionLengths pLengths[PLL_MAX_MODEL];
 
@@ -2586,8 +2588,55 @@ pllSearchNNI (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int 
 }
 
 /** @ingroup rearrangementGroup
-    @brief Create rollback information for an SPR move
+    @brief Create rollback information for a TBR move
     
+    Creates a structure of type ::pllRollbackInfo and fills it with rollback
+    information about the SPR move described in \a rearr. The rollback info
+    is stored in the PLL instance in a LIFO manner.
+
+    @param tr
+      PLL instance
+
+    @param rearr
+      Description of the TBR move
+*/
+static void 
+pllCreateTbrInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches)
+{
+  pllRollbackInfo * tbrRb;
+  nodeptr p;
+  int i;
+
+  p = rearr->TBR.removeBranch;
+
+  tbrRb = (pllRollbackInfo *) rax_malloc (sizeof (pllRollbackInfo) + 5 * numBranches * sizeof (double));
+  tbrRb->TBR.zp1 = (double *) ((void *)tbrRb + sizeof (pllRollbackInfo));
+  tbrRb->TBR.zp2 = (double *) ((void *)tbrRb + sizeof (pllRollbackInfo) +     numBranches * sizeof (double));
+  tbrRb->TBR.zq1 = (double *) ((void *)tbrRb + sizeof (pllRollbackInfo) + 2 * numBranches * sizeof (double));
+  tbrRb->TBR.zq2 = (double *) ((void *)tbrRb + sizeof (pllRollbackInfo) + 3 * numBranches * sizeof (double));
+  tbrRb->TBR.zpq = (double *) ((void *)tbrRb + sizeof (pllRollbackInfo) + 3 * numBranches * sizeof (double));
+
+  for (i = 0; i < numBranches; ++ i)
+   {
+     tbrRb->TBR.zpq[i]   = p->z[i];
+     tbrRb->TBR.zp1[i]   = p->next->z[i];
+     tbrRb->TBR.zp2[i]   = p->next->next->z[i];
+     tbrRb->TBR.zq1[i]   = p->back->next->z[i];
+     tbrRb->TBR.zq2[i]   = p->back->next->next->z[i];
+   }
+
+  tbrRb->TBR.p = p;
+  tbrRb->TBR.q = p->next->back;
+  tbrRb->TBR.r = p->back->next->back;
+
+  tbrRb->rearrangeType = PLL_REARRANGE_TBR;
+
+  pllStackPush (&(tr->rearrangeHistory), (void *) tbrRb);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Create rollback information for an SPR move
+
     Creates a structure of type ::pllRollbackInfo and fills it with rollback
     information about the SPR move described in \a rearr. The rollback info
     is stored in the PLL instance in a LIFO manner.
@@ -2601,7 +2650,7 @@ pllSearchNNI (pllInstance * tr, partitionList * pr, nodeptr p, int mintrav, int 
     @param numBranches
       Number of partitions
 */
-static void 
+static void
 pllCreateSprInfoRollback (pllInstance * tr, pllRearrangeInfo * rearr, int numBranches)
 {
   pllRollbackInfo * sprRb;
@@ -2694,6 +2743,9 @@ pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranch
      case PLL_REARRANGE_SPR:
        pllCreateSprInfoRollback (tr, rearr, numBranches);
        break;
+     case PLL_REARRANGE_TBR:
+       pllCreateTbrInfoRollback (tr, rearr, numBranches);
+       break;
      default:
        break;
    }
@@ -2706,9 +2758,6 @@ pllCreateRollbackInfo (pllInstance * tr, pllRearrangeInfo * rearr, int numBranch
 
     Perform a rollback (undo) on the last SPR move.
     
-    @param tr
-      PLL instance
-
     @param pr
       List of partitions
 
@@ -2726,6 +2775,52 @@ pllRollbackSPR (partitionList * pr, pllRollbackInfo * ri)
   hookup (ri->SPR.p->next->next, ri->SPR.pnn,     ri->SPR.zpnn, numBranches); 
   hookup (ri->SPR.p,             ri->SPR.p->back, ri->SPR.zp,   numBranches);
   hookup (ri->SPR.q,             ri->SPR.r,       ri->SPR.zqr,  numBranches);
+
+  rax_free (ri);
+}
+
+/** @ingroup rearrangementGroup
+    @brief Rollback a TBR move
+
+    Perform a rollback (undo) on the last TBR move.
+
+    @param tr
+      PLL instance
+
+    @param pr
+      List of partitions
+
+    @param ri
+      Rollback information
+*/
+static void
+pllRollbackTBR (pllInstance * tr, partitionList * pr, pllRollbackInfo * ri)
+{
+  int numBranches;
+  if (ri->rearrangeType != PLL_REARRANGE_TBR) {
+      return;
+  }
+
+  numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+
+  pllTbrRemoveBranch(tr, pr, ri->TBR.p);
+  pllTbrConnectSubtreesBL(tr, pr, ri->TBR.q, ri->TBR.r,
+                          0, 0, 0, 0, 0);
+
+  memcpy(ri->TBR.p->next->z , ri->TBR.zp1, numBranches * sizeof(double));
+  memcpy(ri->TBR.p->next->back->z , ri->TBR.zp1, numBranches * sizeof(double));
+
+  memcpy(ri->TBR.p->next->next->z , ri->TBR.zp2, numBranches * sizeof(double));
+  memcpy(ri->TBR.p->next->next->back->z , ri->TBR.zp2, numBranches * sizeof(double));
+
+  memcpy(ri->TBR.p->z , ri->TBR.zpq, numBranches * sizeof(double));
+  memcpy(ri->TBR.p->back->z , ri->TBR.zpq, numBranches * sizeof(double));
+
+  memcpy(ri->TBR.p->back->next->z , ri->TBR.zq1, numBranches * sizeof(double));
+  memcpy(ri->TBR.p->back->next->back->z , ri->TBR.zq1, numBranches * sizeof(double));
+
+  memcpy(ri->TBR.p->back->next->next->z , ri->TBR.zq2, numBranches * sizeof(double));
+  memcpy(ri->TBR.p->back->next->next->back->z , ri->TBR.zq2, numBranches * sizeof(double));
 
   rax_free (ri);
 }
@@ -2789,6 +2884,9 @@ pllRearrangeRollback (pllInstance * tr, partitionList * pr)
      case PLL_REARRANGE_SPR:
        pllRollbackSPR (pr, ri);
        break;
+     case PLL_REARRANGE_TBR:
+       pllRollbackTBR (tr, pr, ri);
+       break;
      default:
        rax_free (ri);
        return (PLL_FALSE);
@@ -2821,9 +2919,10 @@ pllRearrangeRollback (pllInstance * tr, partitionList * pr)
     @param saveRollbackInfo
       If set to \b PLL_TRUE, rollback info will be kept for undoing the rearrangement move
 */
-void
+int
 pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo)
 {
+  nodeptr q, r;
   int numBranches;
 
   numBranches = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
@@ -2844,9 +2943,23 @@ pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rea
        removeNodeBIG (tr, pr, rearr->SPR.removeNode, numBranches);
        insertBIG     (tr, pr, rearr->SPR.removeNode, rearr->SPR.insertNode);
        break;
+     case PLL_REARRANGE_TBR:
+       q = rearr->TBR.removeBranch->next->back;
+       r = rearr->TBR.removeBranch->back->next->back;
+       if (!pllTbrRemoveBranch( tr, pr, rearr->TBR.removeBranch)) {
+           return PLL_FALSE;
+       }
+       if (!pllTbrConnectSubtreesBL( tr, pr, rearr->TBR.insertBranch1, rearr->TBR.insertBranch2, 0,0,0,0,0)) {
+           /* Undo remove branch. This operation should be done without errors. */
+           assert(pllTbrConnectSubtreesML( tr, pr, q, r));
+           return PLL_FALSE;
+       }
+       break;
      default:
+       return PLL_FALSE;
        break;
    }
+  return PLL_TRUE;
 }
 
 

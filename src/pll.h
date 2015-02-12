@@ -1401,6 +1401,16 @@ typedef struct
       nodeptr q;
     } SPR;
     struct {
+      double * zp1;
+      double * zp2;
+      double * zq1;
+      double * zq2;
+      double * zpq;
+      nodeptr p;      /* split node */
+      nodeptr q;      /* left join node */
+      nodeptr r;      /* right join node */
+    } TBR;
+    struct {
       nodeptr origin;
       int swapType;
       double z[PLL_NUM_BRANCHES];
@@ -1468,6 +1478,11 @@ typedef struct
        nodeptr insertNode;
        double  zqr[PLL_NUM_BRANCHES];
      } SPR;
+     struct {
+        nodeptr removeBranch;
+        nodeptr insertBranch1;
+        nodeptr insertBranch2;
+     } TBR;
      struct {
        nodeptr originNode;
        int     swapType;
@@ -1653,7 +1668,7 @@ void pllInitParsimonyStructures(pllInstance *tr, partitionList *pr, boolean perS
 pllRearrangeList * pllCreateRearrangeList (int max);
 void pllDestroyRearrangeList (pllRearrangeList ** bestList);
 void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
-void pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
+int pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
 int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
 void pllClearRearrangeHistory (pllInstance * tr);
 int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
@@ -1665,8 +1680,8 @@ extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 /* TBR moves */
 int pllTbrRemoveBranch(pllInstance * tr, partitionList * pr, nodeptr p);
 int pllTbrConnectSubtreesML(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q);
-int pllTbrConnectSubtreesBL(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pBl, double * pbBl,
-                            double * qBl, double * qbBl, double * rBl);
+int pllTbrConnectSubtreesBL(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pBl, double * pbBl, double * qBl, double * qbBl, double * rBl);
+int pllTbrConnectSubtreesZ (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pZ, double * pbZ, double * qZ, double * qbZ, double * rZ);
 
 /* hash functions */
 unsigned int pllHashString (const char * s, unsigned int size);

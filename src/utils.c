@@ -3833,6 +3833,88 @@ pllTbrConnectSubtreesML (pllInstance * tr, partitionList * pr, nodeptr p, nodept
   return PLL_TRUE;
 }
 
+static int pllTbrConnectSubtrees(pllInstance * tr, partitionList * pr, nodeptr p,
+                                 nodeptr q, nodeptr * freeBranch, nodeptr * pb, nodeptr * qb) {
+  int i;
+  nodeptr tmpNode;
+
+  *freeBranch = 0;
+  *pb = 0;
+  *qb = 0;
+
+  // Evaluate preconditions
+
+  // p and q must be connected and independent branches
+  if (!(p && q && (p != q) && p->back && q->back && (p->back != q)
+      && (q->back != p)))
+    {
+      errno = PLL_TBR_INVALID_NODE;
+      return PLL_FALSE;
+    }
+
+  // p and q must belong to different subtrees. We check that we cannot reach q starting from p
+  for (tmpNode = p->next->back; tmpNode != p && tmpNode != q;
+      tmpNode = tmpNode->next->back)
+    ;
+  if (tmpNode == q)
+    {
+      // p and q are in the same subtree
+      errno = PLL_TBR_INVALID_NODE;
+      return PLL_FALSE;
+    }
+
+  (*pb) = p->back;
+  (*qb) = q->back;
+  tmpNode = 0;
+
+  // Must exist an unconnected branch
+  for (i = 1; i <= (2 * tr->mxtips - 3); i++)
+    {
+      if (!(tr->nodep[i]->back && tr->nodep[i]->next->back))
+        {
+          tmpNode = tr->nodep[i];
+
+          // It should have one and only one connected node
+          if (tmpNode->next->back
+              && !(tmpNode->back || tmpNode->next->next->back))
+            {
+              tmpNode = tmpNode->next->back;
+            }
+          else if (tmpNode->next->next->back
+              && !(tmpNode->back || tmpNode->next->back))
+            {
+              tmpNode = tmpNode->next->next->back;
+            }
+          else if (!(tmpNode->back || tmpNode->next->back
+              || tmpNode->next->next->back))
+            {
+              // There is no missing branch
+              errno = PLL_TBR_INVALID_NODE;
+              return PLL_FALSE;
+            }
+          break;
+        }
+    }
+
+  if (!tmpNode)
+    {
+      // There is no missing branch
+      errno = PLL_TBR_MISSING_FREE_BRANCH;
+      return PLL_FALSE;
+    }
+
+  (*freeBranch) = tmpNode;
+
+
+  // Join subtrees
+  hookupDefault (p, (*freeBranch)->next);
+  hookupDefault ((*pb), (*freeBranch)->next->next);
+  hookupDefault (q, (*freeBranch)->back->next);
+  hookupDefault ((*qb), (*freeBranch)->back->next->next);
+
+  return PLL_TRUE;
+}
+
 /**
  * @brief Reconnects 2 subtrees and sets the user defined branch lengths
  *
@@ -3857,7 +3939,6 @@ pllTbrConnectSubtreesML (pllInstance * tr, partitionList * pr, nodeptr p, nodept
  * @param qbBl, the per-partition branch lengths of q->back connecting to the new branch
  * @param rBl, the per-partition branch lengths of the new inserted branch
  *
- *
  * @return PLL_TRUE if OK, PLL_FALSE and sets errno in case of error
  */
 int
@@ -3865,65 +3946,12 @@ pllTbrConnectSubtreesBL (pllInstance * tr, partitionList * pr, nodeptr p,
                          nodeptr q, double * pBl, double * pbBl, double * qBl,
                          double * qbBl, double * rBl)
 {
-  int i;
-  nodeptr freeBranch = 0;
-  nodeptr pb, qb, tmpNode;
-  int numBranchLengths;
+  int i, numBranchLengths;
+  nodeptr pb, qb, freeBranch;
 
-  // Evaluate preconditions
-
-  // p and q must be connected and independent branches
-  if (!(p && q && (p != q)
-      && p->back && q->back
-      && (p->back != q) && (q->back != p)))
-    {
-      errno = PLL_TBR_INVALID_NODE;
-      return PLL_FALSE;
-    }
-
-  // p and q must belong to different subtrees. We check that we cannot reach q starting from p
-  for (tmpNode = p->next->back; tmpNode != p && tmpNode != q;
-      tmpNode = tmpNode->next->back)
-    ;
-  if(tmpNode == q) {
-      // p and q are in the same subtree
-      errno = PLL_TBR_INVALID_NODE;
+  if (!pllTbrConnectSubtrees(tr, pr, p, q, &freeBranch, &pb, &qb)) {
       return PLL_FALSE;
   }
-
-  pb = p->back;
-  qb = q->back;
-
-  // Must exist an unconnected branch
-  for (i=1; i<=(2 * tr->mxtips - 3); i++) {
-      if (!(tr->nodep[i]->back && tr->nodep[i]->next->back)) {
-          freeBranch = tr->nodep[i];
-
-          // It should have one and only one connected node
-          if (freeBranch->next->back && !(freeBranch->back || freeBranch->next->next->back)) {
-              freeBranch = freeBranch->next->back;
-          } else if (freeBranch->next->next->back && !(freeBranch->back || freeBranch->next->back)) {
-              freeBranch = freeBranch->next->next->back;
-          } else if (!(freeBranch->back || freeBranch->next->back || freeBranch->next->next->back)) {
-              // There is no missing branch
-              errno = PLL_TBR_INVALID_NODE;
-              return PLL_FALSE;
-          }
-          break;
-      }
-  }
-
-  if (!freeBranch) {
-      // There is no missing branch
-      errno = PLL_TBR_MISSING_FREE_BRANCH;
-      return PLL_FALSE;
-  }
-
-  // Join subtrees
-  hookupDefault(p,  freeBranch->next);
-  hookupDefault(pb, freeBranch->next->next);
-  hookupDefault(q,  freeBranch->back->next);
-  hookupDefault(qb, freeBranch->back->next->next);
 
   // Set branch lengths
   numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
@@ -3943,5 +3971,74 @@ pllTbrConnectSubtreesBL (pllInstance * tr, partitionList * pr, nodeptr p,
     for (i = 0; i < numBranchLengths; i++)
       pllSetBranchLength (tr, freeBranch, i, rBl[i]);
 
-return PLL_TRUE;
+  return PLL_TRUE;
+}
+
+/**
+ * @brief Reconnects 2 subtrees and sets the user defined z values
+ *
+ * Reconnects 2 subtrees adding a missing branch between the branches defined by p and q.
+ * p and q must be different and belong to unconnected subtrees.
+ * It must exist at least one completely disconnected branch.
+ *
+ * The length of the branch lengths arrays must be either 1 if tr->perGeneBranchLengths is false,
+ * or the number of partitions.
+ *
+ * The branch length arrays should contain the z values.
+ *
+ * If a branch length array is a null pointer, z values are initialized to default values.
+ *
+ * @param tr, the tree
+ * @param pr, the partitions
+ * @param p, the node defining the branch in subtree 1
+ * @param q, the node defining the branch in subtree 2
+ * @param pZ, the per-partition z values of p connecting to the new branch
+ * @param pbZ, the per-partition z values of p->back connecting to the new branch
+ * @param qZ, the per-partition z values of q connecting to the new branch
+ * @param qbZ, the per-partition z values of q->back connecting to the new branch
+ * @param rZ, the per-partition z values of the new inserted branch
+ *
+ * @return PLL_TRUE if OK, PLL_FALSE and sets errno in case of error
+ */
+int
+pllTbrConnectSubtreesZ (pllInstance * tr, partitionList * pr, nodeptr p,
+                         nodeptr q, double * pZ, double * pbZ, double * qZ,
+                         double * qbZ, double * rZ)
+{
+  int i, numBranchLengths;
+  nodeptr pb, qb, freeBranch;
+
+  if (!pllTbrConnectSubtrees(tr, pr, p, q, &freeBranch, &pb, &qb)) {
+      return PLL_FALSE;
+  }
+
+  // Set branch lengths
+  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  if (pZ)
+    for (i = 0; i < numBranchLengths; i++) {
+        p->z[i] = pZ[i];
+        p->back->z[i] = pZ[i];
+    }
+  if (pbZ)
+    for (i = 0; i < numBranchLengths; i++) {
+        pb->z[i] = pbZ[i];
+        pb->back->z[i] = pbZ[i];
+    }
+  if (qZ)
+    for (i = 0; i < numBranchLengths; i++) {
+        q->z[i] = qZ[i];
+        q->back->z[i] = qZ[i];
+    }
+  if (qbZ)
+    for (i = 0; i < numBranchLengths; i++) {
+        qb->z[i] = qbZ[i];
+        qb->back->z[i] = qbZ[i];
+    }
+  if (rZ)
+    for (i = 0; i < numBranchLengths; i++) {
+        freeBranch->z[i] = rZ[i];
+        freeBranch->back->z[i] = rZ[i];
+    }
+
+  return PLL_TRUE;
 }
