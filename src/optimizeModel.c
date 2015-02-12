@@ -2971,7 +2971,7 @@ static void checkTolerance(double l1, double l2)
   if(l1 < l2)
     {   
       double 
-	tolerance = fabs(PLL_MAX(l1, l2) * 0.000000000001);
+	tolerance = fabs(PLL_MAX(l1, l2) * 1e-7);
 
       if(fabs(l1 - l2) > PLL_MIN(0.1, tolerance))
 	{
@@ -3005,7 +3005,7 @@ void modOpt(pllInstance *tr, partitionList *pr, double likelihoodEpsilon)
   double 
     inputLikelihood,
     currentLikelihood,
-    modelEpsilon = 0.0001;
+    modelEpsilon;
 
   /* linkage lists for alpha, p-invar has actually been ommitted in this version of the code 
      and the GTR subst matrices */
