@@ -125,6 +125,7 @@ parse_newick (pllStack ** stack, int * inp)
             prev_token.tokenType != PLL_TOKEN_COMMA) return (0);
         if (!item) item = (pllNewickNodeInfo *) rax_calloc (1, sizeof (pllNewickNodeInfo));
         //item->name = strndup (token.lexeme, token.len);
+        if (item->name) rax_free(item->name);
         item->name = (char *) rax_malloc ((token.len + 1) * sizeof (char));
         strncpy (item->name, token.lexeme, token.len);
         item->name[token.len] = 0;
@@ -162,6 +163,7 @@ parse_newick (pllStack ** stack, int * inp)
                prev_token.tokenType == PLL_TOKEN_UNKNOWN) item->leaf = 1;
            //if (prev_token.tokenType != PLL_TOKEN_UNKNOWN) ++ indent;
            //item->name = strndup (token.lexeme, token.len);
+           if (item->name) rax_free(item->name);
            item->name = (char *) rax_malloc ((token.len + 1) * sizeof (char));
            strncpy (item->name, token.lexeme, token.len);
            item->name[token.len] = 0;
