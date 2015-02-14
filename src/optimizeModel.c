@@ -1507,12 +1507,14 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
         }
     }
 
-  #if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
-      if (whichParameterType == LXRATE_F || whichParameterType == LXWEIGHT_F) {
-        pllMasterBarrier(tr, pr, PLL_THREAD_COPY_LG4X_RATES);
-      } else {
-        pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
-      }
+#if (defined(_FINE_GRAIN_MPI) || defined(_USE_PTHREADS))
+	if (whichParameterType == LXRATE_F || whichParameterType == LXWEIGHT_F) {
+		pllMasterBarrier(tr, pr, PLL_THREAD_COPY_LG4X_RATES);
+	} else if (whichParameterType == ALPHA_F) {
+		pllMasterBarrier(tr, pr, PLL_THREAD_COPY_ALPHA);
+	} else {
+		pllMasterBarrier(tr, pr, PLL_THREAD_COPY_RATES);
+	}
 
 //    switch(whichParameterType)
 //      {
@@ -1531,7 +1533,7 @@ static void optParamGeneric(pllInstance *tr, partitionList * pr, double modelEps
 //        assert(0);
 //      }
 
-  #endif    
+#endif
 
     
   assert(pos == numberOfModels);
@@ -2971,7 +2973,7 @@ static void checkTolerance(double l1, double l2)
   if(l1 < l2)
     {   
       double 
-	tolerance = fabs(PLL_MAX(l1, l2) * 1e-7);
+	tolerance = fabs(PLL_MAX(l1, l2) * 1e-12);
 
       if(fabs(l1 - l2) > PLL_MIN(0.1, tolerance))
 	{
