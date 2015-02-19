@@ -1513,8 +1513,8 @@ typedef struct
 /******************** START OF API FUNCTION DESCRIPTIONS ********************/
 
 #if (defined(_USE_PTHREADS) || defined(_FINE_GRAIN_MPI))
-boolean isThisMyPartition(partitionList *pr, int tid, int model);
-void printParallelTimePerRegion(void); 
+extern boolean isThisMyPartition(partitionList *pr, int tid, int model);
+extern void printParallelTimePerRegion(void); 
 #endif
 
 #ifdef _FINE_GRAIN_MPI
@@ -1609,12 +1609,11 @@ extern void  pllQueuePartitionsDestroy (pllQueue ** partitions);
 extern pllQueue * pllPartitionParse (const char * filename);
 extern pllQueue * pllPartitionParseString (const char * p);
 extern void pllPartitionDump (pllQueue * partitions);
-void pllBaseSubstitute (pllInstance * tr, partitionList * partitions);
-//void pllBaseSubstitute (pllAlignmentData * tr, partitionList * partitions);
-partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
-int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
+extern void pllBaseSubstitute (pllInstance * tr, partitionList * partitions);
+extern partitionList * pllPartitionsCommit (pllQueue * parts, pllAlignmentData * alignmentData);
+extern int pllPartitionsValidate (pllQueue * parts, pllAlignmentData * alignmentData);
 extern void pllAlignmentRemoveDups (pllAlignmentData * alignmentData, partitionList * pl);
-void pllPartitionsDestroy (pllInstance *, partitionList **);
+extern void pllPartitionsDestroy (pllInstance *, partitionList **);
 
 /* alignment data declarations */
 extern void pllAlignmentDataDestroy (pllAlignmentData *);
@@ -1625,73 +1624,73 @@ extern pllAlignmentData * pllParseAlignmentFile (int fileType, const char *);
 
 
 /* model management */
-int pllInitModel (pllInstance *, partitionList *);
-void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model);
-void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian);
-int pllLinkAlphaParameters(char *string, partitionList *pr);
-int pllLinkFrequencies(char *string, partitionList *pr);
-int pllLinkRates(char *string, partitionList *pr);
-int pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
-void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
-void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
-int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
-void pllSetSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
-void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
-int pllGetInstRateMatrix (partitionList * pr, int model, double * outBuffer);
-int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
-double pllGetAlpha (partitionList * pr, int pid);
-void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
+extern int pllInitModel (pllInstance *, partitionList *);
+extern void pllInitReversibleGTR(pllInstance * tr, partitionList * pr, int model);
+extern void pllMakeGammaCats(double alpha, double *gammaRates, int K, boolean useMedian);
+extern int pllLinkAlphaParameters(char *string, partitionList *pr);
+extern int pllLinkFrequencies(char *string, partitionList *pr);
+extern int pllLinkRates(char *string, partitionList *pr);
+extern int pllSetSubstitutionRateMatrixSymmetries(char *string, partitionList * pr, int model);
+extern void pllSetFixedAlpha(double alpha, int model, partitionList * pr, pllInstance *tr);
+extern void pllSetFixedBaseFrequencies(double *f, int length, int model, partitionList * pr, pllInstance *tr);
+extern int  pllSetOptimizeBaseFrequencies(int model, partitionList * pr, pllInstance *tr);
+extern void pllSetSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
+extern void pllSetFixedSubstitutionMatrix(double *q, int length, int model, partitionList * pr,  pllInstance *tr);
+extern int pllGetInstRateMatrix (partitionList * pr, int model, double * outBuffer);
+extern int pllOptimizeModelParameters(pllInstance *tr, partitionList *pr, double likelihoodEpsilon);
+extern double pllGetAlpha (partitionList * pr, int pid);
+extern void pllGetGammaRates (partitionList * pr, int pid, double * outBuffer);
 extern void pllGetBaseFrequencies(partitionList * pr, int model, double * outBuffer);
 extern void pllGetSubstitutionMatrix (partitionList * pr, int model, double * outBuffer);
-void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
+extern void pllEmpiricalFrequenciesDestroy (double *** empiricalFrequencies, int models);
 extern void pllOptRatesGeneric(pllInstance *tr, partitionList *pr, double modelEpsilon, linkageList *ll);
 extern void pllOptBaseFreqs(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
 extern void pllOptAlphasGeneric(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll);
 extern void pllOptLG4X(pllInstance *tr, partitionList * pr, double modelEpsilon, linkageList *ll, int numberOfModels);
 
 /* tree topology */
-void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
-void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
-void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
+extern void pllTreeInitTopologyNewick (pllInstance *, pllNewickTree *, int);
+extern void pllTreeInitTopologyRandom (pllInstance * tr, int tips, char ** nameList);
+extern void pllTreeInitTopologyForAlignment (pllInstance * tr, pllAlignmentData * alignmentData);
 extern void pllMakeRandomTree ( pllInstance *tr);
-void pllMakeParsimonyTree(pllInstance *tr);
+extern void pllMakeParsimonyTree(pllInstance *tr);
 extern void pllMakeParsimonyTreeFast(pllInstance *tr, partitionList *pr);
-void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
-nodeptr pllGetRandomSubtree(pllInstance *);
+extern void pllComputeRandomizedStepwiseAdditionParsimonyTree(pllInstance * tr, partitionList * partitions);
+extern nodeptr pllGetRandomSubtree(pllInstance *);
 extern void pllFreeParsimonyDataStructures(pllInstance *tr, partitionList *pr);
-void pllDestroyInstance (pllInstance *);
+extern void pllDestroyInstance (pllInstance *);
 extern void pllGetAncestralState(pllInstance *tr, partitionList *pr, nodeptr p, double * outProbs, char * outSequence, int atRoot);
-unsigned int pllEvaluateParsimony(pllInstance *tr, partitionList *pr, nodeptr p, boolean full, boolean perSiteScores);
-void pllInitParsimonyStructures(pllInstance *tr, partitionList *pr, boolean perSiteScores);
+extern unsigned int pllEvaluateParsimony(pllInstance *tr, partitionList *pr, nodeptr p, boolean full, boolean perSiteScores);
+extern void pllInitParsimonyStructures(pllInstance *tr, partitionList *pr, boolean perSiteScores);
 
 /* rearrange functions (NNI and SPR) */
-pllRearrangeList * pllCreateRearrangeList (int max);
-void pllDestroyRearrangeList (pllRearrangeList ** bestList);
-void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
-int pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
-int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
-void pllClearRearrangeHistory (pllInstance * tr);
-int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
-int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
-void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
-int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
+extern pllRearrangeList * pllCreateRearrangeList (int max);
+extern void pllDestroyRearrangeList (pllRearrangeList ** bestList);
+extern void pllRearrangeSearch (pllInstance * tr, partitionList * pr, int rearrangeType, nodeptr p, int mintrav, int maxtrav, pllRearrangeList * bestList);
+extern int pllRearrangeCommit (pllInstance * tr, partitionList * pr, pllRearrangeInfo * rearr, int saveRollbackInfo);
+extern int pllRearrangeRollback (pllInstance * tr, partitionList * pr);
+extern void pllClearRearrangeHistory (pllInstance * tr);
+extern int pllRaxmlSearchAlgorithm (pllInstance * tr, partitionList * pr, boolean estimateModel);
+extern int pllGetTransitionMatrix (pllInstance * tr, partitionList * pr, nodeptr p, int model, int rate, double * outBuffer);
+extern void pllGetTransitionMatrix2 (pllInstance * tr, partitionList * pr, int model, nodeptr p, double * outBuffer);
+extern int pllGetCLV (pllInstance * tr, partitionList * pr, nodeptr p, int partition, double * outProbs);
 extern int pllTopologyPerformNNI(pllInstance * tr, nodeptr p, int swap);
 
 /* TBR moves */
-int pllTbrRemoveBranch(pllInstance * tr, partitionList * pr, nodeptr p);
-int pllTbrConnectSubtreesML(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q);
-int pllTbrConnectSubtreesBL(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pBl, double * pbBl, double * qBl, double * qbBl, double * rBl);
-int pllTbrConnectSubtreesZ (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pZ, double * pbZ, double * qZ, double * qbZ, double * rZ);
+extern int pllTbrRemoveBranch(pllInstance * tr, partitionList * pr, nodeptr p);
+extern int pllTbrConnectSubtreesML(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q);
+extern int pllTbrConnectSubtreesBL(pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pBl, double * pbBl, double * qBl, double * qbBl, double * rBl);
+extern int pllTbrConnectSubtreesZ (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q, double * pZ, double * pbZ, double * qZ, double * qbZ, double * rZ);
 
 /* hash functions */
-unsigned int pllHashString (const char * s, unsigned int size);
-int pllHashAdd  (pllHashTable * hTable, unsigned int hash, const char * s, void * item);
-pllHashTable * pllHashInit (unsigned int n);
-int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
-void pllHashDestroy (struct pllHashTable ** hTable, void (*cbDealloc)(void *));
+extern unsigned int pllHashString (const char * s, unsigned int size);
+extern int pllHashAdd  (pllHashTable * hTable, unsigned int hash, const char * s, void * item);
+extern pllHashTable * pllHashInit (unsigned int n);
+extern int pllHashSearch (struct pllHashTable * hTable, char * s, void ** item);
+extern void pllHashDestroy (struct pllHashTable ** hTable, void (*cbDealloc)(void *));
 
 /* node specific functions */
-nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);
+extern nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);
 
 /* other functions */
 extern char * pllReadFile (const char *, long *);

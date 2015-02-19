@@ -48,4 +48,5 @@ typedef struct
   int optimizeBaseFrequencies;
   pllQueue * regionList;
 } pllPartitionInfo;
+
 #endif
