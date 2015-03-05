@@ -51,3 +51,5 @@ endif
 
 pkgincludedir=$(includedir)/pll
 pkginclude_HEADERS = pll.h stack.h queue.h parsePartition.h
+EXTRA_DIST = cycle.h genericParallelization.h hardware.h lexer.h mic_native.h pll.h queue.h \
+             errcodes.h globalVariables.h hash.h mem_alloc.h parsePartition.h pllInternal.h stack.h

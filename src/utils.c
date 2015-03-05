@@ -843,6 +843,9 @@ double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id)
     @param tr
       PLL instance
 
+    @param pr
+	  PLL partitionlist
+
     @param p
       Specifies one end-point of the branch. The other one is \a p->back
 
@@ -852,14 +855,14 @@ double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id)
     @param bl
       Branch length
 */
-void pllSetBranchLength (pllInstance *tr, nodeptr p, int partition_id, double bl)
+void pllSetBranchLength (pllInstance *tr, partitionList *pr, nodeptr p, int partition_id, double bl)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
-  assert(tr->fracchange != -1.0);
+  assert(pr->partitionData[partition_id]->fracchange != -1.0);
   double z;
-  z = exp((-1 * bl)/tr->fracchange);
+  z = exp((-1 * bl)/pr->partitionData[partition_id]->fracchange);
   if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > PLL_ZMAX) z = PLL_ZMAX;
   p->z[partition_id] = z;

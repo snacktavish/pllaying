@@ -1,3 +1,9 @@
+2015-03-05  Diego Darriba <Diego.Darriba@h-its.org>
+
+		* Release 1.0.8
+		* Fixed bug in pllSetBranchLength
+		  partitionList was added for taking the correct fracchange
+
 2015-01-06  Tomas Flouri <Tomas.Flouri@h-its.org>
         
         * Release 1.0.2
