@@ -1606,9 +1606,9 @@ extern void pllInitMPI(int * argc, char **argv[]);
 
 
 /* handling branch lengths*/
-extern double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id);
+extern double pllGetBranchLength (pllInstance *tr, partitionList *pr, nodeptr p, int partition_id);
 extern void pllSetBranchLength (pllInstance *tr, partitionList *pr, nodeptr p, int partition_id, double bl);
-extern int pllNniSearch(pllInstance * tr, partitionList *pr, int estimateModel);
+extern int pllNniSearch(pllInstance *tr, partitionList *pr, int estimateModel);
 extern void pllOptimizeBranchLengths ( pllInstance *tr, partitionList *pr, int maxSmoothIterations );
 
 

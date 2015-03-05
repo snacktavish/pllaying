@@ -813,6 +813,9 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
     @param tr
       PLL instance
 
+    @param pr
+	  PLL partitionlist
+
     @param p
       Specifies one end-point of the branch. The other one is \a p->back
 
@@ -822,16 +825,16 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
     @return
       The branch length
 */
-double pllGetBranchLength (pllInstance *tr, nodeptr p, int partition_id)
+double pllGetBranchLength (pllInstance *tr, partitionList * pr, nodeptr p, int partition_id)
 {
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
-  assert(tr->fracchange != -1.0);
+  assert(pr->partitionData[partition_id]->fracchange != -1.0);
   double z = p->z[partition_id];
   if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > PLL_ZMAX) z = PLL_ZMAX;
-  return (-log(z) * tr->fracchange);
+  return (-log(z) * pr->partitionData[partition_id]->fracchange);
 }
 
 /** @brief Set the length of a specific branch
@@ -3960,19 +3963,19 @@ pllTbrConnectSubtreesBL (pllInstance * tr, partitionList * pr, nodeptr p,
   numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   if (pBl)
     for (i = 0; i < numBranchLengths; i++)
-      pllSetBranchLength (tr, p, i, pBl[i]);
+      pllSetBranchLength (tr, pr, p, i, pBl[i]);
   if (pbBl)
     for (i = 0; i < numBranchLengths; i++)
-      pllSetBranchLength (tr, pb, i, pbBl[i]);
+      pllSetBranchLength (tr, pr, pb, i, pbBl[i]);
   if (qBl)
     for (i = 0; i < numBranchLengths; i++)
-      pllSetBranchLength (tr, q, i, qBl[i]);
+      pllSetBranchLength (tr, pr, q, i, qBl[i]);
   if (qbBl)
     for (i = 0; i < numBranchLengths; i++)
-      pllSetBranchLength (tr, qb, i, qbBl[i]);
+      pllSetBranchLength (tr, pr, qb, i, qbBl[i]);
   if (rBl)
     for (i = 0; i < numBranchLengths; i++)
-      pllSetBranchLength (tr, freeBranch, i, rBl[i]);
+      pllSetBranchLength (tr, pr, freeBranch, i, rBl[i]);
 
   return PLL_TRUE;
 }
