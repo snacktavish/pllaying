@@ -1,3 +1,8 @@
+2015-03-09  Tomas Flouri <Tomas.Flouri@h-its.org>
+
+		* Release 1.0.9
+		* Added support for multiline FASTA.
+
 2015-03-05  Diego Darriba <Diego.Darriba@h-its.org>
 
 		* Release 1.0.8

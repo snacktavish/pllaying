@@ -189,7 +189,7 @@ extern "C" {
 
 #define PLL_LIB_NAME                            "PLL"
 #define PLL_LIB_VERSION                         PACKAGE_VERSION
-#define PLL_LIB_DATE                            "January 19 2015"
+#define PLL_LIB_DATE                            "March 9 2015"
 
 /* aminoacid substitution models */
 #define PLL_DAYHOFF                             0
