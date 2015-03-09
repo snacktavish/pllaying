@@ -47,8 +47,62 @@ static pllAlignmentData * pllParseFASTA (const char * filename);
 static int read_phylip_header (int * inp, int * sequenceCount, int * sequenceLength);
 static inline int parsedOk (int * actLen, int sequenceCount, int sequenceLength);
 static int parse_phylip (pllAlignmentData * alignmentData, int input);
-static int getFastaAlignmentInfo (int * inp, int * seqCount, int * seqLen);
-static int parseFastaAlignment (pllAlignmentData * alignmentData, int input);
+//static int getFastaAlignmentInfo (int * inp, int * seqCount, int * seqLen);
+//static int parseFastaAlignment (pllAlignmentData * alignmentData, int input);
+
+static int query_getnext(char ** head, int * head_len, 
+                         char ** seq, int * seq_len, int * qno);
+static int query_open(const char * filename);
+static void query_close(void);
+
+#define PLL_MEMCHUNK    4096
+#define PLL_LINEALLOC   1048576
+
+static FILE * query_fp;
+static char query_line[PLL_LINEALLOC];
+
+static int query_no = -1;
+static char * query_head = 0;
+static char * query_seq = 0;
+
+static long query_head_len = 0;
+static long query_seq_len = 0;
+
+static long query_head_alloc = 0;
+static long query_seq_alloc = 0;
+
+static long query_filesize = 0;
+static int query_lineno;
+
+static unsigned int chrstatus[256] =
+  {
+    /*
+
+      How to handle input characters
+
+      0=stripped, 1=legal, 2=fatal, 3=silently stripped
+
+    @   A   B   C   D   E   F   G   H   I   J   K   L   M   N   O
+    P   Q   R   S   T   U   V   W   X   Y   Z   [   \   ]   ^   _
+    */
+
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  2,  2,  2,  2,  3,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  0,  0,  1,  0,  0,
+    1,  1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,
+    0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  1,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,
+    0,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  1,  1,  1,  1,  1,
+    1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0
+  };
 
 #ifdef __PLL_DEBUG_PARSER
 static int
@@ -160,8 +214,8 @@ pllAlignmentDataDestroy (pllAlignmentData * alignmentData)
    {
      rax_free (alignmentData->sequenceLabels[i]);
    }
-  rax_free (alignmentData->sequenceLabels);
   rax_free (alignmentData->sequenceData[1]);
+  rax_free (alignmentData->sequenceLabels);
   rax_free (alignmentData->sequenceData);
   rax_free (alignmentData->siteWeights);
   rax_free (alignmentData);
@@ -174,8 +228,7 @@ pllAlignmentDataDestroy (pllAlignmentData * alignmentData)
     @param alignmentData
       The alignment data structure
 */
-void 
-pllAlignmentDataDumpConsole (pllAlignmentData * alignmentData)
+void pllAlignmentDataDumpConsole (pllAlignmentData * alignmentData)
  {
    int i;
 
@@ -407,8 +460,7 @@ parse_phylip (pllAlignmentData * alignmentData, int input)
 static pllAlignmentData *
 pllParsePHYLIP (const char * filename)
 {
-  int 
-    i, input, sequenceCount, sequenceLength;
+  int i, input, sequenceCount, sequenceLength;
   char * rawdata;
   long filesize;
   pllAlignmentData * alignmentData;
@@ -458,207 +510,291 @@ pllParsePHYLIP (const char * filename)
 
 
 /* FASTA routines */
-/* only check whether it is a valid alignment in fasta format */
-/** @ingroup alignmentGroup
-    @brief Get information about the FASTA alignment
 
-    Get the information such as number of sequences and length of sequences of a FASTA alignment
-
-    @return
-      Returns \b PLL_TRUE if the alignment is valid, otherwise \b PLL_FALSE
-*/
-static int
-getFastaAlignmentInfo (int * inp, int * seqCount, int * seqLen)
+static void query_close(void)
 {
-  pllLexToken token;
-  int input;
+  fclose(query_fp);
+  
+  if (query_seq)
+    free(query_seq);
+  if (query_head)
+    free(query_head);
 
-  input = *inp;
-
-  *seqCount = *seqLen = 0;
-
-  NEXT_TOKEN
-  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-
-  if (token.tokenType != PLL_TOKEN_NUMBER && token.tokenType != PLL_TOKEN_STRING) return (PLL_FALSE);
-
-  while (1)
-   {
-     switch (token.tokenType)
-      {
-        case PLL_TOKEN_EOF:
-          return (PLL_TRUE);
-
-        case PLL_TOKEN_NUMBER:
-        case PLL_TOKEN_STRING:
-          if (token.len < 2 || token.lexeme[0] != '>') return (0);
-          break;
-        default:
-          return (PLL_FALSE);
-      }
-     
-     NEXT_TOKEN
-     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-
-     /* read second token (sequence) */
-     switch (token.tokenType)
-      {
-        case PLL_TOKEN_EOF:
-          return (PLL_FALSE);
-          break;
-
-        case PLL_TOKEN_NUMBER:
-        case PLL_TOKEN_STRING:
-          if (!*seqLen)
-            *seqLen = token.len;
-          else
-           {
-             if (*seqLen != token.len) return (0);
-           }
-          break;
-        default:
-          return (PLL_FALSE);
-      }
-     NEXT_TOKEN
-     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-     ++ (*seqCount);
-   }
-
-  return (PLL_TRUE);
+  query_head = 0;
+  query_seq = 0;
 }
 
-/** @ingroup alignmentGroup
-    @brief Check whether the FASTA content is valid
-*/
-static int
-parseFastaAlignment (pllAlignmentData * alignmentData, int input)
+static int query_open(const char * filename)
 {
-  pllLexToken token;
+  query_head = NULL;
+  query_seq = NULL;
+
+  query_head_len = 0;
+  query_seq_len = 0;
+
+  query_head_alloc = PLL_MEMCHUNK;
+  query_seq_alloc = PLL_MEMCHUNK;
+
+  query_head = (char *) malloc((size_t)query_head_alloc);
+  if (!query_head) return 0;
+  query_seq = (char *) malloc((size_t)query_seq_alloc);
+  if (!query_seq) 
+  {
+    free(query_head);
+    return 0;
+  }
+
+  query_no = -1;
+
+  /* open query file */
+  query_fp = NULL;
+  query_fp = fopen(filename, "r");
+  if (!query_fp) 
+  {
+    free(query_head);
+    free(query_seq);
+    return 0;
+  }
+
+  if (fseek(query_fp, 0, SEEK_END)) 
+  {
+    free(query_head);
+    free(query_seq);
+    return 0;
+  }
+
+  query_filesize = ftell(query_fp);
+  
+  rewind(query_fp);
+
+  query_line[0] = 0;
+  fgets(query_line, PLL_LINEALLOC, query_fp);
+  query_lineno = 1;
+
+  return 1;
+}
+
+static int query_getnext(char ** head, int * head_len,
+                  char ** seq, int * seq_len, int * qno)
+{
+  while (query_line[0])
+    {
+      /* read header */
+
+      if (query_line[0] != '>')
+        return -1;
+      
+      if (strlen(query_line) + 1 == PLL_LINEALLOC)
+        return -1;
+
+      /* terminate header at first space or end of line */
+
+      char * z0 = query_line + 1;
+      char * z = z0;
+      while (*z)
+        {
+          if (*z == '\n')
+            break;
+          z++;
+        }
+      long headerlen = z - z0;
+      query_head_len = headerlen;
+
+      /* store the header */
+
+      if (headerlen + 1 > query_head_alloc)
+        {
+          query_head_alloc = headerlen + 1;
+          query_head = (char *) realloc(query_head, (size_t)query_head_alloc);
+          if (!query_head) return -1;
+        }
+
+      memcpy(query_head, query_line + 1, (size_t)headerlen);
+      query_head[headerlen] = 0;
+
+      /* get next line */
+
+      query_line[0] = 0;
+      fgets(query_line, PLL_LINEALLOC, query_fp);
+      query_lineno++;
+
+      /* read sequence */
+
+      query_seq_len = 0;
+
+      while (query_line[0] && (query_line[0] != '>'))
+        {
+          char c;
+          char m;
+          char * p = query_line;
+
+          while((c = *p++))
+            {
+              m = chrstatus[(int)c];
+              switch(m)
+                {
+                case 0:
+                  /* fatal character */
+                  return -1;
+                  break;
+
+                case 1:
+                  /* legal character */
+                  if (query_seq_len + 1 > query_seq_alloc)
+                    {
+                      query_seq_alloc += PLL_MEMCHUNK;
+                      query_seq = (char *) realloc(query_seq, (size_t)query_seq_alloc);
+                      if (!query_seq) return -1;
+                    }
+                  *(query_seq + query_seq_len) = c;
+                  query_seq_len++;
+
+                  break;
+
+                case 2:
+                  /* silently stripped chars */
+                  break;
+                default:
+                  return -1;
+
+                }
+            }
+
+          query_line[0] = 0;
+          fgets(query_line, PLL_LINEALLOC, query_fp);
+          query_lineno++;
+        }
+
+      /* add zero after sequence */
+
+      if (query_seq_len + 1 > query_seq_alloc)
+        {
+          query_seq_alloc += PLL_MEMCHUNK;
+          query_seq = (char *) realloc(query_seq, (size_t)query_seq_alloc);
+          if (!query_seq) return -1;
+        }
+      *(query_seq + query_seq_len) = 0;
+
+      query_no++;
+      *head = query_head;
+      *seq = query_seq;
+      *head_len = query_head_len;
+      *seq_len = query_seq_len;
+      *qno = query_no;
+
+      return 1;
+    }
+  
+  return 0;
+}
+
+static void _pll_free_temp_alignment(pllAlignmentData * alignmentData, int count)
+{
   int i;
 
-  NEXT_TOKEN
-  CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-
-  if (token.tokenType != PLL_TOKEN_NUMBER && token.tokenType != PLL_TOKEN_STRING) return (0);
-
-  i = 1;
-  while (1)
-   {
-     /* first parse the sequence label */
-     switch (token.tokenType)
-      {
-        case PLL_TOKEN_EOF:
-          return (1);
-          break;
-
-        case PLL_TOKEN_NUMBER:
-        case PLL_TOKEN_STRING:
-          alignmentData->sequenceLabels[i] = strndup (token.lexeme + 1, token.len - 1);
-          break;
-        default:
-          return (0);
-      }
-     
-     NEXT_TOKEN
-     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-
-     /* now parse the sequence itself */
-     switch (token.tokenType)
-      {
-        case PLL_TOKEN_EOF:
-          return (0);
-          break;
-
-        case PLL_TOKEN_NUMBER:
-        case PLL_TOKEN_STRING:
-          memmove (alignmentData->sequenceData[i], token.lexeme, token.len);
-          break;
-        default:
-          return (0);
-      }
-     NEXT_TOKEN
-     CONSUME(PLL_TOKEN_WHITESPACE | PLL_TOKEN_NEWLINE)
-     ++ i;
-   }
+  for (i = 1; i <= count; ++i)
+  {
+    free(alignmentData->sequenceData[i]);
+    free(alignmentData->sequenceLabels[i]);
+  }
+  free(alignmentData->sequenceData);
+  free(alignmentData->sequenceLabels);
+  free(alignmentData);
 }
 
-
-/** @ingroup alignmentGroup
-    @brief Parse a FASTA file
-    
-    Parses the FASTA file \a filename and returns a ::pllAlignmentData structure
-    with the alignment.
-
-    @param filename
-      Name of file to be parsed
-
-    @return
-      Returns a structure of type ::pllAlignmentData that contains the alignment, or \b NULL
-      in case of failure.
-*/
 static pllAlignmentData *
 pllParseFASTA (const char * filename)
 {
-  int
-    i,
-    seqLen,
-    seqCount,
-    input;
-  long filesize;
+  int i,j;
+  int status;
 
-  char * rawdata;
   pllAlignmentData * alignmentData;
 
-  rawdata = pllReadFile (filename, &filesize);
-  if (!rawdata)
-   {
-     errno = PLL_ERROR_FILE_OPEN;
-     return (NULL);
-   }
+  if (!query_open(filename))
+  {
+    errno = PLL_ERROR_FILE_OPEN;
+    return NULL;
+  }
 
-  lex_table_amend_fasta ();
-  
-  init_lexan (rawdata, filesize);
-  input = get_next_symbol ();
+  alignmentData = (pllAlignmentData *) malloc(sizeof(pllAlignmentData));
+  alignmentData->sequenceData = NULL;
+  alignmentData->sequenceLabels = NULL;
 
+  int prev_qseqlen = -1;
+  while(1)
+  {
+    char * qhead;
+    int query_head_len;
+    char *qseq;
+    int qseqlen;
+//    int query_no = -1;
 
-  if (!getFastaAlignmentInfo (&input, &seqCount, &seqLen))
-   {
-     errno = PLL_ERROR_FASTA_SYNTAX;
-     lex_table_restore ();
-     rax_free (rawdata);
-     return (NULL);
-   }
-  
-  alignmentData = pllInitAlignmentData (seqCount, seqLen);
-  
-  printf ("\n---------------\n\n");
+    if ((status = query_getnext(&qhead, &query_head_len,
+                      &qseq, &qseqlen, &query_no)) > 0)
+    {
+      alignmentData->sequenceData = (unsigned char **)realloc(alignmentData->sequenceData, 
+                                                              (query_no + 2)*sizeof(unsigned char *));
+      alignmentData->sequenceLabels = (char **)realloc(alignmentData->sequenceLabels,
+                                                                (query_no + 2)*sizeof(char *));
 
-  init_lexan (rawdata, filesize);
-  input = get_next_symbol ();
-
-  if (!parseFastaAlignment (alignmentData, input))
-   {
-     errno = PLL_ERROR_FASTA_SYNTAX;
-     pllAlignmentDataDestroy (alignmentData);
-     lex_table_restore();
-     rax_free(rawdata);
-     return (NULL);
-   }
-
-  /* allocate alignment structure */
-
-
-  lex_table_restore ();
-  rax_free (rawdata);
+      /* remove trailing whitespace from sequence names */
+      j = query_head_len-1;
+      while(j>0 && (qhead[j] == ' ' || qhead[j] == '\t'))
+      {
+        qhead[j] = 0;
+      }
+      alignmentData->sequenceData[query_no+1] = (unsigned char *)strdup(qseq);
+      alignmentData->sequenceLabels[query_no+1] = strdup(qhead);
+      
+      if (prev_qseqlen != -1)
+      {
+        /* fasta sequences not aligned, free everything except last read
+           which will be freed by query_close() */
+        if (qseqlen != prev_qseqlen)
+        {
+          errno = PLL_ERROR_FASTA_SYNTAX;
+          _pll_free_temp_alignment(alignmentData, query_no+1);
+          query_close();
+          return NULL;
+        }
+      }
+      else
+      {
+        alignmentData->sequenceLength = qseqlen;
+        alignmentData->originalSeqLength = qseqlen;
+        prev_qseqlen = qseqlen;
+      }
+    }
+    else if (status == -1)
+    {
+      errno = PLL_ERROR_FASTA_SYNTAX;
+      _pll_free_temp_alignment(alignmentData, query_no+1);
+      query_close();
+      return NULL;
+    }
+    else break;
+  }
+  alignmentData->sequenceCount  = query_no+1;
+  query_close();
 
   alignmentData->siteWeights = (int *) rax_malloc (alignmentData->sequenceLength * sizeof (int));
   for (i = 0; i < alignmentData->sequenceLength; ++ i)
     alignmentData->siteWeights[i] = 1;
 
+  /* ugly hack to turn it to one contiguous block of memory. This should be redesigned */
+  void * mem = malloc((alignmentData->sequenceCount)*(alignmentData->sequenceLength+1)*sizeof(unsigned char));
+  for (i = 1; i <= alignmentData->sequenceCount; ++i)
+  {
+    void * tmp = alignmentData->sequenceData[i];
+    alignmentData->sequenceData[i] = (unsigned char *) (mem + (i - 1) * (alignmentData->sequenceLength + 1) * sizeof (unsigned char));
+    memcpy(alignmentData->sequenceData[i], tmp, alignmentData->sequenceLength);
+    alignmentData->sequenceData[i][alignmentData->sequenceLength] = 0;
+    free(tmp);
+  }
+  alignmentData->sequenceData[0] = NULL;
+
   return (alignmentData);
 }
-
 
 
 /** @ingroup alignmentGroup
@@ -679,10 +815,8 @@ pllParseFASTA (const char * filename)
       Returns a structure of type ::pllAlignmentData that contains the multiple sequence alignment,
       otherwise returns \b NULL in case of failure.
 */
-pllAlignmentData *
-pllParseAlignmentFile (int fileType, const char * filename)
+pllAlignmentData * pllParseAlignmentFile (int fileType, const char * filename)
 {
-
   switch (fileType)
    {
      case PLL_FORMAT_PHYLIP:
@@ -694,4 +828,5 @@ pllParseAlignmentFile (int fileType, const char * filename)
        errno = PLL_ERROR_INVALID_FILETYPE;
        return (NULL);
    }
+
 }
