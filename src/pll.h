@@ -1248,7 +1248,6 @@ typedef  struct  {
   int              initial;             /**< user defined rearrangement radius which also sets bestTrav if initialSet is set */
   boolean          initialSet;          /**< set bestTrav according to initial */
   int              mode;                /**< candidate for removal */
-  boolean        perGeneBranchLengths;
   boolean        permuteTreeoptimize;   /**< randomly select subtrees for SPR moves */
   boolean        compressPatterns;
   double         likelihoodEpsilon;
@@ -1481,6 +1480,11 @@ typedef struct
         nodeptr removeBranch;
         nodeptr insertBranch1;
         nodeptr insertBranch2;
+        double  zp[PLL_NUM_BRANCHES];
+        double  zpb[PLL_NUM_BRANCHES];
+        double  zq[PLL_NUM_BRANCHES];
+        double  zqb[PLL_NUM_BRANCHES];
+        double  zr[PLL_NUM_BRANCHES];
      } TBR;
      struct {
        nodeptr originNode;
@@ -1721,6 +1725,7 @@ extern nodeptr pllGetOrientedNodePointer (pllInstance * pInst, nodeptr p);
 extern char * pllReadFile (const char *, long *);
 extern int * pllssort1main (char ** x, int n);
 extern node ** pllGetInnerBranchEndPoints (pllInstance * tr);
+extern node ** getSubtreeNodes (pllInstance * tr, nodeptr p, int * numberOfNodes);
 
 /* ---------------- */
 

@@ -1,3 +1,11 @@
+2015-03-13  Diego Darriba <Diego.Darriba@h-its.org>
+
+		* Release 1.0.10
+		* Implemented TBR moves in rearrangement search functions
+		* Added pllGetSubtreeNodes function
+		* Removed perGeneBranchLengths in pllInstance
+			(perGeneBranchLengths in the partitionList should be used instead)
+
 2015-03-09  Tomas Flouri <Tomas.Flouri@h-its.org>
 
 		* Release 1.0.9

@@ -827,14 +827,23 @@ void initMemorySavingAndRecom(pllInstance *tr, partitionList *pr)
 */
 double pllGetBranchLength (pllInstance *tr, partitionList * pr, nodeptr p, int partition_id)
 {
+  double z, fracchange;
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
-  assert(pr->partitionData[partition_id]->fracchange != -1.0);
-  double z = p->z[partition_id];
+
+  if (pr->perGeneBranchLengths) {
+      assert(pr->partitionData[partition_id]->fracchange != -1.0);
+      fracchange = pr->partitionData[partition_id]->fracchange;
+  } else {
+      assert(tr->fracchange != -1.0);
+      fracchange = tr->fracchange;
+  }
+
+  z = p->z[partition_id];
   if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > PLL_ZMAX) z = PLL_ZMAX;
-  return (-log(z) * pr->partitionData[partition_id]->fracchange);
+  return (-log(z) * fracchange);
 }
 
 /** @brief Set the length of a specific branch
@@ -860,12 +869,18 @@ double pllGetBranchLength (pllInstance *tr, partitionList * pr, nodeptr p, int p
 */
 void pllSetBranchLength (pllInstance *tr, partitionList *pr, nodeptr p, int partition_id, double bl)
 {
+  double z;
   //assert(partition_id < tr->numBranches);
   assert(partition_id < PLL_NUM_BRANCHES);
   assert(partition_id >= 0);
-  assert(pr->partitionData[partition_id]->fracchange != -1.0);
-  double z;
-  z = exp((-1 * bl)/pr->partitionData[partition_id]->fracchange);
+  if (pr->perGeneBranchLengths) {
+      assert(pr->partitionData[partition_id]->fracchange != -1.0);
+      z = exp((-1 * bl)/pr->partitionData[partition_id]->fracchange);
+  } else {
+      assert(tr->fracchange != -1.0);
+      z = exp((-1 * bl)/tr->fracchange);
+  }
+
   if(z < PLL_ZMIN) z = PLL_ZMIN;
   if(z > PLL_ZMAX) z = PLL_ZMAX;
   p->z[partition_id] = z;
@@ -3728,6 +3743,41 @@ node ** pllGetInnerBranchEndPoints (pllInstance * tr)
   return nodes;
 }
 
+static void getSubtreeNodesRecursive (nodeptr p, int tips, int * i, node **nodes)
+{
+  nodes[(*i)++] = p;
+  if (!isTip (p->number, tips))
+   {
+     getSubtreeNodesRecursive(p->next->back, tips, i, nodes);
+     getSubtreeNodesRecursive(p->next->next->back, tips, i, nodes);
+   }
+}
+
+/**
+ * @brief Gets the list of nodes in a subtree rooted at p
+ *
+ * @param[in] tr, the tree
+ * @param[in] p, the node rooting the subtree
+ * @param[out] numberOfNodes, the number of nodes in the subtree (i.e., size of the result nodes array)
+ *
+ * @return The list of nodes in the subtree rooted at p, in preorder.
+ */
+node ** getSubtreeNodes (pllInstance * tr, nodeptr p, int * numberOfNodes)
+{
+  node ** nodes;
+  int i = 0;
+
+  nodes = (node **) rax_calloc((size_t)tr->mxtips*2 - 2, sizeof(node *));
+
+  getSubtreeNodesRecursive(p, tr->mxtips, &i, nodes);
+
+  assert(i <= 2*tr->mxtips - 2);
+  nodes = (node **) rax_realloc(nodes, (size_t)i * sizeof(double));
+
+  *numberOfNodes = i;
+
+  return nodes;
+}
 
 /* TBR OPERATIONS */
 
@@ -3773,7 +3823,7 @@ pllTbrRemoveBranch (pllInstance * tr, partitionList * pr, nodeptr p)
   q2 = p->back->next->next->back;
 
   // Connect p neighbors (sum branches)
-  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  numBranchLengths = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   nextZP = (double *) rax_malloc ( (size_t) numBranchLengths * sizeof(double));
   if (!nextZP) {
       return PLL_FALSE;
@@ -3827,19 +3877,45 @@ int
 pllTbrConnectSubtreesML (pllInstance * tr, partitionList * pr, nodeptr p, nodeptr q)
 {
 
+  nodeptr pb, qb, pc, qc;
+  pb = p->back;
+  qb = q->back;
+
   if (!pllTbrConnectSubtreesBL (tr, pr, p, q, 0, 0, 0, 0, 0)) {
       return PLL_FALSE;
   }
 
-  // TODO: Verify this operation
-  regionalSmooth(tr, pr, p, 64, 1);
-  regionalSmooth(tr, pr, q, 64, 1);
-  pllOptimizeBranchLengths(tr, pr, 64);
+  pc = p->back;
+  if (pc->next->back == pb)
+    pc = pc->next->next;
+  else
+    pc = pc->next;
+  qc = q->back;
+  if (qc->next->back == qb)
+    qc = qc->next->next;
+  else
+    qc = qc->next;
+
+  //TODO: This can be improved
+  pllEvaluateLikelihood (tr, pr, tr->start, PLL_TRUE, PLL_FALSE);
+
+  double lk = tr->likelihood - tr->likelihoodEpsilon - 1;
+
+  while (tr->likelihood - lk > tr->likelihoodEpsilon)
+    {
+      lk = tr->likelihood;
+      regionalSmooth (tr, pr, pc, 64, 1);
+
+      regionalSmooth (tr, pr, qc, 64, 1);
+
+      pllEvaluateLikelihood (tr, pr, tr->start, PLL_FALSE, PLL_FALSE);
+      assert(tr->likelihood >= lk);
+    }
 
   return PLL_TRUE;
 }
 
-static int pllTbrConnectSubtrees(pllInstance * tr, partitionList * pr, nodeptr p,
+static int pllTbrConnectSubtrees(pllInstance * tr, nodeptr p,
                                  nodeptr q, nodeptr * freeBranch, nodeptr * pb, nodeptr * qb) {
   int i;
   nodeptr tmpNode;
@@ -3928,7 +4004,7 @@ static int pllTbrConnectSubtrees(pllInstance * tr, partitionList * pr, nodeptr p
  * p and q must be different and belong to unconnected subtrees.
  * It must exist at least one completely disconnected branch.
  *
- * The length of the branch lengths arrays must be either 1 if tr->perGeneBranchLengths is false,
+ * The length of the branch lengths arrays must be either 1 if pr->perGeneBranchLengths is false,
  * or the number of partitions.
  *
  * The branch length arrays should contain the absolute branch lengths (not the internal z values).
@@ -3955,12 +4031,12 @@ pllTbrConnectSubtreesBL (pllInstance * tr, partitionList * pr, nodeptr p,
   int i, numBranchLengths;
   nodeptr pb, qb, freeBranch;
 
-  if (!pllTbrConnectSubtrees(tr, pr, p, q, &freeBranch, &pb, &qb)) {
+  if (!pllTbrConnectSubtrees(tr, p, q, &freeBranch, &pb, &qb)) {
       return PLL_FALSE;
   }
 
   // Set branch lengths
-  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  numBranchLengths = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   if (pBl)
     for (i = 0; i < numBranchLengths; i++)
       pllSetBranchLength (tr, pr, p, i, pBl[i]);
@@ -3987,7 +4063,7 @@ pllTbrConnectSubtreesBL (pllInstance * tr, partitionList * pr, nodeptr p,
  * p and q must be different and belong to unconnected subtrees.
  * It must exist at least one completely disconnected branch.
  *
- * The length of the branch lengths arrays must be either 1 if tr->perGeneBranchLengths is false,
+ * The length of the branch lengths arrays must be either 1 if pr->perGeneBranchLengths is false,
  * or the number of partitions.
  *
  * The branch length arrays should contain the z values.
@@ -4014,12 +4090,12 @@ pllTbrConnectSubtreesZ (pllInstance * tr, partitionList * pr, nodeptr p,
   int i, numBranchLengths;
   nodeptr pb, qb, freeBranch;
 
-  if (!pllTbrConnectSubtrees(tr, pr, p, q, &freeBranch, &pb, &qb)) {
+  if (!pllTbrConnectSubtrees(tr, p, q, &freeBranch, &pb, &qb)) {
       return PLL_FALSE;
   }
 
   // Set branch lengths
-  numBranchLengths = tr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
+  numBranchLengths = pr->perGeneBranchLengths ? pr->numberOfPartitions : 1;
   if (pZ)
     for (i = 0; i < numBranchLengths; i++) {
         p->z[i] = pZ[i];
